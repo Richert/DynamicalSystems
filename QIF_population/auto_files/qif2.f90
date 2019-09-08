@@ -30,7 +30,7 @@
        F(1) = D/PI + 2.0*R*V
        F(2) = V*V + J*R - E - PI*PI*R*R + eta
        F(3) = A
-       F(4) = alpha*J*R/tau - 2.0*A/tau - E/(tau*tau)    
+       F(4) = alpha*R/tau - 2.0*A/tau - E/(tau*tau)    
 
       END SUBROUTINE FUNC
 

@@ -28,7 +28,7 @@
        A=U(4)  
 
        F(1) = D/PI + 2.0*R*V
-       F(2) = V*V + J*(1.0-TANH(E))*R - PI*PI*R*R + eta
+       F(2) = V*V + J*(1.0-E)*R - PI*PI*R*R + eta
        F(3) = A   
        F(4) = alpha*R/tau - 2.0*A/tau - E/(tau*tau)  
 

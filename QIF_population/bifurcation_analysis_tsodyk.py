@@ -181,35 +181,37 @@ def extract_from_solution(s, params, vars, auto_params=None, time_vars=None):
 # initial continuation
 """This serves the purpose of setting the adaptation strength to a desired initial value > 0 using a specified tau.
 """
-alpha_0 = [0.125, 0.25, 0.5, 1.0, 2.0]
-s0 = a.run(e='qif2', c='qif', ICP=3, UZR={3: alpha_0}, STOP=['UZ'+str(len(alpha_0))], DSMAX=0.005)
+J_0 = 100.0
+p_0 = [0.9, 0.8, 0.7, 0.6, 0.5]
+s0 = a.run(e='qif3', c='qif', ICP=2, UZR={2: J_0}, STOP=['UZ1'], DSMAX=0.05)
+s1 = a.run(s0('UZ1'), ICP=3, UZR={3: p_0}, STOP=[], DSMAX=0.05, DS='-')
 
 # primary parameter continuation in eta
 """Now, we look for a bifurcation when increasing the excitability of the system via eta.
 """
 se_col = []
-se_col.append(a.merge(a.run(s0('EP1'), ICP=1, DSMAX=0.005, RL0=-12.0, NMX=2000) +
-                      a.run(s0('EP1'), ICP=1, DSMAX=0.005, RL0=-12.0, DS='-', NMX=2000)))
-for s in s0('UZ'):
-    se_col.append(a.merge(a.run(s, ICP=1, DSMAX=0.005, RL0=-12.0, NMX=8000) +
-                          a.run(s, ICP=1, DSMAX=0.005, RL0=-12.0, DS='-', NMX=8000)))
-se = se_col[4]
+se_col.append(a.merge(a.run(s0('UZ1'), ICP=1, DSMAX=0.005, RL0=-12.0, NMX=2000) +
+                      a.run(s0('UZ1'), ICP=1, DSMAX=0.005, RL0=-12.0, DS='-', NMX=2000)))
+for s in s1('UZ'):
+    se_col.append(a.merge(a.run(s, ICP=1, DSMAX=0.005, RL0=-12.0, NMX=4000) +
+                          a.run(s, ICP=1, DSMAX=0.005, RL0=-12.0, DS='-', NMX=4000)))
+se = se_col[3]
 
 if fixed_point_analysis:
 
     # limit cycle continuation of hopf bifurcations in eta
     """Now, we continue the limit cycle of the first and second hopf bifurcation in eta.
     """
-    se_hb1 = a.run(se('HB1'), c='qif2b', ICP=1, DSMAX=0.1, NMX=2000)
-    se_hb2 = a.run(se('HB2'), c='qif2b', ICP=1, DSMAX=0.1, NMX=2000, UZR={1: -4.9}, STOP={})
+    se_hb1 = a.run(se('HB1'), c='qif2b', ICP=1, DSMAX=0.01, NMX=2000)
+    se_hb2 = a.run(se('HB2'), c='qif2b', ICP=1, DSMAX=0.01, NMX=2000, UZR={1: -4.9}, STOP={})
 
 # visualization of eta continuation
 ###################################
 
 if bifurcation_analysis:
 
-    # plot eta continuation for different alphas
-    ############################################
+    # plot eta continuation for different u
+    #######################################
 
     uv = 1
     fig, ax = plt.subplots(figsize=(15, 8))
@@ -237,7 +239,7 @@ if bifurcation_analysis:
 if bifurcation_analysis and fixed_point_analysis:
 
     uvs = [1]
-    uv_names = ['r', 'v', 'e', 'a']
+    uv_names = ['r', 'v', 'u', 'x']
     xlims = [(-6.5, 3.5), (), (), ()]
     ylims = [(0.0, 3.7), (), (), ()]
     for uv, name, xl, yl in zip(uvs, uv_names, xlims, ylims):
@@ -293,8 +295,8 @@ if bifurcation_analysis and fixed_point_analysis:
         ax.add_collection(col_min_hb2)
         ax.add_collection(col_max_hb2)
         ax.autoscale()
-        ax.set_xlim(xl[0], xl[1])
-        ax.set_ylim(yl[0], yl[1])
+        #ax.set_xlim(xl[0], xl[1])
+        #ax.set_ylim(yl[0], yl[1])
         ax.set_xlabel('eta')
         ax.set_ylabel(name)
         ax.set_title('One-parameter continuation')

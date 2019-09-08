@@ -9,30 +9,19 @@ import numpy as np
 os.chdir("auto_files")
 plt.ioff()
 
-# plotting parameters
-linewidth = 0.5
-fontsize1 = 6
-fontsize2 = 8
-markersize1 = 25
-markersize2 = 25
-dpi = 400
 plt.style.reload_library()
-plt.style.use('seaborn-whitegrid')
-mpl.rcParams['font.family'] = 'Roboto'
-mpl.rcParams['font.size'] = fontsize1
-mpl.rcParams['lines.linewidth'] = linewidth
-mpl.rcParams['axes.titlesize'] = fontsize2
+plt.style.use('ggplot')
+mpl.rcParams['lines.linewidth'] = 2
+mpl.rcParams['axes.titlesize'] = 24
 mpl.rcParams['axes.titleweight'] = 'bold'
-mpl.rcParams['axes.labelsize'] = fontsize2
+mpl.rcParams['axes.labelsize'] = 24
 mpl.rcParams['axes.labelcolor'] = 'black'
 mpl.rcParams['axes.labelweight'] = 'bold'
-mpl.rcParams['xtick.labelsize'] = fontsize1
-mpl.rcParams['ytick.labelsize'] = fontsize1
+mpl.rcParams['xtick.labelsize'] = 20
+mpl.rcParams['ytick.labelsize'] = 20
 mpl.rcParams['xtick.color'] = 'black'
 mpl.rcParams['ytick.color'] = 'black'
-mpl.rcParams['legend.fontsize'] = fontsize1
-mpl.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath} \boldmath']
-mpl.rc('text', usetex=True)
+mpl.rcParams['legend.fontsize'] = 20
 
 #########################################
 # configs, descriptions and definitions #
@@ -76,8 +65,10 @@ HOWTO:
 
 bifurcation_analysis = True
 fixed_point_analysis = True
-phase_portrait_analysis = False
+phase_portrait_analysis = True
 limit_cycle_analysis = True
+n_dim = 6
+n_par = 7
 
 # definitions
 #############
@@ -115,7 +106,6 @@ def get_cont_results(s, data_idx=[1], extract_solution=[]):
             points.append(end - 1)
             point_solutions.append(solutions)
         start = end
-    stability = stability[:start]
     if point_solutions:
         return results, stability, point_solutions, points
     return results, stability
@@ -195,8 +185,10 @@ def extract_from_solution(s, params, vars, auto_params=None, time_vars=None):
 # initial continuation
 """This serves the purpose of setting the adaptation strength to a desired initial value > 0 using a specified tau.
 """
-alpha_0 = [0.0125, 0.025, 0.05, 0.1, 0.2]
-s0 = a.run(e='qif', c='qif', ICP=3, UZR={3: alpha_0}, STOP=['UZ'+str(len(alpha_0))], DSMAX=0.005)
+alpha_0 = 0.05
+beta_0 = [0.125, 0.25, 0.5, 1.0, 2.0]
+s0 = a.run(e='qif4', c='qif', ICP=3, UZR={3: alpha_0}, STOP=['UZ1'], DSMAX=0.005, NDIM=n_dim, NPAR=n_par)
+s1 = a.run(s0('UZ1'), ICP=4, UZR={4: beta_0}, STOP=['UZ'+str(len(beta_0))], DSMAX=0.005)
 
 # primary parameter continuation in eta
 """Now, we look for a bifurcation when increasing the excitability of the system via eta.
@@ -204,62 +196,58 @@ s0 = a.run(e='qif', c='qif', ICP=3, UZR={3: alpha_0}, STOP=['UZ'+str(len(alpha_0
 se_col = []
 se_col.append(a.merge(a.run(s0('EP1'), ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0) +
                       a.run(s0('EP1'), ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, DS='-')))
-for s in s0('UZ'):
+for s in s1('UZ'):
     se_col.append(a.merge(a.run(s, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0) +
                           a.run(s, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, DS='-')))
-se = se_col[3]
+se = se_col[2]
 
 if fixed_point_analysis or phase_portrait_analysis:
 
-    # limit cycle continuation of hopf bifurcations in eta and alpha
+    # limit cycle continuation of hopf bifurcations in eta
     """Now, we continue the limit cycle of the first and second hopf bifurcation in eta.
     """
-    se_hb1 = a.run(se('HB1'), c='qif2b', ICP=1, DSMAX=0.1, NMX=2000)
-    se_hb2 = a.run(se('HB2'), c='qif2b', ICP=1, DSMAX=0.1, NMX=2000, UZR={1: -4.9}, STOP={})
-    se_hb3 = a.run(se('HB2'), c='qif2b', ICP=3, DSMAX=0.1, NMX=2000, RL0=0.0)
+    se_hb1 = a.run(se('HB1'), c='qif2b', ICP=1, DSMAX=0.1, NMX=2000, NDIM=n_dim, NPAR=n_par)
+    se_hb2 = a.run(se('HB2'), c='qif2b', ICP=1, DSMAX=0.1, NMX=2000, UZR={1: -4.9}, STOP={}, NDIM=n_dim, NPAR=n_par)
 
 if limit_cycle_analysis:
-
-    # continuation in eta and alpha
-    ###############################
 
     # continue the limit cycle borders in alpha and eta
     """Here, we investigate for which values of eta and alpha the limit cycle can be found.
     """
-    se_lcb1 = a.run(se('HB2'), c='qif2', ICP=[1, 3], DSMAX=0.01, NMX=2000)
-    se_lcb2 = a.run(se('HB2'), c='qif2', ICP=[1, 3], DSMAX=0.01, NMX=2000, DS='-')
+    se_lcb1 = a.run(se('HB1'), c='qif2', ICP=[1, 3], DSMAX=0.01, NMX=2000, NDIM=n_dim, NPAR=n_par)
+    se_lcb2 = a.run(se('HB1'), c='qif2', ICP=[1, 3], DSMAX=0.01, NMX=2000, DS='-', NDIM=n_dim, NPAR=n_par)
 
     # continue the stable region of the limit cycle
     """Here, we investigate the parameter space in eta and alpha for which the limit cycle is stable.
     """
-    alphas = np.round(np.linspace(0.02, 0.16, 100)[::-1], decimals=4).tolist()
-    se_lcs5 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 11, 3], NMX=2000, RL1=0.0, DSMAX=0.05, UZR={3: alphas},
-                          STOP={}))
-    se_lcs6 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 11, 3], NMX=2000, DS='-', RL1=0.0, DSMAX=0.05,
-                          UZR={3: alphas}, STOP={}))
-    se_lcs7 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 11, 3], NMX=4000, UZR={3: alphas}, STOP={}, RL1=0.0,
-                          DSMAX=0.05, DSMIN=1e-6))
-    se_lcs8 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 11, 3], NMX=4000, DS='-', UZR={3: alphas}, STOP={}, RL1=0.0,
-                          DSMAX=0.05, DSMIN=1e-6))
-    se_lcs_upper = a.merge(se_lcs7 + se_lcs8)
-    se_lcs_lower = a.merge(se_lcs5 + se_lcs6)
+    alphas = np.round(np.linspace(0.03, 0.16, 20)[::-1], decimals=4).tolist()
+    se_lcs1 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 3], NMX=2000, RL1=0.0, DSMAX=0.05, UZR={3: alphas}, STOP={},
+                          NDIM=n_dim, NPAR=n_par))
+    se_lcs2 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 3], NMX=2000, DS='-', RL1=0.0, DSMAX=0.05, UZR={3: alphas},
+                          STOP={}, NDIM=n_dim, NPAR=n_par))
+    se_lcs3 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 3], NMX=4000, UZR={3: alphas}, STOP={}, RL1=0.0, DSMAX=0.05,
+                          NDIM=n_dim, NPAR=n_par))
+    se_lcs4 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 3], NMX=4000, DS='-', UZR={3: alphas}, STOP={}, RL1=0.0,
+                          DSMAX=0.05, NDIM=n_dim, NPAR=n_par))
+    se_lcs_upper = a.merge(se_lcs3 + se_lcs4)
+    se_lcs_lower = a.merge(se_lcs1 + se_lcs2)
 
     # continue the fold bifurcation in eta and alpha
     """Here, we investigate the parameter space for which the fold bifurcation exists.
     """
-    se_fp1 = a.run(se('LP2'), c='qif2', ICP=[1, 3], RL0=0.0, DSMAX=0.01, NMX=2000)
-    se_fp2 = a.run(se('LP2'), c='qif2', ICP=[1, 3], RL0=0.0, DSMAX=0.01, NMX=2000, DS='-')
+    se_fp1 = a.run(se('LP2'), c='qif2', ICP=[3, 1], RL0=0.0, DSMAX=0.01, NMX=2000, NDIM=n_dim, NPAR=n_par)
+    se_fp2 = a.run(se('LP2'), c='qif2', ICP=[3, 1], RL0=0.0, DSMAX=0.01, NMX=2000, DS='-', NDIM=n_dim, NPAR=n_par)
 
     # get limit cycle periods
     """Here, we create auto_solutions for grid y in the eta-alpha plane where the limit cycle is stable, to extract the 
     cycle periods later on.
     """
-    etas = np.round(np.linspace(-6.5, -2.5, 100), decimals=4).tolist()
+    etas = np.round(np.linspace(-5.8, -3.5, 20), decimals=4).tolist()
     period_solutions = np.zeros((len(alphas), len(etas)))
     for s_tmp in se_lcs_upper():
         if np.round(s_tmp['PAR(3)'], decimals=4) in alphas:
             s_tmp2 = a.run(s_tmp, c='qif', ICP=[1], UZR={1: etas}, STOP={}, EPSL=1e-6, EPSU=1e-6, EPSS=1e-4,
-                           ILP=0, ISP=0, IPS=2, DS='-')
+                           ILP=0, ISP=0, IPS=2, DS='-', NDIM=n_dim, NPAR=n_par)
             eta_old = etas[0]
             for s in s_tmp2('UZ'):
                 params_tmp, _, _, _ = extract_from_solution(s, params=['PAR(1)', 'PAR(3)', 'PAR(11)'], vars=[])
@@ -269,74 +257,51 @@ if limit_cycle_analysis:
                     period_solutions[idx_r, idx_c] = params_tmp[2]
                     eta_old = params_tmp[0]
 
-    # continuation in alpha and tau
-    ###############################
-
     # continue the limit cycle borders in alpha and tau
-    """Here, we investigate for which values of alpha and tau the limit cycle can be found.
+    """Here, we investigate for which values of eta and alpha the limit cycle can be found.
     """
-    se_lcb3 = a.run(se('HB2'), c='qif2', ICP=[3, 4], DSMAX=0.1, NMX=4000, RL0=0.0, RL1=100.0, )
-    se_lcb4 = a.run(se('HB2'), c='qif2', ICP=[3, 4], DSMAX=0.1, NMX=8000, DS='-', RL0=0.0, RL1=100.0, )
+    se_lcb3 = a.run(se('HB2'), c='qif2', ICP=[1, 4], DSMAX=0.01, NMX=4000, NDIM=n_dim, NPAR=n_par)
+    se_lcb4 = a.run(se('HB2'), c='qif2', ICP=[1, 4], DSMAX=0.01, NMX=6000, DS='-', NDIM=n_dim, NPAR=n_par)
 
     # continue the stable region of the limit cycle
-    """Here, we investigate the parameter space in alpha and tau for which the limit cycle is stable.
+    """Here, we investigate the parameter space in eta and alpha for which the limit cycle is stable.
     """
-    taus = np.round(np.linspace(5.0, 35.0, 20)[::-1], decimals=2).tolist()
-    se_lcs1 = a.run(a.run(se_hb3('LP1'), c='qif3', ICP=[3, 11, 4], NMX=400, DSMAX=0.1, RL0=0.0))
-    se_lcs2 = a.run(a.run(se_hb3('LP1'), c='qif3', ICP=[3, 11, 4], NMX=4000, DS='-', DSMAX=0.1, RL0=0.0))
-    se_lcs3 = a.run(a.run(se_hb3('LP2'), c='qif3', ICP=[3, 11, 4], NMX=4000, DSMAX=0.1, RL0=0.0))
-    se_lcs4 = a.run(a.run(se_hb3('LP2'), c='qif3', ICP=[3, 11, 4], NMX=4000, DS='-', DSMAX=0.1, RL0=0.0))
+    taus = np.round(np.linspace(5.0, 35.0, 20)[::-1], decimals=4).tolist()
+    se_lcs1 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 4], NMX=4000, UZR={4: taus}, STOP={}, RL1=0.0, DSMAX=0.05,
+                          NDIM=n_dim, NPAR=n_par))
+    se_lcs2 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 4], NMX=4000, DS='-', RL1=0.0, DSMAX=0.05, UZR={4: taus},
+                          STOP={}, NDIM=n_dim, NPAR=n_par))
+    se_lcs3 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 4], NMX=4000, RL1=0.0, DSMAX=0.05, UZR={4: taus}, STOP={},
+                          NDIM=n_dim, NPAR=n_par))
+    se_lcs4 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 4], NMX=4000, DS='-', UZR={4: taus}, STOP={}, RL1=0.0,
+                          DSMAX=0.05, NDIM=n_dim, NPAR=n_par))
     se_lcs_lower2 = a.merge(se_lcs3 + se_lcs4)
     se_lcs_upper2 = a.merge(se_lcs1 + se_lcs2)
 
-    # continuation in eta and J
-    ###########################
-
-    # continue the limit cycle borders in eta and J
-    """Here, we investigate for which values of eta and J the limit cycle can be found.
-    """
-    #se_lcb5 = a.run(se('HB2'), c='qif2', ICP=[1, 2], DSMAX=0.01, NMX=4000)
-    #se_lcb6 = a.run(se('HB2'), c='qif2', ICP=[1, 2], DSMAX=0.01, NMX=6000, DS='-')
-
-    # continue the stable region of the limit cycle
-    """Here, we investigate the parameter space in eta and J for which the limit cycle is stable.
-    """
-    #Js = np.round(np.linspace(0.0, 50.0, 20)[::-1], decimals=2).tolist()
-    #se_lcs1 = a.run(
-    #    a.run(se_hb2('LP1'), c='qif3', ICP=[1, 2], NMX=2000, UZR={2: Js}, STOP={}, RL1=0.0, DSMAX=0.05))
-    #se_lcs2 = a.run(a.run(se_hb2('LP1'), c='qif3', ICP=[1, 2], NMX=2000, DS='-', RL1=0.0, DSMAX=0.05, UZR={2: Js},
-    #                      STOP={}))
-    #se_lcs3 = a.run(
-    #    a.run(se_hb2('LP2'), c='qif3', ICP=[1, 2], NMX=2000, RL1=0.0, DSMAX=0.05, UZR={2: Js}, STOP={}))
-    #se_lcs4 = a.run(a.run(se_hb2('LP2'), c='qif3', ICP=[1, 2], NMX=2000, DS='-', UZR={2: Js}, STOP={}, RL1=0.0,
-    #                      DSMAX=0.05))
-    #se_lcs_upper3 = a.merge(se_lcs1 + se_lcs2)
-    #se_lcs_lower3 = a.merge(se_lcs3 + se_lcs4)
-
-    # continue the fold bifurcation in eta and J
+    # continue the fold bifurcation in eta and alpha
     """Here, we investigate the parameter space for which the fold bifurcation exists.
     """
-    #se_fp5 = a.run(se('LP2'), c='qif2', ICP=[1, 2], RL1=0.0, DSMAX=0.01, NMX=2000)
-    #se_fp6 = a.run(se('LP2'), c='qif2', ICP=[1, 2], RL1=0.0, DSMAX=0.01, NMX=2000, DS='-')
+    se_fp3 = a.run(se('LP2'), c='qif2', ICP=[1, 4], RL1=0.0, DSMAX=0.01, NMX=2000, NDIM=n_dim, NPAR=n_par)
+    se_fp4 = a.run(se('LP2'), c='qif2', ICP=[1, 4], RL1=0.0, DSMAX=0.01, NMX=2000, DS='-', NDIM=n_dim, NPAR=n_par)
 
     # get limit cycle periods
-    """Here, we create auto_solutions for grid y in the eta-tau plane where the limit cycle is stable, to extract the 
+    """Here, we create auto_solutions for grid y in the eta-alpha plane where the limit cycle is stable, to extract the 
     cycle periods later on.
     """
-    # etas3 = np.round(np.linspace(-8.0, -3.0, 20), decimals=2).tolist()
-    # period_solutions3 = np.zeros((len(Js), len(etas3)))
-    # for s_tmp in se_lcs_upper3():
-    #     if np.round(s_tmp['PAR(2)'], decimals=2) in Js:
-    #         s_tmp2 = a.run(s_tmp, c='qif', ICP=1, UZR={1: etas3}, STOP={}, EPSL=1e-6, EPSU=1e-6, EPSS=1e-4,
-    #                        ILP=0, ISP=0, IPS=2, DS='-')
-    #         eta_old = etas3[-1]
-    #         for s in s_tmp2('UZ'):
-    #             params_tmp, _, _, _ = extract_from_solution(s, params=['PAR(1)', 'PAR(2)', 'PAR(11)'], vars=[])
-    #             if params_tmp[0] < eta_old:
-    #                 idx_c = np.argwhere(np.round(params_tmp[0], decimals=2) == etas3)
-    #                 idx_r = np.argwhere(np.round(params_tmp[1], decimals=2) == Js)
-    #                 period_solutions3[idx_r, idx_c] = params_tmp[2]
-    #                 eta_old = params_tmp[0]
+    etas = np.round(np.linspace(-6.0, -3.0, 20), decimals=4).tolist()
+    period_solutions2 = np.zeros((len(taus), len(etas)))
+    for s_tmp in se_lcs_upper2():
+        if np.round(s_tmp['PAR(4)'], decimals=4) in taus:
+            s_tmp2 = a.run(s_tmp, c='qif', ICP=1, UZR={1: etas}, STOP={}, EPSL=1e-6, EPSU=1e-6, EPSS=1e-4,
+                           ILP=0, ISP=0, IPS=2, DS='-', NDIM=n_dim, NPAR=n_par)
+            eta_old = etas[0]
+            for s in s_tmp2('UZ'):
+                params_tmp, _, _, _ = extract_from_solution(s, params=['PAR(1)', 'PAR(4)', 'PAR(11)'], vars=[])
+                if params_tmp[0] >= eta_old:
+                    idx_c = np.argwhere(np.round(params_tmp[0], decimals=4) == etas)
+                    idx_r = np.argwhere(np.round(params_tmp[1], decimals=4) == taus)
+                    period_solutions2[idx_r, idx_c] = params_tmp[2]
+                    eta_old = params_tmp[0]
 
 if phase_portrait_analysis:
 
@@ -361,60 +326,62 @@ if phase_portrait_analysis:
 # visualization of eta continuation
 ###################################
 
-fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
 if bifurcation_analysis:
 
     # plot eta continuation for different alphas
     ############################################
 
     uv = 1
-    ax = axes[0]
+    fig, ax = plt.subplots(figsize=(15, 8))
     for s in se_col:
 
         # plot the principal continuation
         results, stability = get_cont_results(s, data_idx=[0, uv + 1])
-        col = get_line_collection(results[:, 1], results[:, 0], stability, c=['#76448A', '#5D6D7E'],
-                                  linethickness=linewidth)
+        col = get_line_collection(results[:, 1], results[:, 0], stability, c=['#76448A', '#5D6D7E'])
         ax.add_collection(col)
+        ax.autoscale()
 
         # plot the bifurcation y
-        plt.sca(ax)
         hbs, lps = s('HB'), s('LP')
         for l in lps:
-            plt.scatter(l['PAR(1)'], l['U(' + str(uv) + ')'], s=markersize2, marker='v', c='#5D6D7E')
+            plt.scatter(l['PAR(1)'], l['U(' + str(uv) + ')'], s=200, marker='v', c='#5D6D7E')
         for h in hbs:
-            plt.scatter(h['PAR(1)'], h['U(' + str(uv) + ')'], s=markersize2, marker='o', c='#148F77')
+            plt.scatter(h['PAR(1)'], h['U(' + str(uv) + ')'], s=200, marker='o', c='#148F77')
 
-    ax.set_xlim(-12.0, -2.0)
-    ax.set_xlabel(r'$\eta$')
-    ax.set_ylabel('Firing rate (r)')
+    ax.set_xlim(-12.0, 0.0)
+    ax.set_xlabel('eta')
+    ax.set_ylabel('r')
+    ax.set_title('One-parameter continuation')
 
 if bifurcation_analysis and fixed_point_analysis:
 
     uvs = [1]
-    uv_names = ['Firing rate (r)', 'v', 'e', 'a']
-    xlims = [(-6.5, -3.8), (), (), ()]
+    uv_names = ['r', 'v', 'e', 'a']
+    xlims = [(-6.5, -2.5), (), (), ()]
     ylims = [(0.0, 2.5), (), (), ()]
     for uv, name, xl, yl in zip(uvs, uv_names, xlims, ylims):
 
         # plot the principal continuation
         results, stability = get_cont_results(se, data_idx=[0, uv+1])
-        col = get_line_collection(results[:, 1], results[:, 0], stability, c=['#76448A', '#5D6D7E'],
-                                  linethickness=linewidth)
-        ax = axes[1]
+        col = get_line_collection(results[:, 1], results[:, 0], stability, c=['#76448A', '#5D6D7E'], linethickness=2.0)
+        fig, ax = plt.subplots(figsize=(15, 8))
         ax.add_collection(col)
+        ax.autoscale()
 
         # plot the bifurcation y
-        plt.sca(ax)
-        hbs, lps, shs = se('HB'), se('LP'), se_hb2('LP')
+        hbs, lps, shs, pds = se('HB'), se('LP'), se_hb2('LP'), se_hb2('PD')
         for l in lps:
-            plt.scatter(l['PAR(1)'], l['U(' + str(uv) + ')'], s=markersize2, marker='v', c='#5D6D7E')
+            plt.scatter(l['PAR(1)'], l['U(' + str(uv) + ')'], s=300, marker='v', c='#5D6D7E')
         for h in hbs:
-            plt.scatter(h['PAR(1)'], h['U(' + str(uv) + ')'], s=markersize2, marker='o', c='#148F77')
+            plt.scatter(h['PAR(1)'], h['U(' + str(uv) + ')'], s=300, marker='o', c='#148F77')
         for s in shs:
             y = s['U(' + str(uv) + ')']
-            plt.scatter(s['PAR(1)'], np.max(y), s=markersize2, marker='p', c='#5D6D7E')
-            plt.scatter(s['PAR(1)'], np.min(y), s=markersize2, marker='p', c='#5D6D7E')
+            plt.scatter(s['PAR(1)'], np.max(y), s=300, marker='p', c='#5D6D7E')
+            plt.scatter(s['PAR(1)'], np.min(y), s=300, marker='p', c='#5D6D7E')
+        for p in pds:
+            y = p['U(' + str(uv) + ')']
+            plt.scatter(p['PAR(1)'], np.max(y), s=300, marker='*', c='#5D6D7E')
+            plt.scatter(p['PAR(1)'], np.min(y), s=300, marker='*', c='#5D6D7E')
 
         # plot the limit cycle of the first hopf bifurcation
         results_hb1, stability_hb1, solutions_hb1, points_hb1 = get_cont_results(se_hb1, data_idx=[0, uv+1],
@@ -425,9 +392,9 @@ if bifurcation_analysis and fixed_point_analysis:
             p_max_hb1.append(np.max(s[0]))
             period_hb1.append(s[1])
         col_min_hb1 = get_line_collection(np.array(p_min_hb1), results_hb1[points_hb1, 0], stability_hb1[points_hb1],
-                                          c=['#148F77', 'k'], linethickness=linewidth)
+                                          c=['#148F77', 'k'], linethickness=2.0)
         col_max_hb1 = get_line_collection(np.array(p_max_hb1), results_hb1[points_hb1, 0], stability_hb1[points_hb1],
-                                          c=['#148F77', 'k'], linethickness=linewidth)
+                                          c=['#148F77', 'k'], linethickness=2.0)
         ax.add_collection(col_min_hb1)
         ax.add_collection(col_max_hb1)
 
@@ -442,28 +409,21 @@ if bifurcation_analysis and fixed_point_analysis:
         p_min_hb2 = np.asarray(p_min_hb2)
         p_max_hb2 = np.asarray(p_max_hb2)
         col_min_hb2 = get_line_collection(np.array(p_min_hb2), results_hb2[points_hb2, 0], stability_hb2[points_hb2],
-                                          c=['#148F77', 'k'], linethickness=linewidth)
+                                          c=['#148F77', 'k'], linethickness=2.0)
         col_max_hb2 = get_line_collection(np.array(p_max_hb2), results_hb2[points_hb2, 0], stability_hb2[points_hb2],
-                                          c=['#148F77', 'k'], linethickness=linewidth)
+                                          c=['#148F77', 'k'], linethickness=2.0)
         ax.add_collection(col_min_hb2)
         ax.add_collection(col_max_hb2)
+        ax.autoscale()
         ax.set_xlim(xl[0], xl[1])
         ax.set_ylim(yl[0], yl[1])
-        ax.set_xlabel(r'$\eta$')
-        #ax.set_ylabel(name)
+        ax.set_xlabel('eta')
+        ax.set_ylabel(name)
+        ax.set_title('One-parameter continuation')
 
-#if limit_cycle_analysis:
-
-        #ax = axes[2]
-        #results, _, solution, y = get_cont_results(se_hb2, data_idx=[0], extract_solution=[11])
-        #ax.plot(results[y, 0], np.asarray(solution)[:, 0], color='k', linewidth=1.0)
-        #ax.set_xlabel('eta')
-        #ax.set_ylabel('period')
-        #ax.set_xlim(-5.7, -5.5)
-        #plt.tight_layout()
-
-plt.tight_layout()
-plt.savefig('fig2a.svg')
+        # shade the area between the min/max of the limit cycle
+        #ax.fill_between(x=results_hb2[:, 0], y1=p_min_hb2, y2=p_max_hb2, where=stability_hb2 < 0., alpha=0.3)
+        #ax.fill_between(x=results_hb2[:, 0], y1=p_min_hb2, y2=p_max_hb2, where=stability_hb2 < 0., alpha=0.3)
 
 # visualization of eta-alpha continuation
 #########################################
@@ -473,27 +433,27 @@ if limit_cycle_analysis:
     results_lcb1, stability_lcb1 = get_cont_results(se_lcb1, data_idx=[0, -1])
     results_lcb2, stability_lcb2 = get_cont_results(se_lcb2, data_idx=[0, -1])
     col_lcb1 = get_line_collection(results_lcb1[:, 1], results_lcb1[:, 0], stability_lcb1, c='k',
-                                   linestyles=['-', '--'], linethickness=linewidth)
+                                   linestyles=['-', '--'], linethickness=4.0)
     col_lcb2 = get_line_collection(results_lcb2[:, 1], results_lcb2[:, 0], stability_lcb2, c='k',
-                                   linestyles=['-', '--'], linethickness=linewidth)
+                                   linestyles=['-', '--'], linethickness=4.0)
 
     results_lcs1, stability_lcs1, solution_lcs1, points_lcs1 = get_cont_results(se_lcs_upper, data_idx=[0, -1],
                                                                                 extract_solution=[1, 2, 3, 11])
     results_lcs2, stability_lcs2, solution_lcs2, points_lcs2 = get_cont_results(se_lcs_lower, data_idx=[0, -1],
                                                                                 extract_solution=[1, 2, 3, 11])
     col_lcs1 = get_line_collection(results_lcs1[:, 1], results_lcs1[:, 0], stability_lcs1, c='#148F77',
-                                   linestyles=['-', '-'], linethickness=linewidth)
+                                   linestyles=['-', '-'], linethickness=4.0)
     col_lcs2 = get_line_collection(results_lcs2[:, 1], results_lcs2[:, 0], stability_lcs2, c='#148F77',
-                                   linestyles=['-', '-'], linethickness=linewidth)
+                                   linestyles=['-', '-'], linethickness=4.0)
 
     results_fp1, stability_fp1 = get_cont_results(se_fp1, data_idx=[0, -1])
     results_fp2, stability_fp2 = get_cont_results(se_fp2, data_idx=[0, -1])
-    col_fp1 = get_line_collection(results_fp1[:, 1], results_fp1[:, 0], stability_fp1, c='#5D6D7E', linestyles=['-', '--'],
-                                  linethickness=linewidth)
-    col_fp2 = get_line_collection(results_fp2[:, 1], results_fp2[:, 0], stability_fp2, c='#5D6D7E', linestyles=['-', '--'],
-                                  linethickness=linewidth)
+    col_fp1 = get_line_collection(results_fp1[:, 0], results_fp1[:, 1], stability_fp1, c='#5D6D7E', linestyles=['-', '--'],
+                                  linethickness=4.0)
+    col_fp2 = get_line_collection(results_fp2[:, 0], results_fp2[:, 1], stability_fp2, c='#5D6D7E', linestyles=['-', '--'],
+                                  linethickness=4.0)
 
-    fig2, ax2 = plt.subplots(nrows=3, figsize=(2.5, 5), dpi=dpi)
+    fig2, ax2 = plt.subplots(nrows=2, figsize=(7, 16))
 
     # plot the lines
     ax2[0].add_collection(col_lcb1)
@@ -507,163 +467,98 @@ if limit_cycle_analysis:
     plt.sca(ax2[0])
     bts, ghs, cps = se_lcb1('BT') + se_lcb2('BT'), se_lcb1('GH') + se_lcb2('GH'), se_fp1('CP') + se_fp2('CP')
     for b in bts:
-        plt.scatter(b['PAR(1)'], b['PAR(3)'], s=markersize1, marker='s', c='k')
+        plt.scatter(b['PAR(1)'], b['PAR(3)'], s=300, marker='s', c='k')
     for g in ghs:
-        plt.scatter(g['PAR(1)'], g['PAR(3)'], s=markersize1, marker='o', c='#148F77')
+        plt.scatter(g['PAR(1)'], g['PAR(3)'], s=300, marker='o', c='#148F77')
     for c in cps:
-        plt.scatter(c['PAR(1)'], c['PAR(3)'], s=markersize1, marker='d', c='#5D6D7E')
+        plt.scatter(c['PAR(1)'], c['PAR(3)'], s=300, marker='d', c='#5D6D7E')
     ax2[0].autoscale()
-    ax2[0].set_xlim(-7, -2.5)
+    ax2[0].set_xlim(-6.6, -2.9)
     ax2[0].set_ylim(0., 0.17)
-    ax2[0].set_xticks(ax2[0].get_xticks()[::3])
-    ax2[0].set_yticks(ax2[0].get_yticks()[::2])
-    ax2[0].set_xlabel(r'$\eta$')
-    ax2[0].set_ylabel(r'$\alpha$')
-    ax2[0].set_title('Codimension 2 bifurcations')
+    ax2[0].set_xlabel('eta')
+    ax2[0].set_ylabel('alpha')
+    ax2[0].set_title('Two-parameter continuation')
 
     # visualization of limit cycle period
-    plt.sca(ax2[2])
-    im = plt.imshow(period_solutions, aspect='auto', interpolation='nearest', cmap='magma')
-    divider = make_axes_locatable(ax2[2])
-    cax = divider.append_axes("right", size="8%", pad=0.1)
-    plt.colorbar(im, cax=cax, label='units of tau')
-    ax2[2].grid(False)
-    ax2[2].set_xlabel(r'$\eta$')
-    ax2[2].set_ylabel(r'$\alpha$')
-    ax2[2].set_xticks(np.arange(period_solutions.shape[1])[::20])
-    ax2[2].set_yticks(np.arange(period_solutions.shape[0])[::10])
-    ax2[2].set_xticklabels(np.round(etas[::20], decimals=2))
-    ax2[2].set_yticklabels(np.round(alphas[::10], decimals=2))
-    ax2[2].set_title('Limit cycle period')
+    #####################################
+
+    plt.sca(ax2[1])
+    im = plt.imshow(period_solutions*0.01, aspect=1.0, interpolation='nearest', cmap='magma')
+    divider = make_axes_locatable(ax2[1])
+    cax = divider.append_axes("right", size="8%", pad=0.2)
+    plt.colorbar(im, cax=cax, label='ms')
+    ax2[1].set_xlabel('eta')
+    ax2[1].set_ylabel('alpha')
+    ax2[1].set_xticks(np.arange(period_solutions.shape[1])[::4])
+    ax2[1].set_yticks(np.arange(period_solutions.shape[0])[::4])
+    ax2[1].set_xticklabels(np.round(etas[::4], decimals=2))
+    ax2[1].set_yticklabels(np.round(alphas[::4], decimals=2))
+    ax2[1].set_title('Limit cycle period')
+    plt.tight_layout()
+    plt.savefig('Fig4_tmp.svg')
 
     # same shit for alpha-tau
     #########################
 
     results_lcb3, stability_lcb3 = get_cont_results(se_lcb3, data_idx=[0, -1])
     results_lcb4, stability_lcb4 = get_cont_results(se_lcb4, data_idx=[0, -1])
-    col_lcb3 = get_line_collection(results_lcb3[:, 0], results_lcb3[:, 1], stability_lcb3, c='k',
-                                   linestyles=['-', '--'], linethickness=linewidth)
-    col_lcb4 = get_line_collection(results_lcb4[:, 0], results_lcb4[:, 1], stability_lcb4, c='k',
-                                   linestyles=['-', '--'], linethickness=linewidth)
+    col_lcb3 = get_line_collection(results_lcb3[:, 1], results_lcb3[:, 0], stability_lcb3, c='k',
+                                   linestyles=['-', '--'], linethickness=4.0)
+    col_lcb4 = get_line_collection(results_lcb4[:, 1], results_lcb4[:, 0], stability_lcb4, c='k',
+                                   linestyles=['-', '--'], linethickness=4.0)
 
     results_lcs3, stability_lcs3, solution_lcs3, points_lcs3 = get_cont_results(se_lcs_upper2, data_idx=[0, -1],
                                                                                 extract_solution=[1, 2, 3, 11])
     results_lcs4, stability_lcs4, solution_lcs4, points_lcs4 = get_cont_results(se_lcs_lower2, data_idx=[0, -1],
                                                                                 extract_solution=[1, 2, 3, 11])
-    col_lcs3 = get_line_collection(results_lcs3[:, 0], results_lcs3[:, 1], stability_lcs3, c='#148F77',
-                                   linestyles=['-', '-'], linethickness=linewidth)
-    col_lcs4 = get_line_collection(results_lcs4[:, 0], results_lcs4[:, 1], stability_lcs4, c='#148F77',
-                                   linestyles=['-', '-'], linethickness=linewidth)
+    col_lcs3 = get_line_collection(results_lcs3[:, 1], results_lcs3[:, 0], stability_lcs3, c='#148F77',
+                                   linestyles=['-', '-'], linethickness=4.0)
+    col_lcs4 = get_line_collection(results_lcs4[:, 1], results_lcs4[:, 0], stability_lcs4, c='#148F77',
+                                   linestyles=['-', '-'], linethickness=4.0)
 
-    #results_fp3, stability_fp3 = get_cont_results(se_fp3, data_idx=[0, -1])
-    #results_fp4, stability_fp4 = get_cont_results(se_fp4, data_idx=[0, -1])
-    #col_fp3 = get_line_collection(results_fp3[:, 1], results_fp3[:, 0], stability_fp3, c='#5D6D7E',
-    #                              linestyles=['-', '--'], linethickness=linewidth)
-    #col_fp4 = get_line_collection(results_fp4[:, 1], results_fp4[:, 0], stability_fp4, c='#5D6D7E',
-    #                              linestyles=['-', '--'], linethickness=linewidth)
+    results_fp3, stability_fp3 = get_cont_results(se_fp3, data_idx=[0, -1])
+    results_fp4, stability_fp4 = get_cont_results(se_fp4, data_idx=[0, -1])
+    col_fp3 = get_line_collection(results_fp3[:, 1], results_fp3[:, 0], stability_fp3, c='#5D6D7E',
+                                  linestyles=['-', '--'], linethickness=4.0)
+    col_fp4 = get_line_collection(results_fp4[:, 1], results_fp4[:, 0], stability_fp4, c='#5D6D7E',
+                                  linestyles=['-', '--'], linethickness=4.0)
+
+    fig4, ax4 = plt.subplots(figsize=(15, 8))
 
     # plot the lines
-    ax2[1].add_collection(col_lcb3)
-    ax2[1].add_collection(col_lcb4)
-    ax2[1].add_collection(col_lcs3)
-    ax2[1].add_collection(col_lcs4)
-    #ax2[2].add_collection(col_fp3)
-    #ax2[2].add_collection(col_fp4)
+    ax4.add_collection(col_lcb3)
+    ax4.add_collection(col_lcb4)
+    ax4.add_collection(col_lcs3)
+    ax4.add_collection(col_lcs4)
+    ax4.add_collection(col_fp3)
+    ax4.add_collection(col_fp4)
 
     # plot the bifurcation y
-    plt.sca(ax2[1])
-    bts, ghs = se_lcb3('BT') + se_lcb4('BT'), se_lcb3('GH') + se_lcb4('GH')
-    #bts, ghs, cps = se_lcb3('BT') + se_lcb4('BT'), se_lcb3('GH') + se_lcb4('GH'), se_fp3('CP') + se_fp4('CP')
+    bts, ghs, cps = se_lcb3('BT') + se_lcb4('BT'), se_lcb3('GH') + se_lcb4('GH'), se_fp3('CP') + se_fp4('CP')
     for b in bts:
-        plt.scatter(b['PAR(4)'], b['PAR(3)'], s=markersize1, marker='s', c='k')
+        plt.scatter(b['PAR(1)'], b['PAR(4)'], s=300, marker='s', c='k')
     for g in ghs:
-        plt.scatter(g['PAR(4)'], g['PAR(3)'], s=markersize1, marker='o', c='#148F77')
-    #for c in cps:
-    #    plt.scatter(c['PAR(1)'], c['PAR(4)'], s=markersize1, marker='d', c='#5D6D7E')
-    ax2[1].autoscale()
-    ax2[1].set_xlim(0.0, 11.0)
-    ax2[1].set_ylim(0.0, 1.3)
-    #ax2[1].set_xticks(ax2[1].get_xticks()[::3])
-    ax2[1].set_xlabel(r'$\tau$')
-    ax2[1].set_ylabel(r'$\alpha$')
+        plt.scatter(g['PAR(1)'], g['PAR(4)'], s=300, marker='o', c='#148F77')
+    for c in cps:
+        plt.scatter(c['PAR(1)'], c['PAR(4)'], s=300, marker='d', c='#5D6D7E')
+    ax4.autoscale()
+    ax4.set_xlim(-12.0, -3.0)
+    ax4.set_ylim(0.0, 33.0)
+    ax4.set_xlabel('eta')
+    ax4.set_ylabel('tau')
 
     # visualization of limit cycle period
-    # plt.sca(ax2[1, 1])
-    # im = plt.imshow(period_solutions, aspect='auto', interpolation='nearest', cmap='magma')
-    # divider = make_axes_locatable(ax2[1, 1])
-    # cax = divider.append_axes("right", size="8%", pad=0.1)
-    # plt.colorbar(im, cax=cax, label='units of tau')
-    # ax2[1, 1].set_xlabel('eta')
-    # ax2[1, 1].set_ylabel('tau')
-    # ax2[1, 1].set_xticks(np.arange(period_solutions.shape[1])[::6])
-    # ax2[1, 1].set_yticks(np.arange(period_solutions.shape[0])[::4])
-    # ax2[1, 1].set_xticklabels(alphas[::6])
-    # ax2[1, 1].set_yticklabels(taus[::4])
+    #####################################
 
-    # same shit for eta-J
-    #####################
-
-    # results_lcb5, stability_lcb5 = get_cont_results(se_lcb5, data_idx=[0, -1])
-    # results_lcb6, stability_lcb6 = get_cont_results(se_lcb6, data_idx=[0, -1])
-    # col_lcb5 = get_line_collection(results_lcb5[:, 1], results_lcb5[:, 0], stability_lcb5, c='k',
-    #                                linestyles=['-', '--'], linethickness=linewidth)
-    # col_lcb6 = get_line_collection(results_lcb6[:, 1], results_lcb6[:, 0], stability_lcb6, c='k',
-    #                                linestyles=['-', '--'], linethickness=linewidth)
-    #
-    # results_lcs5, stability_lcs5, solution_lcs5, points_lcs5 = get_cont_results(se_lcs_upper3, data_idx=[0, -1],
-    #                                                                             extract_solution=[1, 2, 3, 11])
-    # #results_lcs6, stability_lcs6, solution_lcs6, points_lcs6 = get_cont_results(se_lcs_lower3, data_idx=[0, -1],
-    # #                                                                            extract_solution=[1, 2, 3, 11])
-    # col_lcs5 = get_line_collection(results_lcs5[:, 1], results_lcs5[:, 0], stability_lcs5, c='#148F77',
-    #                                linestyles=['-', '-'], linethickness=linewidth)
-    # #col_lcs6 = get_line_collection(results_lcs6[:, 1], results_lcs6[:, 0], stability_lcs6, c='#148F77',
-    # #                               linestyles=['-', '-'], linethickness=linewidth)
-    #
-    # results_fp5, stability_fp5 = get_cont_results(se_fp5, data_idx=[0, -1])
-    # results_fp6, stability_fp6 = get_cont_results(se_fp6, data_idx=[0, -1])
-    # col_fp5 = get_line_collection(results_fp5[:, 1], results_fp5[:, 0], stability_fp5, c='#5D6D7E',
-    #                               linestyles=['-', '--'], linethickness=linewidth)
-    # col_fp6 = get_line_collection(results_fp6[:, 1], results_fp6[:, 0], stability_fp6, c='#5D6D7E',
-    #                               linestyles=['-', '--'], linethickness=linewidth)
-    #
-    # # plot the lines
-    # ax2[1, 1].add_collection(col_lcb5)
-    # ax2[1, 1].add_collection(col_lcb6)
-    # ax2[1, 1].add_collection(col_lcs5)
-    # #ax2[0, 2].add_collection(col_lcs6)
-    # ax2[1, 1].add_collection(col_fp5)
-    # ax2[1, 1].add_collection(col_fp6)
-    #
-    # # plot the bifurcation y
-    # plt.sca(ax2[1, 1])
-    # bts, ghs, cps = se_lcb5('BT') + se_lcb6('BT'), se_lcb5('GH') + se_lcb6('GH'), se_fp5('CP') + se_fp6('CP')
-    # for b in bts:
-    #     plt.scatter(b['PAR(1)'], b['PAR(2)'], s=markersize1, marker='s', c='k')
-    # for g in ghs:
-    #     plt.scatter(g['PAR(1)'], g['PAR(2)'], s=markersize1, marker='o', c='#148F77')
-    # for c in cps:
-    #     plt.scatter(c['PAR(1)'], c['PAR(2)'], s=markersize1, marker='d', c='#5D6D7E')
-    # ax2[1, 1].autoscale()
-    # ax2[1, 1].set_xlim(-7.0, -2.5)
-    # ax2[1, 1].set_ylim(0.0, 50.0)
-    # ax2[1, 1].set_xticks(ax2[1, 1].get_xticks()[::3])
-    # ax2[1, 1].set_xlabel('eta')
-    # ax2[1, 1].set_ylabel('J')
-
-    # visualization of limit cycle period
-    # plt.sca(ax2[1, 2])
-    # im = plt.imshow(period_solutions3, aspect='auto', interpolation='nearest', cmap='magma')
-    # divider = make_axes_locatable(ax2[1, 2])
-    # cax = divider.append_axes("right", size="8%", pad=0.1)
-    # plt.colorbar(im, cax=cax, label='units of tau')
-    # ax2[1, 2].set_xlabel('eta')
-    # ax2[1, 2].set_ylabel('J')
-    # ax2[1, 2].set_xticks(np.arange(period_solutions3.shape[1])[::6])
-    # ax2[1, 2].set_yticks(np.arange(period_solutions3.shape[0])[::4])
-    # ax2[1, 2].set_xticklabels(etas3[::6])
-    # ax2[1, 2].set_yticklabels(Js[::4])
-    plt.tight_layout()
-    plt.savefig('fig4.svg')
+    fig5, ax5 = plt.subplots(figsize=(15, 10))
+    plt.imshow(period_solutions2, aspect=1.0, interpolation='nearest', cmap='magma')
+    plt.colorbar()
+    ax5.set_xlabel('eta')
+    ax5.set_ylabel('tau')
+    ax5.set_xticks(np.arange(period_solutions2.shape[1])[::4])
+    ax5.set_yticks(np.arange(period_solutions2.shape[0])[::4])
+    ax5.set_xticklabels(etas[::4])
+    ax5.set_yticklabels(taus[::4])
 
 if phase_portrait_analysis:
 
