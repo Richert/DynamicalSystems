@@ -1,12 +1,11 @@
 import os
-import auto as a
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
 import numpy as np
-os.chdir("auto_files")
+from pyauto import PyAuto
 plt.ioff()
 
 # plotting parameters
@@ -39,8 +38,6 @@ mpl.rc('text', usetex=True)
 #########################################
 
 # problem description
-#####################
-
 """
 Performs continuation of extended Montbrio population given the initial condition:
 
@@ -72,142 +69,40 @@ HOWTO:
 
 
 # configuration
-###############
-
 bifurcation_analysis = True
 fixed_point_analysis = True
 limit_cycle_analysis = True
 n_grid_points = 100
 
-# definitions
-#############
+###################################
+# parameter continuations in auto #
+###################################
 
+a = PyAuto("auto_files")
 
-def get_cont_results(s, data_idx=[1], extract_solution=[]):
-    """
-
-    :param s:
-    :param state_var_idx
-    :param param_idx
-    :param extract_solution
-    :return:
-    """
-
-    solution = s()
-    data = s[0].coordarray
-    results = np.zeros((data.shape[1], len(data_idx)))
-    point_solutions = []
-    points = []
-    stability = np.zeros((results.shape[0],))
-    start = 0
-    for i, s in enumerate(solution):
-        end = s['PT']
-        for j, idx in enumerate(data_idx):
-            results[start:end, j] = data[idx, start:end]
-        stability[start:end] = s.b['solution'].b['PT'] < 0
-        if extract_solution:
-            solutions = []
-            for idx in extract_solution:
-                if idx == 11:
-                    solutions.append(s.b['solution']['PAR(11)'])
-                else:
-                    solutions.append(s.b['solution']['U(' + str(idx) + ')'])
-            points.append(end - 1)
-            point_solutions.append(solutions)
-        start = end
-    stability = stability[:start]
-    if point_solutions:
-        return results, stability, point_solutions, points
-    return results, stability
-
-
-def get_line_collection(points, param_vals, stability, c='r', linestyles=['-', '--'], linethickness=1.0):
-    """
-
-    :param points:
-    :param param_vals:
-    :param stability:
-    :param c
-    :param linestyles
-    :param linethickness
-    :return:
-    """
-
-    if type(c) is str:
-        c = [c, c]
-
-    # combine y and param vals
-    points = np.reshape(points, (points.shape[0], 1))
-    param_vals = np.reshape(param_vals, (len(param_vals), 1))
-    points = np.append(param_vals, points, axis=1)
-
-    # get indices for line segments
-    idx = np.asarray(stability == 1)
-    idx_d = np.concatenate([np.zeros((1,)), np.diff(idx)])
-    idx_s = np.sort(np.argwhere(idx_d == 1))
-    idx_s = np.append(idx_s, len(idx))
-
-    # create line segments
-    lines = []
-    styles = []
-    colors = []
-    style_idx = 0 if idx[0] else 1
-    point_idx = 1
-    for i in idx_s:
-        lines.append(points[point_idx-1:i, :])
-        styles.append(linestyles[style_idx])
-        colors.append(c[style_idx])
-        style_idx = abs(style_idx - 1)
-        point_idx = i
-    return LineCollection(lines, linestyles=styles, colors=colors, linewidths=linethickness)
-
-
-def extract_from_solution(s, params, vars, auto_params=None, time_vars=None):
-    """
-
-    :param s:
-    :param params:
-    :param vars:
-    :param time_vars:
-    :return:
-    """
-
-    if hasattr(s, 'b'):
-        sol = s.b['solution']
-    else:
-        sol = s
-
-    param_col = [sol[p] for p in params]
-    var_vol = [s[v] for v in vars]
-    ts_col = [sol[v] for v in time_vars] if time_vars else []
-    auto_par_col = [s.b[p] for p in auto_params] if auto_params else []
-
-    return param_col, var_vol, auto_par_col, ts_col
-
-
-#####################################
-# bifurcations for eta continuation #
-#####################################
-
-# numerical continuations
-#########################
-
-# initial continuation
-"""This serves the purpose of setting the adaptation strength to a desired initial value > 0 using a specified tau.
-"""
+# initial continuation in the adaptation strength alpha
 alpha_0 = [0.005, 0.01, 0.02, 0.04, 0.08]
-s0 = a.run(e='qif_biexp_mult', c='qif', ICP=3, UZR={3: alpha_0}, STOP=['UZ'+str(len(alpha_0))], DSMAX=0.005, NMX=4000)
+alpha_cont = a.run(e='qif_biexp_mult', c='qif', ICP=3, UZR={3: alpha_0}, STOP=['UZ' + str(len(alpha_0))],
+                     DSMAX=0.005, NMX=4000)
 
-# primary parameter continuation in eta
-"""Now, we look for a bifurcation when increasing the excitability of the system via eta.
-"""
-se_col = []
-se_col.append(a.merge(a.run(s0('EP1'), ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=4000) +
-                      a.run(s0('EP1'), ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, DS='-', NMX=4000)))
-for s in s0('UZ'):
-    se_col.append(a.merge(a.run(s, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=4000) +
-                          a.run(s, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, DS='-', NMX=4000)))
-se = se_col[3]
+# principle continuation in eta
+###############################
+
+# continue in eta for each adaptation rate alpha
+solutions_eta = []
+a.run(starting_point='EP1', starting_branch=alpha_cont['branch'], starting_cont=alpha_cont['icp'],
+      ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=2000)
+solutions_eta.append(a.run(starting_point='EP1', starting_branch=alpha_cont['branch'], starting_cont=alpha_cont['icp'],
+                           ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, DS='-', NMX=2000))
+for point, point_info in alpha_cont['points'].items():
+    if 'UZ' in point_info['bifurcation']:
+        a.run(starting_point=point, starting_branch=alpha_cont['branch'], starting_cont=alpha_cont['icp'],
+              ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=4000)
+        solutions_eta.append(a.run(starting_point=point, starting_branch=alpha_cont['branch'],
+                                   starting_cont=alpha_cont['icp'],ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, DS='-',
+                                   NMX=4000))
+# choose a continuation in eta to run further continuations on
+eta_cont = solutions_eta[3]
 
 if fixed_point_analysis:
 
@@ -309,7 +204,7 @@ if bifurcation_analysis:
 
     uv = 1
     ax = axes[0]
-    for s in se_col:
+    for s in solutions_eta:
 
         # plot the principal continuation
         results, stability = get_cont_results(s, data_idx=[0, uv + 1])

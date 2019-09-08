@@ -331,7 +331,7 @@ if limit_cycle_analysis:
     #                        ILP=0, ISP=0, IPS=2, DS='-')
     #         eta_old = etas3[-1]
     #         for s in s_tmp2('UZ'):
-    #             params_tmp, _, _, _ = extract_from_solution(s, params=['PAR(1)', 'PAR(2)', 'PAR(11)'], vars=[])
+    #             params_tmp, _, _, _ = extract_from_solution(s, params=['PAR(1)', 'PAR(2)', 'PAR(11)'], variables=[])
     #             if params_tmp[0] < eta_old:
     #                 idx_c = np.argwhere(np.round(params_tmp[0], decimals=2) == etas3)
     #                 idx_r = np.argwhere(np.round(params_tmp[1], decimals=2) == Js)
