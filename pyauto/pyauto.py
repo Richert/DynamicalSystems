@@ -6,21 +6,26 @@ import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
+from typing import Union, Any
+import h5py
 
 
 class PyAuto:
 
-    def __init__(self, auto_dir=None):
+    def __init__(self, auto_dir: str = None) -> None:
 
+        # open attributes
         self.auto_solutions = {}
-        self.branches = {}
+        self.results = {}
 
+        # private attributes
         if auto_dir:
             os.chdir(auto_dir)
         self._dir = os.getcwd()
-        self._last_cont = 0
-        self._last_branch = 0
-
+        self._last_cont = None
+        self._cont_num = 0
+        self._results_map = {}
+        self._branches = {}
         self._bifurcation_styles = {'LP': {'marker': 'v', 'color' : '#5D6D7E'},
                                     'HB': {'marker': 'o', 'color': '#148F77'},
                                     'CP': {'marker': 'd', 'color': '#5D6D7E'},
@@ -29,8 +34,30 @@ class PyAuto:
                                     'GH': {'marker': 'o', 'color': '#148F77'}
                                     }
 
-    def run(self, variables=None, params=None, extract_stability=True, extract_period=False, extract_timeseries=False,
-            extract_lyapunov_exp=False, starting_point=None, starting_branch=None, starting_cont=None, **auto_kwargs):
+    def run(self, variables: list = None, params: list = None, get_stability: bool = True,
+            get_period: bool = False, get_timeseries: bool = False, get_lyapunov_exp: bool = False,
+            starting_point: Union[str, int] = None, origin: dict = None, bidirectional: bool = False, name: str = None,
+            **auto_kwargs) -> tuple:
+        """Wraps auto-07p command `run` and stores requested solution details on instance.
+
+        Parameters
+        ----------
+        variables
+        params
+        get_stability
+        get_period
+        get_timeseries
+        get_lyapunov_exp
+        starting_point
+        origin
+        bidirectional
+        name
+        auto_kwargs
+
+        Returns
+        -------
+        tuple
+        """
 
         # auto call
         ###########
@@ -40,72 +67,194 @@ class PyAuto:
             raise ValueError('Usage of keyword arguments `IRS` and `s` is disabled in pyauto. To start from a previous'
                              'solution, use the `starting_point` keyword argument and provide a tuple of branch '
                              'number and point number as returned by the `run` method.')
-        if not starting_point and self._last_cont != 0:
+        if not starting_point and self._last_cont:
             raise ValueError('A starting point is required for further continuation. Either provide a solution to '
                              'start from via the `starting_point` keyword argument or create a fresh pyauto instance.')
-        if not starting_cont:
-            starting_cont = self._last_cont
-        if not starting_branch:
-            starting_branch = self._last_branch
+        if not origin:
+            origin = self._last_cont
+        elif type(origin) is str:
+            origin = self._results_map[origin]
+        elif type(origin) is not int:
+            origin = origin.pyauto_key
 
         # call to auto
-        if starting_point:
-            _, s = self.get_solution(starting_branch, starting_cont, starting_point)
-            solution = a.run(s, **auto_kwargs)
-        else:
-            solution = a.run(**auto_kwargs)
+        solution = self._call_auto(starting_point, origin, **auto_kwargs)
+
+        # if continuation is to be performed in both directions, call auto again with opposite continuation direction
+        if bidirectional:
+            auto_kwargs.pop('DS', None)
+            solution = a.merge(solution + self._call_auto(starting_point, origin, DS='-', **auto_kwargs))
 
         # extract information from auto solution
         ########################################
 
         # extract branch and solution info
-        branch, icp = self.get_branch_info(solution)
-        points = self.get_solution_keys(solution)
-        if branch in self.auto_solutions and icp in self.auto_solutions[branch]:
-            solution = a.merge(solution, self.auto_solutions[branch])
-        elif branch not in self.auto_solutions:
-            self.auto_solutions[branch] = {}
-            self.branches[branch] = {}
-        self.auto_solutions[branch][icp] = solution
-        self._last_branch = branch
-        self._last_cont = icp
+        new_branch, new_icp = self.get_branch_info(solution)
+        new_points = self.get_solution_keys(solution)
+
+        # merge auto solutions if necessary and create key for auto solution
+        merged = False
+        if new_branch in self._branches and origin in self._branches[new_branch] \
+                and new_icp in self._branches[new_branch][origin]:
+            solution = a.merge(solution + self.get_solution(origin))
+            merged = True
+
+        # create pyauto key for solution
+        pyauto_key = self._cont_num + 1 if self._cont_num in self.auto_solutions and not merged else self._cont_num
+        solution.pyauto_key = pyauto_key
+
+        # set up dictionary fields in _branches for new solution
+        if new_branch not in self._branches:
+            self._branches[new_branch] = {pyauto_key: []}
+        elif pyauto_key not in self._branches[new_branch]:
+            self._branches[new_branch][pyauto_key] = []
+
+        # store auto solution under unique pyauto cont
+        self.auto_solutions[pyauto_key] = solution
+        self._last_cont = solution
+        self._branches[new_branch][pyauto_key].append(new_icp)
 
         # get all passed variables and params
+        _, solution_tmp = self.get_solution(point=new_points[0], cont=self._last_cont)
         if variables is None:
-            variables = self._get_all_var_keys(self.get_solution(branch, icp, list(points.keys())[0])[1])
+            variables = self._get_all_var_keys(solution_tmp)
         if params is None:
-            params = self._get_all_param_keys(self.get_solution(branch, icp, list(points.keys())[0])[1])
+            params = self._get_all_param_keys(solution_tmp)
 
         # extract continuation results
-        summary = self._create_summary(solution=solution, branch=branch, icp=icp, points=points, variables=variables,
-                                       params=params, timeseries=extract_timeseries, stability=extract_stability,
-                                       period=extract_period, lyapunov_exp=extract_lyapunov_exp)
+        summary = self._create_summary(solution=solution, points=new_points, variables=variables,
+                                       params=params, timeseries=get_timeseries, stability=get_stability,
+                                       period=get_period, lyapunov_exp=get_lyapunov_exp)
 
-        self.branches[branch][icp] = summary.copy()
-        return {'branch': branch, 'icp': icp, 'points': summary}
+        self.results[pyauto_key] = summary.copy()
+        self._cont_num = pyauto_key
+        if name:
+            self._results_map[name] = pyauto_key
+        return summary.copy(), solution
 
-    def get_solution(self, branch, icp, point):
+    def get_summary(self, cont: Union[Any, str, int], point=None) -> dict:
+        """Extract summary of continuation from PyAuto.
+
+        Parameters
+        ----------
+        cont
+        point
+
+        Returns
+        -------
+        dict
+
+        """
+
+        # get continuation summary
+        if type(cont) is int:
+            summary = self.results[cont]
+        elif type(cont) is str:
+            summary = self.results[self._results_map[cont]]
+        else:
+            summary = self.results[cont.pyauto_key]
+
+        # return continuation or point summary
+        if not point:
+            return summary
+        return summary[point]
+
+    def get_solution(self, cont: Union[Any, str, int], point: Union[str, int] = None) -> Union[Any, tuple]:
+        """
+
+        Parameters
+        ----------
+        cont
+        point
+
+        Returns
+        -------
+
+        """
+
+        # extract continuation object
+        if type(cont) is int:
+            cont = self.auto_solutions[cont]
+        elif type(cont) is str:
+            cont = self.auto_solutions[self._results_map[cont]]
+        branch, icp = self.get_branch_info(cont)
+
+        if point is None:
+            return cont
+
+        # extract solution point from continuation object and its solution type
         if type(point) is str:
-            s = self.auto_solutions[branch][icp](point)
+            s = cont(point)
             solution_name = point[:2]
         else:
-            s = self.auto_solutions[branch][icp][0].labels.by_index[point-1]
-            solution_name = list(s.keys())[0]
-            s = s[solution_name]['solution']
+            for idx in range(len(cont.data)):
+                s = cont[idx].labels.by_index[point]
+                if s:
+                    solution_name = list(s.keys())[0]
+                    break
+            else:
+                raise ValueError(f'Invalid point {point} for continuation with ICP={icp} on branch {branch}.')
+            if solution_name != 'No Label':
+                s = s[solution_name]['solution']
+
         return solution_name, s
 
-    def extract(self, keys, branch, icp):
-        return {key: np.asarray([val[key]for point, val in self.branches[branch][icp].items()]) for key in keys}
+    def extract(self, keys: list, cont: Union[Any, str, int]):
+        summary = self.get_summary(cont)
+        return {key: np.asarray([val[key]for point, val in summary.items()]) for key in keys}
 
-    def plot_continuation(self, param, var, branch, icp, ax=None, **kwargs):
+    def to_h5py(self, filename: str) -> None:
+        """Save continuation results on disc.
+
+        Parameters
+        ----------
+        filename
+        solutions
+
+        Returns
+        -------
+        None
+        """
+
+        with h5py.File(filename, 'w') as f:
+
+            # save results dictionary
+            results = f.create_group('results')
+            for point_num, point_info in self.results.items():
+                point = results.create_group(point_num)
+                for key, val in point_info.items():
+                    point.create_dataset(key, data=val)
+
+            # save continuation list
+            continuations = f.create_group('results_map')
+            for key, s in self._results_map.items():
+                branch, icp = self.get_branch_info(s)
+                ds = continuations.create_dataset(key, data=s.pyauto_key)
+                ds.attrs['branch'] = branch
+                ds.attrs['icp'] = icp
+
+    def plot_continuation(self, param: str, var: str, cont: Union[Any, str, int], ax: plt.Axes = None, **kwargs
+                          ) -> plt.Axes:
+        """Line plot of 1D/2D parameter continuation and the respective codimension 1/2 bifurcations.
+
+        Parameters
+        ----------
+        param
+        var
+        cont
+        ax
+        kwargs
+
+        Returns
+        -------
+        plt.Axes
+        """
 
         if ax is None:
             fig, ax = plt.subplots()
-        else:
-            fig = plt.gcf()
 
         # extract information from branch solutions
-        results = self.extract([param, var, 'stability', 'bifurcation'], branch, icp)
+        results = self.extract([param, var, 'stability', 'bifurcation'], cont=cont)
 
         # plot bifurcation points
         bifurcation_point_kwargs = ['default_color', 'default_marker', 'default_size', 'custom_bf_styles',
@@ -115,7 +264,7 @@ class PyAuto:
                                           y_vals=results[var], ax=ax, **kwargs_tmp)
 
         # plot main continuation
-        line_col = self.get_line_collection(x=results[param], y=results[var], stability=results['stability'], **kwargs)
+        line_col = self._get_line_collection(x=results[param], y=results[var], stability=results['stability'], **kwargs)
         ax.add_collection(line_col)
         ax.autoscale()
 
@@ -157,51 +306,101 @@ class PyAuto:
                 plt.scatter(x, y, s=default_size, marker=m, c=c)
         return ax
 
-    def _create_summary(self, solution, branch, icp, points, variables, params, timeseries, stability, period,
-                        lyapunov_exp):
+    def _create_summary(self, solution: Union[Any, dict], points: list, variables: list, params: list,
+                        timeseries: bool, stability: bool, period: bool, lyapunov_exp: bool):
+        """Creates summary of auto continuation and stores it in dictionary.
 
+        Parameters
+        ----------
+        solution
+        points
+        variables
+        params
+        timeseries
+        stability
+        period
+        lyapunov_exp
+
+        Returns
+        -------
+
+        """
         summary = {}
         for point in points:
 
             summary[point] = {}
 
             # get solution
-            solution_type, s = self.get_solution(branch, icp, point)
+            solution_type, s = self.get_solution(cont=solution, point=point)
 
-            # extract variables and params from solution
-            var_vals = self.get_vars(s, variables, timeseries)
-            param_vals = self.get_params(s, params)
+            if solution_type != 'No Label':
 
-            # store solution information in summary
-            summary[point]['bifurcation'] = solution_type
-            for var, val in zip(variables, var_vals):
-                summary[point][var] = val
-            for param, val in zip(params, param_vals):
-                summary[point][param] = val
-            if stability:
-                summary[point]['stability'] = self.get_stability(s)
-            if period:
-                summary[point]['period'] = summary[point]['PAR(11)'] if 'PAR(11)' in params else \
-                    self.get_params(s, ['PAR(11)'])[0]
-            if lyapunov_exp:
-                summary[point]['lyapunov_exponents'] = self.get_lyapunov_exponent(solution, branch, point)
+                # extract variables and params from solution
+                var_vals = self.get_vars(s, variables, timeseries)
+                param_vals = self.get_params(s, params)
+
+                # store solution information in summary
+                summary[point]['bifurcation'] = solution_type
+                for var, val in zip(variables, var_vals):
+                    summary[point][var] = val
+                for param, val in zip(params, param_vals):
+                    summary[point][param] = val
+                if stability:
+                    summary[point]['stability'] = self.get_stability(s)
+                if period:
+                    summary[point]['period'] = summary[point]['PAR(11)'] if 'PAR(11)' in params else \
+                        self.get_params(s, ['PAR(11)'])[0]
+                if lyapunov_exp:
+                    branch, _ = self.get_branch_info(s)
+                    summary[point]['lyapunov_exponents'] = self.get_lyapunov_exponent(solution, branch, point)
 
         return summary
 
+    def _call_auto(self, starting_point: Union[str, int], origin: Union[Any, dict], **auto_kwargs) -> Any:
+        if starting_point:
+            _, s = self.get_solution(point=starting_point, cont=origin)
+            solution = a.run(s, **auto_kwargs)
+        else:
+            solution = a.run(**auto_kwargs)
+        return self._start_from_solution(solution)
+
+    @classmethod
+    def from_h5py(cls, filename: str, auto_dir: str = None) -> Any:
+        """
+
+        Parameters
+        ----------
+        filename
+        auto_dir
+
+        Returns
+        -------
+        Any
+        """
+        pyauto_instance = cls().__init__(auto_dir)
+        with h5py.File(filename, 'r') as f:
+            pyauto_instance.results = f['results']
+            pyauto_instance._results_map = f['results_map']
+        return pyauto_instance
+
     @staticmethod
-    def get_stability(s):
+    def get_stability(s: Any) -> bool:
         return s.b['solution'].b['PT'] < 0
 
     @staticmethod
-    def get_solution_keys(solution):
-        return {s['PT']: {} for s in solution()}
+    def get_solution_keys(solution: Any) -> list:
+        keys = []
+        for idx in range(len(solution.data)):
+            keys += [key for key, val in solution[idx].labels.by_index.items()
+                     if val and 'solution' in tuple(val.values())[0]]
+        return keys
 
     @staticmethod
-    def get_branch_info(solution):
+    def get_branch_info(solution: Any) -> tuple:
         return solution[0].BR, tuple(solution[0].c['ICP'])
 
     @staticmethod
-    def get_vars(solution, vars, extract_timeseries=False):
+    def get_vars(solution: Any, vars: list, extract_timeseries: bool = False) -> list:
         if hasattr(solution, 'b') and extract_timeseries:
             solution = solution.b['solution']
         return [solution[v] for v in vars]
@@ -277,7 +476,14 @@ class PyAuto:
         return solution.PAR.coordnames
 
     @staticmethod
-    def get_line_collection(x, y, stability=None, line_style_stable='solid', line_style_unstable='dotted', **kwargs):
+    def _start_from_solution(solution: Any) -> Any:
+        diag = str(solution[0].diagnostics)
+        if 'Starting direction of the free parameter(s)' in diag:
+            solution = a.run(solution)
+        return solution
+
+    @staticmethod
+    def _get_line_collection(x, y, stability=None, line_style_stable='solid', line_style_unstable='dotted', **kwargs):
         """
 
         :param y:
