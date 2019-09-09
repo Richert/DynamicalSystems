@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
 from typing import Union, Any
-import h5py
+import pickle
 
 
 class PyAuto:
@@ -203,35 +203,23 @@ class PyAuto:
         summary = self.get_summary(cont)
         return {key: np.asarray([val[key]for point, val in summary.items()]) for key in keys}
 
-    def to_h5py(self, filename: str) -> None:
+    def to_file(self, filename: str, include_auto_results=False) -> None:
         """Save continuation results on disc.
 
         Parameters
         ----------
         filename
-        solutions
+        include_auto_results
 
         Returns
         -------
         None
         """
 
-        with h5py.File(filename, 'w') as f:
-
-            # save results dictionary
-            results = f.create_group('results')
-            for point_num, point_info in self.results.items():
-                point = results.create_group(point_num)
-                for key, val in point_info.items():
-                    point.create_dataset(key, data=val)
-
-            # save continuation list
-            continuations = f.create_group('results_map')
-            for key, s in self._results_map.items():
-                branch, icp = self.get_branch_info(s)
-                ds = continuations.create_dataset(key, data=s.pyauto_key)
-                ds.attrs['branch'] = branch
-                ds.attrs['icp'] = icp
+        data = {'results': self.results, '_branches': self._branches, '_results_map': self._results_map}
+        if include_auto_results:
+            data['auto_solutions'] = self.auto_solutions
+        pickle.dump(data, open(filename, 'wb'))
 
     def plot_continuation(self, param: str, var: str, cont: Union[Any, str, int], ax: plt.Axes = None, **kwargs
                           ) -> plt.Axes:
@@ -303,7 +291,11 @@ class PyAuto:
                 else:
                     m = default_marker
                     c = default_color
-                plt.scatter(x, y, s=default_size, marker=m, c=c)
+                if len(y) > 1:
+                    plt.scatter(x, y.max(), s=default_size, marker=m, c=c)
+                    plt.scatter(x, y.min(), s=default_size, marker=m, c=c)
+                else:
+                    plt.scatter(x, y, s=default_size, marker=m, c=c)
         return ax
 
     def _create_summary(self, solution: Union[Any, dict], points: list, variables: list, params: list,
@@ -365,7 +357,7 @@ class PyAuto:
         return self._start_from_solution(solution)
 
     @classmethod
-    def from_h5py(cls, filename: str, auto_dir: str = None) -> Any:
+    def from_file(cls, filename: str, auto_dir: str = None) -> Any:
         """
 
         Parameters
@@ -377,10 +369,10 @@ class PyAuto:
         -------
         Any
         """
-        pyauto_instance = cls().__init__(auto_dir)
-        with h5py.File(filename, 'r') as f:
-            pyauto_instance.results = f['results']
-            pyauto_instance._results_map = f['results_map']
+        pyauto_instance = cls(auto_dir)
+        data = pickle.load(open(filename, 'rb'))
+        for key, val in data.items():
+            setattr(pyauto_instance, key, val)
         return pyauto_instance
 
     @staticmethod
@@ -496,8 +488,16 @@ class PyAuto:
         """
 
         # combine y and param vals
-        y = np.reshape(y, (y.shape[0], 1))
         x = np.reshape(x, (len(x), 1))
+        if len(y.shape) > 1 and y.shape[1] > 1:
+            y_max = np.reshape(y.max(axis=1), (y.shape[0], 1))
+            y_min = np.reshape(y.min(axis=1), (y.shape[0], 1))
+            y_min = np.append(x, y_min, axis=1)
+            y = y_max
+            add_min = True
+        else:
+            y = np.reshape(y, (y.shape[0], 1))
+            add_min = False
         y = np.append(x, y, axis=1)
 
         # if stability was passed, collect indices for stable line segments
@@ -517,11 +517,14 @@ class PyAuto:
             for idx in idx_changes:
                 lines.append(y[idx_old-1:idx, :])
                 styles.append(line_style_stable if stability[idx_old] else line_style_unstable)
+                if add_min:
+                    lines.append(y_min[idx_old - 1:idx, :])
+                    styles.append(line_style_stable if stability[idx_old] else line_style_unstable)
                 idx_old = idx
 
         else:
 
-            lines = [y]
-            styles = [line_style_stable]
+            lines = [y, y_min]
+            styles = [line_style_stable, line_style_stable]
 
         return LineCollection(segments=lines, linestyles=styles, **kwargs)

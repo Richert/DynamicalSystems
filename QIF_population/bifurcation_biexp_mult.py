@@ -53,7 +53,7 @@ solutions_eta.append(a.run(starting_point='EP1', ICP=1, DSMAX=0.005, RL1=0.0, RL
 for i, (point, point_info) in enumerate(alpha_solutions.items()):
     if 'UZ' in point_info['bifurcation']:
         solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=4000,
-                                   origin=alpha_cont, bidirectional=True, name=f"eta_{i+1}"))
+                                   origin=alpha_cont, bidirectional=True, name=f"eta_{i}"))
 
 # choose a continuation in eta to run further continuations on
 eta_points, eta_cont = solutions_eta[3]
@@ -107,7 +107,7 @@ if codim1:
                             period_solutions[idx_r, idx_c] = point_info_tmp['period']
 
         # continuation in eta and tau1
-        ###############################
+        ##############################
 
         # continue the limit cycle borders in eta and tau1
         eta_tau1_hb2_solution, eta_tau1_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[1, 4], DSMAX=0.01,
@@ -136,7 +136,7 @@ if codim1:
 ################
 
 fname = 'biexp_mult.hdf5'
-a.to_h5py(fname)
+a.to_file(fname)
 
-if period_mapping:
-    period_solutions.tofile(f"biexp_mult_period")
+#if period_mapping:
+#    period_solutions.tofile(f"biexp_mult_period")
