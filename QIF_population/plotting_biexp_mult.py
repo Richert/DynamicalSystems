@@ -15,11 +15,11 @@ plt.style.use('seaborn-whitegrid')
 mpl.rcParams['font.family'] = 'Roboto'
 mpl.rcParams['font.size'] = fontsize1
 mpl.rcParams['lines.linewidth'] = linewidth
-mpl.rcParams['axes.titlesize'] = fontsize2
-mpl.rcParams['axes.titleweight'] = 'bold'
-mpl.rcParams['axes.labelsize'] = fontsize2
-mpl.rcParams['axes.labelcolor'] = 'black'
-mpl.rcParams['axes.labelweight'] = 'bold'
+mpl.rcParams['ax_data.titlesize'] = fontsize2
+mpl.rcParams['ax_data.titleweight'] = 'bold'
+mpl.rcParams['ax_data.labelsize'] = fontsize2
+mpl.rcParams['ax_data.labelcolor'] = 'black'
+mpl.rcParams['ax_data.labelweight'] = 'bold'
 mpl.rcParams['xtick.labelsize'] = fontsize1
 mpl.rcParams['ytick.labelsize'] = fontsize1
 mpl.rcParams['xtick.color'] = 'black'
@@ -63,7 +63,7 @@ plt.show()
 #     ############################################
 #
 #     uv = 1
-#     ax = axes[0]
+#     ax = ax_data[0]
 #     for s in solutions_eta:
 #
 #         # plot the principal continuation
@@ -97,7 +97,7 @@ plt.show()
 #         results, stability = get_cont_results(se, data_idx=[0, uv+1])
 #         col = get_line_collection(results[:, 1], results[:, 0], stability, c=['#76448A', '#5D6D7E'],
 #                                   linethickness=linewidth)
-#         ax = axes[1]
+#         ax = ax_data[1]
 #         ax.add_collection(col)
 #
 #         # plot the bifurcation y

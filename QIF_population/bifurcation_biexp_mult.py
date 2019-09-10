@@ -30,6 +30,8 @@ codim1 = True
 codim2 = True
 period_mapping = False
 n_grid_points = 100
+n_dim = 3
+n_params = 6
 
 ###################################
 # parameter continuations in auto #
@@ -135,7 +137,7 @@ if codim1:
 # save results #
 ################
 
-fname = 'biexp_mult.hdf5'
+fname = '../results/biexp_mult.hdf5'
 a.to_file(fname)
 
 #if period_mapping:

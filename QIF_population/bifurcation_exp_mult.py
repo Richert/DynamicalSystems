@@ -21,11 +21,11 @@ plt.style.use('seaborn-whitegrid')
 mpl.rcParams['font.family'] = 'Roboto'
 mpl.rcParams['font.size'] = fontsize1
 mpl.rcParams['lines.linewidth'] = linewidth
-mpl.rcParams['axes.titlesize'] = fontsize2
-mpl.rcParams['axes.titleweight'] = 'bold'
-mpl.rcParams['axes.labelsize'] = fontsize2
-mpl.rcParams['axes.labelcolor'] = 'black'
-mpl.rcParams['axes.labelweight'] = 'bold'
+mpl.rcParams['ax_data.titlesize'] = fontsize2
+mpl.rcParams['ax_data.titleweight'] = 'bold'
+mpl.rcParams['ax_data.labelsize'] = fontsize2
+mpl.rcParams['ax_data.labelcolor'] = 'black'
+mpl.rcParams['ax_data.labelweight'] = 'bold'
 mpl.rcParams['xtick.labelsize'] = fontsize1
 mpl.rcParams['ytick.labelsize'] = fontsize1
 mpl.rcParams['xtick.color'] = 'black'

@@ -2,10 +2,10 @@ import os
 import auto as a
 import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from typing import Union, Any
 import pickle
 
@@ -157,6 +157,17 @@ class PyAuto:
         # return continuation or point summary
         if not point:
             return summary
+        elif type(point) is str:
+            n = int(point[2:]) if len(point) > 2 else 1
+            i = 1
+            for p, p_info in summary.items():
+                if point[:2] == p_info['bifurcation']:
+                    if i == n:
+                        return summary[p]
+                    i += 1
+            else:
+                raise KeyError(f'Invalid point: {point} was not found on continuation {cont}.')
+
         return summary[point]
 
     def get_solution(self, cont: Union[Any, str, int], point: Union[str, int] = None) -> Union[Any, tuple]:
@@ -199,11 +210,13 @@ class PyAuto:
 
         return solution_name, s
 
-    def extract(self, keys: list, cont: Union[Any, str, int]):
-        summary = self.get_summary(cont)
-        return {key: np.asarray([val[key]for point, val in summary.items()]) for key in keys}
+    def extract(self, keys: list, cont: Union[Any, str, int], point: Union[str, int] = None) -> dict:
+        summary = self.get_summary(cont, point=point)
+        if point:
+            return {key: np.asarray(summary[key]) for key in keys}
+        return {key: np.asarray([val[key] for point, val in summary.items()]) for key in keys}
 
-    def to_file(self, filename: str, include_auto_results=False) -> None:
+    def to_file(self, filename: str, include_auto_results: bool = False, **kwargs) -> None:
         """Save continuation results on disc.
 
         Parameters
@@ -219,6 +232,14 @@ class PyAuto:
         data = {'results': self.results, '_branches': self._branches, '_results_map': self._results_map}
         if include_auto_results:
             data['auto_solutions'] = self.auto_solutions
+        data.update(kwargs)
+
+        for key in kwargs:
+            if hasattr(self, key):
+                print(f'WARNING: {key} is an attribute of PyAuto instances. To be able to build a new instance of '
+                      f'PyAuto via the `from_file` method from this file, you need to provide a different attribute '
+                      f'name.')
+
         pickle.dump(data, open(filename, 'wb'))
 
     def plot_continuation(self, param: str, var: str, cont: Union[Any, str, int], ax: plt.Axes = None, **kwargs
@@ -262,9 +283,71 @@ class PyAuto:
 
         return ax
 
-    def plot_trajectory(self, v1, v2, v3=None):
+    def plot_trajectory(self, vars: Union[list, tuple], cont: Union[Any, str, int], point: Union[str, int]= None,
+                        ax: plt.Axes = None, update_axis_lims: bool = False, **kwargs) -> plt.Axes:
+        """Plot trajectory of state variables through phase space over time.
 
-        pass
+        Parameters
+        ----------
+        vars
+        cont
+        point
+        ax
+        update_axis_lims
+        kwargs
+
+        Returns
+        -------
+        plt.Axes
+        """
+
+        # extract information from branch solutions
+        results = self.extract(list(vars) + ['stability'], cont=cont, point=point)
+
+        if len(vars) == 2:
+
+            # create 2D plot
+            if ax is None:
+                fig, ax = plt.subplots()
+
+            # plot phase trajectory
+            line_col = self._get_line_collection(x=results[vars[0]], y=results[vars[1]], stability=results['stability'],
+                                                 **kwargs)
+            ax.add_collection(line_col)
+            ax.autoscale()
+
+            # cosmetics
+            ax.set_xlabel(vars[0])
+            ax.set_ylabel(vars[1])
+
+        elif len(vars) == 3:
+
+            # create 3D plot
+            if ax is None:
+                fig = plt.figure()
+                ax = fig.add_subplot(111, projection='3d')
+            label_pad = kwargs.pop('labelpad', 30)
+            tick_pad = kwargs.pop('tickpad', 20)
+            axislim_pad = kwargs.pop('axislimpad', 0.1)
+
+            # plot phase trajectory
+            x, y, z = results[vars[0]], results[vars[1]], results[vars[2]]
+            line_col = self._get_3d_line_collection(x=x, y=y, z=z, stability=results['stability'], **kwargs)
+            ax.add_collection3d(line_col)
+
+            # cosmetics
+            ax.tick_params(axis='both', which='major', pad=tick_pad)
+            ax.set_xlabel('v', labelpad=label_pad)
+            ax.set_ylabel('r', labelpad=label_pad)
+            ax.set_zlabel('e', labelpad=label_pad)
+            self._update_axis_lims(ax, [x, y, z], padding=axislim_pad, force_update=update_axis_lims)
+
+        else:
+
+            raise ValueError('Invalid number of state variables to plot. First argument can only take 2 or 3 state'
+                             'variable names as input.')
+
+        return ax
 
     def plot_timeseries(self, v):
 
@@ -356,6 +439,18 @@ class PyAuto:
             solution = a.run(**auto_kwargs)
         return self._start_from_solution(solution)
 
+    def _update_axis_lims(self, ax: Union[plt.Axes, Axes3D], ax_data: list, padding: float = 0.,
+                          force_update: bool = False) -> None:
+        ax_names = ['x', 'y', 'z']
+        for i, data in enumerate(ax_data):
+            axis_limits = self._get_axis_lims(np.asarray(data), padding=padding)
+            if force_update:
+                min_val, max_val = axis_limits
+            else:
+                min_val, max_val = eval(f"ax.get_{ax_names[i]}lim()")
+                min_val, max_val = np.min([min_val, axis_limits[0]]), np.max([max_val, axis_limits[1]])
+            eval(f"ax.set_{ax_names[i]}lim(min_val, max_val)")
+
     @classmethod
     def from_file(cls, filename: str, auto_dir: str = None) -> Any:
         """
@@ -372,7 +467,15 @@ class PyAuto:
         pyauto_instance = cls(auto_dir)
         data = pickle.load(open(filename, 'rb'))
         for key, val in data.items():
-            setattr(pyauto_instance, key, val)
+            if hasattr(pyauto_instance, key):
+                attr = getattr(pyauto_instance, key)
+                if type(attr) is dict:
+                    attr.update(val)
+                else:
+                    raise AttributeError(f'Attribute {key} is already contained on this PyAuto instance and cannot be '
+                                         f'set.')
+            else:
+                setattr(pyauto_instance, key, val)
         return pyauto_instance
 
     @staticmethod
@@ -389,7 +492,10 @@ class PyAuto:
 
     @staticmethod
     def get_branch_info(solution: Any) -> tuple:
-        return solution[0].BR, tuple(solution[0].c['ICP'])
+        try:
+            return solution[0].BR, tuple(solution[0].c['ICP'])
+        except AttributeError:
+            return solution['BR'], tuple(solution.c['ICP'])
 
     @staticmethod
     def get_vars(solution: Any, vars: list, extract_timeseries: bool = False) -> list:
@@ -420,6 +526,9 @@ class PyAuto:
             point_str = f' {str(point)} '
 
             for diag_tmp in diag_split:
+
+                if "NOTE:No converge" in diag_tmp:
+                    break
 
                 if branch_str in diag_tmp[:5] and point_str in diag_tmp[5:11] and \
                         ('Eigenvalue' in diag_tmp or 'Multiplier' in diag_tmp):
@@ -475,20 +584,26 @@ class PyAuto:
         return solution
 
     @staticmethod
-    def _get_line_collection(x, y, stability=None, line_style_stable='solid', line_style_unstable='dotted', **kwargs):
+    def _get_line_collection(x, y, stability=None, line_style_stable='solid', line_style_unstable='dotted',
+                             **kwargs) -> LineCollection:
         """
 
-        :param y:
-        :param x:
-        :param stability:
-        :param line_style_stable
-        :param line_style_unstable
+        Parameters
+        ----------
+        x
+        y
+        stability
+        line_style_stable
+        line_style_unstable
+        kwargs
 
-        :return:
+        Returns
+        -------
+        LineCollection
         """
 
         # combine y and param vals
-        x = np.reshape(x, (len(x), 1))
+        x = np.reshape(x, (x.squeeze().shape[0], 1))
         if len(y.shape) > 1 and y.shape[1] > 1:
             y_max = np.reshape(y.max(axis=1), (y.shape[0], 1))
             y_min = np.reshape(y.min(axis=1), (y.shape[0], 1))
@@ -496,14 +611,14 @@ class PyAuto:
             y = y_max
             add_min = True
         else:
-            y = np.reshape(y, (y.shape[0], 1))
+            y = np.reshape(y, (y.squeeze().shape[0], 1))
             add_min = False
         y = np.append(x, y, axis=1)
 
         # if stability was passed, collect indices for stable line segments
         ###################################################################
 
-        if stability is not None:
+        if stability is not None and np.sum(stability.shape) > 1:
 
             # collect indices
             stability = np.asarray(stability, dtype='int')
@@ -524,7 +639,69 @@ class PyAuto:
 
         else:
 
-            lines = [y, y_min]
-            styles = [line_style_stable, line_style_stable]
+            lines = [y, y_min] if add_min else [y]
+            styles = [line_style_stable, line_style_stable] if add_min else [line_style_stable]
 
         return LineCollection(segments=lines, linestyles=styles, **kwargs)
+
+    @staticmethod
+    def _get_3d_line_collection(x, y, z, stability=None, line_style_stable='solid', line_style_unstable='dotted',
+                                **kwargs) -> Line3DCollection:
+        """
+
+        Parameters
+        ----------
+        x
+        y
+        z
+        stability
+        line_style_stable
+        line_style_unstable
+        kwargs
+
+        Returns
+        -------
+        Line3DCollection
+        """
+
+        # combine y and param vals
+        x = np.reshape(x, (x.squeeze().shape[0], 1))
+        y = np.reshape(y, (y.squeeze().shape[0], 1))
+        z = np.reshape(z, (z.squeeze().shape[0], 1))
+        y = np.append(x, y, axis=1)
+        y = np.append(y, z, axis=1)
+
+        # if stability was passed, collect indices for stable line segments
+        ###################################################################
+
+        if stability is not None and np.sum(stability.shape) > 1:
+
+            # collect indices
+            stability = np.asarray(stability, dtype='int')
+            stability_changes = np.concatenate([np.zeros((1,)), np.diff(stability)])
+            idx_changes = np.sort(np.argwhere(stability_changes != 0))
+            idx_changes = np.append(idx_changes, len(stability_changes))
+
+            # create line segments
+            lines, styles = [], []
+            idx_old = 1
+            for idx in idx_changes:
+                lines.append(y[idx_old - 1:idx, :])
+                styles.append(line_style_stable if stability[idx_old] else line_style_unstable)
+                idx_old = idx
+
+        else:
+
+            lines = [y]
+            styles = [line_style_stable]
+
+        line_col = Line3DCollection(segments=lines, linestyles=styles, **kwargs)
+        x = x.squeeze()
+        line_col.set_array(x)
+        return line_col
+
+    @staticmethod
+    def _get_axis_lims(x: np.array, padding: float = 0.) -> tuple:
+        x_min, x_max = x.min(), x.max()
+        x_pad = (x_max - x_min) * padding
+        return x_min - x_pad, x_max + x_pad

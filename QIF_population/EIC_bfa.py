@@ -12,11 +12,11 @@ plt.ioff()
 plt.style.reload_library()
 plt.style.use('ggplot')
 mpl.rcParams['lines.linewidth'] = 2
-mpl.rcParams['axes.titlesize'] = 24
-mpl.rcParams['axes.titleweight'] = 'bold'
-mpl.rcParams['axes.labelsize'] = 24
-mpl.rcParams['axes.labelcolor'] = 'black'
-mpl.rcParams['axes.labelweight'] = 'bold'
+mpl.rcParams['ax_data.titlesize'] = 24
+mpl.rcParams['ax_data.titleweight'] = 'bold'
+mpl.rcParams['ax_data.labelsize'] = 24
+mpl.rcParams['ax_data.labelcolor'] = 'black'
+mpl.rcParams['ax_data.labelweight'] = 'bold'
 mpl.rcParams['xtick.labelsize'] = 20
 mpl.rcParams['ytick.labelsize'] = 20
 mpl.rcParams['xtick.color'] = 'black'
