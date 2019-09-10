@@ -42,19 +42,21 @@ eta_cont_idx = 3
 #############
 
 
-def continue_period_doubling_bf(solution, continuation, auto_runner, max_iter=100, iteration=0):
+def continue_period_doubling_bf(solution, continuation, auto_runner, max_iter=1000, iteration=0):
     solutions = []
-    pd_idx = 0
     for point, point_info in solution.items():
         if 'PD' in point_info['bifurcation']:
-            s_tmp, _ = auto_runner.run(starting_point=point, c='qif2b', ICP=[1, 11], NMX=2000, NTST=600, DSMAX=0.05,
-                                       ILP=0, NDIM=n_dim, origin=continuation, get_timeseries=True,
-                                       get_lyapunov_exp=True, name=f'pd_{pd_idx}')
-            solutions.append(f'pd_{pd_idx}')
+            s_tmp, cont = auto_runner.run(starting_point=point, c='qif2b', ICP=1, NMX=3000, DSMAX=0.05, NTST=800,
+                                          ILP=0, NDIM=n_dim, origin=continuation, get_timeseries=True,
+                                          get_lyapunov_exp=True, name=f'pd_{iteration}')
+            solutions.append(f'pd_{iteration}')
+            iteration += 1
             if iteration >= max_iter:
                 break
-            else:
-                solutions += continue_period_doubling_bf(s_tmp, continuation, auto_runner, iteration=iteration + 1)
+            elif s_tmp:
+                s_tmp2 = continue_period_doubling_bf(s_tmp, cont, auto_runner, iteration=iteration)
+                solutions += s_tmp2
+                iteration += len(s_tmp2)
     return solutions
 
 
@@ -112,7 +114,7 @@ if codim1:
 
         # continue the first period doubling of the limit cycle
         eta_alpha_pd_solutions, eta_alpha_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[1, 3],
-                                                          NMX=3500, DSMAX=0.05, origin=eta_hb2_cont,
+                                                          NMX=5000, DSMAX=0.05, origin=eta_hb2_cont,
                                                           bidirectional=True, name='eta_alpha_pd', NTST=600,
                                                           NDIM=n_dim)
 

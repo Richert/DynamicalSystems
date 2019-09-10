@@ -374,7 +374,7 @@ class PyAuto:
                 else:
                     m = default_marker
                     c = default_color
-                if len(y) > 1:
+                if y.shape and np.sum(y.shape) > 1:
                     plt.scatter(x, y.max(), s=default_size, marker=m, c=c)
                     plt.scatter(x, y.min(), s=default_size, marker=m, c=c)
                 else:
@@ -403,12 +403,12 @@ class PyAuto:
         summary = {}
         for point in points:
 
-            summary[point] = {}
-
             # get solution
             solution_type, s = self.get_solution(cont=solution, point=point)
 
-            if solution_type != 'No Label':
+            if solution_type != 'No Label' and solution_type != 'MX':
+
+                summary[point] = {}
 
                 # extract variables and params from solution
                 var_vals = self.get_vars(s, variables, timeseries)
@@ -493,9 +493,11 @@ class PyAuto:
     @staticmethod
     def get_branch_info(solution: Any) -> tuple:
         try:
-            return solution[0].BR, tuple(solution[0].c['ICP'])
+            branch, icp = solution[0].BR, solution[0].c['ICP']
         except AttributeError:
-            return solution['BR'], tuple(solution.c['ICP'])
+            branch, icp = solution['BR'], solution.c['ICP']
+        icp = (icp,) if type(icp) is int else tuple(icp)
+        return branch, icp
 
     @staticmethod
     def get_vars(solution: Any, vars: list, extract_timeseries: bool = False) -> list:
@@ -576,10 +578,9 @@ class PyAuto:
     def _get_all_param_keys(solution):
         return solution.PAR.coordnames
 
-    @staticmethod
-    def _start_from_solution(solution: Any) -> Any:
+    def _start_from_solution(self, solution: Any) -> Any:
         diag = str(solution[0].diagnostics)
-        if 'Starting direction of the free parameter(s)' in diag:
+        if 'Starting direction of the free parameter(s)' in diag and len(self.get_solution_keys(solution)) == 1:
             solution = a.run(solution)
         return solution
 
@@ -695,9 +696,19 @@ class PyAuto:
             lines = [y]
             styles = [line_style_stable]
 
+        # create line collection
+        array = kwargs.pop('array', 'x')
         line_col = Line3DCollection(segments=lines, linestyles=styles, **kwargs)
-        x = x.squeeze()
-        line_col.set_array(x)
+
+        # post-processing
+        if array == 'x':
+            array = x.squeeze()
+        elif array == 'y':
+            array = y[:, 1].squeeze()
+        elif array == 'z':
+            array = z.squeeze()
+        line_col.set_array(array)
+
         return line_col
 
     @staticmethod

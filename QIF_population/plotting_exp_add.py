@@ -64,9 +64,22 @@ ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore='LP')
 # 3d plot of phase portrait for eta, alpha and e
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111, projection='3d')
-for pd in a.pd_solutions[:-1]:
-    ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=pd, ax=ax2, linewidths=2.0,
-                            cmap=plt.get_cmap('magma'), norm=plt.Normalize(), update_axis_lims=True)
+cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
+for cm, pd in zip(cmaps, a.pd_solutions[:-2]):
+    ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=pd, ax=ax2, linewidths=2.0, point='PD1',
+                            cmap=plt.get_cmap(cm), update_axis_lims=True)
 ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=a.pd_solutions[-1], ax=ax2, linewidths=2.0, point='PD1',
-                        cmap=plt.get_cmap('magma'), norm=plt.Normalize())
+                        cmap=plt.get_cmap('magma'))
+
+# visualization of codim 2 bifurcations
+#######################################
+
+fig, ax = plt.subplots()
+
+# plot eta-alpha continuation of the limit cycle
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont=f'eta_alpha_hb2', ax=ax)
+
+# plot eta-alpha continuation of the period doubling bifurcation
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_pd', ax=ax)
+
 plt.show()
