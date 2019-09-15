@@ -240,10 +240,13 @@ class PyAuto:
                       f'PyAuto via the `from_file` method from this file, you need to provide a different attribute '
                       f'name.')
 
-        pickle.dump(data, open(filename, 'wb'))
+        try:
+            pickle.dump(data, open(filename, 'x'))
+        except (FileExistsError, TypeError):
+            pickle.dump(data, open(filename, 'wb'))
 
-    def plot_continuation(self, param: str, var: str, cont: Union[Any, str, int], ax: plt.Axes = None, **kwargs
-                          ) -> plt.Axes:
+    def plot_continuation(self, param: str, var: str, cont: Union[Any, str, int], ax: plt.Axes = None,
+                          force_axis_lim_update: bool = False, **kwargs) -> plt.Axes:
         """Line plot of 1D/2D parameter continuation and the respective codimension 1/2 bifurcations.
 
         Parameters
@@ -261,6 +264,9 @@ class PyAuto:
 
         if ax is None:
             fig, ax = plt.subplots()
+        label_pad = kwargs.pop('labelpad', 10)
+        tick_pad = kwargs.pop('tickpad', 5)
+        axislim_pad = kwargs.pop('axislimpad', 0.1)
 
         # extract information from branch solutions
         results = self.extract([param, var, 'stability', 'bifurcation'], cont=cont)
@@ -273,18 +279,21 @@ class PyAuto:
                                           y_vals=results[var], ax=ax, **kwargs_tmp)
 
         # plot main continuation
-        line_col = self._get_line_collection(x=results[param], y=results[var], stability=results['stability'], **kwargs)
+        x, y = results[param], results[var]
+        line_col = self._get_line_collection(x=x, y=y, stability=results['stability'], **kwargs)
         ax.add_collection(line_col)
         ax.autoscale()
 
         # cosmetics
-        ax.set_xlabel(param)
-        ax.set_ylabel(var)
+        ax.tick_params(axis='both', which='major', pad=tick_pad)
+        ax.set_xlabel(param, labelpad=label_pad)
+        ax.set_ylabel(var, labelpad=label_pad)
+        self._update_axis_lims(ax, ax_data=[x, y], padding=axislim_pad, force_update=force_axis_lim_update)
 
         return ax
 
     def plot_trajectory(self, vars: Union[list, tuple], cont: Union[Any, str, int], point: Union[str, int]= None,
-                        ax: plt.Axes = None, update_axis_lims: bool = False, **kwargs) -> plt.Axes:
+                        ax: plt.Axes = None, force_axis_lim_update: bool = False, **kwargs) -> plt.Axes:
         """Plot trajectory of state variables through phase space over time.
 
         Parameters
@@ -293,7 +302,7 @@ class PyAuto:
         cont
         point
         ax
-        update_axis_lims
+        force_axis_lim_update
         kwargs
 
         Returns
@@ -334,13 +343,14 @@ class PyAuto:
             x, y, z = results[vars[0]], results[vars[1]], results[vars[2]]
             line_col = self._get_3d_line_collection(x=x, y=y, z=z, stability=results['stability'], **kwargs)
             ax.add_collection3d(line_col)
+            ax.autoscale()
 
             # cosmetics
             ax.tick_params(axis='both', which='major', pad=tick_pad)
             ax.set_xlabel('v', labelpad=label_pad)
             ax.set_ylabel('r', labelpad=label_pad)
             ax.set_zlabel('e', labelpad=label_pad)
-            self._update_axis_lims(ax, [x, y, z], padding=axislim_pad, force_update=update_axis_lims)
+            self._update_axis_lims(ax, [x, y, z], padding=axislim_pad, force_update=force_axis_lim_update)
 
         else:
 
@@ -380,6 +390,15 @@ class PyAuto:
                 else:
                     plt.scatter(x, y, s=default_size, marker=m, c=c)
         return ax
+
+    def update_bifurcation_style(self, bf_type: str, marker: str = None, color: str = None):
+        if bf_type in self._bifurcation_styles:
+            if marker:
+                self._bifurcation_styles[bf_type]['marker'] = marker
+            if color:
+                self._bifurcation_styles[bf_type]['color'] = color
+        else:
+            self._bifurcation_styles.update({bf_type: {'marker': marker, 'color': color}})
 
     def _create_summary(self, solution: Union[Any, dict], points: list, variables: list, params: list,
                         timeseries: bool, stability: bool, period: bool, lyapunov_exp: bool):
@@ -716,3 +735,39 @@ class PyAuto:
         x_min, x_max = x.min(), x.max()
         x_pad = (x_max - x_min) * padding
         return x_min - x_pad, x_max + x_pad
+
+
+def continue_period_doubling_bf(solution: dict, continuation: Union[str, int, Any], pyauto_instance: PyAuto,
+                                max_iter: int = 1000, iteration: int = 0, **kwargs) -> tuple:
+    """Automatically continue a cascade of period doubling bifurcations. Returns the labels of the continuation and the
+    pyauto instance they were run on.
+
+    Parameters
+    ----------
+    solution
+    continuation
+    pyauto_instance
+    max_iter
+    iteration
+    kwargs
+
+    Returns
+    -------
+    tuple
+    """
+    solutions = []
+    for point, point_info in solution.items():
+        if 'PD' in point_info['bifurcation']:
+            s_tmp, cont = pyauto_instance.run(starting_point=point, name=f'pd_{iteration}', origin=continuation,
+                                              **kwargs)
+            solutions.append(f'pd_{iteration}')
+            iteration += 1
+            if iteration >= max_iter:
+                break
+            elif s_tmp:
+                s_tmp2 = continue_period_doubling_bf(solution=s_tmp, continuation=cont, pyauto_instance=pyauto_instance,
+                                                     iteration=iteration, **kwargs)
+                solutions += s_tmp2
+                iteration += len(s_tmp2)
+
+    return solutions, pyauto_instance

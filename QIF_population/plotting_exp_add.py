@@ -49,14 +49,17 @@ fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
 # plot principle eta continuation for different alphas
 ax = axes[0]
 n_alphas = 5
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_0', ax=ax)
+ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_0', ax=ax, default_size=markersize1)
 for i in range(1, n_alphas+1):
-    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax)
+    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax, default_size=markersize1)
 
 # plot eta continuation for single alpha with limit cycle continuation
 ax = axes[1]
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax)
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore='LP')
+a.update_bifurcation_style('PD', color='k')
+ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax, default_size=markersize1)
+ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['LP', 'BP'], default_size=markersize1)
+for i, pd in enumerate(a.pd_solutions[:-2]):
+    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'pd_{i}', ax=ax, ignore=['LP', 'BP'], default_size=markersize1)
 
 # visualization of phase portrait
 #################################
@@ -67,19 +70,19 @@ ax2 = fig2.add_subplot(111, projection='3d')
 cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
 for cm, pd in zip(cmaps, a.pd_solutions[:-2]):
     ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=pd, ax=ax2, linewidths=2.0, point='PD1',
-                            cmap=plt.get_cmap(cm), update_axis_lims=True)
+                            cmap=plt.get_cmap(cm), force_axis_lim_update=True)
 ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=a.pd_solutions[-1], ax=ax2, linewidths=2.0, point='PD1',
                         cmap=plt.get_cmap('magma'))
 
 # visualization of codim 2 bifurcations
 #######################################
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(2, 2), dpi=dpi)
 
 # plot eta-alpha continuation of the limit cycle
-ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont=f'eta_alpha_hb2', ax=ax)
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont=f'eta_alpha_hb2', ax=ax, ignore=['LP', 'BP'])
 
 # plot eta-alpha continuation of the period doubling bifurcation
-ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_pd', ax=ax)
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_pd', ax=ax, ignore=['LP', 'BP'])
 
 plt.show()
