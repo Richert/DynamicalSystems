@@ -255,6 +255,7 @@ class PyAuto:
         var
         cont
         ax
+        force_axis_lim_update
         kwargs
 
         Returns
@@ -399,6 +400,10 @@ class PyAuto:
                 self._bifurcation_styles[bf_type]['color'] = color
         else:
             self._bifurcation_styles.update({bf_type: {'marker': marker, 'color': color}})
+
+    def plot_heatmap(self, x: np.array, ax: plt.Axes = None, **kwargs) -> plt.Axes:
+        from seaborn import heatmap
+        return heatmap(x, ax=ax, **kwargs)
 
     def _create_summary(self, solution: Union[Any, dict], points: list, variables: list, params: list,
                         timeseries: bool, stability: bool, period: bool, lyapunov_exp: bool):
@@ -605,7 +610,7 @@ class PyAuto:
 
     @staticmethod
     def _get_line_collection(x, y, stability=None, line_style_stable='solid', line_style_unstable='dotted',
-                             **kwargs) -> LineCollection:
+                             line_color_stable='k', line_color_unstable='k', **kwargs) -> LineCollection:
         """
 
         Parameters
@@ -615,6 +620,8 @@ class PyAuto:
         stability
         line_style_stable
         line_style_unstable
+        line_color_stable
+        line_color_unstable
         kwargs
 
         Returns
@@ -647,22 +654,25 @@ class PyAuto:
             idx_changes = np.append(idx_changes, len(stability_changes))
 
             # create line segments
-            lines, styles = [], []
+            lines, styles, colors = [], [], []
             idx_old = 1
             for idx in idx_changes:
                 lines.append(y[idx_old-1:idx, :])
                 styles.append(line_style_stable if stability[idx_old] else line_style_unstable)
+                colors.append(line_color_stable if stability[idx_old] else line_color_unstable)
                 if add_min:
                     lines.append(y_min[idx_old - 1:idx, :])
                     styles.append(line_style_stable if stability[idx_old] else line_style_unstable)
+                    colors.append(line_color_stable if stability[idx_old] else line_color_unstable)
                 idx_old = idx
 
         else:
 
             lines = [y, y_min] if add_min else [y]
             styles = [line_style_stable, line_style_stable] if add_min else [line_style_stable]
+            colors = [line_color_stable, line_color_stable] if add_min else [line_color_stable]
 
-        return LineCollection(segments=lines, linestyles=styles, **kwargs)
+        return LineCollection(segments=lines, linestyles=styles, colors=colors, **kwargs)
 
     @staticmethod
     def _get_3d_line_collection(x, y, z, stability=None, line_style_stable='solid', line_style_unstable='dotted',
