@@ -74,26 +74,26 @@ if codim1:
     if codim2:
 
         # continue the limit cycle borders in alpha and eta
-        eta_alpha_hb1_solutions, eta_alpha_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[1, 3], DSMAX=0.005,
-                                                            NMX=8000, bidirectional=True, origin=eta_cont,
+        eta_alpha_hb1_solutions, eta_alpha_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 1], DSMAX=0.005,
+                                                            NMX=8000, bidirectional=True, origin=eta_cont, RL0=0.0,
                                                             name='eta_alpha_hb1', NDIM=n_dim)
-        eta_alpha_hb2_solutions, eta_alpha_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[1, 3], DSMAX=0.005,
-                                                            NMX=8000, bidirectional=True, origin=eta_cont,
+        eta_alpha_hb2_solutions, eta_alpha_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[3, 1], DSMAX=0.005,
+                                                            NMX=8000, bidirectional=True, origin=eta_cont, RL0=0.0,
                                                             name='eta_alpha_hb2', NDIM=n_dim)
 
         # continue the fold borders in alpha and eta
-        eta_alpha_lp1_solutions, eta_alpha_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[1, 3], DSMAX=0.05,
+        eta_alpha_lp1_solutions, eta_alpha_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[3, 1], DSMAX=0.05,
                                                             NMX=8000, origin=eta_cont, name='eta_alpha_lp1', NDIM=n_dim,
-                                                            bidirectional=True)
+                                                            bidirectional=True, RL0=0.0)
 
         # continue the first and second fold bifurcation of the limit cycle
         alphas = np.round(np.linspace(0., 2.0, 100)[::-1], decimals=4).tolist()
         eta_alpha_lp2_solutions, eta_alpha_lp2_cont = a.run(starting_point='LP1', c='qif3', ICP=[1, 11, 3],
-                                                            NMX=8000, DSMAX=0.01, origin=eta_hb2_cont,
+                                                            NMX=12000, DSMAX=0.05, origin=eta_hb2_cont,
                                                             bidirectional=True, name='eta_alpha_lp2', NDIM=n_dim,
                                                             UZR={3: alphas}, STOP={})
         eta_alpha_lp3_solutions, eta_alpha_lp3_cont = a.run(starting_point='LP2', c='qif3', ICP=[1, 11, 3],
-                                                            NMX=8000, DSMAX=0.01, origin=eta_hb2_cont,
+                                                            NMX=12000, DSMAX=0.05, origin=eta_hb2_cont,
                                                             bidirectional=True, name='eta_alpha_lp3', NDIM=n_dim,
                                                             UZR={3: alphas}, STOP={})
 

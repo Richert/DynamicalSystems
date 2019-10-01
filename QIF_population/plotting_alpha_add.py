@@ -8,9 +8,9 @@ import pandas as pd
 linewidth = 0.5
 fontsize1 = 6
 fontsize2 = 8
-markersize1 = 20
-markersize2 = 20
-dpi = 400
+markersize1 = 15
+markersize2 = 15
+dpi = 300
 plt.style.reload_library()
 plt.style.use('seaborn-colorblind')
 mpl.rcParams['font.family'] = 'Roboto'
@@ -101,8 +101,8 @@ ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp1', ax=ax, ignore
 # cosmetics
 ax.set_xlabel(r'$\eta$')
 ax.set_ylabel(r'$\alpha$')
-#ax.set_xlim([-7.0, 2.0])
-#ax.set_ylim([0., 2.0])
+ax.set_xlim([-10.0, 0.0])
+ax.set_ylim([0., 2.0])
 ax.set_title('Codimension 2 Bifurcations')
 plt.tight_layout()
 plt.savefig('fig4.svg')

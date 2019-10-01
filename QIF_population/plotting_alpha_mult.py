@@ -8,10 +8,9 @@ import pandas as pd
 linewidth = 0.5
 fontsize1 = 6
 fontsize2 = 8
-markersize1 = 20
-markersize2 = 20
-dpi = 400
-print(mpl.rcParams.keys())
+markersize1 = 15
+markersize2 = 15
+dpi = 300
 plt.style.reload_library()
 plt.style.use('seaborn-colorblind')
 mpl.rcParams['font.family'] = 'Roboto'
@@ -26,8 +25,8 @@ mpl.rcParams['xtick.color'] = 'black'
 mpl.rcParams['ytick.color'] = 'black'
 mpl.rcParams['ytick.alignment'] = 'center'
 mpl.rcParams['legend.fontsize'] = fontsize1
-mpl.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath} \boldmath']
-mpl.rc('text', usetex=True)
+#mpl.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath} \boldmath']
+#mpl.rc('text', usetex=True)
 
 
 ################
