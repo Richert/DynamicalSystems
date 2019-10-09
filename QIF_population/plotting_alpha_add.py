@@ -5,28 +5,29 @@ import numpy as np
 import pandas as pd
 
 # plotting parameters
-linewidth = 0.5
-fontsize1 = 6
-fontsize2 = 8
-markersize1 = 15
-markersize2 = 15
-dpi = 300
+linewidth = 1.0
+fontsize1 = 8
+fontsize2 = 10
+markersize1 = 20
+markersize2 = 20
+dpi = 500
+
 plt.style.reload_library()
-plt.style.use('seaborn-colorblind')
-mpl.rcParams['font.family'] = 'Roboto'
-mpl.rcParams['font.size'] = fontsize1
+plt.style.use('seaborn-whitegrid')
+mpl.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath} \boldmath']
+#mpl.rc('text', usetex=True)
+mpl.rcParams["font.sans-serif"] = ["Roboto"]
+mpl.rcParams["font.size"] = fontsize1
+mpl.rcParams["font.weight"] = "bold"
 mpl.rcParams['lines.linewidth'] = linewidth
 mpl.rcParams['axes.titlesize'] = fontsize2
 mpl.rcParams['axes.titleweight'] = 'bold'
-mpl.rcParams['axes.labelsize'] = fontsize2
-mpl.rcParams['axes.labelweight'] = 'normal'
-mpl.rcParams['axes.titleweight'] = 'bold'
+mpl.rcParams['axes.labelsize'] = 'large'
+mpl.rcParams['axes.labelweight'] = 'bold'
 mpl.rcParams['xtick.color'] = 'black'
 mpl.rcParams['ytick.color'] = 'black'
 mpl.rcParams['ytick.alignment'] = 'center'
 mpl.rcParams['legend.fontsize'] = fontsize1
-mpl.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath} \boldmath']
-mpl.rc('text', usetex=True)
 
 
 ################
@@ -56,8 +57,8 @@ for i in range(1, n_alphas+1):
 ax.set_xlim([-12.0, 0.8])
 ax.set_ylim([0., 1.25])
 ax.set_xlabel(r'$\eta$')
-ax.set_ylabel('firing rate (r)')
-ax.set_title('Effects of Adaptation Rate')
+ax.set_ylabel('Firing rate (r)')
+ax.set_title('Fixed Point Structure')
 
 # plot eta continuation for single alpha with limit cycle continuation
 ax = axes[1]
@@ -68,8 +69,8 @@ ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP']
 ax.set_xlim([-6.0, 0.0])
 ax.set_ylim([0., 3.8])
 ax.set_xlabel(r'$\eta$')
-ax.set_ylabel('firing rate (r)')
-ax.set_title(r'Principal Continuation in $\eta$')
+ax.set_ylabel('Firing rate (r)')
+ax.set_title(r'Limit Cycle Continuation in $\eta$')
 plt.tight_layout()
 plt.savefig('fig3.svg')
 
@@ -103,7 +104,7 @@ ax.set_xlabel(r'$\eta$')
 ax.set_ylabel(r'$\alpha$')
 ax.set_xlim([-10.0, 0.0])
 ax.set_ylim([0., 2.0])
-ax.set_title('Codimension 2 Bifurcations')
+ax.set_title('2D Limit Cycle Continuation')
 plt.tight_layout()
 plt.savefig('fig4.svg')
 

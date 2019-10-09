@@ -265,9 +265,9 @@ class PyAuto:
 
         if ax is None:
             fig, ax = plt.subplots()
-        label_pad = kwargs.pop('labelpad', 10)
+        label_pad = kwargs.pop('labelpad', 5)
         tick_pad = kwargs.pop('tickpad', 5)
-        axislim_pad = kwargs.pop('axislimpad', 0.1)
+        axislim_pad = kwargs.pop('axislimpad', 0)
 
         # extract information from branch solutions
         results = self.extract([param, var, 'stability', 'bifurcation'], cont=cont)
@@ -293,7 +293,7 @@ class PyAuto:
 
         return ax
 
-    def plot_trajectory(self, vars: Union[list, tuple], cont: Union[Any, str, int], point: Union[str, int]= None,
+    def plot_trajectory(self, vars: Union[list, tuple], cont: Union[Any, str, int], point: Union[str, int] = None,
                         ax: plt.Axes = None, force_axis_lim_update: bool = False, **kwargs) -> plt.Axes:
         """Plot trajectory of state variables through phase space over time.
 
@@ -360,9 +360,47 @@ class PyAuto:
 
         return ax
 
-    def plot_timeseries(self, v):
+    def plot_timeseries(self, var: str, cont: Union[Any, str, int], points: list = None, ax: plt.Axes = None,
+                        linespecs: list = None, **kwargs) -> plt.Axes:
+        """
 
-        pass
+        Parameters
+        ----------
+        var
+        cont
+        points
+        ax
+        linespecs
+        kwargs
+
+        Returns
+        -------
+
+        """
+
+        # extract information from branch solutions
+        results = []
+        for p in points:
+            results += [self.extract([var] + ['stability', 'PAR(11)'], cont=cont, point=p)]
+
+        # create plot
+        if ax is None:
+            fig, ax = plt.subplots()
+
+        # plot phase trajectory
+        if not linespecs:
+            linespecs = [dict() for _ in range(len(points))]
+        for i in range(len(points)):
+            time = np.linspace(0, 1, len(results[i][var]))*results[i]['PAR(11)']
+            kwargs_tmp = kwargs.copy()
+            kwargs_tmp.update(linespecs[i])
+            line_col = self._get_line_collection(x=time, y=results[i][var], stability=results[i]['stability'],
+                                                 **kwargs_tmp)
+            ax.add_collection(line_col)
+        ax.autoscale()
+        ax.legend(points)
+
+        return ax
 
     def plot_bifurcation_points(self, solution_types, x_vals, y_vals, ax, default_color='k', default_marker='*',
                                 default_size=50, ignore=None, custom_bf_styles=None):
@@ -672,6 +710,7 @@ class PyAuto:
             styles = [line_style_stable, line_style_stable] if add_min else [line_style_stable]
             colors = [line_color_stable, line_color_stable] if add_min else [line_color_stable]
 
+        colors = kwargs.pop('colors', colors)
         return LineCollection(segments=lines, linestyles=styles, colors=colors, **kwargs)
 
     @staticmethod
