@@ -31,7 +31,7 @@ period_mapping = False
 n_grid_points = 100
 n_dim = 4
 n_params = 6
-eta_cont_idx = 4
+eta_cont_idx = 3
 
 ###################################
 # parameter continuations in auto #
@@ -40,7 +40,7 @@ eta_cont_idx = 4
 a = PyAuto("auto_files")
 
 # initial continuation in the adaptation strength alpha
-alpha_0 = [0.1, 0.2, 0.4, 0.8, 1.6]
+alpha_0 = [0.25, 0.5, 1.0, 2.0]
 alpha_solutions, alpha_cont = a.run(e='qif_alpha_add', c='qif', ICP=3, UZR={3: alpha_0}, NDIM=n_dim,
                                     STOP=['UZ' + str(len(alpha_0))], DSMAX=0.005, NMX=4000, name='s0')
 

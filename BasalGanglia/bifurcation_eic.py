@@ -28,11 +28,10 @@ with parameters:
 # configuration
 codim1 = True
 codim2 = True
-period_mapping = False
 n_grid_points = 100
 n_dim = 8
-n_params = 9
-eta_cont_idx = 0
+n_params = 16
+eta_cont_idx = 1
 
 ###################################
 # parameter continuations in auto #
@@ -41,9 +40,9 @@ eta_cont_idx = 0
 a = PyAuto("auto_files")
 
 # initial continuations of connection strengths
-eta_i = [-5.0]
+eta_i = [-5.0, -4.0, -3.0, -2.0]
 n_eta = len(eta_i)
-etai_solutions, etai_cont = a.run(e='stn_gpe_alpha', c='qif', ICP=2, DSMAX=0.005, NMX=6000, NPAR=n_params,
+etai_solutions, etai_cont = a.run(e='stn_gpe_rate', c='qif', ICP=2, DSMAX=0.05, NMX=6000, NPAR=n_params,
                                   bidirectional=True, name='eta_i', NDIM=n_dim, UZR={2: eta_i}, STOP={})
 
 # principle continuation in eta
@@ -54,8 +53,8 @@ solutions_eta = list()
 i = 0
 for point, point_info in etai_solutions.items():
     if 'UZ' in point_info['bifurcation']:
-        solutions_eta.append(a.run(starting_point=f'UZ{i+1}', ICP=1, NMX=20000, origin=etai_cont, bidirectional=True,
-                                   name=f'eta_{i}', RL0=-20.0, RL1=20.0, ))
+        solutions_eta.append(a.run(starting_point=f'UZ{i+1}', ICP=2, NMX=20000, origin=etai_cont, bidirectional=True,
+                                   name=f'eta_{i}', RL0=-20.0, RL1=20.0))
         i += 1
 
 # choose a continuation in eta to run further continuations on
@@ -64,16 +63,19 @@ eta_points, eta_cont = solutions_eta[eta_cont_idx]
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', ICP=[1, 11], NMX=2000, origin=eta_cont,
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', ICP=[2, 11], NMX=6000, origin=eta_cont,
                                             name='eta_hb1', IPS=2, DSMAX=1.0, STOP='LP2')
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', ICP=[1, 11], NMX=2000, origin=eta_cont,
-                                            name='eta_hb2', IPS=2, DSMAX=1.0, STOP='LP2')
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', ICP=[2, 11], NMX=6000, origin=eta_cont,
+                                            name='eta_hb2', IPS=2, DSMAX=1.0, STOP='LP1')
+    eta_bp1_solutions, eta_bp1_cont = a.run(starting_point='BP1', origin=eta_hb2_cont, ISW=-1, name='eta_bp1', STOP={})
 
     # limit cycle continuation of hopf bifurcation in beta
     beta_hb1_solutions, beta_hb1_cont = a.run(starting_point='HB1', ICP=[8, 11], NMX=6000, origin=eta_cont, IPS=2,
-                                              RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb1')
+                                              RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb1', STOP='LP2')
     beta_hb2_solutions, beta_hb2_cont = a.run(starting_point='HB2', ICP=[8, 11], NMX=6000, origin=eta_cont, IPS=2,
-                                              RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb2')
+                                              RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb2', STOP='LP1')
+    beta_bp1_solutions, beta_bp1_cont = a.run(starting_point='BP1', origin=beta_hb2_cont, ISW=-1, name='beta_bp1',
+                                              STOP={})
 
     if codim2:
 

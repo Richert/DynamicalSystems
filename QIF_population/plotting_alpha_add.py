@@ -5,11 +5,16 @@ import numpy as np
 import pandas as pd
 
 # plotting parameters
-linewidth = 1.0
-fontsize1 = 8
-fontsize2 = 10
-markersize1 = 20
-markersize2 = 20
+# linewidth = 2.0
+# fontsize1 = 12
+# fontsize2 = 14
+# markersize1 = 80
+# markersize2 = 80
+linewidth = 2.0
+fontsize1 = 14
+fontsize2 = 16
+markersize1 = 160
+markersize2 = 160
 dpi = 500
 
 plt.style.reload_library()
@@ -44,33 +49,31 @@ a = PyAuto.from_file(fname)
 # principle continuation in eta
 ###############################
 
-fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
+fig, ax = plt.subplots(figsize=(5.8, 2.6), dpi=dpi)
 
 # plot principle eta continuation for different alphas
-ax = axes[0]
-n_alphas = 5
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_0', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-for i in range(1, n_alphas+1):
-    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlim([-12.0, 0.8])
-ax.set_ylim([0., 1.25])
-ax.set_xlabel(r'$\eta$')
-ax.set_ylabel('Firing rate (r)')
-ax.set_title('Fixed Point Structure')
+# n_alphas = 5
+# ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_0', ax=ax, line_color_stable='#76448A',
+#                          line_color_unstable='#5D6D7E', default_size=markersize1)
+# for i in range(1, n_alphas+1):
+#     ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax, line_color_stable='#76448A',
+#                              line_color_unstable='#5D6D7E', default_size=markersize1)
+# ax.set_xlim([-12.0, 0.8])
+# ax.set_ylim([0., 1.25])
+# ax.set_xlabel(r'$\eta$')
+# ax.set_ylabel('Firing rate (r)')
+# ax.set_title('Fixed Point Structure')
 
 # plot eta continuation for single alpha with limit cycle continuation
-ax = axes[1]
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_4', ax=ax, line_color_stable='#76448A',
+ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax, line_color_stable='#76448A',
                          line_color_unstable='#5D6D7E', default_size=markersize1)
 ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1)
-ax.set_xlim([-6.0, 0.0])
-ax.set_ylim([0., 3.8])
+                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
+ax.set_xlim([-5.5, 2.0])
+ax.set_ylim([-0.05, 4.2])
 ax.set_xlabel(r'$\eta$')
 ax.set_ylabel('Firing rate (r)')
-ax.set_title(r'Limit Cycle Continuation in $\eta$')
+ax.set_title(r'Bursting Limit Cycle')
 plt.tight_layout()
 plt.savefig('fig3.svg')
 

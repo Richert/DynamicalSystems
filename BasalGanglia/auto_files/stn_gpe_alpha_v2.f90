@@ -38,7 +38,7 @@
        F(1) = D/(PI*Te*Te) + 2.0*Re*Ve/Te
        F(2) = (Ve*Ve + Ee)/Te + Je*Re*(1.0-Ae)/10.0 - Ji*Ri*(1.0-Ai) - PI*PI*Re*Re*Te
        F(3) = D/(PI*Ti*Ti) + 2.0*Ri*Vi/Ti
-       F(4) = (Vi*Vi + Ei)/Ti + Je*Re*(1.0-Ae) - Ji*Ri*(1.0-Ai) - PI*PI*Ri*Ri*Ti
+       F(4) = (Vi*Vi + Ei)/Ti + Je*Re*(1.0-Ae) - Ji*Ri*(1.0-Ai)/2.0 - PI*PI*Ri*Ri*Ti
 
        F(5) = Xe
        F(6) = alpha*Re/Ta - 2.0*Xe/Ta - Ae/(Ta*Ta)
@@ -57,14 +57,14 @@
 
       DOUBLE PRECISION Ee,Ei,Je,Ji,alpha,D,Te,Ti,Ta
 
-       Ee = -1.0
-       Ei = 5.0
-       Je = 50.0
-       Ji = 10.0
-       Te = 0.01
-       Ti = 0.02
+       Ee = 2.0
+       Ei = 14.0
+       Je = 20.0
+       Ji = 30.0
+       Te = 0.006
+       Ti = 0.014
        Ta = 0.2
-       alpha = 0.05
+       alpha = 0.01
        D = 2.0
 
        PAR(1)=Ee
@@ -77,13 +77,13 @@
        PAR(8)=alpha
        PAR(9)=D
 
-       U(1)=18.6210391
-       U(2)=-1.70941
-       U(3)=62.7459448
-       U(4)=-0.25364977
-       U(5)=0.186210391
+       U(1)=18.971274
+       U(2)=-2.796420
+       U(3)=62.999583
+       U(4)=-0.360898
+       U(5)=0.03794255
        U(6)=0.0
-       U(7)=0.627459448
+       U(7)=0.12599917
        U(8)=0.0
 
       END SUBROUTINE STPNT

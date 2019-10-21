@@ -65,7 +65,7 @@ eta_points, eta_cont = solutions_eta[eta_cont_idx]
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=3000,
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=4000,
                                             origin=eta_cont, name='eta_hb2', NDIM=n_dim)
 
     # continuation in eta and alpha
@@ -84,7 +84,7 @@ if codim1:
                                                             bidirectional=True)
 
         # continue the first and second fold bifurcation of the limit cycle
-        alphas = np.round(np.linspace(0., 0.2, 100)[::-1], decimals=4).tolist()
+        alphas = np.round(np.linspace(0., 0.2, 100)[::-1], decimals=5).tolist()
         eta_alpha_lp2_solutions, eta_alpha_lp2_cont = a.run(starting_point='LP1', c='qif3', ICP=[1, 11, 3],
                                                             NMX=8000, DSMAX=0.01, origin=eta_hb2_cont,
                                                             bidirectional=True, name='eta_alpha_lp2', NDIM=n_dim,
@@ -100,18 +100,16 @@ if codim1:
             etas = np.round(np.linspace(-6.5, -2.5, 100), decimals=4).tolist()
             period_solutions = np.zeros((len(alphas), len(etas)))
             for s, s_info in eta_alpha_lp3_solutions.items():
-                if np.round(s_info['PAR(3)'], decimals=4) in alphas:
-                #if 'UZ' in s_info['bifurcation']:
+                if np.round(s_info['PAR(3)'], decimals=5) in alphas:
                     s_tmp, _ = a.run(starting_point=s, c='qif', ICP=[1, 11], UZR={1: etas}, STOP={}, EPSL=1e-6,
-                                     EPSU=1e-6, EPSS=1e-4, ILP=0, ISP=0, IPS=2, DS='-', get_period=True,
-                                     origin=eta_alpha_lp3_cont)
-                    eta_old = etas[0]
-                    for s_tmp2 in s_tmp.values():
-                        if 'UZ' in s_tmp2['bifurcation'] and s_tmp2['PAR(1)'] >= eta_old:
-                            idx_c = np.argwhere(np.round(s_tmp2['PAR(1)'], decimals=4) == etas)
-                            idx_r = np.argwhere(np.round(s_tmp2['PAR(3)'], decimals=4) == alphas)
-                            period_solutions[idx_r, idx_c] = s_tmp2['period']
-                            eta_old = s_tmp2['PAR(1)']
+                                     EPSU=1e-6, EPSS=1e-4, ILP=0, ISP=0, IPS=2, get_period=True, DSMAX=0.0002,
+                                     origin=eta_alpha_lp3_cont, NMX=40000, DS='-', THL={11: 0.0})
+                    for s2 in s_tmp.values():
+                        if np.round(s2['PAR(1)'], decimals=4) in etas:
+                            idx_c = np.argwhere(np.round(s2['PAR(1)'], decimals=4) == etas)
+                            idx_r = np.argwhere(np.round(s2['PAR(3)'], decimals=5) == alphas)
+                            if s2['period'] > period_solutions[idx_r, idx_c]:
+                                period_solutions[idx_r, idx_c] = s2['period']
 
 ################
 # save results #

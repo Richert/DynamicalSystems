@@ -404,6 +404,24 @@ class PyAuto:
 
     def plot_bifurcation_points(self, solution_types, x_vals, y_vals, ax, default_color='k', default_marker='*',
                                 default_size=50, ignore=None, custom_bf_styles=None):
+        """
+
+        Parameters
+        ----------
+        solution_types
+        x_vals
+        y_vals
+        ax
+        default_color
+        default_marker
+        default_size
+        ignore
+        custom_bf_styles
+
+        Returns
+        -------
+
+        """
 
         if not ignore:
             ignore = []
@@ -411,7 +429,8 @@ class PyAuto:
         # set bifurcation styles
         bf_styles = self._bifurcation_styles.copy()
         if custom_bf_styles:
-            bf_styles.update(custom_bf_styles)
+            for key, args in custom_bf_styles.items():
+                bf_styles[key].update(args)
         plt.sca(ax)
 
         # draw bifurcation points
