@@ -16,17 +16,10 @@ a = PyAuto.from_file(fname)
 # principle continuation in eta
 ###############################
 
-fig, axes = plt.subplots(ncols=2)
-ax = axes[0]
-n = 8
-for i in range(n):
-    ax = a.plot_continuation('PAR(2)', 'U(1)', cont=f'eta_{i}', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E')
-ax = axes[1]
+fig, ax = plt.subplots()
 ax = a.plot_continuation('PAR(2)', 'U(1)', cont='eta_1', ax=ax, line_color_stable='#76448A',
                          line_color_unstable='#5D6D7E')
-ax = a.plot_continuation('PAR(2)', 'U(1)', cont=f'eta_hb1', ax=ax, ignore=['BP'], line_color_stable='#148F77')
-ax = a.plot_continuation('PAR(2)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP'], line_color_stable='#148F77')
+ax = a.plot_continuation('PAR(2)', 'U(1)', cont=f'eta_i_hb', ax=ax, ignore=['BP'], line_color_stable='#148F77')
 
 #ax = axes[1, 0]
 #ax = a.plot_continuation('PAR(8)', 'U(1)', cont=f'beta_hb', ax=ax, ignore=['BP'], line_color_stable='#148F77')
@@ -39,23 +32,23 @@ plt.tight_layout()
 # limit cycle continuation in beta
 ##################################
 
-fig2, axes2 = plt.subplots(nrows=2)
-
-ax = axes2[0]
-ax = a.plot_continuation('PAR(8)', 'U(1)', cont='beta_hb2', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E')
-ax = axes2[1]
-ax = a.plot_timeseries('U(1)', cont='beta_hb2', points=['LP1'], ax=ax,
-                       linespecs=[{'colors': '#76448A'}, {'colors': '#5D6D7E'}])
-
-# Codimension 2 Bifurcations
-############################
-
-fig3, axes3 = plt.subplots(nrows=2)
-
-ax = axes3[0]
-ax = a.plot_continuation('PAR(3)', 'PAR(4)', cont='j_hb1', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E')
+# fig2, axes2 = plt.subplots(nrows=2)
+#
+# ax = axes2[0]
+# ax = a.plot_continuation('PAR(8)', 'U(1)', cont='beta_hb2', ax=ax, line_color_stable='#76448A',
+#                          line_color_unstable='#5D6D7E')
+# ax = axes2[1]
+# ax = a.plot_timeseries('U(1)', cont='beta_hb2', points=['LP1'], ax=ax,
+#                        linespecs=[{'colors': '#76448A'}, {'colors': '#5D6D7E'}])
+#
+# # Codimension 2 Bifurcations
+# ############################
+#
+# fig3, axes3 = plt.subplots(nrows=2)
+#
+# ax = axes3[0]
+# ax = a.plot_continuation('PAR(3)', 'PAR(4)', cont='j_hb1', ax=ax, line_color_stable='#76448A',
+#                          line_color_unstable='#5D6D7E')
 
 #axes2 = a.plot_continuation('PAR(8)', 'U(1)', cont='beta_bp2', ax=axes2, line_color_stable='#76448A',
 #                            line_color_unstable='#5D6D7E')

@@ -71,7 +71,7 @@ ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP']
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
 ax.set_xlim([-5.5, 2.0])
 ax.set_ylim([-0.05, 4.2])
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel('Firing rate (r)')
 ax.set_title(r'Bursting Limit Cycle')
 plt.tight_layout()
@@ -103,7 +103,7 @@ ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp1', ax=ax, ignore
                          default_size=markersize1)
 
 # cosmetics
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel(r'$\alpha$')
 ax.set_xlim([-10.0, 0.0])
 ax.set_ylim([0., 2.0])

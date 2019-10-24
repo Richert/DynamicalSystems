@@ -80,7 +80,7 @@ ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP']
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
 ax.set_xlim([-6.5, -3.8])
 ax.set_ylim([0., 2.5])
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel('Firing rate (r)')
 ax.set_title(r'Bursting Limit Cycle')
 plt.tight_layout()
@@ -113,7 +113,7 @@ ax.set_xticks(xticks[::3])
 ax.set_xticklabels(xticklabels[::3])
 ax.set_yticks(yticks[::3])
 ax.set_yticklabels(yticklabels[::3])
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel(r'$\alpha$')
 ax.set_title('Limit Cycle Period')
 
@@ -140,7 +140,7 @@ ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp1', ax=ax, ignore
 # transfer line plots to period image
 
 # cosmetics
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel(r'$\alpha$')
 ax.set_xticks(xticklabels[::3])
 ax.set_yticks(yticklabels[::3])

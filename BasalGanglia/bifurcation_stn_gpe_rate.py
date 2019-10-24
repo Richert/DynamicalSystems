@@ -29,9 +29,9 @@ with parameters:
 codim1 = True
 codim2 = True
 n_grid_points = 100
-n_dim = 8
-n_params = 16
-eta_cont_idx = 1
+n_dim = 10
+n_params = 20
+cont_idx = 0
 
 ###################################
 # parameter continuations in auto #
@@ -39,50 +39,62 @@ eta_cont_idx = 1
 
 a = PyAuto("auto_files")
 
-# initial continuations of connection strengths
-eta_i = [-5.0, -4.0, -3.0, -2.0]
-n_eta = len(eta_i)
-etai_solutions, etai_cont = a.run(e='stn_gpe_rate', c='qif', ICP=2, DSMAX=0.05, NMX=6000, NPAR=n_params,
-                                  bidirectional=True, name='eta_i', NDIM=n_dim, UZR={2: eta_i}, STOP={})
-
 # principle continuation in eta
 ###############################
 
-# continue in eta for each adaptation rate alpha
-solutions_eta = list()
-i = 0
-for point, point_info in etai_solutions.items():
+# continue in eta_e
+etas = [0.2, 0.4, 0.6, 0.8]
+n = len(etas)
+etae_solutions, etae_cont = a.run(e='stn_gpe_rate', c='qif', ICP=1, DSMAX=0.005, NMX=6000, NPAR=n_params,
+                                  name='eta_e', NDIM=n_dim, STOP={}, RL0=0.0, RL1=1.0, DS='-', UZR={1: etas})
+
+# continue in eta_i
+solutions = []
+i = 1
+for point, point_info in etae_solutions.items():
     if 'UZ' in point_info['bifurcation']:
-        solutions_eta.append(a.run(starting_point=f'UZ{i+1}', ICP=2, NMX=20000, origin=etai_cont, bidirectional=True,
-                                   name=f'eta_{i}', RL0=-20.0, RL1=20.0))
+        solutions.append(a.run(starting_point=f'UZ{i}', ICP=2, DSMAX=0.005, NMX=6000, NPAR=n_params,
+                               name=f'eta_{i}', NDIM=n_dim, STOP={}, RL0=-20.0, RL1=0.0, origin=etae_cont,
+                               bidirectional=True))
         i += 1
 
 # choose a continuation in eta to run further continuations on
-eta_points, eta_cont = solutions_eta[eta_cont_idx]
+eta_points, eta_cont = solutions[cont_idx]
 
 if codim1:
 
-    # limit cycle continuation of hopf bifurcations in eta
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', ICP=[2, 11], NMX=6000, origin=eta_cont,
-                                            name='eta_hb1', IPS=2, DSMAX=1.0, STOP='LP2')
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', ICP=[2, 11], NMX=6000, origin=eta_cont,
-                                            name='eta_hb2', IPS=2, DSMAX=1.0, STOP='LP1')
-    eta_bp1_solutions, eta_bp1_cont = a.run(starting_point='BP1', origin=eta_hb2_cont, ISW=-1, name='eta_bp1', STOP={})
+    # limit cycle continuation of hopf bifurcations in eta_i
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', ICP=[2, 11], NMX=8000, origin=eta_cont,
+                                            name='eta_i_hb', IPS=2, DSMAX=0.1)
 
-    # limit cycle continuation of hopf bifurcation in beta
-    beta_hb1_solutions, beta_hb1_cont = a.run(starting_point='HB1', ICP=[8, 11], NMX=6000, origin=eta_cont, IPS=2,
-                                              RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb1', STOP='LP2')
-    beta_hb2_solutions, beta_hb2_cont = a.run(starting_point='HB2', ICP=[8, 11], NMX=6000, origin=eta_cont, IPS=2,
-                                              RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb2', STOP='LP1')
-    beta_bp1_solutions, beta_bp1_cont = a.run(starting_point='BP1', origin=beta_hb2_cont, ISW=-1, name='beta_bp1',
-                                              STOP={})
+    # limit cycle continuation of hopf bifurcations in k_e
+    ke_hb1_solutions, ke_hb1_cont = a.run(starting_point='HB1', ICP=[3, 11], NMX=8000, origin=eta_cont,
+                                          name='k_e_hb', IPS=2, DSMAX=0.1)
 
-    if codim2:
+    # limit cycle continuation of hopf bifurcations in k_i
+    ki_hb1_solutions, ki_hb1_cont = a.run(starting_point='HB1', ICP=[4, 11], NMX=8000, origin=eta_cont,
+                                          name='k_i_hb', IPS=2, DSMAX=0.1)
 
-        # continue the limit cycle borders in eta_i and beta
-        j_hb1_solutions, j_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 4], NMX=20000, NDIM=n_dim,
-                                            DSMAX=10.0, NPAR=n_params, bidirectional=True, origin=eta_cont, RL0=0.0,
-                                            name='j_hb1')
+    # limit cycle continuation of hopf bifurcations in alpha
+    alpha_solutions, alpha_cont = a.run(starting_point='HB1', ICP=[5, 11], NMX=8000, origin=eta_cont,
+                                        name='alpha_hb', IPS=2, DSMAX=0.1)
+
+    # eta_bp1_solutions, eta_bp1_cont = a.run(starting_point='BP1', origin=eta_hb2_cont, ISW=-1, name='eta_bp1', STOP={})
+    #
+    # # limit cycle continuation of hopf bifurcation in beta
+    # beta_hb1_solutions, beta_hb1_cont = a.run(starting_point='HB1', ICP=[8, 11], NMX=6000, origin=eta_cont, IPS=2,
+    #                                           RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb1', STOP='LP2')
+    # beta_hb2_solutions, beta_hb2_cont = a.run(starting_point='HB2', ICP=[8, 11], NMX=6000, origin=eta_cont, IPS=2,
+    #                                           RL0=-0.00001, RL1=1.0, DSMAX=1.0, name='beta_hb2', STOP='LP1')
+    # beta_bp1_solutions, beta_bp1_cont = a.run(starting_point='BP1', origin=beta_hb2_cont, ISW=-1, name='beta_bp1',
+    #                                           STOP={})
+    #
+    # if codim2:
+    #
+    #     # continue the limit cycle borders in eta_i and beta
+    #     j_hb1_solutions, j_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 4], NMX=20000, NDIM=n_dim,
+    #                                         DSMAX=10.0, NPAR=n_params, bidirectional=True, origin=eta_cont, RL0=0.0,
+    #                                         name='j_hb1')
 
         #etai_beta_hb2_solutions, etai_beta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[8, 2], DSMAX=0.05,
         #                                                    NMX=8000, bidirectional=True, origin=eta_cont, RL0=-0.001,
@@ -106,7 +118,6 @@ if codim1:
         #                                          NPAR=n_params, DSMAX=0.01, NMX=10000, RL0=-0.001, name='alpha_hb',
         #                                          RL1=1.0, origin=eta_hb_cont, EPSL=1e-6, EPSU=1e-6, EPSS=1e-4, IPS=2)
 
-        pass
 
 ################
 # save results #

@@ -14,7 +14,7 @@
       DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,NDIM), DFDP(NDIM,*)
 
       DOUBLE PRECISION V_e,V_i,I_ei,I_ie,I_ii,X_ei,X_ie,X_ii,A_i,Z_i
-      DOUBLE PRECISION k_e,k_i,tau_e,tau_i,tau_ei,tau_ie,tau_ii,eta_e,eta_i,s_e,s_i,max_e,max_i,alpha,tau_a
+      DOUBLE PRECISION k_e,k_i,tau_e,tau_i,tau_ei,tau_ie,tau_ii,eta_e,eta_i,s_e,s_i,max_e,max_i,alpha,tau_a,delta
 
        eta_e  = PAR(1)
        eta_i  = PAR(2)
@@ -31,6 +31,7 @@
        s_i = PAR(15)
        max_e = PAR(16)
        max_i = PAR(17)
+       delta = PAR(18)
 
        V_e=U(1)
        V_i=U(2)
@@ -43,10 +44,10 @@
        A_i=U(9)
        Z_i=U(10)
 
-       F(1) = (eta_e - I_ei - V_e)/tau_e
-       F(2) = (eta_i + I_ie - I_ii - V_i)/tau_i
+       F(1) = (eta_e*(1.0-0.5*delta) - I_ei - V_e)/tau_e
+       F(2) = (eta_i*(1.0+2.0*delta) + I_ie - I_ii - V_i)/tau_i
        F(3) = X_ei
-       F(4) = k_i*max_i/((1.0 + EXP(-s_i*V_i))*tau_ei) - 2.0*X_ei/tau_ei - I_ei/(tau_ei*tau_ei)
+       F(4) = k_i*(1.0-0.5*delta)*max_i/((1.0 + EXP(-s_i*V_i))*tau_ei) - 2.0*X_ei/tau_ei - I_ei/(tau_ei*tau_ei)
        F(5) = X_ie
        F(6) = k_e*max_e/((1.0 + EXP(-s_e*V_e))*tau_ie) - 2.0*X_ie/tau_ie - I_ie/(tau_ie*tau_ie)
        F(7) = X_ii
@@ -68,8 +69,8 @@
 
        eta_e = 1.0
        eta_i = -3.0
-       k_e = 3.0
-       k_i = 4.0
+       k_e = 3.7
+       k_i = 3.0
        s_e = 7.0
        s_i = 0.5
        max_e = 300.0
@@ -98,13 +99,13 @@
        PAR(16)=max_e
        PAR(17)=max_i
 
-       U(1)=-0.38048518
-       U(2)=-3.5682325
-       U(3)=1.3804941
+       U(1)=-0.3784634
+       U(2)=-3.3884044
+       U(3)=1.3784544
        U(4)=0.0
-       U(5)=0.35191604
+       U(5)=0.35658336
        U(6)=0.0
-       U(7)=0.9203154
+       U(7)=0.74509746
        U(8)=0.0
 
       END SUBROUTINE STPNT
