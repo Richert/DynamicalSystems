@@ -6,31 +6,23 @@ from pyauto import PyAuto
 # file loading #
 ################
 
-fname = 'results/eic.pkl'
+fname = 'results/qif_stn_gpe.pkl'
 a = PyAuto.from_file(fname)
 
-############
-# plotting #
-############
+# plotting of qif_stn_gpe results
+#################################
 
-# principle continuation in eta
-###############################
-
+# principle continuation
 fig, ax = plt.subplots()
-ax = a.plot_continuation('PAR(2)', 'U(1)', cont='eta_1', ax=ax, line_color_stable='#76448A',
+ax = a.plot_continuation('PAR(3)', 'U(1)', cont='k', ax=ax, line_color_stable='#76448A',
                          line_color_unstable='#5D6D7E')
-ax = a.plot_continuation('PAR(2)', 'U(1)', cont=f'eta_i_hb', ax=ax, ignore=['BP'], line_color_stable='#148F77')
-
-#ax = axes[1, 0]
-#ax = a.plot_continuation('PAR(8)', 'U(1)', cont=f'beta_hb', ax=ax, ignore=['BP'], line_color_stable='#148F77')
-
-#ax = axes[1, 1]
-#ax = a.plot_continuation('PAR(7)', 'U(1)', cont=f'alpha_hb', ax=ax, ignore=['BP'], line_color_stable='#148F77')
-
+ax = a.plot_continuation('PAR(3)', 'U(1)', cont=f'k_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77')
 plt.tight_layout()
 
-# limit cycle continuation in beta
-##################################
+# codimension 2 visualization
+fig2, ax2 = plt.subplots()
+a.plot_continuation('PAR(8)', 'PAR(2)', cont='alpha_etai', ax=ax2, line_color_stable='#76448A',
+                    line_color_unstable='#5D6D7E')
 
 # fig2, axes2 = plt.subplots(nrows=2)
 #

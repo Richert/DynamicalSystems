@@ -1,6 +1,6 @@
 !----------------------------------------------------------------------------------
 !----------------------------------------------------------------------------------
-!   str : rate-based mean-field model of striatal microcircuit (3 populations)
+!   str : ODE-approximation of delayed rate equation
 !----------------------------------------------------------------------------------
 !----------------------------------------------------------------------------------
 
@@ -13,28 +13,25 @@
       DOUBLE PRECISION, INTENT(OUT) :: F(NDIM)
       DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,NDIM), DFDP(NDIM,*)
 
-      DOUBLE PRECISION V_e,V_i
-      DOUBLE PRECISION eta_e,eta_i,k,r_ei,r_io
-      DOUBLE PRECISION tau_e,tau_i,s_e,s_i,max_e,max_i
+      DOUBLE PRECISION r, r_1, r_2, r_3, r_4, r_5
+      DOUBLE PRECISION k
 
-       eta_e  = PAR(1)
-       eta_i  = PAR(2)
-       k = PAR(3)
-       r_ei = PAR(4)
-       r_io = PAR(5)
+       k  = PAR(1)
+       k = 1.0
 
-       tau_e = 0.006
-       tau_i = 0.014
-       s_e = 7.0
-       s_i = 0.5
-       max_e = 300.0
-       max_i = 400.0
+       r = U(1)
+       r_1 = U(2)
+       r_2 = U(3)
+       r_3 = U(4)
+       r_4 = U(5)
+       r_5 = U(6)
 
-       V_e=U(1)
-       V_i=U(2)
-
-       F(1) = (eta_e - k*(max_i/((1.0 + EXP(-s_i*V_i)))) - V_e)/tau_e
-       F(2) = (eta_i + k*r_ei*(max_e/((1.0 + EXP(-s_e*V_e)))) - k*r_io*(max_i/((1.0 + EXP(-s_i*V_i)))) - V_i)/tau_i
+       F(1) = -k*r_5
+       F(2) = 5*(r-r_1)
+       F(3) = 5*(r_1-r_2)
+       F(4) = 5*(r_2-r_3)
+       F(5) = 5*(r_3-r_4)
+       F(6) = 5*(r_4-r_5)
 
       END SUBROUTINE FUNC
 
@@ -46,23 +43,12 @@
       DOUBLE PRECISION, INTENT(INOUT) :: U(NDIM),PAR(*)
       DOUBLE PRECISION, INTENT(IN) :: T
 
-      DOUBLE PRECISION eta_e,eta_i,k,r_ei,r_io
-      DOUBLE PRECISION tau_e,tau_i,s_e,s_i,max_e,max_i
+      DOUBLE PRECISION r,r_1,r_2,r_3,r_4,r_5
+      DOUBLE PRECISION k
 
-       eta_e = 0.23
-       eta_i = -3.0
-       k = 0.01
-       r_ei = 1.0
-       r_io = 1.0
-
-       PAR(1)=eta_e
-       PAR(2)=eta_i
-       PAR(3)=k
-       PAR(4)=r_ei
-       PAR(5)=r_io
-
-       U(1)=-0.382669901458847
-       U(2)=-3.419942028854723
+       k = 1.0
+       PAR(1)=k
+       U(1)=0.0
 
       END SUBROUTINE STPNT
 
