@@ -7,13 +7,17 @@ import matplotlib.pyplot as plt
 #####################################
 
 # config
-n_dim = 8
-n_params = 16
+n_dim = 46
+n_params = 10
 a = PyAuto("auto_files")
 
 # continuation in k
-k_sols, k_cont = a.run(e='qif_stn_gpe', c='qif', ICP=3, DSMAX=0.005, NMX=6000, NPAR=n_params, name='k', NDIM=n_dim,
-                       STOP={}, RL0=0.99, RL1=2.0)
+t_sols, t_cont = a.run(e='qif_stn_gpe', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='k',
+                       UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
+
+# continuation in k
+k_sols, k_cont = a.run(starting_point='UZ1', c='qif', ICP=1, NPAR=n_params, name='k', NDIM=n_dim,
+                       RL0=-20.0, RL1=20.0, origin=t_cont)
 
 # 2d continuation of hopf bifurcation in alpha and eta_i
 k_alpha_sols, k_alpha_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 2], DSMAX=0.1, NMX=10000, NPAR=n_params,
