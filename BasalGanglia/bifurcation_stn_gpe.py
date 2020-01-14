@@ -8,24 +8,107 @@ import matplotlib.pyplot as plt
 
 # config
 n_dim = 46
-n_params = 10
+n_params = 17
 a = PyAuto("auto_files")
 
-# continuation in k
-t_sols, t_cont = a.run(e='qif_stn_gpe', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='k',
+# initial continuation in time
+##############################
+
+t_sols, t_cont = a.run(e='qif_stn_gpe', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
                        UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
+# continuation in k_i
+#####################
+
+# step 1: codim 1 investigation
+c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=10, NPAR=n_params, name='k_i', NDIM=n_dim,
+                         RL0=0.0, RL1=10.0, origin=t_cont, bidirectional=True, NMX=6000, DSMAX=0.005)
+
+# step 2: codim 1 continuation of limit cycle found in step 1
+#c3_lc_sols, c3_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[10, 11], DSMAX=0.1, NMX=6000,
+#                               NPAR=n_params, name='k_i_lc', origin=c3_cont, NDIM=n_dim, RL0=0.0,
+#                               RL1=10.0)
+
+# step 3: codim 2 investigation of hopf bifurcation found in step 1
+c3_d2_sols, c3_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[9, 10], DSMAX=0.1, NMX=10000,
+                               NPAR=n_params, name='k/k_i', origin=c3_cont, NDIM=n_dim,
+                               bidirectional=True, RL0=0.0, RL1=10.0)
+c3_d2_2_sols, c3_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 10], DSMAX=0.1, NMX=10000,
+                                   NPAR=n_params, name='alpha/k_i', origin=c3_cont, NDIM=n_dim,
+                                   bidirectional=True, RL0=0.0, RL1=1.0)
+
+# step 4: codim 2 continuation of limit cycle found in step 1
+c3_lc_d2_sols, c3_lc_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[17, 10, 11], DSMAX=0.01, NMX=1000,
+                                     NPAR=n_params, name='k_i_alpha_lc', origin=c3_cont, NDIM=n_dim, RL0=0.0,
+                                     RL1=1.0, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04, DSMIN=1e-8, STOP={'BP2'})
+
+# continuation in alpha
+#######################
+
+# step 1: codim 1 investigation
+c0_sols, c0_cont = a.run(starting_point='UZ1', c='qif', ICP=17, NPAR=n_params, name='alpha', NDIM=n_dim,
+                         RL0=0.0, RL1=1.0, origin=t_cont, bidirectional=True, NMX=8000, DSMAX=0.01)
+
+# step 2: codim 2 investigation of fold found in step 1
+c0_d2_sols, c0_d2_cont = a.run(starting_point='LP1', c='qif2', ICP=[3, 17], DSMAX=0.1, NMX=10000,
+                               NPAR=n_params, name='eta_str/alpha', origin=c0_cont, NDIM=n_dim,
+                               bidirectional=True, RL0=-80.0, RL1=0.0)
+c0_d2_2_sols, c0_d2_2_cont = a.run(starting_point='LP1', c='qif2', ICP=[9, 17], DSMAX=0.1, NMX=10000,
+                                   NPAR=n_params, name='k/alpha', origin=c0_cont, NDIM=n_dim,
+                                   bidirectional=True, RL0=0.0, RL1=10.0)
+c0_d2_3_sols, c0_d2_3_cont = a.run(starting_point='LP1', c='qif2', ICP=[10, 17], DSMAX=0.1, NMX=10000,
+                                   NPAR=n_params, name='k_i/alpha', origin=c0_cont, NDIM=n_dim,
+                                   bidirectional=True, RL0=0.0, RL1=10.0)
+
+# continuation in eta_str
+#########################
+
+# step 1: codim 1 investigation
+c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=3, NPAR=n_params, name='eta_str', NDIM=n_dim,
+                         RL0=-80.0, RL1=0.0, origin=t_cont, bidirectional=True, NMX=6000, DSMAX=0.05)
+
+# step 2: codim 1 continuation of limit cycle found in step 1
+#c1_lc_sols, c1_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], DSMAX=0.1, NMX=1000,
+#                               NPAR=n_params, name='eta_str_lc', origin=c1_cont, NDIM=n_dim, RL0=-80.0,
+#                               RL1=0.0)
+
+# step 3: codim 2 investigations of hopf bifurcation found in step 1
+c1_d2_sols, c1_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[7, 3], DSMAX=0.1, NMX=10000,
+                               NPAR=n_params, name='k_ie/eta_str', origin=c1_cont, NDIM=n_dim,
+                               bidirectional=True, RL0=0.0, RL1=200.0)
+c1_d2_2_sols, c1_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 3], DSMAX=0.1, NMX=10000,
+                                   NPAR=n_params, name='alpha/eta_str', origin=c1_cont, NDIM=n_dim,
+                                   bidirectional=True, RL0=0.0, RL1=1.0)
+
+# step 4: codim 2 continuation of limit cycle found in step 1
+c1_lc_d2_sols, c1_lc_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 17, 11], DSMAX=0.1, NMX=6000,
+                                     NPAR=n_params, name='eta_str_alpha_lc', origin=c1_cont, NDIM=n_dim, RL0=-80.0,
+                                     RL1=0.0, STOP={'TR1'})
+
 # continuation in k
-k_sols, k_cont = a.run(starting_point='UZ1', c='qif', ICP=1, NPAR=n_params, name='k', NDIM=n_dim,
-                       RL0=-20.0, RL1=20.0, origin=t_cont)
+###################
 
-# 2d continuation of hopf bifurcation in alpha and eta_i
-k_alpha_sols, k_alpha_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 2], DSMAX=0.1, NMX=10000, NPAR=n_params,
-                                   name='k_alpha', origin=k_cont, NDIM=n_dim, bidirectional=True, RL0=0.0, RL1=20.0)
+# step 1: codim 1 investigation
+c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=9, NPAR=n_params, name='k', NDIM=n_dim,
+                         RL0=0.0, RL1=10.0, origin=t_cont, bidirectional=True, NMX=6000, DSMAX=0.005)
 
-# continuation of limit cycle
-k_lc_sols, k_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], DSMAX=0.1, NMX=6000, NPAR=n_params,
-                             name='k_lc', origin=k_cont, NDIM=n_dim, RL0=1.0, RL1=4.0)
+# step 2: codim 1 continuation of limit cycle found in step 1
+#c2_lc_sols, c2_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[9, 11], DSMAX=0.1, NMX=6000,
+#                               NPAR=n_params, name='k_lc', origin=c2_cont, NDIM=n_dim, RL0=0.0,
+#                               RL1=10.0)
+
+# step 3: codim 2 investigations of hopf bifurcation found in step 1
+c2_d2_sols, c2_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[10, 9], DSMAX=0.1, NMX=10000,
+                               NPAR=n_params, name='k_i/k', origin=c2_cont, NDIM=n_dim,
+                               bidirectional=True, RL0=0.0, RL1=10.0)
+c2_d2_2_sols, c2_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 9], DSMAX=0.1, NMX=10000,
+                                   NPAR=n_params, name='alpha/k', origin=c2_cont, NDIM=n_dim,
+                                   bidirectional=True, RL0=0.0, RL1=1.0)
+
+# step 4: codim 2 continuation of limit cycle found in step 1
+c2_lc_d2_sols, c2_lc_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[9, 17, 11], DSMAX=0.1, NMX=6000,
+                                     NPAR=n_params, name='k_alpha_lc', origin=c2_cont, NDIM=n_dim, RL0=0.0,
+                                     RL1=10.0)
 
 # save results
 fname = '../results/qif_stn_gpe.pkl'
