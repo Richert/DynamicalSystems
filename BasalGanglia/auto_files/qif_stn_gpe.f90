@@ -16,7 +16,7 @@
       DOUBLE PRECISION V_e,V_i,R_e,R_i,I_ee,I_ei,I_ie,I_ii,X_ee,X_ei,X_ie,X_ii,I_a,X_a
       DOUBLE PRECISION R_e1,R_e2,R_e3,R_e4,R_e5,R_e6,R_e7,R_e8,R_e9,R_e10,R_e11,R_e12,R_e13,R_e14,R_e15,R_e16
       DOUBLE PRECISION R_i1,R_i2,R_i3,R_i4,R_i5,R_i6,R_i7,R_i8,R_i9,R_i10,R_i11,R_i12,R_i13,R_i14,R_i15,R_i16
-      DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i
+      DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i,delta
       DOUBLE PRECISION tau_e,tau_i,tau_ee_r,tau_ee_d,tau_ei_r,tau_ei_d,tau_ie_r,tau_ie_d,tau_ii_r,tau_ii_d,tau_a
 
        eta_e  = PAR(1)
@@ -32,6 +32,7 @@
        delta_e = PAR(15)
        delta_i = PAR(16)
        alpha = PAR(17)
+       delta = PAR(18)
 
        tau_e = 6
        tau_i = 14
@@ -95,9 +96,9 @@
        R_i15=U(45)
        R_i16=U(46)
 
-       F(1) = delta_e/(PI*tau_e*tau_e) + 2.*R_e*V_e/tau_e
+       F(1) = (delta*delta_e)/(PI*tau_e*tau_e) + 2.*R_e*V_e/tau_e
        F(2) = (V_e*V_e + eta_e)/tau_e + I_ee - I_ei*(1.0-I_a) - tau_e*PI*PI*R_e*R_e
-       F(3) = delta_i/(PI*tau_i*tau_i) + 2.*R_i*V_i/tau_i
+       F(3) = (delta*delta_i)/(PI*tau_i*tau_i) + 2.*R_i*V_i/tau_i
        F(4) = (V_i*V_i + eta_i + eta_str + eta_tha)/tau_i + I_ie - I_ii*(1.0-I_a) - tau_i*PI*PI*R_i*R_i
        F(5) = X_ee
        F(6) = (k*k_ee*R_e - X_ee*(tau_ee_r+tau_ee_d) - I_ee)/(tau_ee_r*tau_ee_d)
@@ -152,7 +153,7 @@
       DOUBLE PRECISION, INTENT(INOUT) :: U(NDIM),PAR(*)
       DOUBLE PRECISION, INTENT(IN) :: T
 
-      DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i
+      DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i,delta
       DOUBLE PRECISION tau_e,tau_i,tau_ee_r,tau_ee_d,tau_ei_r,tau_ei_d,tau_ie_r,tau_ie_d,tau_ii_r, tau_ii_d,tau_a
 
        eta_e = -3.0
@@ -167,7 +168,8 @@
        k_i = 1.0
        alpha = 0.0
        delta_e = 2.8
-       delta_i = 2.6
+       delta_i = 1.5
+       delta = 1.0
 
        PAR(1)=eta_e
        PAR(2)=eta_i
@@ -182,6 +184,7 @@
        PAR(15)=delta_e
        PAR(16)=delta_i
        PAR(17)=alpha
+       PAR(18)=delta
 
        U(1)=0.016
        U(2)=-3.270351
