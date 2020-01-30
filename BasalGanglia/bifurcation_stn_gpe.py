@@ -54,7 +54,7 @@ starting_cont = c0_cont
 ###################
 
 # step 1: codim 1 investigation
-k_vals = [0.5, 1.5, 2.0, 2.5, 3.0]
+k_vals = [0.6, 0.8, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
 c2_sols, c2_cont = a.run(starting_point=starting_point, c='qif', ICP=9, NPAR=n_params, name='k', NDIM=n_dim,
                          RL0=0.0, RL1=4.0, origin=starting_cont, bidirectional=True, NMX=6000, DSMAX=0.005,
                          UZR={9: k_vals}, STOP={})
@@ -62,11 +62,16 @@ c2_sols, c2_cont = a.run(starting_point=starting_point, c='qif', ICP=9, NPAR=n_p
 # step 2: continue each user point from step 1 in eta_str
 for i, k in enumerate(k_vals):
     s_tmp, c_tmp = a.run(starting_point=f'UZ{i+1}', c='qif', ICP=3, NPAR=n_params, name=f'eta_str_{i+1}', NDIM=n_dim,
-                         RL0=-100.0, RL1=0.0, origin=c2_cont, bidirectional=True, NMX=6000, DSMAX=0.05)
-    if 'HB' in [s['bifurcation'] for s in s_tmp.values()]:
-        s_lc_tmp, c_lc_tmp = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], DSMAX=0.05, NMX=2000,
-                                   NPAR=n_params, name=f'eta_str_{i+1}_lc', origin=c_tmp, NDIM=n_dim, RL0=-100.0,
+                         RL0=-200.0, RL1=0.0, origin=c2_cont, bidirectional=True, NMX=6000, DSMAX=0.05)
+    bifs = [s['bifurcation'] for s in s_tmp.values()]
+    if 'HB' in bifs:
+        s_lc_tmp, c_lc_tmp = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], DSMAX=0.1, NMX=2000,
+                                   NPAR=n_params, name=f'eta_str_{i+1}_lc', origin=c_tmp, NDIM=n_dim, RL0=-200.0,
                                    RL1=0.0, STOP={'BP1'}, NPR=10)
+        if bifs.count('HB') > 2:
+            s_lc_tmp, c_lc_tmp = a.run(starting_point='HB3', c='qif2b', ICP=[3, 11], DSMAX=0.1, NMX=2000,
+                                       NPAR=n_params, name=f'eta_str_{i + 1}_hb2_lc', origin=c_tmp, NDIM=n_dim,
+                                       RL0=-200.0, RL1=0.0, STOP={'BP1'}, NPR=10)
 
 # save results
 fname = '../results/qif_stn_gpe_new.pkl'

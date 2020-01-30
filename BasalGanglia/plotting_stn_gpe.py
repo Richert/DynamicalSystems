@@ -33,7 +33,7 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading #
 ################
 
-fname = 'results/qif_stn_gpe.pkl'
+fname = 'results/qif_stn_gpe_new.pkl'
 a = PyAuto.from_file(fname)
 
 ###################################
@@ -149,70 +149,44 @@ plt.savefig('results/eta_str_cont.svg', dpi=600, format='svg')
 # continuation in k
 ###################
 
-fig2 = plt.figure(tight_layout=True, figsize=(12, 8))
-grid2 = gs.GridSpec(2, 3)
+fig2 = plt.figure(tight_layout=True, figsize=(12, 12))
+grid2 = gs.GridSpec(6, 2)
 
 # codim 1
-ax0 = fig2.add_subplot(grid2[0, :])
-a.plot_continuation('PAR(9)', 'U(3)', cont='k', ax=ax0, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-a.plot_continuation('PAR(9)', 'U(3)', cont=f'k_lc', ax=ax0, ignore=['BP'], line_color_stable='#148F77')
-ax0.set_xlabel('k')
-ax0.set_ylabel('r_i')
-
-# codim 2
-ax1 = fig2.add_subplot(grid2[1, 0])
-a.plot_continuation('PAR(9)', 'PAR(3)', cont='eta_str/k', ax=ax1, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax1.set_xlabel('k')
-ax1.set_ylabel('eta_str')
-
-ax2 = fig2.add_subplot(grid2[1, 1])
-a.plot_continuation('PAR(9)', 'PAR(17)', cont='alpha/k', ax=ax2, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax2.set_xlabel('k')
-ax2.set_ylabel('alpha')
-
-ax3 = fig2.add_subplot(grid2[1, 2])
-a.plot_continuation('PAR(9)', 'PAR(18)', cont='delta/k', ax=ax3, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax3.set_xlabel('k')
-ax3.set_ylabel('delta')
-
-plt.savefig('results/k_cont.svg', dpi=600, format='svg')
-
-# continuation in delta
-#######################
-
-fig3 = plt.figure(tight_layout=True, figsize=(12, 8))
-grid3 = gs.GridSpec(2, 3)
+for i in range(6):
+    ax_tmp = fig2.add_subplot(grid2[i, 0])
+    a.plot_continuation('PAR(3)', 'U(3)', cont=f'eta_str_{i+1}', ax=ax_tmp, line_color_stable='#76448A',
+                        line_color_unstable='#5D6D7E', title_var='PAR(9)')
+    try:
+        a.plot_continuation('PAR(3)', 'U(3)', cont=f'eta_str_{i+1}_lc', ax=ax_tmp, ignore=['BP'],
+                            line_color_stable='#148F77')
+        try:
+            a.plot_continuation('PAR(3)', 'U(3)', cont=f'eta_str_{i + 1}_hb2_lc', ax=ax_tmp, ignore=['BP'],
+                                line_color_stable='#148F77')
+        except KeyError:
+            pass
+    except KeyError:
+        pass
+    ax_tmp.set_ylabel('r_i')
+ax_tmp.set_xlabel('eta_str')
 
 # codim 1
-ax0 = fig3.add_subplot(grid3[0, :])
-a.plot_continuation('PAR(18)', 'U(3)', cont='delta', ax=ax0, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-a.plot_continuation('PAR(18)', 'U(3)', cont=f'delta_lc', ax=ax0, ignore=['BP'], line_color_stable='#148F77')
-ax0.set_xlabel('delta')
-ax0.set_ylabel('r_i')
+for i in range(6, 12):
+    ax_tmp = fig2.add_subplot(grid2[i-6, 1])
+    a.plot_continuation('PAR(3)', 'U(3)', cont=f'eta_str_{i+1}', ax=ax_tmp, line_color_stable='#76448A',
+                        line_color_unstable='#5D6D7E', title_var='PAR(9)')
+    try:
+        a.plot_continuation('PAR(3)', 'U(3)', cont=f'eta_str_{i+1}_lc', ax=ax_tmp, ignore=['BP'],
+                            line_color_stable='#148F77')
+        try:
+            a.plot_continuation('PAR(3)', 'U(3)', cont=f'eta_str_{i + 1}_hb2_lc', ax=ax_tmp, ignore=['BP'],
+                                line_color_stable='#148F77')
+        except KeyError:
+            pass
+    except KeyError:
+        pass
+    ax_tmp.set_ylabel('r_i')
+ax_tmp.set_xlabel('eta_str')
 
-# codim 2
-ax1 = fig3.add_subplot(grid3[1, 0])
-a.plot_continuation('PAR(18)', 'PAR(3)', cont='eta_str/delta', ax=ax1, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax1.set_xlabel('delta')
-ax1.set_ylabel('eta_str')
-
-ax2 = fig3.add_subplot(grid3[1, 1])
-a.plot_continuation('PAR(18)', 'PAR(9)', cont='k/delta', ax=ax2, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax2.set_xlabel('delta')
-ax2.set_ylabel('k')
-
-ax3 = fig3.add_subplot(grid2[1, 2])
-a.plot_continuation('PAR(18)', 'PAR(17)', cont='alpha/delta', ax=ax3, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax3.set_xlabel('delta')
-ax3.set_ylabel('alpha')
-
-plt.savefig('results/delta_cont.svg', dpi=600, format='svg')
+plt.savefig('results/eta_str_cont_k2.svg', dpi=600, format='svg')
 plt.show()

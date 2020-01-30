@@ -279,6 +279,13 @@ class PyAuto:
         ax = self.plot_bifurcation_points(solution_types=results['bifurcation'], x_vals=results[param],
                                           y_vals=results[var], ax=ax, **kwargs_tmp)
 
+        # set title variable if passed
+        tvar = kwargs.pop('title_var', None)
+        if tvar:
+            tvar_results = self.extract([tvar], cont=cont)
+            tval = tvar_results[tvar][0]
+            ax.set_title(f"{tvar} = {tval}")
+
         # plot main continuation
         x, y = results[param], results[var]
         line_col = self._get_line_collection(x=x, y=y, stability=results['stability'], **kwargs)
