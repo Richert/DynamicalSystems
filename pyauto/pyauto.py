@@ -386,9 +386,18 @@ class PyAuto:
         """
 
         # extract information from branch solutions
-        results = []
-        for p in points:
-            results += [self.extract([var] + ['stability', 'PAR(11)'], cont=cont, point=p)]
+        if not points:
+            points = ['RG']
+            points_tmp = self.results[self._results_map[cont] if type(cont) is str else cont].keys()
+            results_tmp = [self.extract([var] + ['stability', 'PAR(14)'], cont=cont, point=p) for p in points_tmp]
+            results = [{key: [] for key in results_tmp[0].keys()}]
+            for r in results_tmp:
+                for key in r:
+                    results[0][key].append(r[key])
+            for key in results[0].keys():
+                results[0][key] = np.asarray(results[0][key]).squeeze()
+        else:
+            results = [self.extract([var] + ['stability', 'PAR(14)'], cont=cont, point=p) for p in points]
 
         # create plot
         if ax is None:
@@ -398,7 +407,7 @@ class PyAuto:
         if not linespecs:
             linespecs = [dict() for _ in range(len(points))]
         for i in range(len(points)):
-            time = np.linspace(0, 1, len(results[i][var]))*results[i]['PAR(11)']
+            time = np.linspace(0, 1, len(results[i][var]))*results[i]['PAR(14)']
             kwargs_tmp = kwargs.copy()
             kwargs_tmp.update(linespecs[i])
             line_col = self._get_line_collection(x=time, y=results[i][var], stability=results[i]['stability'],

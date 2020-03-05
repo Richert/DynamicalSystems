@@ -18,7 +18,6 @@
       DOUBLE PRECISION R_i1,R_i2,R_i3,R_i4,R_i5,R_i6,R_i7,R_i8,R_i9,R_i10,R_i11,R_i12,R_i13,R_i14,R_i15,R_i16
       DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i,delta
       DOUBLE PRECISION tau_e,tau_i,tau_ee_r,tau_ee_d,tau_ei_r,tau_ei_d,tau_ie_r,tau_ie_d,tau_ii_r,tau_ii_d,tau_a
-      DOUBLE PRECISION beta,omega,X,Y
 
        eta_e  = PAR(1)
        eta_i  = PAR(2)
@@ -34,8 +33,6 @@
        delta_i = PAR(16)
        alpha = PAR(17)
        delta = PAR(18)
-       beta = PAR(19)
-       omega = PAR(20)
 
        tau_e = 6
        tau_i = 14
@@ -104,7 +101,7 @@
        F(1) = (delta*delta_e)/(PI*tau_e*tau_e) + 2.*R_e*V_e/tau_e
        F(2) = (V_e*V_e + eta_e)/tau_e + I_ee - I_ei*(1.0-I_a) - tau_e*PI*PI*R_e*R_e
        F(3) = (delta*delta_i)/(PI*tau_i*tau_i) + 2.*R_i*V_i/tau_i
-       F(4) = (V_i*V_i + eta_i + eta_str + eta_tha + beta*X)/tau_i + I_ie - I_ii*(1.0-I_a) - tau_i*PI*PI*R_i*R_i
+       F(4) = (V_i*V_i + eta_i + eta_str + eta_tha)/tau_i + I_ie - I_ii*(1.0-I_a) - tau_i*PI*PI*R_i*R_i
        F(5) = X_ee
        F(6) = (k*k_ee*R_e - X_ee*(tau_ee_r+tau_ee_d) - I_ee)/(tau_ee_r*tau_ee_d)
        F(7) = X_ei
@@ -147,8 +144,6 @@
        F(44) = (R_i13 - R_i14)*16.0/d_i
        F(45) = (R_i14 - R_i15)*16.0/d_i
        F(46) = (R_i15 - R_i16)*16.0/d_i
-       F(47) = X + omega*Y - X*(X*X+Y*Y)
-       F(48)= Y - omega*X - Y*(X*X+Y*Y)
 
       END SUBROUTINE FUNC
 
@@ -160,8 +155,8 @@
       DOUBLE PRECISION, INTENT(INOUT) :: U(NDIM),PAR(*)
       DOUBLE PRECISION, INTENT(IN) :: T
 
-      DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i,delta,beta
-      DOUBLE PRECISION tau_e,tau_i,tau_ee_r,tau_ee_d,tau_ei_r,tau_ei_d,tau_ie_r,tau_ie_d,tau_ii_r,tau_ii_d,tau_a,omega
+      DOUBLE PRECISION eta_e,eta_i,eta_str,eta_tha,k_ee,k_ei,k_ie,k_ii,alpha,delta_e,delta_i,pi,d_e,d_i,k,k_i,delta
+      DOUBLE PRECISION tau_e,tau_i,tau_ee_r,tau_ee_d,tau_ei_r,tau_ei_d,tau_ie_r,tau_ie_d,tau_ii_r,tau_ii_d,tau_a
 
        eta_e = -3.0
        eta_i = 16.6
@@ -177,8 +172,6 @@
        delta_e = 2.8
        delta_i = 1.5
        delta = 1.0
-       beta = 0.0
-       omega = 10.0
 
        PAR(1)=eta_e
        PAR(2)=eta_i
@@ -190,7 +183,6 @@
        PAR(8)=k_ii
        PAR(9)=k
        PAR(10)=k_i
-       PAR(11)=8.0*ATAN(1.0D0)/omega
        PAR(15)=delta_e
        PAR(16)=delta_i
        PAR(17)=alpha
@@ -244,8 +236,6 @@
        U(44)=0.011
        U(45)=0.011
        U(46)=0.011
-       U(47)=SIN(8.0*ATAN(1.0D0)*T)
-       U(48)=COS(8.0*ATAN(1.0D0)*T)
 
 
       END SUBROUTINE STPNT
