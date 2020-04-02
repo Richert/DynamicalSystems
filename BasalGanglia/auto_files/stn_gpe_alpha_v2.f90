@@ -13,7 +13,7 @@
       DOUBLE PRECISION, INTENT(OUT) :: F(NDIM)
       DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,NDIM), DFDP(NDIM,*)
 
-      DOUBLE PRECISION Ve,Vi,Re,Ri,Ae,Ai,Je,Ji,Ta,Tb,Ee,Ei,Te,Ti,Xe,Xi,alpha,beta,D,PI
+      DOUBLE PRECISION Ve,Vi,Re,Ri,Ae,Ai,Je,Ji,Ta,Tb,Ee,Ei,Te,Ti,Xe,Xi,alpha,beta,D,PI,k
 
        Ee  = PAR(1)
        Ei  = PAR(2)
@@ -24,8 +24,9 @@
        Ta = PAR(7)
        Tb = PAR(8)
        alpha = PAR(9)
-       beta = PAR(10)
-       D = 4.0
+       k = PAR(10)
+       beta = 2.0
+       D = 2.0
        PI = 4*ATAN(1.0D0)
 
        Re=U(1)
@@ -38,14 +39,14 @@
        Xi=U(8)
 
        F(1) = D/(PI*Te*Te) + 2.0*Re*Ve/Te
-       F(2) = (Ve*Ve + Ee)/Te - Ji*Ri - PI*PI*Re*Re*Te
+       F(2) = (Ve*Ve + Ee)/Te - k*Ji*Ri*(1.0-Ai) - PI*PI*Re*Re*Te
        F(3) = D/(PI*Ti*Ti) + 2.0*Ri*Vi/Ti
-       F(4) = (Vi*Vi + Ei)/Ti + Je*Re - Ji*Ri*(1.0-Ae)*0.2 - Ai - PI*PI*Ri*Ri*Ti
+       F(4) = (Vi*Vi + Ei)/Ti + k*Je*Re*(1.0-Ae) - k*Ji*Ri*(1.0-Ai)*0.3 - PI*PI*Ri*Ri*Ti
 
        F(5) = Xe
-       F(6) = (alpha*Ri - 2.0*Xe - Ae/Ta)/Ta
+       F(6) = (alpha*Re - 2.0*Xe - Ae/Ta)/Ta
        F(7) = Xi
-       F(8) = (beta*Ri - 2.0*Xi - Ai/Tb)/Tb
+       F(8) = (alpha*beta*Ri - 2.0*Xi - Ai/Tb)/Tb
 
       END SUBROUTINE FUNC
 
@@ -57,18 +58,40 @@
       DOUBLE PRECISION, INTENT(INOUT) :: U(NDIM),PAR(*)
       DOUBLE PRECISION, INTENT(IN) :: T
 
-      DOUBLE PRECISION Ve,Vi,Re,Ri,Ae,Ai,Je,Ji,Ta,Tb,Ee,Ei,Te,Ti,Xe,Xi,alpha,beta
+      DOUBLE PRECISION Ve,Vi,Re,Ri,Ae,Ai,Je,Ji,Ta,Tb,Ee,Ei,Te,Ti,Xe,Xi,alpha,k
 
-       Ee = -4.0
-       Ei = 16.0
-       Je = 100.0
+       Ee = 4.0
+       Ei = 6.0
+       Je = 40.0
        Ji = 40.0
        Te = 6.0
        Ti = 14.0
-       Ta = 400.0
-       Tb = 600.0
+       Ta = 100.0
+       Tb = 200.0
        alpha = 0.0
-       beta =  0.1
+       k = 1.0
+
+       !Ee = 2.0
+       !Ei = 10.0
+       !Je = 20.0
+       !Ji = 30.0
+       !Te = 6.0
+       !Ti = 14.0
+       !Ta = 100.0
+       !Tb = 200.0
+       !alpha = 0.0
+       !k = 1.0
+
+       !Ee = -2.0
+       !Ei = 10.0
+       !Je = 30.0
+       !Ji = 30.0
+       !Te = 6.0
+       !Ti = 14.0
+       !Ta = 100.0
+       !Tb = 200.0
+       !alpha = 0.0
+       !k = 1.0
 
        PAR(1)=Ee
        PAR(2)=Ei
@@ -79,7 +102,7 @@
        PAR(7)=Ta
        PAR(8)=Tb
        PAR(9)=alpha
-       PAR(10)=beta
+       PAR(10)=k
 
        U(1)=18.971274
        U(2)=-2.796420

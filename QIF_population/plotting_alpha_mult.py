@@ -11,7 +11,7 @@ fontsize1 = 12
 fontsize2 = 14
 markersize1 = 100
 markersize2 = 100
-dpi = 500
+dpi = 600
 
 plt.style.reload_library()
 plt.style.use('seaborn-whitegrid')
@@ -56,7 +56,7 @@ a = PyAuto.from_file(fname)
 # principle continuation in eta
 ###############################
 
-fig, axes = plt.subplots(ncols=2, figsize=(13.4, 3.0), dpi=dpi)
+fig, axes = plt.subplots(ncols=2, figsize=(13.4, 6.0), dpi=dpi)
 
 # plot principle eta continuation for different alphas
 ax = axes[0]
@@ -85,6 +85,7 @@ ax.set_ylabel('Firing rate (r)')
 ax.set_title(r'Bursting Limit Cycle')
 plt.tight_layout()
 plt.savefig('fig1.svg')
+plt.show()
 
 # 2D continuation in eta and alpha
 ##################################

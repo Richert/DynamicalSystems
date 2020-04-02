@@ -13,8 +13,8 @@ import pandas as pd
 linewidth = 2.0
 fontsize1 = 14
 fontsize2 = 16
-markersize1 = 160
-markersize2 = 160
+markersize1 = 100
+markersize2 = 100
 dpi = 500
 
 plt.style.reload_library()
@@ -49,7 +49,7 @@ a = PyAuto.from_file(fname)
 # principle continuation in eta
 ###############################
 
-fig, ax = plt.subplots(figsize=(5.8, 2.6), dpi=dpi)
+fig, ax = plt.subplots(figsize=(4.0, 6.0), dpi=dpi)
 
 # plot principle eta continuation for different alphas
 # n_alphas = 5
@@ -70,7 +70,7 @@ ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax, line_color_stab
 ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
 ax.set_xlim([-5.5, 2.0])
-ax.set_ylim([-0.05, 4.2])
+ax.set_ylim([-0.05, 4.0])
 ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel('Firing rate (r)')
 ax.set_title(r'Bursting Limit Cycle')
