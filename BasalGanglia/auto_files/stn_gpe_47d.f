@@ -17,16 +17,9 @@
 	double precision R_ei_d1,R_ei_d2,R_ei_d3,R_ei_d4,R_ei_d5,R_ei_d6
 	double precision R_ei_d7,R_ei_d8,R_ei_d9,R_ei_d10,R_ei_d11
 	double precision R_ei_d12,R_ei_d13,R_ei_d14,R_ei_d15,R_ei_d16
-	double precision R_i_d1,R_i_d2,R_i_d3,R_i_d4,R_i_d5,R_i_d6,R_i_d7
-	double precision R_i_d8,R_i_d9,R_i_d10,R_i_d11,R_i_d12,R_i_d13
-	double precision R_i_d14,R_i_d15,R_i_d16
-	double precision R_a_d1,R_a_d2,R_a_d3,R_a_d4,R_a_d5,R_a_d6,R_a_d7
-	double precision R_a_d8,R_a_d9,R_a_d10,R_a_d11,R_a_d12,R_a_d13
-	double precision R_a_d14,R_a_d15,R_a_d16
-	double precision k_e_d,k_ei_d,k_i_d,k_a_d,k_ee_d,k_ee
-	double precision R_ee_d1,R_ee_d2,R_ee_d3,R_ee_d4,R_ee_d5,R_ee_d6
-	double precision R_ee_d7,R_ee_d8,R_ee_d9,R_ee_d10,R_ee_d11
-	double precision R_ee_d12,R_ee_d13,R_ee_d14,R_ee_d15,R_ee_d16
+	double precision R_i_d1,R_i_d2,R_i_d3,R_i_d4
+	double precision R_a_d1,R_a_d2,R_a_d3,R_a_d4
+	double precision k_e_d,k_ei_d,k_i_d,k_a_d,k_ee,k_i,k_p
 
 	! declare parameters
 	d = args(1)
@@ -49,6 +42,8 @@
 	tau_i = args(22)
 	tau_a = args(23)
 	k_ee = args(24)
+	k_i = args(25)
+	k_p = args(26)
 
 	! declare constants
 	tau_s = 1.0
@@ -56,9 +51,8 @@
 	mu = 0.002
 	k_e_d = 4
 	k_ei_d = 5
-	k_i_d = 10
-	k_a_d = 10
-	k_ee_d = 10
+	k_i_d = 4
+	k_a_d = 4
 
 	delta_e = delta_e*tau_e*tau_e
 	delta_i = delta_i*tau_i*tau_i/d
@@ -70,14 +64,14 @@
 
 	k_ee = k_ee*sqrt(delta_e)
 	k_ei = k_ei*sqrt(delta_e)
-	k_ie = k_ie*sqrt(delta_i)
-	k_ii = k_ii*sqrt(delta_i)
-	k_ia = k_ia*sqrt(delta_i)
-	k_is = k_is*sqrt(delta_i)
-	k_ae = k_ae*sqrt(delta_a)
-	k_ai = k_ai*sqrt(delta_a)*d
-	k_aa = k_aa*sqrt(delta_a)*d
-	k_as = k_as*sqrt(delta_a)
+	k_ie = k_ie*sqrt(delta_i)*k_i*k_p
+	k_ii = k_ii*sqrt(delta_i)*k_i*k_p
+	k_ia = k_ia*sqrt(delta_i)*d*k_i*k_p
+	k_is = k_is*sqrt(delta_i)*k_i*k_p
+	k_ae = k_ae*sqrt(delta_a)*k_p
+	k_ai = k_ai*sqrt(delta_a)*d*k_p
+	k_aa = k_aa*sqrt(delta_a)*k_p
+	k_as = k_as*sqrt(delta_a)*k_p
 
 	! extract state variables from input vector
 	R_s = y(1)
@@ -123,61 +117,21 @@
 	R_i_d2 = y(41)
 	R_i_d3 = y(42)
 	R_i_d4 = y(43)
-	R_i_d5 = y(44)
-	R_i_d6 = y(45)
-	R_i_d7 = y(46)
-	R_i_d8 = y(47)
-	R_i_d9 = y(48)
-	R_i_d10 = y(49)
-	R_i_d11 = y(50)
-	R_i_d12 = y(51)
-	R_i_d13 = y(52)
-	R_i_d14 = y(53)
-	R_i_d15 = y(54)
-	R_i_d16 = y(55)
-	R_a_d1 = y(56)
-	R_a_d2 = y(57)
-	R_a_d3 = y(58)
-	R_a_d4 = y(59)
-	R_a_d5 = y(60)
-	R_a_d6 = y(61)
-	R_a_d7 = y(62)
-	R_a_d8 = y(63)
-	R_a_d9 = y(64)
-	R_a_d10 = y(65)
-	R_a_d11 = y(66)
-	R_a_d12 = y(67)
-	R_a_d13 = y(68)
-	R_a_d14 = y(69)
-	R_a_d15 = y(70)
-	R_a_d16 = y(71)
-	R_ee_d1 = y(72)
-	R_ee_d2 = y(73)
-	R_ee_d3 = y(74)
-	R_ee_d4 = y(75)
-	R_ee_d5 = y(76)
-	R_ee_d6 = y(77)
-	R_ee_d7 = y(78)
-	R_ee_d8 = y(79)
-	R_ee_d9 = y(80)
-	R_ee_d10 = y(81)
-	R_ee_d11 = y(82)
-	R_ee_d12 = y(83)
-	R_ee_d13 = y(84)
-	R_ee_d14 = y(85)
-	R_ee_d15 = y(86)
-	R_ee_d16 = y(87)
+	R_a_d1 = y(44)
+	R_a_d2 = y(45)
+	R_a_d3 = y(46)
+	R_a_d4 = y(47)
 
 	! calculate right-hand side update of equation system
-	stn = R_ee_d16 * k_ee
+	stn = R_e_d4 * k_ee
 	gpe_p = R_ei_d16 * k_ei
 	stn_0 = R_e_d16 * k_ie
-	gpe_p_0 = R_i_d16 * k_ii
-	gpe_a = R_a_d16 * k_ia
+	gpe_p_0 = R_i_d4 * k_ii
+	gpe_a = R_a_d4 * k_ia
 	str = R_s * k_is
 	stn_1 = R_e_d16 * k_ae
-	gpe_p_1 = R_i_d16 * k_ai
-	gpe_a_0 = R_a_d16 * k_aa
+	gpe_p_1 = R_i_d4 * k_ai
+	gpe_a_0 = R_a_d4 * k_aa
 	str_0 = R_s * k_as
 
     ! dummy STR
@@ -244,54 +198,12 @@
 	y_delta(41) = k_i_d * (R_i_d1 - R_i_d2)
 	y_delta(42) = k_i_d * (R_i_d2 - R_i_d3)
 	y_delta(43) = k_i_d * (R_i_d3 - R_i_d4)
-	y_delta(44) = k_i_d * (R_i_d4 - R_i_d5)
-	y_delta(45) = k_i_d * (R_i_d5 - R_i_d6)
-	y_delta(46) = k_i_d * (R_i_d6 - R_i_d7)
-	y_delta(47) = k_i_d * (R_i_d7 - R_i_d8)
-	y_delta(48) = k_i_d * (R_i_d8 - R_i_d9)
-	y_delta(49) = k_i_d * (R_i_d9 - R_i_d10)
-	y_delta(50) = k_i_d * (R_i_d10 - R_i_d11)
-	y_delta(51) = k_i_d * (R_i_d11 - R_i_d12)
-	y_delta(52) = k_i_d * (R_i_d12 - R_i_d13)
-	y_delta(53) = k_i_d * (R_i_d13 - R_i_d14)
-	y_delta(54) = k_i_d * (R_i_d14 - R_i_d15)
-	y_delta(55) = k_i_d * (R_i_d15 - R_i_d16)
 
 	! Gpe-a to both GPes
-	y_delta(56) = k_a_d * (R_a - R_a_d1)
-	y_delta(57) = k_a_d * (R_a_d1 - R_a_d2)
-	y_delta(58) = k_a_d * (R_a_d2 - R_a_d3)
-	y_delta(59) = k_a_d * (R_a_d3 - R_a_d4)
-	y_delta(60) = k_a_d * (R_a_d4 - R_a_d5)
-	y_delta(61) = k_a_d * (R_a_d5 - R_a_d6)
-	y_delta(62) = k_a_d * (R_a_d6 - R_a_d7)
-	y_delta(63) = k_a_d * (R_a_d7 - R_a_d8)
-	y_delta(64) = k_a_d * (R_a_d8 - R_a_d9)
-	y_delta(65) = k_a_d * (R_a_d9 - R_a_d10)
-	y_delta(66) = k_a_d * (R_a_d10 - R_a_d11)
-	y_delta(67) = k_a_d * (R_a_d11 - R_a_d12)
-	y_delta(68) = k_a_d * (R_a_d12 - R_a_d13)
-	y_delta(69) = k_a_d * (R_a_d13 - R_a_d14)
-	y_delta(70) = k_a_d * (R_a_d14 - R_a_d15)
-	y_delta(71) = k_a_d * (R_a_d15 - R_a_d16)
-
-    ! STN to STN
-	y_delta(72) = k_ee_d * (R_e - R_ee_d1)
-	y_delta(73) = k_ee_d * (R_ee_d1 - R_ee_d2)
-	y_delta(74) = k_ee_d * (R_ee_d2 - R_ee_d3)
-	y_delta(75) = k_ee_d * (R_ee_d3 - R_ee_d4)
-	y_delta(76) = k_ee_d * (R_ee_d4 - R_ee_d5)
-	y_delta(77) = k_ee_d * (R_ee_d5 - R_ee_d6)
-	y_delta(78) = k_ee_d * (R_ee_d6 - R_ee_d7)
-	y_delta(79) = k_ee_d * (R_ee_d7 - R_ee_d8)
-	y_delta(80) = k_ee_d * (R_ee_d8 - R_ee_d9)
-	y_delta(81) = k_ee_d * (R_ee_d9 - R_ee_d10)
-	y_delta(82) = k_ee_d * (R_ee_d10 - R_ee_d11)
-	y_delta(83) = k_ee_d * (R_ee_d11 - R_ee_d12)
-	y_delta(84) = k_ee_d * (R_ee_d12 - R_ee_d13)
-	y_delta(85) = k_ee_d * (R_ee_d13 - R_ee_d14)
-	y_delta(86) = k_ee_d * (R_ee_d14 - R_ee_d15)
-	y_delta(87) = k_ee_d * (R_ee_d15 - R_ee_d16)
+	y_delta(44) = k_a_d * (R_a - R_a_d1)
+	y_delta(45) = k_a_d * (R_a_d1 - R_a_d2)
+	y_delta(46) = k_a_d * (R_a_d2 - R_a_d3)
+	y_delta(47) = k_a_d * (R_a_d3 - R_a_d4)
 
 	end subroutine func
 
@@ -303,51 +215,53 @@
 	double precision, intent(in) :: T
 	double precision d,k_ei,k_ie,k_ii,k_ia,k_is,k_ae,k_ai,k_aa,k_as
 	double precision delta_e,delta_i,delta_a,eta_e,eta_i,eta_a
-	double precision tau_e,tau_i,tau_a,k_ee
+	double precision tau_e,tau_i,tau_a,k_ee,k_i,k_p
 
 	d = 1.0
+	k_i = 1.0
+	k_p = 1.0
 
 	tau_e = 13.0
 	tau_i = 25.0
 	tau_a = 20.0
 
-	!delta_e = 0.75
-	!delta_i = 0.89
-	!delta_a = 0.72
+	delta_e = 0.086
+	delta_i = 0.2
+	delta_a = 0.4
 
-	delta_e = 0.1
-	delta_i = 0.4
-	delta_a = 0.1
+	!delta_e = 0.165
+	!delta_i = 0.30
+	!delta_a = 0.384
 
-	!eta_e = -3.7
-	!eta_i = -4.7
-	!eta_a = -11.6
+	eta_e = 0.22
+	eta_i = 0.19
+	eta_a = -2.53
 
-	eta_e = 0.0
-	eta_i = -4.0
-	eta_a = 0.0
+	!eta_e = -0.23
+	!eta_i = -0.42
+	!eta_a = -1.40
 
-	!k_ee = 10.9
-	!k_ei = 487.7
-	!k_ie = 352.0
-	!k_ii = 81.4
-	!k_ia = 120.2
-	!k_is = 516.0
-	!k_ae = 292.4
-	!k_ai = 65.6
-	!k_aa = 417.8
-	!k_as = 143.6
+	k_ee = 5.0
+	k_ae = 53.8
+	k_ie = 58.7
+	k_ei = 27.5
+	k_ii = 7.6
+	k_ai = 111.1
+	k_ia = 48.5
+	k_aa = 8.0
+	k_is = 24.1
+	k_as = 193.7
 
-	k_ee = 4.0
-	k_ei = 20.0
-	k_ie = 130.0
-	k_ii = 4.0
-	k_ia = 60.0
-	k_is = 80.0
-	k_ae = 40.0
-	k_ai = 20.0
-	k_aa = 4.0
-	k_as = 160.0
+	!k_ee = 4.9
+	!k_ae = 44.5
+	!k_ie = 84.2
+	!k_ii = 7.9
+	!k_ei = 63.0
+	!k_ai = 92.1
+	!k_aa = 3.9
+	!k_ia = 66.6
+	!k_is = 26.1
+	!k_as = 181.2
 
 	args(1) = d
 	args(2) = k_ei
@@ -368,6 +282,9 @@
 	args(21) = tau_e
 	args(22) = tau_i
 	args(23) = tau_a
+	args(24) = k_ee
+	args(25) = k_i
+	args(26) = k_p
 
 	y(2) = 0.016097187995910645
 	y(4) = 0.03679664060473442

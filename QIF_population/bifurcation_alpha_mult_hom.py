@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pyrates.utility import PyAuto
 import numpy as np
 
 #########################################
@@ -72,6 +72,9 @@ if codim1:
 
     a.plot_timeseries('U(1)', points=['LP1', 'BP1', 'BP15'], linespecs=[{'color': (0,0,0,1)}, {'color': (0,1,0,1)}, {'color': (0,0,1,1)}],
                       cont='eta_hb2')
+    import matplotlib.pyplot as plt
+    plt.show()
+
     # homoclinic bifurcation analysis
     eta_ho_solutions, eta_ho_cont = a.run(starting_point='UZ3', origin=eta_cont, c='kpr.1', ICP=[1, 11])
 
