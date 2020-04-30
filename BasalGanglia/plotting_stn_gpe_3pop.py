@@ -38,7 +38,7 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading #
 ################
 
-fname = 'results/stn_gpe_3pop_tmp2.pkl'
+fname = 'results/stn_gpe_3pop.pkl'
 a = PyAuto.from_file(fname)
 
 ############
@@ -152,9 +152,48 @@ ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc', ax=ax, ignore=['BP']
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
 ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'$k_{a}$')
+ax.set_xlabel(r'$k_{gp}$')
 ax.set_ylabel('Firing rate (STN)')
 ax.set_title(r'Bursting Limit Cycle')
 
+plt.tight_layout()
+
+# principle continuation in eta_e
+#################################
+
+fig6 = plt.figure(tight_layout=True, figsize=(8.0, 6.0), dpi=dpi)
+grid6 = gs.GridSpec(3, 2)
+
+# codim 1 bifurcations
+ax = fig6.add_subplot(grid6[0, :])
+ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e', ax=ax, line_color_stable='#76448A',
+                         line_color_unstable='#5D6D7E', default_size=markersize1)
+ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
+                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
+ax.set_xlabel(r'$\eta_e$')
+ax.set_ylabel('Firing rate (STN)')
+ax.set_title(r'Bursting Limit Cycle')
+
+# codim 2 bifurcations
+ax = fig6.add_subplot(grid6[1, 0])
+ax = a.plot_continuation('PAR(18)', 'PAR(2)', cont='eta_e/k_ep', ax=ax, line_color_stable='#76448A',
+                         line_color_unstable='#5D6D7E', default_size=markersize1)
+ax.set_xlabel(r'$\eta_e$')
+ax.set_ylabel(r'$k_{ep}$')
+ax = fig6.add_subplot(grid6[1, 1])
+ax = a.plot_continuation('PAR(18)', 'PAR(16)', cont='eta_e/delta_e', ax=ax, line_color_stable='#76448A',
+                         line_color_unstable='#5D6D7E', default_size=markersize1)
+ax.set_xlabel(r'$\eta_e$')
+ax.set_ylabel(r'$\Delta_{p}$')
+ax = fig6.add_subplot(grid6[2, 0])
+ax = a.plot_continuation('PAR(18)', 'PAR(19)', cont='eta_e/eta_p', ax=ax, line_color_stable='#76448A',
+                         line_color_unstable='#5D6D7E', default_size=markersize1)
+ax.set_xlabel(r'$\eta_e$')
+ax.set_ylabel(r'$\eta_p$')
+ax = fig6.add_subplot(grid6[2, 1])
+ax = a.plot_continuation('PAR(18)', 'PAR(20)', cont='eta_e/eta_a', ax=ax, line_color_stable='#76448A',
+                         line_color_unstable='#5D6D7E', default_size=markersize1)
+ax.set_xlabel(r'$\eta_e$')
+ax.set_ylabel(r'$\eta_a$')
 plt.tight_layout()
 plt.show()

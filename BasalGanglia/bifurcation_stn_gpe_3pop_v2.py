@@ -10,12 +10,12 @@ import matplotlib.pyplot as plt
 n_dim = 47
 n_params = 27
 a = PyAuto("auto_files")
-fname = '../results/stn_gpe_3pop_tmp.pkl'
+fname = '../results/stn_gpe_3pop_v2.pkl'
 
 # initial continuation in time
 ##############################
 
-t_sols, t_cont = a.run(e='stn_gpe_47d', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
+t_sols, t_cont = a.run(e='stn_gpe_47d_v2', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
                        UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 # continuation in eta_e
@@ -97,7 +97,7 @@ c1_sols, c1_cont = a.run(starting_point=starting_point, c='qif', ICP=16, NPAR=n_
                          bidirectional=True)
 
 # step 3: codim 1 investigation of periodic orbit found in step 1
-c1_lc1_sols, c1_lc1_cont = a.run(starting_point='HB2', c='qif2b', ICP=[16, 11], NMX=4000, DSMAX=0.5,
+c1_lc1_sols, c1_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[16, 11], NMX=4000, DSMAX=0.5,
                                  NPAR=n_params, name='delta_p_lc', origin=c1_cont, NDIM=n_dim,
                                  RL0=0.01, RL1=1.0, STOP={'PD1', 'BP2'})
 
