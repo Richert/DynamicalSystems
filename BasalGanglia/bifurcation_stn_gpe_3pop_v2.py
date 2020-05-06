@@ -18,40 +18,6 @@ fname = '../results/stn_gpe_3pop_v2.pkl'
 t_sols, t_cont = a.run(e='stn_gpe_47d_v2', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
                        UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
-# continuation in eta_e
-#######################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c7_sols, c7_cont = a.run(starting_point=starting_point, c='qif', ICP=18, NPAR=n_params, name='eta_e', NDIM=n_dim,
-                         RL0=-10.0, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={},
-                         bidirectional=True)
-
-# step 2: codim 2 investigation of branch point found in step 1
-c7_2d1_sols, c7_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[2, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/k_ep', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=10.0, RL1=100.0)
-c7_2d2_sols, c7_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[16, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/delta_p', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=0.01, RL1=0.4)
-c7_2d3_sols, c7_2d3_cont = a.run(starting_point='HB1', c='qif2', ICP=[19, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/eta_p', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=-10.0, RL1=10.0)
-c7_2d4_sols, c7_2d4_cont = a.run(starting_point='HB1', c='qif2', ICP=[20, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/eta_a', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=-10.0, RL1=10.0)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c7_lc1_sols, c7_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='eta_e_lc', origin=c7_cont, NDIM=n_dim,
-                                 RL0=-10.0, RL1=10.0, STOP={'PD1', 'BP2'})
-
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
 # continuation in dopamine depletion (downscaling of deltas in GPe and upscaling of GPe to GPe-a coupling)
 ##########################################################################################################
 
@@ -93,7 +59,7 @@ starting_cont = t_cont
 
 # step 1: codim 1 investigation
 c1_sols, c1_cont = a.run(starting_point=starting_point, c='qif', ICP=16, NPAR=n_params, name='delta_p', NDIM=n_dim,
-                         RL0=0.01, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={'UZ6'},
+                         RL0=0.001, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={'UZ6'},
                          bidirectional=True)
 
 # step 3: codim 1 investigation of periodic orbit found in step 1
@@ -146,11 +112,6 @@ c4_sols, c4_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_p
                          RL0=0.0, RL1=200.0, origin=starting_cont, NMX=6000, DSMAX=0.5, STOP={},
                          bidirectional=True)
 
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c4_lc1_sols, c4_lc1_cont = a.run(starting_point='HB2', c='qif2b', ICP=[7, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_ae_lc', origin=c4_cont, NDIM=n_dim,
-                                 RL0=1.0, RL1=200.0, STOP={'PD1', 'BP2'})
-
 # save results
 kwargs = dict()
 a.to_file(fname, **kwargs)
@@ -167,16 +128,16 @@ c5_sols, c5_cont = a.run(starting_point=starting_point, c='qif', ICP=25, NPAR=n_
                          bidirectional=True)
 
 # step 3: codim 1 investigation of periodic orbit found in step 1
-c5_lc1_sols, c5_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[25, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_p_lc', origin=c5_cont, NDIM=n_dim,
-                                 RL0=0.0, RL1=5.5, STOP={'PD1', 'BP2'})
+#c5_lc1_sols, c5_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[25, 11], NMX=4000, DSMAX=0.5,
+#                                 NPAR=n_params, name='k_p_lc', origin=c5_cont, NDIM=n_dim,
+#                                 RL0=0.0, RL1=5.5, STOP={'PD1', 'BP2'})
 
 # save results
 kwargs = dict()
 a.to_file(fname, **kwargs)
 
-# continuation in k_p (scaling of all synaptic inputs to prototypical population)
-#################################################################################
+# continuation in k_gp (scaling of all synaptic inputs to pallidal populations)
+###############################################################################
 
 starting_point = 'UZ1'
 starting_cont = t_cont
@@ -187,12 +148,46 @@ c6_sols, c6_cont = a.run(starting_point=starting_point, c='qif', ICP=26, NPAR=n_
                          bidirectional=True)
 
 # step 3: codim 1 investigation of periodic orbit found in step 1
-c6_lc1_sols, c6_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[26, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_lc', origin=c6_cont, NDIM=n_dim,
-                                 RL0=0.0, RL1=10.0, STOP={'PD1', 'BP2', 'TR2'})
-c6_lc2_sols, c6_lc2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[26, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_lc2', origin=c6_cont, NDIM=n_dim,
-                                 RL0=0.0, RL1=10.0, STOP={'PD1', 'BP2', 'TR2'})
+#c6_lc1_sols, c6_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[26, 11], NMX=4000, DSMAX=0.5,
+#                                 NPAR=n_params, name='k_gp_lc', origin=c6_cont, NDIM=n_dim,
+#                                 RL0=0.0, RL1=10.0, STOP={'PD1', 'BP2', 'TR2'})
+
+# save results
+kwargs = dict()
+a.to_file(fname, **kwargs)
+
+# continuation in eta_e
+#######################
+
+starting_point = 'UZ1'
+starting_cont = t_cont
+
+# step 1: codim 1 investigation
+c7_sols, c7_cont = a.run(starting_point=starting_point, c='qif', ICP=18, NPAR=n_params, name='eta_e', NDIM=n_dim,
+                         RL0=-10.0, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={},
+                         bidirectional=True)
+
+# step 2: codim 2 investigation of branch point found in step 1
+c7_2d1_sols, c7_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[2, 18], NMX=4000, DSMAX=0.1,
+                                 NPAR=n_params, name='eta_e/k_ep', origin=c7_cont, NDIM=n_dim,
+                                 bidirectional=True, RL0=1.0, RL1=20.0)
+c7_2d2_sols, c7_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[16, 18], NMX=4000, DSMAX=0.1,
+                                 NPAR=n_params, name='eta_e/delta_p', origin=c7_cont, NDIM=n_dim,
+                                 bidirectional=True, RL0=0.01, RL1=0.4)
+c7_2d3_sols, c7_2d3_cont = a.run(starting_point='HB1', c='qif2', ICP=[19, 18], NMX=4000, DSMAX=0.1,
+                                 NPAR=n_params, name='eta_e/eta_p', origin=c7_cont, NDIM=n_dim,
+                                 bidirectional=True, RL0=-10.0, RL1=10.0)
+c7_2d4_sols, c7_2d4_cont = a.run(starting_point='HB1', c='qif2', ICP=[20, 18], NMX=4000, DSMAX=0.1,
+                                 NPAR=n_params, name='eta_e/eta_a', origin=c7_cont, NDIM=n_dim,
+                                 bidirectional=True, RL0=-10.0, RL1=10.0)
+
+# step 3: codim 1 investigation of periodic orbit found in step 1
+c7_lc1_sols, c7_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 11], NMX=4000, DSMAX=0.2,
+                                 NPAR=n_params, name='eta_e_lc', origin=c7_cont, NDIM=n_dim,
+                                 RL0=-10.0, RL1=4.0, STOP={'PD1', 'BP2'})
+#c7_lc2_sols, c7_lc2_cont = a.run(starting_point='HB3', c='qif2b', ICP=[18, 11], NMX=4000, DSMAX=0.5,
+#                                 NPAR=n_params, name='eta_e_lc2', origin=c7_cont, NDIM=n_dim,
+#                                 RL0=-10.0, RL1=10.0, STOP={'PD1', 'BP2'})
 
 # save results
 kwargs = dict()

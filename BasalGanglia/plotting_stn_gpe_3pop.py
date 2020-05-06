@@ -138,8 +138,8 @@ ax.set_title(r'Bursting Limit Cycle')
 
 plt.tight_layout()
 
-# continuation in k_p
-#####################
+# continuation in k_gp
+######################
 
 fig5 = plt.figure(tight_layout=True, figsize=(6.0, 3.0), dpi=dpi)
 grid5 = gs.GridSpec(1, 2)
@@ -150,8 +150,8 @@ ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp', ax=ax, line_color_stabl
                          line_color_unstable='#5D6D7E', default_size=markersize1)
 ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
+#ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
+#                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
 ax.set_xlabel(r'$k_{gp}$')
 ax.set_ylabel('Firing rate (STN)')
 ax.set_title(r'Bursting Limit Cycle')
@@ -170,6 +170,8 @@ ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e', ax=ax, line_color_stab
                          line_color_unstable='#5D6D7E', default_size=markersize1)
 ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
                          default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
+#ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e_lc2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
+#                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
 ax.set_xlabel(r'$\eta_e$')
 ax.set_ylabel('Firing rate (STN)')
 ax.set_title(r'Bursting Limit Cycle')

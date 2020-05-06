@@ -225,24 +225,24 @@
 	tau_i = 25.0
 	tau_a = 20.0
 
-	delta_e = 0.057
-	delta_i = 0.139
-	delta_a = 0.492
+	delta_e = 0.06
+	delta_i = 0.20
+	delta_a = 0.40
 
-	eta_e = -0.36
-	eta_i = 0.35
-	eta_a = -4.40
+	eta_e = -0.4
+	eta_i = -0.2
+	eta_a = -6.0
 
-	k_ee = 6.2
-	k_ae = 88.0
-	k_ie = 54.7
-	k_ii = 8.9
-	k_ei = 14.0
-	k_ai = 112.1
-	k_aa = 5.2
-	k_ia = 28.9
-	k_is = 10.1
-	k_as = 288.8
+	k_ee = 6.0
+	k_ae = 173.0
+	k_ie = 69.0
+	k_ii = 6.0
+	k_ei = 16.0
+	k_ai = 100.0
+	k_aa = 5.0
+	k_ia = 42.0
+	k_is = 100.0
+	k_as = 106.0
 
 	args(1) = d
 	args(2) = k_ei

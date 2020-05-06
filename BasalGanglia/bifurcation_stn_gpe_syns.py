@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 #####################################
 
 # config
-n_dim = 47
-n_params = 27
+n_dim = 37
+n_params = 20
 a = PyAuto("auto_files")
-fname = '../results/stn_gpe_3pop_tmp.pkl'
+fname = '../results/stn_gpe_syns.pkl'
 
 # initial continuation in time
 ##############################
 
-t_sols, t_cont = a.run(e='stn_gpe_47d', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
+t_sols, t_cont = a.run(e='stn_gpe_syns', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
                        UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 # continuation in dopamine depletion (downscaling of deltas in GPe and upscaling of GPe to GPe-a coupling)
