@@ -76,12 +76,14 @@
 	k_pe = k_pe*sqrt(delta_p)*k_gp
 	k_ae = k_ae*sqrt(delta_a)*k_gp
 	k_ep = k_ep*sqrt(delta_e)
-	k_pp = k_pp*sqrt(delta_p)*k_gp*k_gp_inh
+	k_pp = k_pp*sqrt(delta_p)*k_gp*k_gp_intra*k_gp_inh
 	k_ap = k_ap*sqrt(delta_a)*k_gp_intra*k_gp*k_gp_inh
 	k_pa = k_pa*sqrt(delta_p)*k_gp_intra*k_gp*k_gp_inh
-	k_aa = k_aa*sqrt(delta_a)*k_gp*k_gp_inh
+	k_aa = k_aa*sqrt(delta_a)*k_gp*k_gp_intra*k_gp_inh
 	k_ps = k_ps*sqrt(delta_p)*k_gp*k_gp_inh
 	k_as = k_as*sqrt(delta_a)*k_gp*k_gp_inh
+
+	delta_a = delta_a*d
 
 	! extract state variables from input vector
 	r_e = y(1)
@@ -206,25 +208,25 @@
 	k_gp_inh = 1.0
 	d = 1.0
 
-	delta_e = 0.10
-	delta_p = 0.25
-	delta_a = 0.18
+	delta_e = 0.165
+	delta_p = 0.123
+	delta_a = 0.221
 
-	eta_e = 0.8
-	eta_p = 0.46
-	eta_a = 0.7
+	eta_e = 0.27
+	eta_p = 0.80
+	eta_a = 1.00
 	eta_s = 0.002
 
-	k_ee = 5.9
-	k_pe = 158.9
-	k_ae = 129.8
-	k_ep = 44.2
-	k_pp = 18.5
-	k_ap = 20.4
-	k_pa = 88.6
-	k_aa = 83.0
-	k_ps = 116.9
-	k_as = 414.5
+	k_ee = 11.8
+	k_pe = 63.6
+	k_ae = 74.3
+	k_ep = 76.6
+	k_pp = 10.6
+	k_ap = 60.2
+	k_pa = 22.6
+	k_aa = 19.2
+	k_ps = 161.1
+	k_as = 146.2
 
 	args(1) = eta_e
 	args(2) = eta_p

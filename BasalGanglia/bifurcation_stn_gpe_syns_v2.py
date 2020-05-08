@@ -9,13 +9,13 @@ Populations include the STN (exc), GPe-p (inh) and GPe-a (inh)."""
 n_dim = 37
 n_params = 25
 a = PyAuto("auto_files")
-fname = '../results/stn_gpe_syns.pkl'
+fname = '../results/stn_gpe_syns_v2.pkl'
 
 ################################
 # initial continuation in time #
 ################################
 
-t_sols, t_cont = a.run(e='stn_gpe_syns', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
+t_sols, t_cont = a.run(e='stn_gpe_syns_v2', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
                        UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 #################################
@@ -32,13 +32,13 @@ starting_cont = t_cont
 c0_sols, c0_cont = a.run(starting_point=starting_point, c='qif', ICP=21, NPAR=n_params, name='k_gp', NDIM=n_dim,
                          RL0=0.99, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.2)
 
-# step 2: codim 2 investigation of branch point found in step 1
-c0_2d1_sols, c0_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[23, 21], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp/k_gp_intra', origin=c0_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=0.1, RL1=10.0)
-c0_2d2_sols, c0_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[24, 21], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp/k_gp_inh', origin=c0_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=0.1, RL1=10.0)
+# # step 2: codim 2 investigation of branch point found in step 1
+# c0_2d1_sols, c0_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[23, 21], NMX=4000, DSMAX=0.5,
+#                                  NPAR=n_params, name='k_gp/k_gp_intra', origin=c0_cont, NDIM=n_dim,
+#                                  bidirectional=True, RL0=0.1, RL1=10.0)
+# c0_2d2_sols, c0_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[24, 21], NMX=4000, DSMAX=0.5,
+#                                  NPAR=n_params, name='k_gp/k_gp_inh', origin=c0_cont, NDIM=n_dim,
+#                                  bidirectional=True, RL0=0.1, RL1=10.0)
 
 # step 3: codim 1 investigation of periodic orbit found in step 1
 c0_lc1_sols, c0_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[21, 11], NMX=4000, DSMAX=1.0,
@@ -57,24 +57,24 @@ c1_sols, c1_cont = a.run(starting_point=starting_point, c='qif', ICP=23, NPAR=n_
                          RL0=0.99, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={'UZ6'},
                          bidirectional=True)
 
-# step 2: codim 2 investigation of branch point found in step 1
-c1_2d1_sols, c1_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[9, 23], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_intra/k_ap', origin=c1_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=1.0, RL1=50.0)
-c1_2d2_sols, c1_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[10, 23], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_intra/k_pa', origin=c1_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=20.0, RL1=200.0)
-c1_2d3_sols, c1_2d3_cont = a.run(starting_point='HB1', c='qif2', ICP=[15, 23], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_intra/k_aa', origin=c1_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=20.0, RL1=200.0)
-c1_2d4_sols, c1_2d4_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 23], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_intra/k_pp', origin=c1_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=5.0, RL1=100.0)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c1_lc1_sols, c1_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[23, 11], NMX=4000, DSMAX=1.0,
-                                 NPAR=n_params, name='k_gp_intra_lc', origin=c1_cont, NDIM=n_dim,
-                                 RL0=0.99, RL1=3.0, STOP={'PD1', 'BP1', 'LP4'})
+# # step 2: codim 2 investigation of branch point found in step 1
+# c1_2d1_sols, c1_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[9, 23], NMX=4000, DSMAX=0.5,
+#                                  NPAR=n_params, name='k_gp_intra/k_ap', origin=c1_cont, NDIM=n_dim,
+#                                  bidirectional=True, RL0=1.0, RL1=50.0)
+# c1_2d2_sols, c1_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[10, 23], NMX=4000, DSMAX=0.5,
+#                                  NPAR=n_params, name='k_gp_intra/k_pa', origin=c1_cont, NDIM=n_dim,
+#                                  bidirectional=True, RL0=20.0, RL1=200.0)
+# c1_2d3_sols, c1_2d3_cont = a.run(starting_point='HB1', c='qif2', ICP=[15, 23], NMX=4000, DSMAX=0.5,
+#                                  NPAR=n_params, name='k_gp_intra/k_aa', origin=c1_cont, NDIM=n_dim,
+#                                  bidirectional=True, RL0=20.0, RL1=200.0)
+# c1_2d4_sols, c1_2d4_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 23], NMX=4000, DSMAX=0.5,
+#                                  NPAR=n_params, name='k_gp_intra/k_pp', origin=c1_cont, NDIM=n_dim,
+#                                  bidirectional=True, RL0=5.0, RL1=100.0)
+#
+# # step 3: codim 1 investigation of periodic orbit found in step 1
+# c1_lc1_sols, c1_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[23, 11], NMX=4000, DSMAX=1.0,
+#                                  NPAR=n_params, name='k_gp_intra_lc', origin=c1_cont, NDIM=n_dim,
+#                                  RL0=0.99, RL1=10.0, STOP={'PD1', 'BP1', 'LP4'})
 
 # save results
 kwargs = dict()
