@@ -21,7 +21,7 @@
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
 	double precision tau_gabaa_r2, tau_gabaa_d2
 	double precision k_ee_d, k_pe_d, k_ep_d, k_p_d, k_a_d
-	double precision PI, k_gp, k_gp_intra, k_gp_inh, d
+	double precision PI, k_gp, k_p, k_i, k_pi, k_gp_e, k_e, k_gp_s
 
 	! declare parameters
 	eta_e = args(1)
@@ -40,11 +40,14 @@
 	delta_e = args(18)
 	delta_p = args(19)
 	delta_a = args(20)
-	k_gp = args(21)
-	eta_s = args(22)
-	k_gp_intra = args(23)
-	k_gp_inh = args(24)
-	d = args(25)
+	eta_s = args(21)
+	k_gp = args(22)
+	k_p = args(23)
+	k_i = args(24)
+	k_pi = args(25)
+	k_gp_e = args(26)
+	k_e = args(27)
+	k_gp_s = args(28)
 
 	! declare constants
 	tau_e = 13.0
@@ -72,16 +75,16 @@
 	eta_p = eta_p*delta_p
 	eta_a = eta_a*delta_a
 
-	k_ee = k_ee*sqrt(delta_e)
-	k_pe = k_pe*sqrt(delta_p)*k_gp
-	k_ae = k_ae*sqrt(delta_a)*k_gp
-	k_ep = k_ep*sqrt(delta_e)
-	k_pp = k_pp*sqrt(delta_p)*k_gp*k_gp_inh
-	k_ap = k_ap*sqrt(delta_a)*k_gp_intra*k_gp*k_gp_inh
-	k_pa = k_pa*sqrt(delta_p)*k_gp_intra*k_gp*k_gp_inh
-	k_aa = k_aa*sqrt(delta_a)*k_gp*k_gp_inh
-	k_ps = k_ps*sqrt(delta_p)*k_gp*k_gp_inh
-	k_as = k_as*sqrt(delta_a)*k_gp*k_gp_inh
+	k_ee = k_ee*sqrt(delta_e)*k_e
+	k_pe = k_pe*sqrt(delta_p)*k_gp_e
+	k_ae = k_ae*sqrt(delta_a)/k_gp_e
+	k_ep = k_ep*sqrt(delta_e)*k_e
+	k_pp = k_pp*sqrt(delta_p)*k_gp*k_p/k_i
+	k_ap = k_ap*sqrt(delta_a)*k_gp*k_i*k_p*k_pi
+	k_pa = k_pa*sqrt(delta_p)*k_gp*k_i/(k_p*k_pi)
+	k_aa = k_aa*sqrt(delta_a)*k_gp/(k_i*k_p)
+	k_ps = k_ps*sqrt(delta_p)*k_gp_s
+	k_as = k_as*sqrt(delta_a)/k_gp_s
 
 	! extract state variables from input vector
 	r_e = y(1)
@@ -199,32 +202,35 @@
 	double precision k_pa, k_aa
 	double precision k_ps, k_as
 	double precision delta_e, delta_p, delta_a
-	double precision k_gp, k_gp_intra, k_gp_inh, d
+	double precision k_gp, k_p, k_i, k_pi, k_gp_e, k_e, k_gp_s
 
 	k_gp = 1.0
-	k_gp_intra = 1.0
-	k_gp_inh = 1.0
-	d = 1.0
+	k_p = 1.0
+	k_i = 1.0
+	k_pi = 1.0
+	k_gp_e = 1.0
+	k_e = 1.0
+	k_gp_s = 1.0
 
-	delta_e = 0.10
-	delta_p = 0.25
-	delta_a = 0.18
+	delta_e = 0.2
+	delta_p = 0.1
+	delta_a = 0.2
 
-	eta_e = 0.8
-	eta_p = 0.46
-	eta_a = 0.7
+	eta_e = 0.0
+	eta_p = 0.0
+	eta_a = 0.0
 	eta_s = 0.002
 
-	k_ee = 5.9
-	k_pe = 158.9
-	k_ae = 129.8
-	k_ep = 44.2
-	k_pp = 18.5
-	k_ap = 20.4
-	k_pa = 88.6
-	k_aa = 83.0
-	k_ps = 116.9
-	k_as = 414.5
+	k_ee = 6.0
+	k_pe = 80.0
+	k_ae = 80.0
+	k_ep = 100.0
+	k_pp = 1.0
+	k_ap = 1.0
+	k_pa = 1.0
+	k_aa = 1.0
+	k_ps = 200.0
+	k_as = 200.0
 
 	args(1) = eta_e
 	args(2) = eta_p
@@ -242,11 +248,14 @@
 	args(18) = delta_e
 	args(19) = delta_p
 	args(20) = delta_a
-	args(21) = k_gp
-	args(22) = eta_s
-	args(23) = k_gp_intra
-	args(24) = k_gp_inh
-	args(25) = d
+	args(21) = eta_s
+	args(22) = k_gp
+	args(23) = k_p
+	args(24) = k_i
+	args(25) = k_pi
+	args(26) = k_gp_e
+	args(27) = k_e
+	args(28) = k_gp_s
 
 	y(2) = 0.02
 	y(4) = 0.06
