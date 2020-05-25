@@ -16,7 +16,7 @@
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
 	double precision k_p_d, k_a_d
-	double precision PI, k_gp, k_i, k_p, k_pi
+	double precision PI, k_gp, k_i, k_p
 
 	! declare parameters
 	eta_e = args(1)
@@ -36,7 +36,6 @@
 	k_gp = args(19)
 	k_p = args(20)
 	k_i = args(21)
-	k_pi = args(22)
 
 	! declare constants
 	tau_e = 13.0
@@ -60,8 +59,8 @@
 	k_pe = k_pe*sqrt(delta_p)
 	k_ae = k_ae*sqrt(delta_a)
 	k_pp = k_pp*sqrt(delta_p)*k_gp*k_p/k_i
-	k_ap = k_ap*sqrt(delta_a)*k_gp*k_i*k_p*k_pi
-	k_pa = k_pa*sqrt(delta_p)*k_gp*k_i/(k_p*k_pi)
+	k_ap = k_ap*sqrt(delta_a)*k_gp*k_i*k_p
+	k_pa = k_pa*sqrt(delta_p)*k_gp*k_i/k_p
 	k_aa = k_aa*sqrt(delta_a)*k_gp/(k_i*k_p)
 	k_ps = k_ps*sqrt(delta_p)
 	k_as = k_as*sqrt(delta_a)
@@ -144,12 +143,12 @@
 	double precision k_pa, k_aa
 	double precision k_ps, k_as
 	double precision delta_p, delta_a
-	double precision k_gp, k_p, k_i, k_pi
+	double precision k_gp, k_p, k_i, k_a
 
 	k_gp = 1.0
 	k_p = 1.0
 	k_i = 1.0
-	k_pi = 1.0
+	k_a = 1.0
 
 	delta_p = 0.1
 	delta_a = 0.2
@@ -185,7 +184,7 @@
 	args(19) = k_gp
 	args(20) = k_p
 	args(21) = k_i
-	args(22) = k_pi
+	args(22) = k_a
 
 	y(2) = 0.06
 	y(4) = 0.03
