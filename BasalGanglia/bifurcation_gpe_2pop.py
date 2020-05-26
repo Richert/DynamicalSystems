@@ -38,45 +38,35 @@ if c1:
     # step 1: codim 1 investigation
     s0_sols, s0_cont = a.run(starting_point=starting_point, c='qif', ICP=19, NPAR=n_params, name='k_gp', NDIM=n_dim,
                              RL0=0.99, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                             UZR={19: [10.0, 20.0, 30.0, 40.0]}, STOP={})
+                             UZR={19: [10.0, 15.0, 20.0, 25.0]}, STOP={})
 
-    starting_point = 'UZ2'
+    starting_point = 'UZ3'
     starting_cont = s0_cont
 
     # step 1: codim 1 investigation
-    s1_sols, s1_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params, name='k_ap', NDIM=n_dim,
+    s1_sols, s1_cont = a.run(starting_point=starting_point, c='qif', ICP=20, NPAR=n_params, name='k_p', NDIM=n_dim,
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
-                             UZR={7: [0.5, 0.75, 1.5, 2.0]}, STOP={})
+                             UZR={20: [0.5, 0.75, 1.5, 2.0]}, STOP={})
 
-    starting_point = 'UZ4'
+    starting_point = 'UZ3'
     starting_cont = s1_cont
 
     # step 1: codim 1 investigation
-    s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif', ICP=8, NPAR=n_params, name='k_pa', NDIM=n_dim,
+    k_i_col = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+    s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif', ICP=21, NPAR=n_params, name='k_i', NDIM=n_dim,
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
-                             UZR={8: [0.5, 0.75, 1.5, 2.0]}, STOP={})
+                             UZR={21: k_i_col}, STOP={})
 
-    starting_point = 'UZ3'
-    starting_cont = s2_cont
+    c = 1
+    for i in range(len(k_i_col)):
 
-    # step 1: codim 1 investigation
-    s3_sols, s3_cont = a.run(starting_point=starting_point, c='qif', ICP=9, NPAR=n_params, name='k_aa', NDIM=n_dim,
-                             RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
-                             UZR={9: [0.25, 0.5, 0.75, 1.0]}, STOP={})
-
-    starting_point = 'UZ2'
-    starting_cont = s3_cont
-
-    # step 1: codim 1 investigation
-    k_pp_col = [0.5, 0.75, 1.5, 2.0]
-    s4_sols, s4_cont = a.run(starting_point=starting_point, c='qif', ICP=6, NPAR=n_params, name='k_pp', NDIM=n_dim,
-                             RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
-                             UZR={6: k_pp_col}, STOP={})
-
-    for i in range(len(k_pp_col)):
-
-        starting_point = f'UZ{i+1}'
-        starting_cont = s4_cont
+        if k_i_col[i] == 1.0:
+            starting_point = 'UZ3'
+            starting_cont = s1_cont
+            c = 0
+        else:
+            starting_point = f'UZ{i+c}'
+            starting_cont = s2_cont
 
         # continuation of eta_p
         #######################
@@ -84,7 +74,7 @@ if c1:
         # step 1: codim 1 investigation
         c1_b1_sols, c1_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params,
                                        name=f'c1:eta_p/v{i}', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={2: [4.0]})
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={2: [3.0]})
 
         starting_point = 'UZ1'
         starting_cont = c1_b1_cont
@@ -97,60 +87,43 @@ if c1:
                                        name=f'c1:eta_a/v{i}', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
                                        NMX=6000, DSMAX=0.1, bidirectional=True)
 
-    # continuation of delta_p
-    #########################
+        # step 2: codim 2 investigationo f hopf and fold bifurcations from step 1
+        sols = [v['bifurcation'] for v in c1_b2_sols.values()]
+        if 'LP' in sols:
+            a.run(starting_point='LP1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/LP1/v{i}', NDIM=n_dim,
+                  RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            a.run(starting_point='LP1', c='qif2', ICP=[3, 21], NPAR=n_params, name=f'c1:eta_a/k_i/LP1/v{i}',
+                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            a.run(starting_point='LP1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/LP1/v{i}', NDIM=n_dim,
+                  RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            a.run(starting_point='LP1', c='qif2', ICP=[3, 7], NPAR=n_params, name=f'c1:eta_a/k_ap/LP1/v{i}', NDIM=n_dim,
+                  RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+        if 'HB' in sols:
+            a.run(starting_point='HB1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/HB1/v{i}',
+                  NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            a.run(starting_point='HB1', c='qif2', ICP=[3, 21], NPAR=n_params, name=f'c1:eta_a/k_i/HB1/v{i}',
+                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            a.run(starting_point='HB1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/HB1/v{i}',
+                  NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            a.run(starting_point='HB1', c='qif2', ICP=[3, 7], NPAR=n_params, name=f'c1:eta_a/k_ap/HB1/v{i}',
+                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
 
-    # step 1: codim 1 investigation
-    c1_b3_sols, c1_b3_cont = a.run(starting_point=starting_point, c='qif', ICP=16, NPAR=n_params, name='c1:delta_p',
-                                   NDIM=n_dim, RL0=0.01, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                                   bidirectional=True)
+        # continuation in k_ap
+        ######################
 
-    # continuation of delta_a
-    #########################
+        # step 1: continuation in k_ap
+        c1_b5_sols, c1_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
+                                       name=f'c1:k_ap/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont,
+                                       NMX=6000, DSMAX=0.1, bidirectional=True)
 
-    # step 1: codim 1 investigation
-    c1_b4_sols, c1_b4_cont = a.run(starting_point=starting_point, c='qif', ICP=17, NPAR=n_params, name='c1:delta_a',
-                                   NDIM=n_dim, RL0=0.01, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                                   bidirectional=True)
-
-    # continuation of k_a
-    #####################
-
-    # step 1: codim 1 investigation
-    c1_b5_sols, c1_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=20, NPAR=n_params, name='c1:k_p',
-                                   NDIM=n_dim, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.1)
-
-    # continuation of k_pa
-    ######################
-
-    # step 1: codim 1 investigation
-    c1_b6_sols, c1_b6_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params, name='c1:k_ap',
-                                   NDIM=n_dim, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1)
-
-    # step 2: codim 2 investigation of hopf found in step 1
-    c1_b6_hb1_sols, c1_b6_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[7, 8], NPAR=n_params,
-                                           name='c1:k_ap/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c1_b6_cont,
-                                           NMX=6000, DSMAX=0.5, bidirectional=True)
-    c1_b6_hb2_sols, c1_b6_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[7, 2], NPAR=n_params,
-                                           name='c1:eta_p/k_ap', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c1_b6_cont,
-                                           NMX=6000, DSMAX=0.5, STOP={'CP3'}, bidirectional=True)
-    c1_b6_hb3_sols, c1_b6_hb3_cont = a.run(starting_point='HB1', c='qif2', ICP=[21, 2], NPAR=n_params,
-                                           name='c1:eta_p/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b6_cont,
-                                           NMX=6000, DSMAX=0.5, STOP={'CP3'}, bidirectional=True)
-    c1_b6_hb4_sols, c1_b6_hb4_cont = a.run(starting_point='HB1', c='qif2', ICP=[20, 2], NPAR=n_params,
-                                           name='c1:eta_p/k_p', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b6_cont,
-                                           NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
-    c1_b6_hb5_sols, c1_b6_hb5_cont = a.run(starting_point='HB1', c='qif2', ICP=[21, 20], NPAR=n_params,
-                                           name='c1:k_p/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b6_cont,
-                                           NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
-
-    # step 3: continuation of periodic orbit of hopf from step 1
-    c1_b6_lc1_sols, c1_b6_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[7, 11], NPAR=n_params,
-                                           name='c1:k_ap_lc', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c1_b6_cont,
-                                           NMX=6000, DSMAX=0.5, STOP={'BP1', 'PD1'})
+        # step 2: continuation of limit cycle from hopf bifurcation found in step 1
+        if 'HB' in [v['bifurcation'] for v in c1_b5_sols.values()]:
+            c1_b5_sols, c1_b5_cont = a.run(starting_point='HB1', c='qif2b', ICP=[7, 11], NPAR=n_params,
+                                           name=f'c1:k_ap_lc/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b5_cont,
+                                           NMX=2000, DSMAX=0.2, bidirectional=True)
 
     # save results
-    kwargs = dict()
+    kwargs = {'k_pp': k_i_col}
     a.to_file(fname, **kwargs)
 
 #########################################################################

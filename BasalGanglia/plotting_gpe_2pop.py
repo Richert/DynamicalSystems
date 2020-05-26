@@ -51,45 +51,69 @@ c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
 
 if c1:
 
-    # continuation of eta_a
-    #######################
+    # continuation of eta_a and k_pp
+    ################################
 
-    fig1 = plt.figure(tight_layout=True, figsize=(6.0, 9.0), dpi=dpi)
-    grid1 = gs.GridSpec(3, 2)
+    fig1 = plt.figure(tight_layout=True, figsize=(8.0, 8.0), dpi=dpi)
+    grid1 = gs.GridSpec(2, 6)
 
-    # codim 1
-    ax = fig1.add_subplot(grid1[0, :])
-    ax = a.plot_continuation('PAR(7)', 'U(2)', cont='c1:k_ap', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1)
-    ax = a.plot_continuation('PAR(7)', 'U(2)', cont='c1:k_ap_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                             default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-    ax.set_xlabel(r'$k_{ap}$')
+    # codim 1: eta_a
+    ax = fig1.add_subplot(grid1[0, 3:])
+    for i in range(len(a.k_pp)):
+        ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v{i}', ax=ax, line_color_stable='#76448A',
+                                 line_color_unstable='#5D6D7E', default_size=markersize1,
+                                 custom_bf_styles={'HB': {'color': 'k'}})
+    ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel('Firing rate')
+    ax.set_xlim([-6.5, 9.0])
+    ax.set_ylim([0.0, 0.13])
+    ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
+    ax.set_yticklabels([0.0, 25.0, 50.0, 75.0, 100.0, 125.0])
 
-    # codim 2
-    ax = fig1.add_subplot(grid1[1, 0])
-    ax = a.plot_continuation('PAR(7)', 'PAR(8)', cont='c1:k_ap/k_pa', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize2)
-    ax.set_xlabel(r'$k_{ap}$')
-    ax.set_ylabel(r'$k_{pa}$')
+    # codim 2: eta_a and k_i
+    ax = fig1.add_subplot(grid1[0, 0:3])
+    ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=f'c1:eta_a/k_i/LP1/v5', ax=ax, line_color_stable='#5D6D7E',
+                             line_color_unstable='#5D6D7E', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=f'c1:eta_a/k_i/HB1/v5', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=f'c1:eta_a/k_i/HB1/v3', ax=ax, line_color_stable='#b8b632',
+                             line_color_unstable='#b8b632', default_size=markersize1)
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$k_{i}$')
+    ax.set_xlim([-12.0, 12.0])
+    ax.set_ylim([0.0, 3.0])
 
-    ax = fig1.add_subplot(grid1[1, 1])
-    ax = a.plot_continuation('PAR(20)', 'PAR(21)', cont='c1:k_p/k_i', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize2)
-    ax.set_xlabel(r'$k_p$')
-    ax.set_ylabel(r'$k_i$')
+    # codim 2: eta_a and k_ap
+    ax = fig1.add_subplot(grid1[1, 0:2])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/LP1/v6', ax=ax, line_color_stable='#5D6D7E',
+                             line_color_unstable='#5D6D7E', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/HB1/v6', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1)
 
-    ax = fig1.add_subplot(grid1[2, 0])
-    ax = a.plot_continuation('PAR(2)', 'PAR(21)', cont='c1:eta_p/k_i', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize2)
-    ax.set_xlabel(r'$\eta_p$')
-    ax.set_ylabel(r'$k_i$')
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$k_{ap}$')
+    ax.set_xlim([-2.0, 12.0])
+    ax.set_ylim([0.0, 3.5])
+    ax.set_xticks([0.0, 5.0, 10.0])
 
-    ax = fig1.add_subplot(grid1[2, 1])
-    ax = a.plot_continuation('PAR(2)', 'PAR(20)', cont='c1:eta_p/k_p', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize2)
-    ax.set_xlabel(r'$\eta_p$')
-    ax.set_ylabel(r'$k_p$')
+    ax = fig1.add_subplot(grid1[1, 2:4])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/LP1/v4', ax=ax, line_color_stable='#5D6D7E',
+                             line_color_unstable='#5D6D7E', default_size=markersize1)
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$k_{ap}$')
+    ax.set_xlim([-2.0, 12.0])
+    ax.set_ylim([0.0, 3.5])
+    ax.set_xticks([0.0, 5.0, 10.0])
+
+    ax = fig1.add_subplot(grid1[1, 4:])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/HB1/v2', ax=ax, line_color_stable='#b8b632',
+                             line_color_unstable='#b8b632', default_size=markersize1,
+                             custom_bf_styles={'GH': {'color': 'k'}})
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$k_{ap}$')
+    ax.set_xlim([-2.0, 12.0])
+    ax.set_ylim([0.0, 3.5])
+    ax.set_xticks([0.0, 5.0, 10.0])
 
     plt.tight_layout()
 
