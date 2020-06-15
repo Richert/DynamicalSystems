@@ -127,6 +127,8 @@ class PyAuto:
             params = self._get_all_param_keys(solution_tmp)
 
         # extract continuation results
+        if new_icp[0] == 14:
+            get_stability = False
         summary = self._create_summary(solution=solution, points=new_points, variables=variables,
                                        params=params, timeseries=get_timeseries, stability=get_stability,
                                        period=get_period, lyapunov_exp=get_lyapunov_exp)
@@ -394,15 +396,15 @@ class PyAuto:
         if not points:
             points = ['RG']
             points_tmp = self.results[self._results_map[cont] if type(cont) is str else cont].keys()
-            results_tmp = [self.extract([var] + ['stability', 'time'], cont=cont, point=p) for p in points_tmp]
+            results_tmp = [self.extract([var] + ['PAR(14)'], cont=cont, point=p) for p in points_tmp]
             results = [{key: [] for key in results_tmp[0].keys()}]
             for r in results_tmp:
                 for key in r:
-                    results[0][key].append(r[key])
+                    results[0][key].append(np.squeeze(r[key]))
             for key in results[0].keys():
                 results[0][key] = np.asarray(results[0][key]).squeeze()
         else:
-            results = [self.extract([var] + ['stability', 'time'], cont=cont, point=p) for p in points]
+            results = [self.extract([var] + ['time'], cont=cont, point=p) for p in points]
 
         # create plot
         if ax is None:
@@ -415,8 +417,7 @@ class PyAuto:
             time = results[i]['time']
             kwargs_tmp = kwargs.copy()
             kwargs_tmp.update(linespecs[i])
-            line_col = self._get_line_collection(x=time, y=results[i][var], stability=results[i]['stability'],
-                                                 **kwargs_tmp)
+            line_col = self._get_line_collection(x=time, y=results[i][var], **kwargs_tmp)
             ax.add_collection(line_col)
         ax.autoscale()
         ax.legend(points)
@@ -448,10 +449,10 @@ class PyAuto:
             ignore = []
 
         # set bifurcation styles
-        bf_styles = self._bifurcation_styles.copy()
         if custom_bf_styles:
             for key, args in custom_bf_styles.items():
-                bf_styles[key].update(args)
+                self.update_bifurcation_style(key, **args)
+        bf_styles = self._bifurcation_styles.copy()
         plt.sca(ax)
 
         # draw bifurcation points
@@ -477,6 +478,10 @@ class PyAuto:
             if color:
                 self._bifurcation_styles[bf_type]['color'] = color
         else:
+            if marker is None:
+                marker = 'o'
+            if color is None:
+                color = 'k'
             self._bifurcation_styles.update({bf_type: {'marker': marker, 'color': color}})
 
     def plot_heatmap(self, x: np.array, ax: plt.Axes = None, **kwargs) -> plt.Axes:
@@ -518,6 +523,7 @@ class PyAuto:
 
                 # store solution information in summary
                 summary[point]['bifurcation'] = solution_type
+                branch, _ = self.get_branch_info(s)
                 for var, val in zip(variables, var_vals):
                     summary[point][var] = val
                 if len(var_vals) > len(variables) and timeseries:
@@ -525,12 +531,11 @@ class PyAuto:
                 for param, val in zip(params, param_vals):
                     summary[point][param] = val
                 if stability:
-                    summary[point]['stability'] = self.get_stability(s)
+                    summary[point]['stability'] = self.get_stability(solution, s, point)
                 if period:
                     summary[point]['period'] = summary[point]['PAR(11)'] if 'PAR(11)' in params else \
                         self.get_params(s, ['PAR(11)'])[0]
                 if lyapunov_exp:
-                    branch, _ = self.get_branch_info(s)
                     summary[point]['lyapunov_exponents'] = self.get_lyapunov_exponent(solution, branch, point)
 
         return summary
@@ -583,8 +588,21 @@ class PyAuto:
         return pyauto_instance
 
     @staticmethod
-    def get_stability(s: Any) -> bool:
-        return s.b['solution'].b['PT'] < 0
+    def get_stability(solution, s, point) -> bool:
+
+        diag = solution[0].diagnostics.data[point]['Text']
+        if "Eigenvalues" in diag:
+            diag_line = "Eigenvalues  :   Stable:  "
+            splitter = " "
+        elif "Multipliers" in diag:
+            diag_line = "Multipliers:     Stable:  "
+            splitter = "\n"
+        else:
+            return s.b['solution'].b['PT'] < 0
+        idx = diag.find(diag_line) + len(diag_line)
+        value = int(diag[idx:].split(splitter)[0])
+        target = s.data['NDIM']
+        return value == target
 
     @staticmethod
     def get_solution_keys(solution: Any) -> list:
@@ -598,8 +616,21 @@ class PyAuto:
     def get_branch_info(solution: Any) -> tuple:
         try:
             branch, icp = solution[0].BR, solution[0].c['ICP']
-        except AttributeError:
-            branch, icp = solution['BR'], solution.c['ICP']
+        except (AttributeError, ValueError):
+            try:
+                branch, icp = solution['BR'], solution.c['ICP']
+            except AttributeError:
+                icp = solution[0].c['ICP']
+                i = 0
+                while i < 10:
+                    try:
+                        sol_key = list(solution[0].labels.by_index.keys())[i]
+                        branch = solution[0].labels.by_index[sol_key]['RG']['solution']['data']['BR']
+                        break
+                    except KeyError as e:
+                        i += 1
+                        if i == 10:
+                            raise e
         icp = (icp,) if type(icp) is int else tuple(icp)
         return branch, icp
 
@@ -622,59 +653,53 @@ class PyAuto:
     @staticmethod
     def get_lyapunov_exponent(solution, branch, point):
 
-        diag = solution[0].diagnostics.data
-        N = len(diag)
+        diag = solution[0].diagnostics.data[point]['Text']
+        diag_split = diag.split('\n\n')
 
-        # go through auto_solutions of diagnostic data
-        for point_idx in range(N):
+        # check whether branch and point identifiers match the targets
+        branch_str = f' {str(branch)} '
+        point_str = f' {str(point)} '
 
-            # extract relevant diagnostic text output
-            diag_split = diag[point_idx]['Text'].split('\n\n')
+        for diag_tmp in diag_split:
 
-            # check whether branch and point identifiers match the targets
-            branch_str = f' {str(branch)} '
-            point_str = f' {str(point)} '
+            if "NOTE:No converge" in diag_tmp:
+                break
 
-            for diag_tmp in diag_split:
+            if branch_str in diag_tmp[:5] and point_str in diag_tmp[5:11] and \
+                    ('Eigenvalue' in diag_tmp or 'Multiplier' in diag_tmp):
 
-                if "NOTE:No converge" in diag_tmp:
-                    break
+                lyapunovs = []
+                i = 0
+                while True:
 
-                if branch_str in diag_tmp[:5] and point_str in diag_tmp[5:11] and \
-                        ('Eigenvalue' in diag_tmp or 'Multiplier' in diag_tmp):
+                    i += 1
 
-                    lyapunovs = []
-                    i = 0
-                    while True:
+                    # check whether solution is periodic or not
+                    if 'Eigenvalue' in diag_tmp:
+                        start_str = f'Eigenvalue  {str(i + 1)}:  '
+                        stop_str = '\n'
+                        period = 0
+                    else:
+                        start_str = f'Multiplier  {str(i + 1)}   '
+                        stop_str = '  Abs. Val.'
+                        period = float(diag_split[2].split(' ')[-1])
 
-                        i += 1
+                    # extract eigenvalues/floquet multipliers
+                    if start_str in diag_tmp:
+                        start = diag_tmp.index(start_str) + len(start_str)
+                        stop = diag_tmp[start:].index(stop_str) + start if stop_str in diag_tmp[start:] else None
+                        diag_tmp_split = diag_tmp[start:stop].split(' ')
+                        real = float(diag_tmp_split[1]) if diag_tmp_split[0] == ' ' else float(diag_tmp_split[0])
+                        imag = float(diag_tmp_split[-1])
+                    else:
+                        break
 
-                        # check whether solution is periodic or not
-                        if 'Eigenvalue' in diag_tmp:
-                            start_str = f'Eigenvalue  {str(i + 1)}:  '
-                            stop_str = '\n'
-                            period = 0
-                        else:
-                            start_str = f'Multiplier  str(i + 1)   '
-                            stop_str = '  Abs. Val.'
-                            period = float(diag_split[2].split(' ')[-1])
+                    # calculate lyapunov exponent
+                    lyapunov = np.log(complex(real, imag)) / period if period else real
+                    lyapunovs.append(lyapunov)
 
-                        # extract eigenvalues/floquet multipliers
-                        if start_str in diag_tmp:
-                            start = diag_tmp.index(start_str) + len(start_str)
-                            stop = diag_tmp[start:].index(stop_str) + start if stop_str in diag_tmp[start:] else None
-                            diag_tmp_split = diag_tmp[start:stop].split(' ')
-                            real = float(diag_tmp_split[1]) if diag_tmp_split[0] == ' ' else float(diag_tmp_split[0])
-                            imag = float(diag_tmp_split[-1])
-                        else:
-                            break
-
-                        # calculate lyapunov exponent
-                        lyapunov = np.log(complex(real, imag)) / period if period else real
-                        lyapunovs.append(lyapunov)
-
-                    if lyapunovs:
-                        return lyapunovs
+                if lyapunovs:
+                    return lyapunovs
 
         return []
 

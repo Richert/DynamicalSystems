@@ -68,11 +68,13 @@ eta_points, eta_cont = solutions_eta[eta_cont_idx]
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=3000,
-                                            origin=eta_cont, name='eta_hb1', NDIM=n_dim)
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=3000,
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.005, NMX=3000,
+                                            origin=eta_cont, name='eta_hb1', NDIM=n_dim, EPSL=1e-05, EPSU=1e-05,
+                                            EPSS=1e-04, DSMIN=1e-10, NTST=600, NCOL=7)
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.005, NMX=3000,
                                             origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_lyapunov_exp=True,
-                                            get_timeseries=True)
+                                            get_timeseries=True, EPSL=1e-05, EPSU=1e-05,
+                                            EPSS=1e-04, DSMIN=1e-10, NTST=600, NCOL=7)
 
     # continue the period doubling bifurcations in eta that we found above
     pds, a = continue_period_doubling_bf(solution=eta_hb2_solutions, continuation=eta_hb2_cont, pyauto_instance=a,

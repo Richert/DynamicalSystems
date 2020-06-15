@@ -90,37 +90,71 @@ if c1:
         # step 2: codim 2 investigationo f hopf and fold bifurcations from step 1
         sols = [v['bifurcation'] for v in c1_b2_sols.values()]
         if 'LP' in sols:
-            a.run(starting_point='LP1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/LP1/v{i}', NDIM=n_dim,
-                  RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            # a.run(starting_point='LP1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/LP1/v{i}', NDIM=n_dim,
+            #       RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
             a.run(starting_point='LP1', c='qif2', ICP=[3, 21], NPAR=n_params, name=f'c1:eta_a/k_i/LP1/v{i}',
-                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
-            a.run(starting_point='LP1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/LP1/v{i}', NDIM=n_dim,
-                  RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
-            a.run(starting_point='LP1', c='qif2', ICP=[3, 7], NPAR=n_params, name=f'c1:eta_a/k_ap/LP1/v{i}', NDIM=n_dim,
-                  RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=8000, DSMAX=0.05, bidirectional=True)
+            # a.run(starting_point='LP1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/LP1/v{i}', NDIM=n_dim,
+            #       RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            sol_tmp1, cont_tmp1 = a.run(starting_point='LP1', c='qif2', ICP=[3, 7], NPAR=n_params,
+                                        name=f'c1:eta_a/k_ap/LP1/v{i}', NDIM=n_dim, RL0=-50.0, RL1=50.0,
+                                        origin=c1_b2_cont, NMX=8000, DSMAX=0.05, bidirectional=True)
+            sols_tmp = [v['bifurcation'] for v in sol_tmp1.values()]
+
+            if 'ZH' in sols_tmp:
+                c1_b2_zh1_sols, c1_b2_zh1_cont = a.run(starting_point='ZH1', c='qif', ICP=3, NPAR=n_params,
+                                                       name=f'c1:eta_a/zh1/v{i}', NDIM=n_dim, RL0=-50.0, RL1=50.0,
+                                                       NMX=2000, DSMAX=0.5, origin=cont_tmp1, bidirectional=True)
+                c1_b2_zh2_sols, c1_b2_zh2_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 7], NPAR=n_params,
+                                                       name=f'c1:eta_a/k_ap/zh1/v{i}', NDIM=n_dim, RL0=-50.0, RL1=50.0,
+                                                       NMX=6000, DSMAX=0.5, origin=c1_b2_zh1_cont, bidirectional=True)
+
         if 'HB' in sols:
-            a.run(starting_point='HB1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/HB1/v{i}',
-                  NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            # a.run(starting_point='HB1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/HB1/v{i}',
+            #       NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
             a.run(starting_point='HB1', c='qif2', ICP=[3, 21], NPAR=n_params, name=f'c1:eta_a/k_i/HB1/v{i}',
-                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
-            a.run(starting_point='HB1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/HB1/v{i}',
-                  NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
-            a.run(starting_point='HB1', c='qif2', ICP=[3, 7], NPAR=n_params, name=f'c1:eta_a/k_ap/HB1/v{i}',
-                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+                  NDIM=n_dim, RL0=-50.0, RL1=50.0, origin=c1_b2_cont, NMX=8000, DSMAX=0.05, bidirectional=True)
+            # a.run(starting_point='HB1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/HB1/v{i}',
+            #       NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
+            sol_tmp2, cont_tmp2 = a.run(starting_point='HB1', c='qif2', ICP=[3, 7], NPAR=n_params,
+                                        name=f'c1:eta_a/k_ap/HB1/v{i}', NDIM=n_dim, RL0=-50.0, RL1=50.0,
+                                        origin=c1_b2_cont, NMX=8000, DSMAX=0.05, bidirectional=True)
+            sols_tmp = [v['bifurcation'] for v in sol_tmp2.values()]
+            if 'ZH' in sols_tmp:
+                c1_b2_zh3_sols, c1_b2_zh3_cont = a.run(starting_point='ZH1', c='qif', ICP=3, NPAR=n_params,
+                                                       name=f'c1:eta_a/zh2/v{i}', NDIM=n_dim, RL0=-50.0, RL1=50.0,
+                                                       NMX=2000, DSMAX=0.5, origin=cont_tmp2, bidirectional=True)
+                c1_b2_zh4_sols, c1_b2_zh4_cont = a.run(starting_point='LP1', c='qif2', ICP=[3, 7], NPAR=n_params,
+                                                       name=f'c1:eta_a/k_ap/zh2/v{i}', NDIM=n_dim, RL0=-50.0, RL1=50.0,
+                                                       NMX=6000, DSMAX=0.5, origin=c1_b2_zh3_cont, bidirectional=True)
+                if 'GH' in sols_tmp:
+                    n_ghs = sum([s == 'GH' for s in sols_tmp])
+                    for j in range(n_ghs):
+                        c1_b2_gh1_sols, c1_b2_gh1_cont = a.run(starting_point=f'GH{j+1}', c='qif2b', ICP=[7, 11],
+                                                               NPAR=n_params, name=f'c1:k_ap/v{i}/gh{j+1}', NDIM=n_dim,
+                                                               RL0=0.0, RL1=50.0, NMX=2000, DSMAX=0.05,
+                                                               origin=cont_tmp2, STOP={'LP1'})
+                        try:
+                            s, c = a.run(starting_point='LP1', c='qif3', ICP=[7, 11, 3], NPAR=n_params, RL0=0.0, RL1=50.0,
+                                         NDIM=n_dim,  NMX=6000, origin=c1_b2_gh1_cont, bidirectional=True, DSMIN=1e-8)
+                            a.run(starting_point='EP1', name=f'c1:eta_a/k_ap/v{i}/gh{j + 1}', origin=c,
+                                  bidirectional=True)
+                        except KeyError:
+                            pass
 
         # continuation in k_ap
         ######################
 
-        # step 1: continuation in k_ap
-        c1_b5_sols, c1_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
-                                       name=f'c1:k_ap/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True)
-
-        # step 2: continuation of limit cycle from hopf bifurcation found in step 1
-        if 'HB' in [v['bifurcation'] for v in c1_b5_sols.values()]:
-            c1_b5_sols, c1_b5_cont = a.run(starting_point='HB1', c='qif2b', ICP=[7, 11], NPAR=n_params,
-                                           name=f'c1:k_ap_lc/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b5_cont,
-                                           NMX=2000, DSMAX=0.2, bidirectional=True)
+        # # step 1: continuation in k_ap
+        # c1_b5_sols, c1_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
+        #                                name=f'c1:k_ap/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont,
+        #                                NMX=6000, DSMAX=0.1, bidirectional=True)
+        #
+        # # step 2: continuation of limit cycle from hopf bifurcation found in step 1
+        # if 'HB' in [v['bifurcation'] for v in c1_b5_sols.values()]:
+        #     c1_b5_sols, c1_b5_cont = a.run(starting_point='HB1', c='qif2b', ICP=[7, 11], NPAR=n_params,
+        #                                    name=f'c1:k_ap_lc/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b5_cont,
+        #                                    NMX=2000, DSMAX=0.2, bidirectional=True)
 
     # save results
     kwargs = {'k_pp': k_i_col}

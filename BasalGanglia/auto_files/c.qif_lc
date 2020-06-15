@@ -3,5 +3,5 @@ ICP = [1,3]
 NTST = 400, NCOL = 4, IAD =  3, ISP =  2, ISW = 1, IPLT = 9, NBC = 0, NINT = 0
 NMX = 400, NPR = 20, MXBF = 5, IID = 2, ITMX = 8, ITNW = 20, NWTN = 10, JAC = 0
 EPSL = 1e-07, EPSU = 1e-07, EPSS = 1e-05
-DS = 0.001, DSMIN = 0.000001, DSMAX = 0.05, IADS = 1
+DS = 1e-4, DSMIN = 1e-10, DSMAX = 0.05, IADS = 1
 NPAR = 6, THL = {}, THU = {}

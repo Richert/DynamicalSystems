@@ -78,6 +78,8 @@ if c1:
                              line_color_unstable='#3689c9', default_size=markersize1)
     ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=f'c1:eta_a/k_i/HB1/v3', ax=ax, line_color_stable='#b8b632',
                              line_color_unstable='#b8b632', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=f'c1:eta_a/k_i/HB1/v0', ax=ax, line_color_stable='#b8b632',
+                             line_color_unstable='#b8b632', default_size=markersize1)
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel(r'$k_{i}$')
     ax.set_xlim([-12.0, 12.0])
@@ -89,31 +91,33 @@ if c1:
                              line_color_unstable='#5D6D7E', default_size=markersize1)
     ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/HB1/v6', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1)
-
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel(r'$k_{ap}$')
-    ax.set_xlim([-2.0, 12.0])
-    ax.set_ylim([0.0, 3.5])
-    ax.set_xticks([0.0, 5.0, 10.0])
+    ax.set_xlim([-4.0, 20.0])
+    ax.set_ylim([-0.5, 10.0])
+    #ax.set_xticks([0.0, 5.0, 10.0])
 
     ax = fig1.add_subplot(grid1[1, 2:4])
     ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/LP1/v4', ax=ax, line_color_stable='#5D6D7E',
                              line_color_unstable='#5D6D7E', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/zh1/v4', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1)
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel(r'$k_{ap}$')
-    ax.set_xlim([-2.0, 12.0])
-    ax.set_ylim([0.0, 3.5])
-    ax.set_xticks([0.0, 5.0, 10.0])
+    ax.set_xlim([-4.0, 20.0])
+    ax.set_ylim([-0.5, 10.0])
 
     ax = fig1.add_subplot(grid1[1, 4:])
-    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/HB1/v2', ax=ax, line_color_stable='#b8b632',
-                             line_color_unstable='#b8b632', default_size=markersize1,
-                             custom_bf_styles={'GH': {'color': 'k'}})
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/HB1/v2', ax=ax, line_color_stable='#5D6D7E',
+                             line_color_unstable='#5D6D7E', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/zh2/v2', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1)
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=f'c1:eta_a/k_ap/v2/gh4', ax=ax, line_color_stable='#b8b632',
+                             line_color_unstable='#b8b632', default_size=markersize1)
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel(r'$k_{ap}$')
-    ax.set_xlim([-2.0, 12.0])
-    ax.set_ylim([0.0, 3.5])
-    ax.set_xticks([0.0, 5.0, 10.0])
+    ax.set_xlim([-4.0, 20.0])
+    ax.set_ylim([-0.5, 10.0])
 
     plt.tight_layout()
 
