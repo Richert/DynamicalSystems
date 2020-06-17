@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pyauto import PyAuto, fractal_dimension
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-fname = '../results/gpe_2pop_forced.pkl'
 c1 = True
 c2 = False
 
@@ -58,21 +57,53 @@ if c1:
     # continuation of driver
     ########################
 
-    alphas = np.arange(10.0, 100.0, 10.0)
+    alphas = np.arange(37.0, 39.1, 0.2)
+    omegas = np.arange(72.0, 76.1, 0.5)
+    n, m = len(omegas), len(alphas)
 
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
-                             NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=4000, DSMAX=0.05, RL0=0.0, RL1=100.0,
+                             NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=0.0, RL1=42.0,
                              STOP={}, UZR={23: alphas})
 
-    # step 2: codim 2 investigation of torus bifurcation found in step 1
+    # step 2: perform 1-d continuations in omega at each point in alpha continuation and extract LEs at each user point
+    LE_max = np.zeros((n, m))
+    D_ky = np.zeros_like(LE_max)
+    i = 1
+    for s in c0_sols.values():
+        if 'UZ' in s['bifurcation']:
+            s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif_lc', ICP=[25, 11], UZR={25: omegas}, STOP={},
+                             get_lyapunov_exp=True, DSMAX=0.05, RL0=71.0, RL1=78.0, origin=c0_cont, NMX=2000,
+                             bidirectional=True, NDIM=n_dim, NPAR=n_params)
+            i += 1
+            for s2 in s_tmp.values():
+                if 'UZ' in s2['bifurcation']:
+                    idx_c = np.argmin(np.abs(s2['PAR(23)'] - alphas))
+                    idx_r = np.argmin(np.abs(s2['PAR(25)'] - omegas))
+                    lyapunovs = s2['lyapunov_exponents']
+                    LE_max[idx_r, idx_c] = np.max(lyapunovs)
+                    D_ky[idx_r, idx_c] = fractal_dimension(lyapunov_exponents=lyapunovs)
+
+    # step 3: codim 2 investigation of torus bifurcation found in step 1
     c1_sols, c1_cont = a.run(starting_point='TR1', origin=c0_cont, c='qif3', ICP=[23, 25, 11],
-                             NPAR=n_params, name='c1:alpha/omega', NDIM=n_dim, NMX=2000, DSMAX=0.5, RL0=0.0, RL1=100.0,
-                             STOP={'UZ1'}, UZR={25: [50.0, 100.0]})
+                             NPAR=n_params, name='c1:alpha/omega/TR1', NDIM=n_dim, NMX=2000, DSMAX=0.5, RL0=20.0,
+                             RL1=40.0, STOP={'R22'}, UZR={}, DSMIN=1e-8)
     c2_sols, c2_cont = a.run(starting_point='EP1', origin=c1_cont, bidirectional=True)
 
+    # step 4: find period doubling bifurcation in omega, by starting at 1:4 Resonance
+    c3_sols, c3_cont = a.run(starting_point='R41', c='qif_lc', ICP=[25, 11], UZR={}, STOP={}, DSMAX=0.05, RL0=59.0,
+                             RL1=81.0, origin=c2_cont, NMX=2000, bidirectional=True, NDIM=n_dim, NPAR=n_params,
+                             name='c1:omega')
+
+    # step 5: find 2D locus of period doubling bifurcation
+    c4_sols, c4_cont = a.run(starting_point='PD1', origin=c3_cont, c='qif3', ICP=[25, 23, 11],
+                             NPAR=n_params, name='c1:alpha/omega/PD1', NDIM=n_dim, NMX=2000, DSMAX=0.5, RL0=59.0,
+                             RL1=81.0, STOP={'R22'}, UZR={}, DSMIN=1e-8)
+    c5_sols, c5_cont = a.run(starting_point='EP1', origin=c4_cont, bidirectional=True)
+
     # save results
-    kwargs = {'alpha': alphas}
+    fname = '../results/gpe_2pop_forced_lc.pkl'
+    kwargs = {'alpha': alphas, 'omega': omegas, 'LE_max': LE_max, 'D_ky': D_ky}
     a.to_file(fname, **kwargs)
 
 ################################
@@ -117,5 +148,6 @@ if c2:
     c2_sols, c2_cont = a.run(starting_point='EP1', origin=c1_cont, bidirectional=True)
 
     # save results
+    fname = '../results/gpe_2pop_forced_bs.pkl'
     kwargs = {'alpha': alphas}
     a.to_file(fname, **kwargs)

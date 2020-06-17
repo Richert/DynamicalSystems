@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from pyauto import PyAuto
+from pyrates.utility import plot_connectivity
 import matplotlib.gridspec as gs
+import numpy as np
 
 # plotting parameters
 # linewidth = 2.0
@@ -38,13 +40,13 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
-fname = 'results/gpe_2pop_forced.pkl'
-a = PyAuto.from_file(fname)
-
-c1 = False  # oscillatory
-c2 = True  # bistable
+c1 = True  # oscillatory
+c2 = False  # bistable
 
 if c1:
+
+    fname = 'results/gpe_2pop_forced_lc.pkl'
+    a = PyAuto.from_file(fname)
 
     # continuation of alpha and omega
     #################################
@@ -57,20 +59,53 @@ if c1:
     ax = a.plot_continuation('PAR(23)', 'U(2)', cont='c1:alpha', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'],
                              custom_bf_styles={'TR': {'marker': 'X'}})
+    ax.set_xlabel(r'$\alpha$')
+    ax.set_ylabel('Firing rate')
+    ax.set_yticks([0.04, 0.08, 0.12])
+    ax.set_yticklabels([40.0, 80.0, 120.0])
 
     # continuation of the torus bifurcation in alpha and omega
     ax = fig1.add_subplot(grid1[1:, :])
-    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega', ax=ax, ignore=['UZ'],
-                             line_color_stable='#148F77', default_size=markersize1,
+    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega/TR1', ax=ax, ignore=['UZ'],
+                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
                              custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
                                                'R2': {'marker': 'h', 'color': 'g'},
                                                'R3': {'marker': 'h', 'color': 'r'},
-                                               'R4': {'marker': 'h', 'color': 'b'}})
+                                               'R4': {'marker': 'h', 'color': 'b'}},
+                             line_style_unstable='solid')
+    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega/PD1', ax=ax, ignore=['UZ'],
+                             line_color_stable='#3689c9', line_color_unstable='#3689c9',
+                             line_style_unstable='solid', default_size=markersize1)
+    ax.set_xlabel(r'$\alpha$')
+    ax.set_ylabel(r'$\omega$')
+    fig1.canvas.draw()
+    #ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
+    #ax.set_xlim([0.0, 40.0])
+    #ax.set_ylim([55.0, 85.0])
 
     plt.tight_layout()
+    #plt.show()
+
+    # lyapunov exponents and fractal dimension
+    ##########################################
+
+    fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
+    grid2 = gs.GridSpec(1, 2)
+
+    # maximal lyapunov exponent
+    ax = fig2.add_subplot(grid2[0, 0])
+    plot_connectivity(a.LE_max, ax=ax, threshold=False)
+
+    # fractal dimension
+    ax = fig2.add_subplot(grid2[0, 1])
+    plot_connectivity(np.mod(a.D_ky, 1), ax=ax)
+
     plt.show()
 
 if c2:
+
+    fname = 'results/gpe_2pop_forced_bs.pkl'
+    a = PyAuto.from_file(fname)
 
     # continuation of alpha and omega
     #################################
@@ -82,11 +117,21 @@ if c2:
     ax = fig2.add_subplot(grid2[0, :])
     ax = a.plot_continuation('PAR(23)', 'U(2)', cont='c2:alpha', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'])
+    ax.set_xlabel(r'$\alpha$')
+    ax.set_ylabel('Firing rate')
+    ax.set_yticks([0.03, 0.06, 0.09])
+    ax.set_yticklabels([30.0, 60.0, 90.0])
 
     # continuation of the torus bifurcation in alpha and omega
     ax = fig2.add_subplot(grid2[1:, :])
     ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c2:alpha/omega', ax=ax, ignore=['UZ'],
                              line_color_stable='#148F77', default_size=markersize1)
+    ax.set_xlabel(r'$\alpha$')
+    ax.set_ylabel(r'$\omega$')
+    ax.set_ylim([50.0, 100.0])
+    fig2.canvas.draw()
+    ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
+    #ax.set_xlim([0.0, 40.0])
 
     plt.tight_layout()
     plt.show()
