@@ -57,8 +57,8 @@ if c1:
     # continuation of driver
     ########################
 
-    alphas = np.arange(37.0, 39.1, 0.2)
-    omegas = np.arange(72.0, 76.1, 0.5)
+    alphas = np.arange(36.0, 41.1, 0.1)
+    omegas = np.arange(71.0, 77.1, 0.1)
     n, m = len(omegas), len(alphas)
 
     # step 1: codim 1 investigation of driver strength
@@ -73,7 +73,7 @@ if c1:
     for s in c0_sols.values():
         if 'UZ' in s['bifurcation']:
             s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif_lc', ICP=[25, 11], UZR={25: omegas}, STOP={},
-                             get_lyapunov_exp=True, DSMAX=0.05, RL0=71.0, RL1=78.0, origin=c0_cont, NMX=2000,
+                             get_lyapunov_exp=True, DSMAX=0.05, RL0=70.0, RL1=78.0, origin=c0_cont, NMX=2000,
                              bidirectional=True, NDIM=n_dim, NPAR=n_params)
             i += 1
             for s2 in s_tmp.values():
@@ -84,25 +84,45 @@ if c1:
                     LE_max[idx_r, idx_c] = np.max(lyapunovs)
                     D_ky[idx_r, idx_c] = fractal_dimension(lyapunov_exponents=lyapunovs)
 
+    # save results
+    fname = '../results/gpe_2pop_forced_lc2.pkl'
+    kwargs = {'alpha': alphas, 'omega': omegas, 'LE_max': LE_max, 'D_ky': D_ky}
+    a.to_file(fname, **kwargs)
+
     # step 3: codim 2 investigation of torus bifurcation found in step 1
     c1_sols, c1_cont = a.run(starting_point='TR1', origin=c0_cont, c='qif3', ICP=[23, 25, 11],
-                             NPAR=n_params, name='c1:alpha/omega/TR1', NDIM=n_dim, NMX=2000, DSMAX=0.5, RL0=20.0,
-                             RL1=40.0, STOP={'R22'}, UZR={}, DSMIN=1e-8)
+                             NPAR=n_params, name='c1:alpha/omega/TR1', NDIM=n_dim, NMX=2000, DSMAX=0.01, RL0=0.0,
+                             RL1=40.0, STOP={'BP1'}, UZR={})
     c2_sols, c2_cont = a.run(starting_point='EP1', origin=c1_cont, bidirectional=True)
 
     # step 4: find period doubling bifurcation in omega, by starting at 1:4 Resonance
-    c3_sols, c3_cont = a.run(starting_point='R41', c='qif_lc', ICP=[25, 11], UZR={}, STOP={}, DSMAX=0.05, RL0=59.0,
+    c3_sols, c3_cont = a.run(starting_point='R41', c='qif_lc', ICP=[25, 11], UZR={}, STOP={'TR1'}, DSMAX=0.05, RL0=59.0,
                              RL1=81.0, origin=c2_cont, NMX=2000, bidirectional=True, NDIM=n_dim, NPAR=n_params,
                              name='c1:omega')
 
     # step 5: find 2D locus of period doubling bifurcation
     c4_sols, c4_cont = a.run(starting_point='PD1', origin=c3_cont, c='qif3', ICP=[25, 23, 11],
-                             NPAR=n_params, name='c1:alpha/omega/PD1', NDIM=n_dim, NMX=2000, DSMAX=0.5, RL0=59.0,
-                             RL1=81.0, STOP={'R22'}, UZR={}, DSMIN=1e-8)
-    c5_sols, c5_cont = a.run(starting_point='EP1', origin=c4_cont, bidirectional=True)
+                             NPAR=n_params, name='c1:alpha/omega/PD1', NDIM=n_dim, NMX=2000, DSMAX=0.01, RL0=59.0,
+                             RL1=81.0, STOP={'R22'}, UZR={})
 
     # save results
-    fname = '../results/gpe_2pop_forced_lc.pkl'
+    fname = '../results/gpe_2pop_forced_lc2.pkl'
+    kwargs = {'alpha': alphas, 'omega': omegas, 'LE_max': LE_max, 'D_ky': D_ky}
+    a.to_file(fname, **kwargs)
+
+    # try-out: compute loci of resonance bifurcations
+    c5_sols, c5_cont = a.run(starting_point='R41', origin=c2_cont, c='qif3', ICP=[23, 25, 11],
+                             NPAR=n_params, name='c1:alpha/omega/R41', NDIM=n_dim, NMX=2000, DSMAX=0.01, RL0=0.0,
+                             RL1=40.0, STOP={}, UZR={})
+    c6_sols, c6_cont = a.run(starting_point='R31', origin=c2_cont, c='qif3', ICP=[23, 25, 11],
+                             NPAR=n_params, name='c1:alpha/omega/R31', NDIM=n_dim, NMX=2000, DSMAX=0.01, RL0=0.0,
+                             RL1=40.0, STOP={}, UZR={})
+    c7_sols, c7_cont = a.run(starting_point='R31', origin=c4_cont, c='qif3', ICP=[23, 25, 11],
+                             NPAR=n_params, name='c1:alpha/omega/R21', NDIM=n_dim, NMX=2000, DSMAX=0.01, RL0=0.0,
+                             RL1=40.0, STOP={}, UZR={})
+
+    # save results
+    fname = '../results/gpe_2pop_forced_lc2.pkl'
     kwargs = {'alpha': alphas, 'omega': omegas, 'LE_max': LE_max, 'D_ky': D_ky}
     a.to_file(fname, **kwargs)
 

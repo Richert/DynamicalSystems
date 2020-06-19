@@ -115,6 +115,13 @@ class PyAuto:
             pyauto_key = solution_old.pyauto_key
             solution, summary = self.merge(pyauto_key, solution, summary, new_icp)
 
+        elif name == 'bidirect:cont2' and not bidirectional and 'DS' in auto_kwargs and auto_kwargs['DS'] == '-':
+
+            # get key from old solution and merge with new solution
+            solution_old = self._last_cont
+            pyauto_key = solution_old.pyauto_key
+            solution, summary = self.merge(pyauto_key, solution, summary, new_icp)
+
         else:
 
             # create pyauto key for solution
@@ -134,7 +141,7 @@ class PyAuto:
 
         self.results[pyauto_key] = summary.copy()
         self._cont_num = pyauto_key
-        if name:
+        if name and name != 'bidirect:cont2':
             self._results_map[name] = pyauto_key
 
         # if continuation should be bidirectional, call this method again with reversed continuation direction
@@ -142,12 +149,11 @@ class PyAuto:
 
         if bidirectional:
             auto_kwargs.pop('DS', None)
-            summary2, solution2 = self.run(variables=variables, params=params, get_stability=get_stability,
-                                           get_period=get_period, get_timeseries=get_timeseries,
-                                           get_eigenvals=get_eigenvals, get_lyapunov_exp=get_lyapunov_exp,
-                                           starting_point=starting_point, origin=origin, bidirectional=False,
-                                           name=name, DS='-', **auto_kwargs)
-            solution, summary = self.merge(pyauto_key, solution2, summary2, new_icp)
+            summary, solution = self.run(variables=variables, params=params, get_stability=get_stability,
+                                         get_period=get_period, get_timeseries=get_timeseries,
+                                         get_eigenvals=get_eigenvals, get_lyapunov_exp=get_lyapunov_exp,
+                                         starting_point=starting_point, origin=origin, bidirectional=False,
+                                         name='bidirect:cont2', DS='-', **auto_kwargs)
 
         return summary.copy(), solution
 
@@ -761,7 +767,7 @@ class PyAuto:
         if branch_str in diag_split[idx] and point_str in diag_split[idx] and \
                 ('Eigenvalue' in diag or 'Multiplier' in diag_split[idx]):
 
-            # go through lines of system diagnostics (starting at 6th line) and extract eigenvalues/floquet multipliers
+            # go through lines of system diagnostics and extract eigenvalues/floquet multipliers
             i = 1
             while i < len(diag_split) - idx:
 
@@ -1000,8 +1006,7 @@ def fractal_dimension(lyapunov_exponents: list) -> float:
     k = 0
     for j in range(len(LEs)-1):
         k = j+1
-        frac_dim = k + np.sum(LEs[:k]) / np.abs(LEs[k])
-        if frac_dim < 0:
+        if np.sum(LEs[:k]) < 0:
             k -= 1
             break
     return k + np.sum(LEs[:k]) / np.abs(LEs[k]) if k > 0 else 0.0
@@ -1024,15 +1029,28 @@ def get_point_idx(diag: list, point: int) -> int:
 
     idx = point
     while idx < len(diag)-1:
-        diag_tmp = diag[idx]['Text'].split('\n')[-3]
-        if "Location of special point" in diag_tmp:
+
+        diag_tmp = diag[idx]['Text']
+        if "Location of special point" in diag_tmp and "Convergence" not in diag_tmp:
             idx += 1
         else:
+
+            # find index of line after first appearance of BR
+            diag_tmp = diag_tmp.split('\n')
+            idx_line = 1
+            while idx_line < len(diag_tmp)-1:
+                if 'BR' in diag_tmp[idx_line].split(' '):
+                    break
+                idx_line += 1
+            diag_tmp = diag_tmp[idx_line+1]
+
+            # find point number in text
             line_split = [d for d in diag_tmp.split(' ') if d != ""]
             if abs(int(line_split[1])) < point+1:
                 idx += 1
             elif abs(int(line_split[1])) == point+1:
                 return idx
             else:
-                raise ValueError
+                raise ValueError(f"Point with index {point+1} was not found on solution. Last auto output line that "
+                                 f"was checked: \n {diag_tmp}")
     return idx

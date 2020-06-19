@@ -98,7 +98,7 @@ if c1:
 
     # fractal dimension
     ax = fig2.add_subplot(grid2[0, 1])
-    plot_connectivity(np.mod(a.D_ky, 1), ax=ax)
+    plot_connectivity(a.D_ky, ax=ax)
 
     plt.show()
 

@@ -135,10 +135,9 @@ if c1:
                                                                RL0=0.0, RL1=50.0, NMX=2000, DSMAX=0.05,
                                                                origin=cont_tmp2, STOP={'LP1'})
                         try:
-                            sol, cont = a.run(starting_point='LP1', c='qif3', ICP=[7, 11, 3], NPAR=n_params, RL0=0.0,
-                                              RL1=10.0, NDIM=n_dim,  NMX=6000, origin=c1_b2_gh1_cont, DSMAX=0.5)
-                            a.run(starting_point='EP1', name=f'c1:eta_a/k_ap/v{i}/gh{j + 1}', origin=cont,
-                                  bidirectional=True)
+                            s_tmp, c_tmp = a.run(starting_point='LP1', c='qif3', ICP=[7, 11, 3], NPAR=n_params, RL0=0.0,
+                                                 RL1=10.0, NDIM=n_dim,  NMX=2000, origin=c1_b2_gh1_cont, DSMAX=0.5,
+                                                 name=f'c1:eta_a/k_ap/v{i}/gh{j + 1}', bidirectional=True, STOP={})
                         except KeyError:
                             pass
 
