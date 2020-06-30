@@ -7,7 +7,7 @@ gamma-dstributed axonal delays and bi-exponential synapses."""
 
 # config
 n_dim = 37
-n_params = 30
+n_params = 29
 a = PyAuto("auto_files")
 fname = '../results/stn_gpe_syns.pkl'
 
@@ -32,8 +32,8 @@ c3 = [  # strong GPe-p <-> GPe-a coupling
 # continuation in time
 ######################
 
-t_sols, t_cont = a.run(e='stn_gpe_syns', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
-                       UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
+t_sols, t_cont = a.run(e='stn_gpe_syns', c='ivp', ICP=14, NMX=1000000, name='t', UZR={14: 10000.0}, STOP={'UZ1'},
+                       NDIM=n_dim, NPAR=n_params)
 
 starting_point = 'UZ1'
 starting_cont = t_cont
