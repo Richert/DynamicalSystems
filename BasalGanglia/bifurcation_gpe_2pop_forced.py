@@ -99,7 +99,7 @@ if c1:
                                              bidirectional=True)
 
         # save results
-        fname = '../results/gpe_2pop_forced_lc_all.pkl'
+        fname = '../results/gpe_2pop_forced_lc.pkl'
         kwargs = {'alpha': alphas, 'omega': omegas}
         a.to_file(fname, **kwargs)
 
