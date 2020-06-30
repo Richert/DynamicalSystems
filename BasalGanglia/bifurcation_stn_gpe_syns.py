@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -563,44 +563,139 @@ if any(c3):
                                        name=f'c3.2:k_gp', NDIM=n_dim, RL1=60.0,
                                        origin=starting_cont, NMX=6000, DSMAX=0.1)
 
-        # step 2: codim 2 investigation of hopf bifurcation found in step 1
-        # c3_b3_hb1_sols, c3_b3_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[24, 22], NPAR=n_params,
-        #                                        name=f'c3.2:k_gp/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0,
-        #                                        origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
+        # 2D bifurcation analysis: k_gp x k_gp_e
+        ########################################
+
+        # step 1: codim 2 investigation of hopf bifurcation found in k_gp continuation
         c3_b3_hb2_sols, c3_b3_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[26, 22], NPAR=n_params,
                                                name=f'c3.2:k_gp/k_gp_e', NDIM=n_dim, RL0=0.1, RL1=10.0,
                                                origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
-        # c3_b3_hb3_sols, c3_b3_hb3_cont = a.run(starting_point='HB1', c='qif2', ICP=[25, 22], NPAR=n_params,
-        #                                        name=f'c3.2:k_gp/k_p_out', NDIM=n_dim, RL0=0.1, RL1=10.0,
-        #                                        origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
-        # c3_b3_hb4_sols, c3_b3_hb4_cont = a.run(starting_point='HB1', c='qif2', ICP=[29, 22], NPAR=n_params,
-        #                                        name=f'c3.2:k_gp/k_a_out', NDIM=n_dim, RL0=0.1, RL1=10.0,
-        #                                        origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
-        # c3_b3_hb5_sols, c3_b3_hb5_cont = a.run(starting_point='HB1', c='qif2', ICP=[1, 22], NPAR=n_params,
-        #                                        name=f'c3.2:k_gp/eta_e', NDIM=n_dim, RL0=-20.0, RL1=20.0,
-        #                                        origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
-        # c3_b3_hb6_sols, c3_b3_hb6_cont = a.run(starting_point='HB1', c='qif2', ICP=[2, 22], NPAR=n_params,
-        #                                        name=f'c3.2:k_gp/eta_p', NDIM=n_dim, RL0=-20, RL1=20.0,
-        #                                        origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
 
-        # step 3: branch switching to fold curves found tangent to the hopf curves computed in step 2
-        c3_b3_zh1_sols, c3_b3_zh1_cont = a.run(starting_point='ZH1', c='qif', ICP=26, NPAR=n_params,
-                                               name='c3.2:k_gp_e/zh1', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=2000, DSMAX=0.5,
-                                               origin=c3_b3_hb2_cont, STOP={'BP3'})
+        # perform branch switching at codimension 2 bifurcations to continue nearby fold/hopf branches
+        i, j = 0, 0
+        for s in c3_b3_hb2_sols.values():
 
-        # step 4: continuation of the fold bifurcations found in step 3 in 2 parameters
-        c3_b3_zh2_sols, c3_b3_zh2_cont = a.run(starting_point='LP1', c='qif2', ICP=[26, 22], NPAR=n_params,
-                                               name='c3.2:k_gp/k_gp_e/zh1', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                               DSMAX=0.5, origin=c3_b3_zh1_cont, bidirectional=True)
+            if 'ZH' in s['bifurcation']:
 
-        # step 5: switch onto newly found hopf curve at zero hopf point found in step 4
-        k_gp_e = [1.0, 1.25, 1.5, 2.0, 3.0]
-        c3_b3_zh3_sols, c3_b3_zh3_cont = a.run(starting_point='ZH6', c='qif', ICP=26, NPAR=n_params,
-                                               name='c3.2:k_gp_e/zh2', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                               DSMAX=0.5, origin=c3_b3_zh2_cont, bidirectional=True, UZR={26: k_gp_e})
-        c3_b3_zh4_sols, c3_b3_zh4_cont = a.run(starting_point='ZH3', c='qif', ICP=26, NPAR=n_params,
-                                               name='c3.2:k_gp_e/zh2', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                               DSMAX=0.5, origin=c3_b3_zh2_cont, bidirectional=True)
+                i += 1
+                p_start = f"ZH{i}"
+
+                # step 2: perform branch switching
+                s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=26, NPAR=n_params,
+                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     origin=c3_b3_hb2_cont, STOP={'LP1'})
+
+                # step 3: continuation of the fold/hopf bifurcations found in step 2 in 2 parameters
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 22], NPAR=n_params,
+                                       name=f'c3.2:k_gp/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
+                                       DSMAX=0.1, origin=c_tmp, bidirectional=True)
+
+            if 'GH' in s['bifurcation']:
+
+                j += 1
+                p_start = f"GH{j}"
+
+                # step 2: perform branch switching
+                s_tmp, c_tmp = a.run(starting_point=p_start, c='qif2b', ICP=[26, 11], NPAR=n_params,
+                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     origin=c3_b3_hb2_cont, STOP={'LP1'})
+
+                # step 3: continuation of the fold of limit cycle bifurcation found in step 2 in 2 parameters
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 22], NPAR=n_params,
+                                       name=f'c3.2:k_gp/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
+                                       DSMAX=0.1, origin=c_tmp, bidirectional=True)
+
+        # save results
+        kwargs = dict()
+        a.to_file(fname, **kwargs)
+
+        # 2D bifurcation analysis: k_gp x k_i
+        #####################################
+
+        # step 1: codim 2 investigation of hopf bifurcation found in k_gp continuation
+        c3_b3_hb1_sols, c3_b3_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[24, 22], NPAR=n_params,
+                                               name=f'c3.2:k_gp/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0,
+                                               origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
+
+        # perform branch switching at codimension 2 bifurcations to continue nearby fold/hopf branches
+        i, j = 0, 0
+        for s in c3_b3_hb1_sols.values():
+
+            if 'ZH' in s['bifurcation']:
+
+                i += 1
+                p_start = f"ZH{i}"
+
+                # step 2: perform branch switching
+                s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=24, NPAR=n_params,
+                                     name=f'c3.2:k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     origin=c3_b3_hb1_cont, STOP={'LP1'})
+
+                # step 3: continuation of the fold/hopf bifurcations found in step 2 in 2 parameters
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[24, 22], NPAR=n_params,
+                                       name=f'c3.2:k_gp/k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
+                                       DSMAX=0.1, origin=c_tmp, bidirectional=True)
+
+            if 'GH' in s['bifurcation']:
+
+                j += 1
+                p_start = f"GH{j}"
+
+                # step 2: perform branch switching
+                s_tmp, c_tmp = a.run(starting_point=p_start, c='qif2b', ICP=[24, 11], NPAR=n_params,
+                                     name=f'c3.2:k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     origin=c3_b3_hb1_cont, STOP={'LP1'})
+
+                # step 3: continuation of the fold of limit cycle bifurcation found in step 2 in 2 parameters
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[24, 22], NPAR=n_params,
+                                       name=f'c3.2:k_gp/k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
+                                       DSMAX=0.1, origin=c_tmp, bidirectional=True)
+
+        # save results
+        kwargs = dict()
+        a.to_file(fname, **kwargs)
+
+        # 2D bifurcation analysis: k_i x k_gp_e
+        #######################################
+
+        # step 1: codim 2 investigation of hopf bifurcation found in k_gp continuation
+        c3_b3_hb3_sols, c3_b3_hb3_cont = a.run(starting_point='HB1', c='qif2', ICP=[24, 26], NPAR=n_params,
+                                               name=f'c3.2:k_i/k_gp_e', NDIM=n_dim, RL0=0.1, RL1=10.0,
+                                               origin=c3_b3_cont, NMX=4000, DSMAX=0.1, bidirectional=True)
+
+        # perform branch switching at codimension 2 bifurcations to continue nearby fold/hopf branches
+        i, j = 0, 0
+        for s in c3_b3_hb3_sols.values():
+
+            if 'ZH' in s['bifurcation']:
+
+                i += 1
+                p_start = f"ZH{i}"
+
+                # step 2: perform branch switching
+                s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=26, NPAR=n_params,
+                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     origin=c3_b3_hb3_cont, STOP={'LP1'})
+
+                # step 3: continuation of the fold/hopf bifurcations found in step 2 in 2 parameters
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 24], NPAR=n_params,
+                                       name=f'c3.2:k_i/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
+                                       DSMAX=0.1, origin=c_tmp, bidirectional=True)
+
+            if 'GH' in s['bifurcation']:
+
+                j += 1
+                p_start = f"GH{j}"
+
+                # step 2: perform branch switching
+                s_tmp, c_tmp = a.run(starting_point=p_start, c='qif2b', ICP=[26, 11], NPAR=n_params,
+                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     origin=c3_b3_hb3_cont, STOP={'LP1'})
+
+                # step 3: continuation of the fold of limit cycle bifurcation found in step 2 in 2 parameters
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 24], NPAR=n_params,
+                                       name=f'c3.2:k_i/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
+                                       DSMAX=0.1, origin=c_tmp, bidirectional=True)
 
         # step 6: continue curve of hopf bifurcation found in step 5 in 2 parameters
         # a.run(starting_point='HB2', c='qif2', ICP=[26, 22], NPAR=n_params, name='c3.2:k_gp/k_gp_e/zh2', NDIM=n_dim,
@@ -614,19 +709,19 @@ if any(c3):
         # a.run(starting_point='HB4', c='qif2', ICP=[26, 22], NPAR=n_params, name='c3.2:k_gp/k_gp_e/zh6', NDIM=n_dim,
         #       RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.5, origin=c3_b3_zh4_cont, bidirectional=True)
 
-        # step 8: perform continuation of k_gp for different values of k_gp_e and continue periodic orbits, if found
-        i = 1
-        for point, point_info in c3_b3_zh3_sols.items():
-            if 'UZ' in point_info['bifurcation']:
-                sols_tmp, cont_tmp = a.run(starting_point=f'UZ{i}', c='qif', ICP=22, NPAR=n_params, DSMAX=0.1,
-                                           name=f'c3.2:k_gp_{i}', NDIM=n_dim, RL0=0.0, RL1=300.0, origin=c3_b3_zh3_cont,
-                                           NMX=6000, bidirectional=True)
-                sols = [v['bifurcation'] for v in sols_tmp.values()]
-                n_hopfs = sum([s == 'HB' for s in sols])
-                for j in range(n_hopfs):
-                    a.run(starting_point=f'HB{j+1}', c='qif2b', ICP=[22, 11], NPAR=n_params, DSMAX=0.2, STOP={'BP2'},
-                          NDIM=n_dim, name=f'c3.2:k_gp_{i}_lc{j+1}', RL0=0.0, RL1=300.0, origin=cont_tmp, NMX=2000)
-                i += 1
+        # # step 8: perform continuation of k_gp for different values of k_gp_e and continue periodic orbits, if found
+        # i = 1
+        # for point, point_info in c3_b3_zh3_sols.items():
+        #     if 'UZ' in point_info['bifurcation']:
+        #         sols_tmp, cont_tmp = a.run(starting_point=f'UZ{i}', c='qif', ICP=22, NPAR=n_params, DSMAX=0.1,
+        #                                    name=f'c3.2:k_gp_{i}', NDIM=n_dim, RL0=0.0, RL1=300.0, origin=c3_b3_zh3_cont,
+        #                                    NMX=6000, bidirectional=True)
+        #         sols = [v['bifurcation'] for v in sols_tmp.values()]
+        #         n_hopfs = sum([s == 'HB' for s in sols])
+        #         for j in range(n_hopfs):
+        #             a.run(starting_point=f'HB{j+1}', c='qif2b', ICP=[22, 11], NPAR=n_params, DSMAX=0.2, STOP={'BP2'},
+        #                   NDIM=n_dim, name=f'c3.2:k_gp_{i}_lc{j+1}', RL0=0.0, RL1=300.0, origin=cont_tmp, NMX=2000)
+        #         i += 1
 
         # save results
         kwargs = dict()
