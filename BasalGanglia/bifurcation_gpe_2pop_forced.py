@@ -81,9 +81,9 @@ if c1:
             else:
                 j += 1
                 p_tmp = f'PD{j}'
-            c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[23, 25, 11],
-                                     NPAR=n_params, name=f'c1:alpha/omega/{p_tmp}', NDIM=n_dim, NMX=3000, DSMAX=0.01,
-                                     RL0=0.0, RL1=45.0, STOP={'BP1', 'R25'}, UZR={}, bidirectional=True)
+            c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[25, 23, 11],
+                                     NPAR=n_params, name=f'c1:omega/alpha/{p_tmp}', NDIM=n_dim, NMX=3000, DSMAX=0.01,
+                                     RL0=35.0, RL1=95.0, STOP={'BP1', 'R25'}, UZR={}, bidirectional=True)
             m, n = 0, 0
             for s2 in c2_sols.values():
                 if 'R3' in s['bifurcation'] or 'R4' in s['bifurcation']:
