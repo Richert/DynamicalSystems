@@ -1,4 +1,4 @@
-from pyauto import PyAuto, fractal_dimension, continue_period_doubling_bf
+from pyrates.utility.pyauto import PyAuto
 import numpy as np
 import matplotlib.pyplot as plt
 
