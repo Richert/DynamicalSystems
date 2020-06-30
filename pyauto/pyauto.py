@@ -189,24 +189,27 @@ class PyAuto:
 
         summary_old = self.results[key]
 
-        # extract end points, icp values at end points and bifurcation counters for both continuations
-        p1, p2 = list(summary_old)[-1], list(summary)[-1]
-        v1, v2 = summary_old[p1][f'PAR({icp[0]})'], summary[p2][f'PAR({icp[0]})']
-        if v1 > v2:
-            conts_sorted = [summary, summary_old]
-            end_point = p2
-        else:
-            conts_sorted = [summary_old, summary]
-            end_point = p1
+        # extract end points and icp values at end points
+        points_old, points_new = list(summary_old), list(summary)
+        start_old, start_new, end_old, end_new = points_old[0], points_new[0], points_old[-1], points_new[-1]
 
-        # move points from first into second summary
-        for point, point_summary in conts_sorted[1].items():
-            conts_sorted[0][point+end_point] = point_summary
+        # connect starting points of both continuations and re-label points accordingly
+        conts_sorted = [summary, summary_old]
+        new_keys = [points_new[::-1], points_old]
+        old_keys = [points_new, points_old]
+        end_point = end_new
+
+        # move points into combined summary
+        summary_final = {}
+        for p1, p2 in zip(new_keys[0], old_keys[0]):
+            summary_final[p1] = conts_sorted[0][p2]
+        for p1, p2 in zip(new_keys[1], old_keys[1]):
+            summary_final[p1+end_point] = conts_sorted[1][p2]
 
         # store updated summary
-        self.results[key] = conts_sorted[0]
+        self.results[key] = summary_final
 
-        return solution, conts_sorted[0]
+        return solution, summary_final
 
     def get_summary(self, cont: Union[Any, str, int], point=None) -> dict:
         """Extract summary of continuation from PyAuto.
@@ -290,7 +293,8 @@ class PyAuto:
         summary = self.get_summary(cont, point=point)
         if point:
             return {key: np.asarray(summary[key]) for key in keys}
-        return {key: np.asarray([val[key] for point, val in summary.items()]) for key in keys}
+        points = np.sort(list(summary))
+        return {key: np.asarray([summary[p][key] for p in points]) for key in keys}
 
     def to_file(self, filename: str, include_auto_results: bool = False, **kwargs) -> None:
         """Save continuation results on disc.
@@ -670,14 +674,12 @@ class PyAuto:
 
         if "Eigenvalues" in diag:
             diag_line = "Eigenvalues  :   Stable:  "
-            splitter = " "
         elif "Multipliers" in diag:
             diag_line = "Multipliers:     Stable:  "
-            splitter = "\n"
         else:
             return s.b['solution'].b['PT'] < 0
         idx = diag.find(diag_line) + len(diag_line)
-        value = int(diag[idx:].split(splitter)[0])
+        value = int(diag[idx:].split("\n")[0])
         target = s.data['NDIM']
         return value >= target
 
@@ -967,12 +969,14 @@ def continue_period_doubling_bf(solution: dict, continuation: Union[str, int, An
     tuple
     """
     solutions = []
+    i = 1
     for point, point_info in solution.items():
         if 'PD' in point_info['bifurcation']:
-            s_tmp, cont = pyauto_instance.run(starting_point=point, name=f'pd_{iteration}', origin=continuation,
+            s_tmp, cont = pyauto_instance.run(starting_point=f'PD{i}', name=f'pd_{iteration}', origin=continuation,
                                               **kwargs)
             solutions.append(f'pd_{iteration}')
             iteration += 1
+            i += 1
             if iteration >= max_iter:
                 break
             elif s_tmp:

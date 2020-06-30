@@ -11,7 +11,7 @@ fontsize1 = 12
 fontsize2 = 14
 markersize1 = 100
 markersize2 = 100
-dpi = 600
+dpi = 200
 
 plt.style.reload_library()
 plt.style.use('seaborn-whitegrid')
@@ -97,26 +97,26 @@ fig2, axes2 = plt.subplots(figsize=(14.5, 7), dpi=dpi, ncols=3, gridspec_kw={'wi
 alphas = np.round(np.linspace(0., 0.2, 100)[::-1], decimals=3)
 etas = np.round(np.linspace(-6.5, -2.5, 100), decimals=2)
 vmax = 100.0
-data = a.period_solutions
-data[data > vmax] = vmax
-df = pd.DataFrame(interpolate2d(data), index=alphas, columns=etas)
-
+# data = a.period_solutions
+# data[data > vmax] = vmax
+# df = pd.DataFrame(interpolate2d(data), index=alphas, columns=etas)
+#
 # plot codim 2 periods
 ax = axes2[1]
-ax = a.plot_heatmap(df, ax=ax, cmap='magma', cbar_ax=axes2[2], mask=df.values == 0)
-
+# ax = a.plot_heatmap(df, ax=ax, cmap='magma', cbar_ax=axes2[2], mask=df.values == 0)
+#
 # cosmetics
-yticks = [label._y for label in ax.get_yticklabels()]
-yticklabels = [float(label._text) for label in ax.get_yticklabels()]
-xticks = [label._x for label in ax.get_xticklabels()]
-xticklabels = [float(label._text) for label in ax.get_xticklabels()]
-ax.set_xticks(xticks[::3])
-ax.set_xticklabels(xticklabels[::3])
-ax.set_yticks(yticks[::3])
-ax.set_yticklabels(yticklabels[::3])
-ax.set_xlabel(r'$\bar\eta$')
-ax.set_ylabel(r'$\alpha$')
-ax.set_title('Limit Cycle Period')
+# yticks = [label._y for label in ax.get_yticklabels()]
+# yticklabels = [float(label._text) for label in ax.get_yticklabels()]
+# xticks = [label._x for label in ax.get_xticklabels()]
+# xticklabels = [float(label._text) for label in ax.get_xticklabels()]
+# ax.set_xticks(xticks[::3])
+# ax.set_xticklabels(xticklabels[::3])
+# ax.set_yticks(yticks[::3])
+# ax.set_yticklabels(yticklabels[::3])
+# ax.set_xlabel(r'$\bar\eta$')
+# ax.set_ylabel(r'$\alpha$')
+# ax.set_title('Limit Cycle Period')
 
 
 # plot eta-alpha continuation of the limit cycle
@@ -126,10 +126,10 @@ ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont=f'eta_alpha_hb2', ax=ax, ignor
                          line_style_unstable='dashed', default_size=markersize1)
 
 # plot eta-alpha continuation of the limit cycle fold bifurcations
-ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp2', ax=ax, ignore=['LP', 'BP', 'UZ', 'R1'],
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp2', ax=ax, ignore=['LP', 'BP', 'UZ'],
                          line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
                          default_size=markersize1, linewidth=linewidth2)
-ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp3', ax=ax, ignore=['LP', 'BP', 'UZ', 'R1'],
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp3', ax=ax, ignore=['LP', 'BP', 'UZ'],
                          line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
                          default_size=markersize1, linewidth=linewidth2)
 
@@ -143,10 +143,10 @@ ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_lp1', ax=ax, ignore
 # cosmetics
 ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel(r'$\alpha$')
-ax.set_xticks(xticklabels[::3])
-ax.set_yticks(yticklabels[::3])
-ax.set_xlim([-6.5, -2.5])
-ax.set_ylim([0., 0.2])
+# ax.set_xticks(xticklabels[::3])
+# ax.set_yticks(yticklabels[::3])
+# ax.set_xlim([-6.5, -2.5])
+# ax.set_ylim([0., 0.2])
 ax.set_title('2D Limit Cycle Continuation')
 plt.tight_layout()
 plt.savefig('fig2.svg')

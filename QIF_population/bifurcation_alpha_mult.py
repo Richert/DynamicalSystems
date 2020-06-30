@@ -27,7 +27,7 @@ with parameters:
 # configuration
 codim1 = True
 codim2 = True
-period_mapping = True
+period_mapping = False
 n_grid_points = 100
 n_dim = 4
 n_params = 6

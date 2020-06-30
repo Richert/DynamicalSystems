@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from pyauto import PyAuto
-from pyrates.utility import plot_connectivity
+from pyrates.utility.visualization import plot_connectivity
 import matplotlib.gridspec as gs
 import numpy as np
 
@@ -45,7 +45,7 @@ c2 = False  # bistable
 
 if c1:
 
-    fname = 'results/gpe_2pop_forced_lc.pkl'
+    fname = 'results/gpe_2pop_forced_lc2.pkl'
     a = PyAuto.from_file(fname)
 
     # continuation of alpha and omega
@@ -66,16 +66,28 @@ if c1:
 
     # continuation of the torus bifurcation in alpha and omega
     ax = fig1.add_subplot(grid1[1:, :])
-    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega/TR1', ax=ax, ignore=['UZ'],
-                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
-                             custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
-                                               'R2': {'marker': 'h', 'color': 'g'},
-                                               'R3': {'marker': 'h', 'color': 'r'},
-                                               'R4': {'marker': 'h', 'color': 'b'}},
-                             line_style_unstable='solid')
-    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega/PD1', ax=ax, ignore=['UZ'],
-                             line_color_stable='#3689c9', line_color_unstable='#3689c9',
-                             line_style_unstable='solid', default_size=markersize1)
+    i = 1
+    while i < 50:
+        try:
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/TR{i}', ax=ax, ignore=['UZ'],
+                                     line_color_stable='#148F77', line_color_unstable='#148F77',
+                                     custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
+                                                       'R2': {'marker': 'h', 'color': 'g'},
+                                                       'R3': {'marker': 'h', 'color': 'r'},
+                                                       'R4': {'marker': 'h', 'color': 'b'}},
+                                     line_style_unstable='solid', default_size=markersize1)
+            i += 1
+        except KeyError:
+            break
+    i = 1
+    while i < 50:
+        try:
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega/PD1', ax=ax, ignore=['UZ'],
+                                     line_color_stable='#3689c9', line_color_unstable='#3689c9',
+                                     line_style_unstable='solid', default_size=markersize1)
+            i += 1
+        except KeyError:
+            break
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel(r'$\omega$')
     fig1.canvas.draw()
@@ -89,16 +101,26 @@ if c1:
     # lyapunov exponents and fractal dimension
     ##########################################
 
-    fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
-    grid2 = gs.GridSpec(1, 2)
-
-    # maximal lyapunov exponent
-    ax = fig2.add_subplot(grid2[0, 0])
-    plot_connectivity(a.LE_max, ax=ax, threshold=False)
-
-    # fractal dimension
-    ax = fig2.add_subplot(grid2[0, 1])
-    plot_connectivity(a.D_ky, ax=ax)
+    # fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
+    # grid2 = gs.GridSpec(1, 2)
+    #
+    # # maximal lyapunov exponent
+    # ax = fig2.add_subplot(grid2[0, 0])
+    # ax = plot_connectivity(a.LE_max.T, ax=ax, threshold=False)
+    # ax.invert_yaxis()
+    # ax.set_xticks(ax.get_xticks()[0::4])
+    # ax.set_yticks(ax.get_yticks()[0::4])
+    # ax.set_xticklabels(np.round(a.omega[0::4], decimals=1))
+    # ax.set_yticklabels(np.round(a.alpha[0::4], decimals=1))
+    #
+    # # fractal dimension
+    # ax = fig2.add_subplot(grid2[0, 1])
+    # ax = plot_connectivity(a.D_ky.T, ax=ax)
+    # ax.invert_yaxis()
+    # ax.set_xticks(ax.get_xticks()[0::4])
+    # ax.set_yticks(ax.get_yticks()[0::4])
+    # ax.set_xticklabels(np.round(a.omega[0::4], decimals=1))
+    # ax.set_yticklabels(np.round(a.alpha[0::4], decimals=1))
 
     plt.show()
 
