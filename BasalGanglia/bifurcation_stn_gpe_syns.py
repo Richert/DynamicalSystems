@@ -601,7 +601,7 @@ if any(c3):
                                      origin=c3_b3_hb2_cont, STOP={'LP1'})
 
                 # step 3: continuation of the fold of limit cycle bifurcation found in step 2 in 2 parameters
-                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 22], NPAR=n_params,
+                s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif3', ICP=[26, 22, 11], NPAR=n_params,
                                        name=f'c3.2:k_gp/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
                                        DSMAX=0.1, origin=c_tmp, bidirectional=True)
 
