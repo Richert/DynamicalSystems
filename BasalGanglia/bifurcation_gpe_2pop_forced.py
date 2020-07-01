@@ -57,17 +57,13 @@ if c1:
     # continuation of driver
     ########################
 
-    alphas = np.arange(35.0, 42.0, 0.5)
-    omegas = np.arange(72.0, 72.5, 0.05)
-    n, m = len(omegas), len(alphas)
-
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
                              NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=0.0, RL1=42.0,
-                             STOP={}, UZR={23: alphas})
+                             STOP={}, UZR={23: [30.0]})
 
     # step 2: codim 1 investigation of driver period
-    c1_sols, c1_cont = a.run(starting_point='TR1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
+    c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
                              NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=4000, DSMAX=0.05, RL0=35.0, RL1=95.0,
                              STOP={}, UZR={}, bidirectional=True)
 
@@ -86,21 +82,21 @@ if c1:
                                      RL0=35.0, RL1=95.0, STOP={'BP1', 'R25'}, UZR={}, bidirectional=True)
             m, n = 0, 0
             for s2 in c2_sols.values():
-                if 'R3' in s['bifurcation'] or 'R4' in s['bifurcation']:
-                    if 'R3' in s['bifurcation']:
+                if 'R3' in s2['bifurcation'] or 'R4' in s2['bifurcation']:
+                    if 'R3' in s2['bifurcation']:
                         m += 1
                         p2_tmp = f'R3{m}'
                     else:
                         n += 1
                         p2_tmp = f'R4{n}'
                     c3_sols, c3_cont = a.run(starting_point=p2_tmp, origin=c2_cont, c='qif3', ICP=[23, 25, 11],
-                                             NPAR=n_params, name=f'c1:alpha/omega/{p2_tmp}', NDIM=n_dim, NMX=3000,
-                                             DSMAX=0.01, RL0=0.0, RL1=45.0, STOP={'BP1', 'R25'}, UZR={},
+                                             NPAR=n_params, name=f'c1:alpha/omega/{p_tmp}/{p2_tmp}', NDIM=n_dim,
+                                             NMX=3000, DSMAX=0.01, RL0=0.0, RL1=45.0, STOP={'BP1', 'R25'}, UZR={},
                                              bidirectional=True)
 
         # save results
         fname = '../results/gpe_2pop_forced_lc.pkl'
-        kwargs = {'alpha': alphas, 'omega': omegas}
+        kwargs = {}
         a.to_file(fname, **kwargs)
 
     # # save results

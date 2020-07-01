@@ -38,7 +38,7 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
-fname = 'results/stn_gpe_syns.pkl'
+fname = 'results/stn_gpe_syns_lc.pkl'
 a = PyAuto.from_file(fname)
 
 c1 = [  # weak GPe-p <-> GPe-a coupling

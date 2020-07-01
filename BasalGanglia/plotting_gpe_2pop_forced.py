@@ -45,7 +45,7 @@ c2 = False  # bistable
 
 if c1:
 
-    fname = 'results/gpe_2pop_forced_lc2.pkl'
+    fname = 'results/gpe_2pop_forced_lc.pkl'
     a = PyAuto.from_file(fname)
 
     # continuation of alpha and omega
@@ -69,7 +69,7 @@ if c1:
     i = 1
     while i < 50:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/TR{i}', ax=ax, ignore=['UZ'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ'],
                                      line_color_stable='#148F77', line_color_unstable='#148F77',
                                      custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
                                                        'R2': {'marker': 'h', 'color': 'g'},
@@ -82,8 +82,26 @@ if c1:
     i = 1
     while i < 50:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont='c1:alpha/omega/PD1', ax=ax, ignore=['UZ'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ'],
                                      line_color_stable='#3689c9', line_color_unstable='#3689c9',
+                                     line_style_unstable='solid', default_size=markersize1)
+            i += 1
+        except KeyError:
+            break
+    i = 1
+    while i < 50:
+        try:
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/R3{i}', ax=ax, ignore=['UZ'],
+                                     line_color_stable='#8299b0', line_color_unstable='#8299b0',
+                                     line_style_unstable='solid', default_size=markersize1)
+            i += 1
+        except KeyError:
+            break
+    i = 1
+    while i < 50:
+        try:
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/R4{i}', ax=ax, ignore=['UZ'],
+                                     line_color_stable='#b8b632', line_color_unstable='#b8b632',
                                      line_style_unstable='solid', default_size=markersize1)
             i += 1
         except KeyError:
