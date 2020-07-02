@@ -582,7 +582,7 @@ if any(c3):
 
                 # step 2: perform branch switching
                 s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=26, NPAR=n_params,
-                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.01,
                                      origin=c3_b3_hb2_cont, STOP={'LP1'})
 
                 try:
@@ -594,14 +594,7 @@ if any(c3):
 
                 except KeyError:
 
-                    s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=22, NPAR=n_params,
-                                         name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                         DSMAX=0.1, origin=c3_b3_hb2_cont, STOP={'LP1'})
-
-                    # step 3: continuation of the fold/hopf bifurcations found in step 2 in 2 parameters
-                    s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 22], NPAR=n_params,
-                                           name=f'c3.2:k_gp/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                           DSMAX=0.1, origin=c_tmp, bidirectional=True)
+                    pass
 
             if 'GH' in s['bifurcation']:
 
@@ -641,7 +634,7 @@ if any(c3):
 
                 # step 2: perform branch switching
                 s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=24, NPAR=n_params,
-                                     name=f'c3.2:k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     name=f'c3.2:k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.01,
                                      origin=c3_b3_hb1_cont, STOP={'LP1'})
 
                 try:
@@ -653,14 +646,7 @@ if any(c3):
 
                 except KeyError:
 
-                    s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=22, NPAR=n_params,
-                                         name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                         DSMAX=0.1, origin=c3_b3_hb2_cont, STOP={'LP1'})
-
-                    # step 3: continuation of the fold/hopf bifurcations found in step 2 in 2 parameters
-                    s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[24, 22], NPAR=n_params,
-                                           name=f'c3.2:k_gp/k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                           DSMAX=0.1, origin=c_tmp, bidirectional=True)
+                    pass
 
             if 'GH' in s['bifurcation']:
 
@@ -700,7 +686,7 @@ if any(c3):
 
                 # step 2: perform branch switching
                 s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=26, NPAR=n_params,
-                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.1,
+                                     name=f'c3.2:k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000, DSMAX=0.01,
                                      origin=c3_b3_hb3_cont, STOP={'LP1'})
 
                 try:
@@ -712,14 +698,7 @@ if any(c3):
 
                 except KeyError:
 
-                    s_tmp, c_tmp = a.run(starting_point=p_start, c='qif', ICP=24, NPAR=n_params,
-                                         name=f'c3.2:k_i/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                         DSMAX=0.1, origin=c3_b3_hb2_cont, STOP={'LP1'})
-
-                    # step 3: continuation of the fold/hopf bifurcations found in step 2 in 2 parameters
-                    s2_tmp, c2_tmp = a.run(starting_point='LP1', c='qif2', ICP=[26, 24], NPAR=n_params,
-                                           name=f'c3.2:k_i/k_gp_e/{p_start}', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=6000,
-                                           DSMAX=0.1, origin=c_tmp, bidirectional=True)
+                    pass
 
             if 'GH' in s['bifurcation']:
 
