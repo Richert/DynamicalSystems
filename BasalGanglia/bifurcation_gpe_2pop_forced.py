@@ -95,7 +95,7 @@ if c1:
                                              bidirectional=True)
 
         # save results
-        fname = '../results/gpe_2pop_forced_lc.pkl'
+        fname = '../results/gpe_2pop_forced_lc2.pkl'
         kwargs = {}
         a.to_file(fname, **kwargs)
 
