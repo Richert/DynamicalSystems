@@ -45,7 +45,7 @@ c2 = False  # bistable
 
 if c1:
 
-    fname = 'results/gpe_2pop_forced_lc2.pkl'
+    fname = 'results/gpe_2pop_forced_lc.pkl'
     a = PyAuto.from_file(fname)
 
     # continuation of alpha and omega
