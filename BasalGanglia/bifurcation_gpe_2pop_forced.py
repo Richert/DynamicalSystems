@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = False
-c2 = True
+c1 = True
+c2 = False
 
 # initial continuations
 #######################
