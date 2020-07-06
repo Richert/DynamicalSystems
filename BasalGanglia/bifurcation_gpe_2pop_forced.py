@@ -1,4 +1,4 @@
-from pyrates.utility.pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto, get_from_solutions
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = True
-c2 = False
+c1 = False
+c2 = True
 
 # initial continuations
 #######################
@@ -70,32 +70,28 @@ if c1:
     # step 4: codim 2 investigation of torus bifurcations found in step 1 and 2
     i, j = 0, 0
     for s in c1_sols.values():
-        if 'TR' in s['bifurcation'] or 'PD' in s['bifurcation']:
-            if 'TR' in s['bifurcation']:
-                i += 1
-                p_tmp = f'TR{i}'
-            else:
-                j += 1
-                p_tmp = f'PD{j}'
+        if 'TR' in s['bifurcation']:
+            i += 1
+            p_tmp = f'TR{i}'
             c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[25, 23, 11],
                                      NPAR=n_params, name=f'c1:omega/alpha/{p_tmp}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
-                                     RL0=35.0, RL1=95.0, STOP={'BP1', 'R25'}, UZR={}, bidirectional=True)
-            m, n = 0, 0
-            for s2 in c2_sols.values():
-                if 'R3' in s2['bifurcation'] or 'R4' in s2['bifurcation']:
-                    if 'R3' in s2['bifurcation']:
-                        m += 1
-                        p2_tmp = f'R3{m}'
-                    else:
-                        n += 1
-                        p2_tmp = f'R4{n}'
-                    c3_sols, c3_cont = a.run(starting_point=p2_tmp, origin=c2_cont, c='qif3', ICP=[23, 25, 11],
-                                             NPAR=n_params, name=f'c1:alpha/omega/{p_tmp}/{p2_tmp}', NDIM=n_dim,
-                                             NMX=2000, DSMAX=0.1, RL0=0.0, RL1=45.0, STOP={'BP1', 'R25'}, UZR={},
+                                     RL0=35.0, RL1=95.0, STOP={'BP1', 'R21'}, UZR={}, bidirectional=True)
+            bfs = get_from_solutions(['bifurcation'], c2_sols)
+            if "R2" in bfs:
+                s_tmp, c_tmp = a.run(starting_point='R21', origin=c2_cont, c='qif_lc', ICP=[25, 11],
+                                     NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=4000, DSMAX=0.05, RL0=35.0,
+                                     RL1=95.0, STOP={'PD1'}, UZR={}, bidirectional=True)
+                pds = get_from_solutions(['bifurcation'], s_tmp)
+                if "PD" in pds:
+                    j += 1
+                    p2_tmp = f'PD{j}'
+                    c2_sols, c2_cont = a.run(starting_point=p2_tmp, origin=c_tmp, c='qif3', ICP=[25, 23, 11],
+                                             NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
+                                             DSMAX=0.05, RL0=35.0, RL1=95.0, STOP={'BP1'}, UZR={},
                                              bidirectional=True)
 
         # save results
-        fname = '../results/gpe_2pop_forced_lc2.pkl'
+        fname = '../results/gpe_2pop_forced_lc.pkl'
         kwargs = {}
         a.to_file(fname, **kwargs)
 
@@ -147,7 +143,7 @@ if c2:
     # continuation of eta_p
     s3_sols, s3_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[2, 11], NPAR=n_params,
                              name='c2:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                             NMX=6000, DSMAX=0.1, UZR={2: [2.0]}, STOP={'UZ3'})
+                             NMX=6000, DSMAX=0.1, UZR={2: [1.85]}, STOP={'UZ3'})
 
     starting_point = 'UZ3'
     starting_cont = s3_cont
@@ -155,20 +151,17 @@ if c2:
     # continuation of driver
     ########################
 
-    alphas = np.arange(10.0, 100.0, 10.0)
-
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
-                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=4000, DSMAX=0.05, RL0=0.0, RL1=100.0,
-                             STOP={'LP1'}, UZR={23: alphas})
+                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=8000, DSMAX=0.005, RL0=0.0, RL1=45.0,
+                             STOP={}, UZR={})
 
     # step 2: codim 2 investigation of torus bifurcation found in step 1
-    c1_sols, c1_cont = a.run(starting_point='LP1', origin=c0_cont, c='qif3', ICP=[23, 25, 11],
-                             NPAR=n_params, name='c2:alpha/omega', NDIM=n_dim, NMX=2000, DSMAX=0.5, RL0=0.0, RL1=100.0,
-                             STOP={'UZ1'}, UZR={25: [50.0, 100.0]})
-    c2_sols, c2_cont = a.run(starting_point='EP1', origin=c1_cont, bidirectional=True)
+    c1_sols, c1_cont = a.run(starting_point='LP1', origin=c0_cont, c='qif3', ICP=[25, 23, 11],
+                             NPAR=n_params, name='c2:alpha/omega', NDIM=n_dim, NMX=4000, DSMAX=0.1, RL0=40.0, RL1=95.0,
+                             STOP={}, UZR={}, bidirectional=True)
 
     # save results
     fname = '../results/gpe_2pop_forced_bs.pkl'
-    kwargs = {'alpha': alphas}
+    kwargs = {}
     a.to_file(fname, **kwargs)

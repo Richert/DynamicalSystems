@@ -316,6 +316,9 @@ if any(c3):
 
     if c3[1]:
 
+        branch_color = {'HB': '#8299b0',
+                        'LP': '#b8b632'}
+
         # 2D continuation k_gp x k_gpe_e
         ################################
 
@@ -353,12 +356,11 @@ if any(c3):
         ax.set_ylabel(r'$k_{stn}$')
         plt.tight_layout()
 
-
         fig3 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
         grid3 = gs.GridSpec(1, 1)
 
         ax = fig3.add_subplot(grid3[:, :])
-        ax = a.plot_continuation('PAR(26)', 'PAR(24)', cont='c3.2:k_gp_e/k_i', ax=ax, line_color_stable='#8299b0',
+        ax = a.plot_continuation('PAR(26)', 'PAR(24)', cont='c3.2:k_i/k_gp_e', ax=ax, line_color_stable='#8299b0',
                                  line_color_unstable='#8299b0', default_size=markersize1,
                                  line_style_unstable='solid', ignore=['LP'])
         i = 1
