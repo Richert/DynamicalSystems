@@ -85,7 +85,7 @@ if c1:
                 if "PD" in pds:
                     j += 1
                     p2_tmp = f'PD{j}'
-                    c2_sols, c2_cont = a.run(starting_point=p2_tmp, origin=c_tmp, c='qif3', ICP=[25, 23, 11],
+                    c2_sols, c2_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
                                              NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
                                              DSMAX=0.05, RL0=40.0, RL1=95.0, STOP={'BP1'}, UZR={},
                                              bidirectional=True)
