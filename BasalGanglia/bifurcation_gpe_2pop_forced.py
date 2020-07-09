@@ -59,15 +59,15 @@ if c1:
 
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
-                             NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=0.0, RL1=42.0,
+                             NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=0.0, RL1=50.0,
                              STOP={}, UZR={23: [30.0]})
 
     # step 2: codim 1 investigation of driver period
     c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
-                             NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=4000, DSMAX=0.05, RL0=40.0, RL1=95.0,
-                             STOP={}, UZR={}, bidirectional=True)
+                             NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=10.0, RL1=100.0,
+                             STOP={}, UZR={25: [20.0]}, bidirectional=True)
 
-    # step 4: codim 2 investigation of torus bifurcations found in step 1 and 2
+    # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
     i, j = 0, 0
     for s in c1_sols.values():
         if 'TR' in s['bifurcation']:
@@ -75,12 +75,12 @@ if c1:
             p_tmp = f'TR{i}'
             c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[25, 23, 11],
                                      NPAR=n_params, name=f'c1:omega/alpha/{p_tmp}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
-                                     RL0=40.0, RL1=95.0, STOP={'BP1', 'R21'}, UZR={}, bidirectional=True)
+                                     RL0=10.0, RL1=100.0, STOP={'BP1', 'R21'}, UZR={}, bidirectional=True)
             bfs = get_from_solutions(['bifurcation'], c2_sols)
             if "R2" in bfs:
                 s_tmp, c_tmp = a.run(starting_point='R21', origin=c2_cont, c='qif_lc', ICP=[25, 11],
-                                     NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=40.0,
-                                     RL1=95.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True, MXBF=0)
+                                     NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=10.0,
+                                     RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True, MXBF=0)
                 pds = get_from_solutions(['bifurcation'], s_tmp)
                 if "PD" in pds:
                     j += 1
@@ -95,33 +95,34 @@ if c1:
         kwargs = {}
         a.to_file(fname, **kwargs)
 
-    # # save results
-    # fname = '../results/gpe_2pop_forced_lc2.pkl'
-    # kwargs = {'alpha': alphas, 'omega': omegas}
-    # a.to_file(fname, **kwargs)
+    # step 4: codim 1 investigation of driver amplitude for low omega
+    c3_sols, c3_cont = a.run(starting_point='UZ1', origin=c1_cont, c='qif_lc', ICP=[23, 11],
+                             NPAR=n_params, name='c1:alpha2', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=0.0, RL1=50.0,
+                             STOP={'TR1'}, UZR={}, bidirectional=True)
+    c3_bifs = get_from_solutions(['bifurcation'], c3_sols)
+    if 'TR' in c3_bifs:
+        i += 1
+        c4_sols, c4_cont = a.run(starting_point='TR1', origin=c1_cont, c='qif3', ICP=[25, 23, 11],
+                                 NPAR=n_params, name=f'c1:omega/alpha/TR{i}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
+                                 RL0=10.0, RL1=100.0, STOP={'BP1', 'R21'}, UZR={}, bidirectional=True)
+        bfs = get_from_solutions(['bifurcation'], c4_sols)
+        if "R2" in bfs:
+            s_tmp, c_tmp = a.run(starting_point='R21', origin=c4_cont, c='qif_lc', ICP=[25, 11],
+                                 NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=10.0,
+                                 RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True, MXBF=0)
+            pds = get_from_solutions(['bifurcation'], s_tmp)
+            if "PD" in pds:
+                j += 1
+                p2_tmp = f'PD{j}'
+                c4_sols, c4_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
+                                         NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
+                                         DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1'}, UZR={},
+                                         bidirectional=True)
 
-    # # step 3: perform 1-d continuations in omega at each point in alpha continuation and extract LEs at each user point
-    # LE_max = np.zeros((n, m))
-    # D_ky = np.zeros_like(LE_max)
-    # i = 1
-    # for s in c0_sols.values():
-    #     if 'UZ' in s['bifurcation']:
-    #         s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif_lc', ICP=[25, 11], UZR={25: omegas}, STOP={},
-    #                          get_lyapunov_exp=True, DSMAX=0.05, RL0=70.0, RL1=78.0, origin=c0_cont, NMX=2000,
-    #                          bidirectional=True, NDIM=n_dim, NPAR=n_params)
-    #         i += 1
-    #         for s2 in s_tmp.values():
-    #             if 'UZ' in s2['bifurcation']:
-    #                 idx_c = np.argmin(np.abs(s2['PAR(23)'] - alphas))
-    #                 idx_r = np.argmin(np.abs(s2['PAR(25)'] - omegas))
-    #                 lyapunovs = s2['lyapunov_exponents']
-    #                 LE_max[idx_r, idx_c] = np.max(lyapunovs)
-    #                 D_ky[idx_r, idx_c] = fractal_dimension(lyapunov_exponents=lyapunovs)
-    #
-    # # save results
-    # fname = '../results/gpe_2pop_forced_lc2.pkl'
-    # kwargs = {'alpha': alphas, 'omega': omegas, 'LE_max': LE_max, 'D_ky': D_ky}
-    # a.to_file(fname, **kwargs)
+    # save results
+    fname = '../results/gpe_2pop_forced_lc.pkl'
+    kwargs = {}
+    a.to_file(fname, **kwargs)
 
 ################################
 # condition 2: bistable regime #
@@ -153,12 +154,12 @@ if c2:
 
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
-                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=8000, DSMAX=0.005, RL0=0.0, RL1=45.0,
+                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=8000, DSMAX=0.005, RL0=0.0, RL1=50.0,
                              STOP={}, UZR={})
 
     # step 2: codim 2 investigation of torus bifurcation found in step 1
     c1_sols, c1_cont = a.run(starting_point='LP1', origin=c0_cont, c='qif3', ICP=[25, 23, 11],
-                             NPAR=n_params, name='c2:alpha/omega', NDIM=n_dim, NMX=4000, DSMAX=0.1, RL0=40.0, RL1=95.0,
+                             NPAR=n_params, name='c2:alpha/omega', NDIM=n_dim, NMX=4000, DSMAX=0.1, RL0=10.0, RL1=100.0,
                              STOP={}, UZR={}, bidirectional=True)
 
     # save results
