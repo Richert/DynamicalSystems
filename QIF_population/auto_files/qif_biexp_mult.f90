@@ -13,13 +13,13 @@
       DOUBLE PRECISION, INTENT(OUT) :: F(NDIM)
       DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,NDIM), DFDP(NDIM,*)
 
-      DOUBLE PRECISION eta,J,D,PI,R,V,E,X,alpha,tau1,tau2
+      DOUBLE PRECISION eta,J,D,PI,R,V,E,X,alpha,tau_r,tau_d
 
        eta  = PAR(1) 
        J  = PAR(2) 
        alpha = PAR(3) 
-       tau1 = PAR(4)
-       tau2 = PAR(5) 
+       tau_r = PAR(4)
+       tau_d = PAR(5) 
        D  = PAR(6)
        PI = 4*ATAN(1.0D0)
 
@@ -30,8 +30,8 @@
 
        F(1) = D/PI + 2.0*R*V
        F(2) = V*V + J*R*(1.0-E) - PI*PI*R*R + eta
-       F(3) = ((tau2*tau1)**(tau1/(tau2-tau1))*X-E)/tau1
-       F(4) = -X/tau2 + alpha*R    
+       F(3) = X
+       F(4) = (alpha*R - X*(tau_r+tau_d) - E)/(tau_r*tau_d)
 
       END SUBROUTINE FUNC
 
@@ -43,20 +43,20 @@
       DOUBLE PRECISION, INTENT(INOUT) :: U(NDIM),PAR(*)
       DOUBLE PRECISION, INTENT(IN) :: T
 
-      DOUBLE PRECISION eta,J,alpha,tau1,tau2,D
+      DOUBLE PRECISION eta,J,alpha,tau_r,tau_d,D
 
        eta  = -10.0
        J  = 15.0*SQRT(2.0)
        alpha  = 0.0
-       tau1  = 2.0
-       tau2  = 10.0
+       tau_r  = 2.0
+       tau_d  = 10.0
        D  = 2.0
 
        PAR(1)=eta
        PAR(2)=J
        PAR(3)=alpha
-       PAR(4)=tau1
-       PAR(5)=tau2
+       PAR(4)=tau_r
+       PAR(5)=tau_d
        PAR(6)=D
        
        U(1)=0.114741

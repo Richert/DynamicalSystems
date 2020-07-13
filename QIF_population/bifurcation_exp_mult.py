@@ -1,4 +1,4 @@
-from pyauto import PyAuto, continue_period_doubling_bf
+from pyrates.utility.pyauto import PyAuto, continue_period_doubling_bf
 
 #########################################
 # configs, descriptions and definitions #
@@ -74,12 +74,12 @@ if codim1:
                                             origin=eta_cont, name='eta_hb1', NDIM=n_dim)
     eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=4000,
                                             origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_lyapunov_exp=True,
-                                            get_timeseries=True)
+                                            get_timeseries=True, STOP={'PD1'})
 
     # continue the period doubling bifurcations in eta that we found above
     pds, a = continue_period_doubling_bf(solution=eta_hb2_solutions, continuation=eta_hb2_cont, pyauto_instance=a,
                                          c='qif2b', ICP=[1, 11], NMX=3000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
-                                         get_timeseries=True, get_lyapunov_exp=True,)
+                                         get_timeseries=True, get_lyapunov_exp=True, STOP={'PD1'})
     pds.append('eta_hb2')
 
     # continuation in eta and alpha
