@@ -74,12 +74,12 @@ if codim1:
                                             origin=eta_cont, name='eta_hb1', NDIM=n_dim)
     eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=4000,
                                             origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_lyapunov_exp=True,
-                                            get_timeseries=True, STOP={'PD1'})
+                                            get_timeseries=True, STOP={'PD1'}, NPR=10)
 
     # continue the period doubling bifurcations in eta that we found above
     pds, a = continue_period_doubling_bf(solution=eta_hb2_solutions, continuation=eta_hb2_cont, pyauto_instance=a,
                                          c='qif2b', ICP=[1, 11], NMX=3000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
-                                         get_timeseries=True, get_lyapunov_exp=True, STOP={'PD1'})
+                                         get_timeseries=True, get_lyapunov_exp=True, STOP={'PD1'}, NPR=10)
     pds.append('eta_hb2')
 
     # continuation in eta and alpha
@@ -96,7 +96,7 @@ if codim1:
         eta_alpha_pd_solutions, eta_alpha_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[1, 3],
                                                           NMX=3000, DSMAX=0.05, origin=eta_hb2_cont,
                                                           bidirectional=True, name='eta_alpha_pd', NTST=600,
-                                                          NDIM=n_dim)
+                                                          NDIM=n_dim, ILP=0)
 
 ################
 # save results #
