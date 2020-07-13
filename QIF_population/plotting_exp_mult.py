@@ -57,22 +57,21 @@ for i in range(1, n_alphas+1):
 ax = axes[1]
 a.update_bifurcation_style('PD', color='k')
 ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax, default_size=markersize1)
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP'], default_size=markersize1)
-for i, pd in enumerate(a.additional_attributes['pd_solutions'][:-2]):
-    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'pd_{i}', ax=ax, ignore=['LP', 'BP'], default_size=markersize1)
+for pd in a.additional_attributes['pd_solutions']:
+    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=pd, ax=ax, ignore=['LP', 'BP'], default_size=markersize1)
 
 # visualization of phase portrait
 #################################
 
-# 3d plot of phase portrait for eta, alpha and e
-fig2 = plt.figure()
-ax2 = fig2.add_subplot(111, projection='3d')
-cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
-for cm, pd in zip(cmaps, a.additional_attributes['pd_solutions'][:-2]):
-    ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=pd, ax=ax2, linewidths=2.0, point='PD1',
-                            cmap=plt.get_cmap(cm), force_axis_lim_update=True)
-ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=a.additional_attributes['pd_solutions'][-1], ax=ax2,
-                        linewidths=2.0, point='PD1', cmap=plt.get_cmap('magma'))
+# # 3d plot of phase portrait for eta, alpha and e
+# fig2 = plt.figure()
+# ax2 = fig2.add_subplot(111, projection='3d')
+# cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
+# for cm, pd in zip(cmaps, a.additional_attributes['pd_solutions'][:-2]):
+#     ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=pd, ax=ax2, linewidths=2.0, point='PD1',
+#                             cmap=plt.get_cmap(cm), force_axis_lim_update=True)
+# ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=a.additional_attributes['pd_solutions'][-1], ax=ax2,
+#                         linewidths=2.0, point='PD1', cmap=plt.get_cmap('magma'))
 
 # visualization of codim 2 bifurcations
 #######################################
