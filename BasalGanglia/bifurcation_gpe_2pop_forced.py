@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = True
-c2 = False
+c1 = False
+c2 = True
 
 # initial continuations
 #######################
@@ -80,7 +80,7 @@ if c1:
             if "R2" in bfs:
                 s_tmp, c_tmp = a.run(starting_point='R21', origin=c2_cont, c='qif_lc', ICP=[25, 11],
                                      NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=10.0,
-                                     RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True, MXBF=0)
+                                     RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True)
                 pds = get_from_solutions(['bifurcation'], s_tmp)
                 if "PD" in pds:
                     j += 1
@@ -109,7 +109,7 @@ if c1:
         if "R2" in bfs:
             s_tmp, c_tmp = a.run(starting_point='R21', origin=c4_cont, c='qif_lc', ICP=[25, 11],
                                  NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=10.0,
-                                 RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True, MXBF=0)
+                                 RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True)
             pds = get_from_solutions(['bifurcation'], s_tmp)
             if "PD" in pds:
                 j += 1
