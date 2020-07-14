@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = False
-c2 = True
+c1 = True
+c2 = False
 
 # initial continuations
 #######################
@@ -154,13 +154,13 @@ if c2:
 
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
-                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=8000, DSMAX=0.005, RL0=0.0, RL1=50.0,
+                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=0.0, RL1=50.0,
                              STOP={}, UZR={})
 
     # step 2: codim 2 investigation of torus bifurcation found in step 1
     c1_sols, c1_cont = a.run(starting_point='LP1', origin=c0_cont, c='qif3', ICP=[25, 23, 11],
-                             NPAR=n_params, name='c2:alpha/omega', NDIM=n_dim, NMX=4000, DSMAX=0.1, RL0=10.0, RL1=100.0,
-                             STOP={}, UZR={}, bidirectional=True)
+                             NPAR=n_params, name='c2:alpha/omega', NDIM=n_dim, NMX=8000, DSMAX=0.1, RL0=10.0, RL1=100.0,
+                             STOP={}, UZR={}, bidirectional=True, NPR=20)
 
     # save results
     fname = '../results/gpe_2pop_forced_bs.pkl'

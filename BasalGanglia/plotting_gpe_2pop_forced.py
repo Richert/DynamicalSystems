@@ -40,8 +40,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
-c1 = True  # oscillatory
-c2 = False  # bistable
+c1 = False  # oscillatory
+c2 = True  # bistable
 
 if c1:
 
