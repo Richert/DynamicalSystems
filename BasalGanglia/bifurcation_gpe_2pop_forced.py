@@ -75,7 +75,7 @@ if c1:
             p_tmp = f'TR{i}'
             c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[25, 23, 11],
                                      NPAR=n_params, name=f'c1:omega/alpha/{p_tmp}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
-                                     RL0=10.0, RL1=100.0, STOP={'BP1', 'R21'}, UZR={}, bidirectional=True)
+                                     RL0=10.0, RL1=100.0, STOP={'BP1', 'R21', 'R12'}, UZR={}, bidirectional=True)
             bfs = get_from_solutions(['bifurcation'], c2_sols)
             if "R2" in bfs:
                 s_tmp, c_tmp = a.run(starting_point='R21', origin=c2_cont, c='qif_lc', ICP=[25, 11],
@@ -87,7 +87,7 @@ if c1:
                     p2_tmp = f'PD{j}'
                     c2_sols, c2_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
                                              NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
-                                             DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1'}, UZR={},
+                                             DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1', 'R25'}, UZR={},
                                              bidirectional=True)
 
         # save results
@@ -104,7 +104,7 @@ if c1:
         i += 1
         c4_sols, c4_cont = a.run(starting_point='TR1', origin=c1_cont, c='qif3', ICP=[25, 23, 11],
                                  NPAR=n_params, name=f'c1:omega/alpha/TR{i}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
-                                 RL0=10.0, RL1=100.0, STOP={'BP1', 'R21'}, UZR={}, bidirectional=True)
+                                 RL0=10.0, RL1=100.0, STOP={'BP1', 'R21', 'R12'}, UZR={}, bidirectional=True)
         bfs = get_from_solutions(['bifurcation'], c4_sols)
         if "R2" in bfs:
             s_tmp, c_tmp = a.run(starting_point='R21', origin=c4_cont, c='qif_lc', ICP=[25, 11],
@@ -116,7 +116,7 @@ if c1:
                 p2_tmp = f'PD{j}'
                 c4_sols, c4_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
                                          NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
-                                         DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1'}, UZR={},
+                                         DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1', 'R25'}, UZR={},
                                          bidirectional=True)
 
     # save results
@@ -155,7 +155,7 @@ if c2:
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
                              NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=0.0, RL1=50.0,
-                             STOP={}, UZR={})
+                             STOP={}, UZR={}, NPR=10)
 
     # step 2: codim 2 investigation of torus bifurcation found in step 1
     c1_sols, c1_cont = a.run(starting_point='LP1', origin=c0_cont, c='qif3', ICP=[25, 23, 11],

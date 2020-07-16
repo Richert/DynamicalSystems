@@ -99,7 +99,7 @@ if codim1:
         chaos_analysis_hb2[s]['lyapunov_exponents'] = lyapunovs
 
         # compute fractal dimension of attractor at each solution point
-        chaos_analysis_hb2[s]['fractal_dim'] = fractal_dimension(lyapunovs)
+        chaos_analysis_hb2[s]['fractal_dim'] = [fractal_dimension(lp) for lp in lyapunovs]
 
     # continuation in eta and alpha
     ###############################

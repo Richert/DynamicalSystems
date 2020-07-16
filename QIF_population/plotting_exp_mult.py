@@ -84,4 +84,24 @@ ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont=f'eta_alpha_hb2', ax=ax, ignor
 # plot eta-alpha continuation of the period doubling bifurcation
 ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='eta_alpha_pd', ax=ax, ignore=['LP', 'BP'])
 
+# visualization of chaos measures
+#################################
+
+chaos_data = a.additional_attributes['chaos_analysis_hb2']
+fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
+for i, key in enumerate(chaos_data):
+
+    x = np.asarray(chaos_data[key]['eta'])
+    fd = np.asarray(chaos_data[key]['fractal_dim'])
+    lps = chaos_data[key]['lyapunov_exponents']
+    idx = [i for i in range(len(lps)) if lps[i]]
+    lp_max = np.max(np.asarray([lps[i] for i in idx]), axis=1)
+
+    axes[0].plot(x[idx], lp_max)
+    axes[1].plot(x[idx], fd[idx])
+
+axes[0].set_title('Max LP')
+axes[1].set_title('FD')
+
+plt.tight_layout()
 plt.show()
