@@ -67,9 +67,9 @@ if c1:
     # continuation of the torus bifurcation in alpha and omega
     ax = fig1.add_subplot(grid1[1:, :])
     i = 1
-    while i < 50:
+    while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ', 'R1'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ'],
                                      line_color_stable='#148F77', line_color_unstable='#148F77',
                                      custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
                                                        'R2': {'marker': 'h', 'color': 'g'},
@@ -77,53 +77,17 @@ if c1:
                                                        'R4': {'marker': 'h', 'color': 'b'}},
                                      line_style_unstable='solid', default_size=markersize1)
             i += 1
-            j = 1
-            while j < 10:
-                try:
-                    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/TR{i}/R4{j}', ax=ax,
-                                             ignore=['UZ'], line_color_stable='#b8b632', line_color_unstable='#b8b632',
-                                             line_style_unstable='solid', default_size=markersize1)
-                    j += 1
-                except KeyError:
-                    break
-            j = 1
-            while j < 10:
-                try:
-                    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/TR{i}/R3{j}', ax=ax,
-                                             ignore=['UZ'], line_color_stable='#8299b0', line_color_unstable='#8299b0',
-                                             line_style_unstable='solid', default_size=markersize1)
-                    j += 1
-                except KeyError:
-                    break
         except KeyError:
-            break
+            i += 1
     i = 1
-    while i < 20:
+    while i < 11:
         try:
             ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ'],
                                      line_color_stable='#3689c9', line_color_unstable='#3689c9',
                                      line_style_unstable='solid', default_size=markersize1)
             i += 1
-            j = 1
-            while j < 10:
-                try:
-                    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/PD{i}/R4{j}', ax=ax,
-                                             ignore=['UZ'], line_color_stable='#b8b632', line_color_unstable='#b8b632',
-                                             line_style_unstable='solid', default_size=markersize1)
-                    j += 1
-                except KeyError:
-                    break
-            j = 1
-            while j < 10:
-                try:
-                    ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:alpha/omega/PD{i}/R3{j}', ax=ax,
-                                             ignore=['UZ'], line_color_stable='#8299b0', line_color_unstable='#8299b0',
-                                             line_style_unstable='solid', default_size=markersize1)
-                    j += 1
-                except KeyError:
-                    break
         except KeyError:
-            break
+            i += 1
 
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel(r'$\omega$')

@@ -102,7 +102,7 @@ if c1:
     c3_bifs = get_from_solutions(['bifurcation'], c3_sols)
     if 'TR' in c3_bifs:
         i += 1
-        c4_sols, c4_cont = a.run(starting_point='TR1', origin=c1_cont, c='qif3', ICP=[25, 23, 11],
+        c4_sols, c4_cont = a.run(starting_point='TR1', origin=c3_cont, c='qif3', ICP=[25, 23, 11],
                                  NPAR=n_params, name=f'c1:omega/alpha/TR{i}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
                                  RL0=10.0, RL1=100.0, STOP={'BP1', 'R21', 'R12'}, UZR={}, bidirectional=True)
         bfs = get_from_solutions(['bifurcation'], c4_sols)
