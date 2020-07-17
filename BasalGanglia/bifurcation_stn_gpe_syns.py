@@ -558,10 +558,12 @@ if any(c3):
         # continuation of k_gp
         ######################
 
-        # step 1: codim 1 investigation
+        k_gp_col = np.arange(10, 200, 20)
+
+        # step 1: 1D continuation in k_gp
         c3_b3_sols, c3_b3_cont = a.run(starting_point=starting_point, c='qif', ICP=22, NPAR=n_params,
-                                       name=f'c3.2:k_gp', NDIM=n_dim, RL1=60.0,
-                                       origin=starting_cont, NMX=6000, DSMAX=0.1)
+                                       name=f'c3.2:k_gp', NDIM=n_dim, RL1=60.0, origin=starting_cont, NMX=6000,
+                                       DSMAX=0.1, UZR={})
 
         # 2D bifurcation analysis: k_gp x k_gp_e
         ########################################
