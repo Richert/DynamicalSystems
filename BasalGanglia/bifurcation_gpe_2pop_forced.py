@@ -60,7 +60,7 @@ if c1:
     # step 1: codim 1 investigation of driver strength
     c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
                              NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=0.0, RL1=50.0,
-                             STOP={}, UZR={23: [30.0]})
+                             STOP={}, UZR={23: [20.0]})
 
     # step 2: codim 1 investigation of driver period
     c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
@@ -96,28 +96,28 @@ if c1:
         a.to_file(fname, **kwargs)
 
     # step 4: codim 1 investigation of driver amplitude for low omega
-    c3_sols, c3_cont = a.run(starting_point='UZ1', origin=c1_cont, c='qif_lc', ICP=[23, 11],
-                             NPAR=n_params, name='c1:alpha2', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=0.0, RL1=50.0,
-                             STOP={'TR1'}, UZR={}, bidirectional=True)
-    c3_bifs = get_from_solutions(['bifurcation'], c3_sols)
-    if 'TR' in c3_bifs:
-        i += 1
-        c4_sols, c4_cont = a.run(starting_point='TR1', origin=c3_cont, c='qif3', ICP=[25, 23, 11],
-                                 NPAR=n_params, name=f'c1:omega/alpha/TR{i}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
-                                 RL0=10.0, RL1=100.0, STOP={'BP1', 'R21', 'R12'}, UZR={}, bidirectional=True)
-        bfs = get_from_solutions(['bifurcation'], c4_sols)
-        if "R2" in bfs:
-            s_tmp, c_tmp = a.run(starting_point='R21', origin=c4_cont, c='qif_lc', ICP=[25, 11],
-                                 NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=10.0,
-                                 RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True)
-            pds = get_from_solutions(['bifurcation'], s_tmp)
-            if "PD" in pds:
-                j += 1
-                p2_tmp = f'PD{j}'
-                c4_sols, c4_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
-                                         NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
-                                         DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1', 'R25'}, UZR={},
-                                         bidirectional=True)
+    # c3_sols, c3_cont = a.run(starting_point='UZ1', origin=c1_cont, c='qif_lc', ICP=[23, 11],
+    #                          NPAR=n_params, name='c1:alpha2', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=0.0, RL1=50.0,
+    #                          STOP={'TR1'}, UZR={}, bidirectional=True)
+    # c3_bifs = get_from_solutions(['bifurcation'], c3_sols)
+    # if 'TR' in c3_bifs:
+    #     i += 1
+    #     c4_sols, c4_cont = a.run(starting_point='TR1', origin=c3_cont, c='qif3', ICP=[25, 23, 11],
+    #                              NPAR=n_params, name=f'c1:omega/alpha/TR{i}', NDIM=n_dim, NMX=2000, DSMAX=0.05,
+    #                              RL0=10.0, RL1=100.0, STOP={'BP1', 'R21', 'R12'}, UZR={}, bidirectional=True)
+    #     bfs = get_from_solutions(['bifurcation'], c4_sols)
+    #     if "R2" in bfs:
+    #         s_tmp, c_tmp = a.run(starting_point='R21', origin=c4_cont, c='qif_lc', ICP=[25, 11],
+    #                              NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=1000, DSMAX=0.01, RL0=10.0,
+    #                              RL1=100.0, STOP={'PD1', 'TR1'}, UZR={}, bidirectional=True)
+    #         pds = get_from_solutions(['bifurcation'], s_tmp)
+    #         if "PD" in pds:
+    #             j += 1
+    #             p2_tmp = f'PD{j}'
+    #             c4_sols, c4_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
+    #                                      NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
+    #                                      DSMAX=0.05, RL0=10.0, RL1=100.0, STOP={'BP1', 'R25'}, UZR={},
+    #                                      bidirectional=True)
 
     # save results
     fname = '../results/gpe_2pop_forced_lc.pkl'
