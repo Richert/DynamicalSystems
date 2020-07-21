@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = [False, False]
-c2 = True
+c1 = [True, False]
+c2 = False
 
 # initial continuations
 #######################
@@ -27,7 +27,7 @@ s0_sols, s0_cont = a.run(e='gpe_2pop_forced', c='qif_lc', ICP=[19, 11], NPAR=n_p
 
 if any(c1):
 
-    starting_point = 'UZ3'
+    starting_point = 'UZ4'
     starting_cont = s0_cont
 
     # continuation of between vs. within population coupling strengths
@@ -41,7 +41,7 @@ if any(c1):
     # continuation of eta_p
     s3_sols, s3_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[2, 11], NPAR=n_params,
                              name='c1:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                             NMX=6000, DSMAX=0.1, UZR={2: [3.0]}, STOP={'UZ1'})
+                             NMX=6000, DSMAX=0.1, UZR={2: [4.0]}, STOP={'UZ1'})
 
     starting_point = 'UZ1'
     starting_cont = s3_cont
@@ -62,8 +62,8 @@ if any(c1):
         # driver parameter boundaries
         alpha_min = 0.0
         alpha_max = 50.0
-        omega_min = 10.0
-        omega_max = 80.0
+        omega_min = 30.0
+        omega_max = 90.0
 
         # step 1: codim 1 investigation of driver strength
         c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
@@ -111,9 +111,9 @@ if any(c1):
 
         # driver parameter boundaries
         alpha_min = 0.0
-        alpha_max = 40.0
-        omega_min = 10.0
-        omega_max = 100.0
+        alpha_max = 50.0
+        omega_min = 30.0
+        omega_max = 90.0
 
         # driver parameter grid
         n = 20

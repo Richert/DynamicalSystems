@@ -39,8 +39,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 ############################################
 
 c1 = False  # strong GPe-p projections
-c2 = True  # strong bidirectional coupling between GPe-p and GPe-a
-c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
+c2 = False  # strong bidirectional coupling between GPe-p and GPe-a
+c3 = True  # weak bidirectional coupling between GPe-p and GPe-a
 
 ##########################################################################
 # c1: investigation of GPe behavior for strong GPe-p to GPe-a connection #
