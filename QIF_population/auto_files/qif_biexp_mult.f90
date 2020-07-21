@@ -48,7 +48,7 @@
        eta  = -10.0
        J  = 15.0*SQRT(2.0)
        alpha  = 0.0
-       tau_r  = 2.0
+       tau_r  = 10.0
        tau_d  = 10.0
        D  = 2.0
 

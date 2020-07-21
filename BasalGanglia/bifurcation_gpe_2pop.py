@@ -1,4 +1,4 @@
-from pyrates.utility.pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto, codim2_search
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -11,8 +11,8 @@ n_params = 23
 a = PyAuto("auto_files")
 
 # choice of conditions to run bifurcation analysis for
-c1 = True  # strong GPe-p projections
-c2 = False  # strong bidirectional coupling between GPe-p and GPe-a
+c1 = False  # strong GPe-p projections
+c2 = True  # strong bidirectional coupling between GPe-p and GPe-a
 c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
 
 ################################
@@ -39,7 +39,7 @@ if c1:
                              RL0=0.99, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
                              UZR={19: [10.0, 15.0, 20.0, 25.0]}, STOP={})
 
-    starting_point = 'UZ3'
+    starting_point = 'UZ4'
     starting_cont = s0_cont
 
     # step 1: codim 1 investigation
@@ -56,7 +56,10 @@ if c1:
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
                              UZR={21: k_i_col}, STOP={})
 
+    eta_min = -20.0
+    eta_max = 20.0
     c = 1
+    codim1_col = []
     for i in range(len(k_i_col)):
 
         if k_i_col[i] == 1.0:
@@ -82,77 +85,41 @@ if c1:
         #######################
 
         # step 1: codim 1 investigation
-        c1_b2_sols, c1_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
-                                       name=f'c1:eta_a/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.05, bidirectional=True)
+        codim1_col.append(a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
+                                name=f'c1:eta_a/v{i}', NDIM=n_dim, RL0=eta_min, RL1=eta_max,
+                                origin=starting_cont, NMX=6000, DSMAX=0.05, bidirectional=True))
 
-        # step 2: codim 2 investigation of hopf and fold bifurcations from step 1
-        sols = [v['bifurcation'] for v in c1_b2_sols.values()]
+    # step 2: codim 2 investigation of hopf and fold bifurcations from step 1
+    target_conts = [0, 1, 2, 3, 4, 5, 6]
+    kwargs = {'k_i': k_i_col}
+    for i, t in enumerate(target_conts):
+        sol, cont = codim1_col[t]
+        sols = [v['bifurcation'] for v in sol.values()]
         if 'LP' in sols:
-            # a.run(starting_point='LP1', c='qif2', ICP=[21, 7], NPAR=n_params, name=f'c1:k_i/k_ap/LP1/v{i}', NDIM=n_dim,
-            #       RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
-            a.run(starting_point='LP1', c='qif2', ICP=[3, 21], NPAR=n_params, name=f'c1:eta_a/k_i/LP1/v{i}',
-                  NDIM=n_dim, RL0=-12.0, RL1=12.0, origin=c1_b2_cont, NMX=8000, DSMAX=0.1, bidirectional=True)
-            # a.run(starting_point='LP1', c='qif2', ICP=[21, 6], NPAR=n_params, name=f'c1:k_i/k_pp/LP1/v{i}', NDIM=n_dim,
-            #       RL0=0.1, RL1=10.0, origin=c1_b2_cont, NMX=6000, DSMAX=0.1, bidirectional=True)
-            sol_tmp1, cont_tmp1 = a.run(starting_point='LP1', c='qif2', ICP=[3, 7], NPAR=n_params,
-                                        name=f'c1:eta_a/k_ap/LP1/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0,
-                                        origin=c1_b2_cont, NMX=8000, DSMAX=0.1, bidirectional=True)
-            sols_tmp = [v['bifurcation'] for v in sol_tmp1.values()]
+            starting_points = ['LP1']
+        elif 'HB' in sols:
+            starting_points = ['HB1']
+        else:
+            starting_points = []
 
-            if 'ZH' in sols_tmp:
-                c1_b2_zh1_sols, c1_b2_zh1_cont = a.run(starting_point='ZH1', c='qif', ICP=3, NPAR=n_params,
-                                                       name=f'c1:eta_a/zh1/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0,
-                                                       NMX=2000, DSMAX=0.5, origin=cont_tmp1, bidirectional=True)
-                c1_b2_zh2_sols, c1_b2_zh2_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 7], NPAR=n_params,
-                                                       name=f'c1:eta_a/k_ap/zh1/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0,
-                                                       NMX=6000, DSMAX=0.1, origin=c1_b2_zh1_cont, bidirectional=True)
+        if starting_points:
+            c1_b4_sols = codim2_search(params=[7, 3], starting_points=starting_points, origin=cont,
+                                       pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
+                                       RL0=0.1, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
+                                       name=f"c{i}:k_i/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
+                                       kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
+            c1_b5_sols = codim2_search(params=[7, 21], starting_points=starting_points, origin=cont,
+                                       pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1,
+                                       RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"c{i}:k_i/k_ap",
+                                       kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                       kwargs_lc_cont={'c': 'qif2b'})
 
-        if 'HB' in sols:
-            a.run(starting_point='HB1', c='qif2', ICP=[3, 21], NPAR=n_params, name=f'c1:eta_a/k_i/HB1/v{i}',
-                  NDIM=n_dim, RL0=-12.0, RL1=12.0, origin=c1_b2_cont, NMX=8000, DSMAX=0.1, bidirectional=True)
-            sol_tmp2, cont_tmp2 = a.run(starting_point='HB1', c='qif2', ICP=[3, 7], NPAR=n_params,
-                                        name=f'c1:eta_a/k_ap/HB1/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0,
-                                        origin=c1_b2_cont, NMX=8000, DSMAX=0.1, bidirectional=True)
-            sols_tmp = [v['bifurcation'] for v in sol_tmp2.values()]
-            if 'ZH' in sols_tmp:
-                c1_b2_zh3_sols, c1_b2_zh3_cont = a.run(starting_point='ZH1', c='qif', ICP=3, NPAR=n_params,
-                                                       name=f'c1:eta_a/zh2/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0,
-                                                       NMX=2000, DSMAX=0.5, origin=cont_tmp2, bidirectional=True)
-                c1_b2_zh4_sols, c1_b2_zh4_cont = a.run(starting_point='LP1', c='qif2', ICP=[3, 7], NPAR=n_params,
-                                                       name=f'c1:eta_a/k_ap/zh2/v{i}', NDIM=n_dim, RL0=-12.0, RL1=12.0,
-                                                       NMX=6000, DSMAX=0.1, origin=c1_b2_zh3_cont, bidirectional=True)
-                if 'GH' in sols_tmp:
-                    n_ghs = sum([s == 'GH' for s in sols_tmp])
-                    for j in range(n_ghs):
-                        c1_b2_gh1_sols, c1_b2_gh1_cont = a.run(starting_point=f'GH{j+1}', c='qif2b', ICP=[7, 11],
-                                                               NPAR=n_params, name=f'c1:k_ap/v{i}/gh{j+1}', NDIM=n_dim,
-                                                               RL0=0.0, RL1=10.0, NMX=2000, DSMAX=0.05,
-                                                               origin=cont_tmp2, STOP={'LP1'})
-                        try:
-                            s_tmp, c_tmp = a.run(starting_point='LP1', c='qif3', ICP=[7, 3, 11], NPAR=n_params, RL0=0.0,
-                                                 RL1=10.0, NDIM=n_dim,  NMX=1000, origin=c1_b2_gh1_cont, DSMAX=0.1,
-                                                 name=f'c1:eta_a/k_ap/v{i}/gh{j + 1}', STOP={'BP9'})
-                        except (KeyError, ValueError):
-                            pass
+            # save results
+            kwargs.update({f'c{i}:k_i/eta_a:names': list(c1_b4_sols.keys()),
+                           f'c{i}:k_i/k_ap:names': list(c1_b5_sols.keys())})
 
-        # continuation in k_ap
-        ######################
-
-        # # step 1: continuation in k_ap
-        # c1_b5_sols, c1_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
-        #                                name=f'c1:k_ap/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont,
-        #                                NMX=6000, DSMAX=0.1, bidirectional=True)
-        #
-        # # step 2: continuation of limit cycle from hopf bifurcation found in step 1
-        # if 'HB' in [v['bifurcation'] for v in c1_b5_sols.values()]:
-        #     c1_b5_sols, c1_b5_cont = a.run(starting_point='HB1', c='qif2b', ICP=[7, 11], NPAR=n_params,
-        #                                    name=f'c1:k_ap_lc/v{i}', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c1_b5_cont,
-        #                                    NMX=2000, DSMAX=0.2, bidirectional=True)
-
-    # save results
+    # save final results
     fname = '../results/gpe_2pop_c1.pkl'
-    kwargs = {'k_pp': k_i_col}
     a.to_file(fname, **kwargs)
 
 #########################################################################
@@ -170,9 +137,9 @@ if c2:
     # step 1: codim 1 investigation
     s0_sols, s0_cont = a.run(starting_point=starting_point, c='qif', ICP=19, NPAR=n_params, name='k_gp', NDIM=n_dim,
                              RL0=0.99, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                             UZR={19: [10.0, 20.0, 30.0, 40.0]}, STOP={})
+                             UZR={19: [10.0, 20.0, 25.0, 30.0]}, STOP={})
 
-    starting_point = 'UZ2'
+    starting_point = 'UZ3'
     starting_cont = s0_cont
 
     # step 1: codim 1 investigation
@@ -180,7 +147,7 @@ if c2:
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
                              UZR={20: [0.25, 0.5, 2.0, 4.0]}, STOP={})
 
-    starting_point = 'UZ2'
+    starting_point = 'UZ3'
     starting_cont = s0_cont
 
     # step 1: codim 1 investigation
@@ -205,7 +172,7 @@ if c2:
     # step 1: codim 1 investigation
     c2_b1_sols, c2_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params, name='c2:eta_p',
                                    NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                                   bidirectional=True, UZR={2: [2.0]})
+                                   bidirectional=True, UZR={2: [2.5]})
 
     # step 2: codim 2 investigation of fold found in step 1
     c2_b1_fp1_sols, c2_b1_fp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[3, 2], NPAR=n_params,
@@ -223,14 +190,6 @@ if c2:
     c2_b1_fp5_sols, c2_b1_fp5_cont = a.run(starting_point='LP1', c='qif2', ICP=[21, 20], NPAR=n_params,
                                            name='c2:k_p/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b1_cont,
                                            NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
-    c2_b1_fp6_sols, c2_b1_fp6_cont = a.run(starting_point='LP1', c='qif2', ICP=[20, 3], NPAR=n_params,
-                                           name='c2:k_p/eta_a', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b1_cont,
-                                           NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
-
-    # step 3: switch branch to zero-hopf bifurcations identified in step 2
-    c2_b1_zh1_sols, c2_b1_zh1_cont = a.run(starting_point='ZH1', c='qif2b', ICP=[20, 11], NPAR=n_params,
-                                           name='c2:k_p/eta_a/zh1', NDIM=n_dim, RL0=0.1, RL1=10.0, NMX=600, DSMAX=0.5,
-                                           origin=c2_b1_fp6_cont, STOP={})
 
     starting_point = 'UZ3'
     starting_cont = c2_b1_cont
@@ -242,6 +201,23 @@ if c2:
     c2_b2_sols, c2_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params, name='c2:eta_a',
                                    NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
                                    bidirectional=True)
+
+    # step 2: codim 2 investigation of fold found in step 1
+    c2_b2_fp1_sols, c2_b2_fp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[19, 3], NPAR=n_params,
+                                           name='c2:eta_a/k_gp', NDIM=n_dim, RL0=1.0, RL1=100.0, origin=c2_b1_cont,
+                                           NMX=6000, DSMAX=0.5, STOP={'CP3'}, bidirectional=True)
+    c2_b2_fp2_sols, c2_b2_fp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[20, 3], NPAR=n_params,
+                                           name='c2:eta_a/k_p', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b1_cont,
+                                           NMX=6000, DSMAX=0.5, STOP={'CP3'}, bidirectional=True)
+    c2_b2_fp3_sols, c2_b2_fp3_cont = a.run(starting_point='LP1', c='qif2', ICP=[21, 3], NPAR=n_params,
+                                           name='c2:eta_a/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b1_cont,
+                                           NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
+    c2_b2_fp4_sols, c2_b2_fp4_cont = a.run(starting_point='LP1', c='qif2', ICP=[21, 20], NPAR=n_params,
+                                           name='c2:k_p/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b1_cont,
+                                           NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
+    c2_b2_fp5_sols, c2_b2_fp5_cont = a.run(starting_point='LP1', c='qif2', ICP=[21, 19], NPAR=n_params,
+                                           name='c2:k_gp/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b1_cont,
+                                           NMX=6000, DSMAX=0.5, bidirectional=True, STOP={'CP3'})
 
     # continuation of delta_p
     #########################
@@ -279,9 +255,9 @@ if c3:
     # step 1: codim 1 investigation
     s0_sols, s0_cont = a.run(starting_point=starting_point, c='qif', ICP=19, NPAR=n_params, name='k_gp', NDIM=n_dim,
                              RL0=0.99, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                             UZR={19: [10.0, 20.0, 30.0, 40.0]}, STOP={})
+                             UZR={19: [10.0, 20.0, 25.0, 30.0]}, STOP={})
 
-    starting_point = 'UZ2'
+    starting_point = 'UZ3'
     starting_cont = s0_cont
 
     # step 1: codim 1 investigation
@@ -289,7 +265,7 @@ if c3:
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
                              UZR={20: [0.25, 0.5, 2.0, 4.0]}, STOP={})
 
-    starting_point = 'UZ2'
+    starting_point = 'UZ3'
     starting_cont = s0_cont
 
     # step 1: codim 1 investigation
@@ -314,7 +290,7 @@ if c3:
     # step 1: codim 1 investigation
     c3_b2_sols, c3_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params, name='c3:eta_p',
                                    NDIM=n_dim, RL0=-5.0, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                                   bidirectional=True, UZR={2: [3.0]})
+                                   bidirectional=True, UZR={2: [4.0]})
 
     starting_point = 'UZ1'
     starting_cont = c3_b2_cont

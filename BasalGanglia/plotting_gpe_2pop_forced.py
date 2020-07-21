@@ -40,8 +40,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
-c1 = True  # oscillatory
-c2 = False  # bistable
+c1 = False  # oscillatory
+c2 = True  # bistable
 
 if c1:
 
@@ -61,15 +61,15 @@ if c1:
                              custom_bf_styles={'TR': {'marker': 'X'}})
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel('Firing rate')
-    ax.set_yticks([0.04, 0.08, 0.12])
-    ax.set_yticklabels([40.0, 80.0, 120.0])
+    ax.set_yticks([0.04, 0.06, 0.08])
+    ax.set_yticklabels([40.0, 60.0, 80.0])
 
     # continuation of the torus bifurcation in alpha and omega
     ax = fig1.add_subplot(grid1[1:, :])
     i = 1
     while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ', 'BR'],
                                      line_color_stable='#148F77', line_color_unstable='#148F77',
                                      custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
                                                        'R2': {'marker': 'h', 'color': 'g'},
@@ -82,7 +82,7 @@ if c1:
     i = 1
     while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ', 'BR'],
                                      line_color_stable='#3689c9', line_color_unstable='#3689c9',
                                      line_style_unstable='solid', default_size=markersize1)
             i += 1
@@ -93,8 +93,8 @@ if c1:
     ax.set_ylabel(r'$\omega$')
     fig1.canvas.draw()
     #ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
-    #ax.set_xlim([0.0, 40.0])
-    #ax.set_ylim([55.0, 85.0])
+    ax.set_xlim([0.0, 50.0])
+    ax.set_ylim([10.0, 80.0])
 
     plt.tight_layout()
     plt.show()
@@ -142,8 +142,9 @@ if c2:
                              line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'])
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel('Firing rate')
-    ax.set_yticks([0.04, 0.05, 0.06, 0.07])
-    ax.set_yticklabels([40.0, 50.0, 60.0, 70.0])
+    ax.set_yticks([0.04, 0.06, 0.08])
+    ax.set_yticklabels([40.0, 60.0, 80.0])
+    ax.set_xlim([0.0, 30.0])
 
     # continuation of the torus bifurcation in alpha and omega
     ax = fig2.add_subplot(grid2[1:, :])
@@ -151,10 +152,10 @@ if c2:
                              line_color_stable='#148F77', default_size=markersize1)
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel(r'$\omega$')
-    #ax.set_ylim([50.0, 100.0])
+    ax.set_ylim([10.0, 80.0])
     fig2.canvas.draw()
-    ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
-    #ax.set_xlim([0.0, 40.0])
+    #ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
+    ax.set_xlim([0.0, 30.0])
 
     plt.tight_layout()
     plt.show()

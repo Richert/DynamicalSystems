@@ -324,103 +324,52 @@ if any(c3):
 
         fig1 = plt.figure(tight_layout=True, figsize=(6.0, 6.0), dpi=dpi)
         grid1 = gs.GridSpec(2, 2)
-
         ax = fig1.add_subplot(grid1[:, :])
-        ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont='c3.2:k_gp/k_gp_e', ax=ax, line_color_stable='#8299b0',
-                                 line_color_unstable='#8299b0', default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
-        i = 1
-        while i < 10:
-            try:
-                ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'c3.2:k_gp/k_gp_e/ZH{i}', ax=ax,
-                                         line_color_stable='#3689c9', line_color_unstable='#3689c9',
-                                         default_size=markersize1, line_style_unstable='solid',  ignore=['BP', 'LP'],
-                                         custom_bf_styles={'PD': {'marker': 'P'}, 'TR': {'marker': 'X'}})
-                i += 1
-            except KeyError:
-                i += 1
-                continue
-        i = 1
-        while i < 10:
-            try:
-                ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'c3.2:k_gp/k_gp_e/GH{i}', ax=ax,
-                                         line_color_stable='#b8b632', line_color_unstable='#b8b632',
-                                         default_size=markersize1, line_style_unstable='solid', ignore=['BP', 'LP'],
-                                         custom_bf_styles={'PD': {'marker': 'P'}, 'TR': {'marker': 'X'}})
-                i += 1
-            except (KeyError, IndexError):
-                i += 1
-                continue
-
+        for cont in a.additional_attributes['k_gp/k_gp_e:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
         ax.set_xlabel(r'$k_{gp}$')
         ax.set_ylabel(r'$k_{stn}$')
         plt.tight_layout()
 
-        fig3 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
-        grid3 = gs.GridSpec(1, 1)
+        # 2D continuation k_gp x k_i
+        ############################
 
-        ax = fig3.add_subplot(grid3[:, :])
-        ax = a.plot_continuation('PAR(26)', 'PAR(24)', cont='c3.2:k_i/k_gp_e', ax=ax, line_color_stable='#8299b0',
-                                 line_color_unstable='#8299b0', default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
-        i = 1
-        while i < 10:
-            try:
-                ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont=f'c3.2:k_gp/k_i/ZH{i}', ax=ax,
-                                         line_color_stable='#3689c9', line_color_unstable='#3689c9',
-                                         default_size=markersize1, line_style_unstable='solid', ignore=['BP', 'LP'],
-                                         custom_bf_styles={'PD': {'marker': 'P'}, 'TR': {'marker': 'X'}})
-                i += 1
-            except KeyError:
-                i += 1
-                continue
-        i = 1
-        while i < 10:
-            try:
-                ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont=f'c3.2:k_gp/k_i/GH{i}', ax=ax,
-                                         line_color_stable='#b8b632', line_color_unstable='#b8b632',
-                                         default_size=markersize1, line_style_unstable='solid', ignore=['BP', 'LP'],
-                                         custom_bf_styles={'PD': {'marker': 'P'}, 'TR': {'marker': 'X'}})
-                i += 1
-            except (KeyError, IndexError):
-                i += 1
-                continue
-
+        fig2 = plt.figure(tight_layout=True, figsize=(6.0, 6.0), dpi=dpi)
+        grid2 = gs.GridSpec(2, 2)
+        ax = fig2.add_subplot(grid2[:, :])
+        for cont in a.additional_attributes['k_gp/k_i:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
         ax.set_xlabel(r'$k_{gp}$')
         ax.set_ylabel(r'$k_{i}$')
         plt.tight_layout()
 
-        fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
-        grid2 = gs.GridSpec(1, 1)
+        # 2D continuation k_i x k_gp_e
+        ##############################
 
-        ax = fig2.add_subplot(grid2[:, :])
-        ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont='c3.2:k_gp/k_i', ax=ax, line_color_stable='#8299b0',
-                                 line_color_unstable='#8299b0', default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
-        i = 1
-        while i < 10:
-            try:
-                ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont=f'c3.2:k_gp/k_i/ZH{i}', ax=ax,
-                                         line_color_stable='#3689c9', line_color_unstable='#3689c9',
-                                         default_size=markersize1, line_style_unstable='solid', ignore=['BP', 'LP'],
-                                         custom_bf_styles={'PD': {'marker': 'P'}, 'TR': {'marker': 'X'}})
-                i += 1
-            except KeyError:
-                i += 1
-                continue
-        i = 1
-        while i < 10:
-            try:
-                ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont=f'c3.2:k_gp/k_i/GH{i}', ax=ax,
-                                         line_color_stable='#b8b632', line_color_unstable='#b8b632',
-                                         default_size=markersize1, line_style_unstable='solid', ignore=['BP', 'LP'],
-                                         custom_bf_styles={'PD': {'marker': 'P'}, 'TR': {'marker': 'X'}})
-                i += 1
-            except (KeyError, IndexError):
-                i += 1
-                continue
-
-        ax.set_xlabel(r'$k_{gp}$')
-        ax.set_ylabel(r'$k_{i}$')
+        fig3 = plt.figure(tight_layout=True, figsize=(6.0, 6.0), dpi=dpi)
+        grid3 = gs.GridSpec(2, 2)
+        ax = fig3.add_subplot(grid3[:, :])
+        for cont in a.additional_attributes['k_i/k_gp_e:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(24)', 'PAR(26)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+        ax.set_xlabel(r'$k_{i}$')
+        ax.set_ylabel(r'$k_{stn}$')
         plt.tight_layout()
         plt.show()

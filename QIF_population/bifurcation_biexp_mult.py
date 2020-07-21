@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 
 #########################################
 # configs, descriptions and definitions #
@@ -40,7 +40,7 @@ n_params = 6
 a = PyAuto("auto_files")
 
 # initial continuation in the adaptation strength alpha
-alpha_0 = [0.005, 0.01, 0.02, 0.04, 0.08]
+alpha_0 = [0.125, 0.25, 0.5, 1.0, 2.0]
 alpha_solutions, alpha_cont = a.run(e='qif_biexp_mult', c='qif', ICP=3, UZR={3: alpha_0},
                                     STOP=['UZ' + str(len(alpha_0))], DSMAX=0.005, NMX=4000, name='s0')
 
@@ -62,35 +62,61 @@ eta_points, eta_cont = solutions_eta[3]
 
 if codim1:
 
+    # 1D continuations in eta and tau1
+    ##################################
+
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=1, DSMAX=0.1, NMX=2000,
-                                            origin=eta_cont, name='eta_hb1')
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=1, DSMAX=0.1, NMX=2000,
-                                            origin=eta_cont, name='eta_hb2')
-    tau2_hb2_solutions, tau2_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=5, DSMAX=0.1, NMX=300, RL0=0.0,
-                                              origin=eta_cont, name='tau2_hb2')
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.1, NMX=2000,
+                                            origin=eta_cont, name='eta/hb1', STOP={'BP1'})
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, NMX=2000,
+                                            origin=eta_cont, name='eta/hb2', UZR={1: [-5.2]})
+
+    # limit cycle continuation in tau1
+    tau1_hb2_solutions, tau1_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[4, 11], DSMAX=0.1, NMX=2000,
+                                              RL0=0.001, origin=eta_cont, name='tau_r/hb2', STOP={'BP1'})
+    tau1_lc_solutions, tau1_lc_cont = a.run(starting_point='UZ1', c='qif_lc', ICP=[4, 11], DSMAX=0.1, NMX=2000,
+                                            RL0=0.001, origin=eta_hb2_cont, name='tau_r/lc', STOP={'BP1'}, DS='-')
 
     if codim2:
 
-        # continuation in eta and tau2
-        ##############################
+        # 2D continuations in tau1, eta and alpha
+        #########################################
 
-        # continue the limit cycle borders in tau2 and eta
-        eta_tau2_hb2_solutions, eta_tau2_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[1, 5], DSMAX=0.01,
+        # continue the limit cycle borders in tau1 and eta
+        eta_tau2_hb2_solutions, eta_tau2_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[1, 4], DSMAX=0.01,
                                                           NMX=6000, bidirectional=True, origin=eta_cont,
-                                                          name='eta_tau2_hb2')
+                                                          name='tau_r/eta/hb2')
 
         # continue the stable region of the limit cycle
         tau2s = np.round(np.linspace(2e-2, 25.0, n_grid_points)[::-1], decimals=4).tolist()
-        eta_tau2_hb2_lc_solutions, eta_tau2_hb2_lc_cont = a.run(starting_point='LP2', c='qif3', ICP=[1, 11, 5],
-                                                                NMX=4000, DSMAX=0.01, UZR={5: tau2s}, STOP=[],
-                                                                origin=eta_hb2_cont, bidirectional=True,
-                                                                name='eta_tau2_hb2b')
+        eta_tau2_hb2_lc_solutions, eta_tau2_hb2_lc_cont = a.run(starting_point='LP1', c='qif3', ICP=[4, 1, 11],
+                                                                NMX=4000, DSMAX=0.01, UZR={4: tau2s}, STOP=[],
+                                                                origin=eta_hb2_cont, bidirectional=True, RL0=0.001,
+                                                                name='tau_r/eta/lc_lp1')
 
-        # continue the fold bifurcation in eta and tau2
-        eta_tau2_lp2_solution, eta_tau2_lp2_cont = a.run(starting_point='LP2', c='qif2', ICP=[1, 5], DSMAX=0.01,
-                                                         NMX=4000, origin=eta_cont, bidirectional=True,
-                                                         name='eta_tau2_lp2')
+        # continue the period doubling region of the limit cycle
+        eta_tau2_pd_solutions, eta_tau2_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[4, 1, 11],
+                                                        NMX=4000, DSMAX=0.01, UZR={4: tau2s}, STOP=[],
+                                                        origin=tau1_lc_cont, bidirectional=True, RL0=0.001,
+                                                        name='tau_r/eta/lc_pd1')
+
+        # continue the limit cycle borders in alpha and tau1
+        tau1_alpha_hb2_solution, tau1_alpha_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[4, 3],
+                                                             DSMAX=0.01, NMX=2000, RL0=0.001, DS='-', origin=eta_cont,
+                                                             name='tau_r/alpha/hb2', bidirectional=True)
+
+        # continue the stable region of the limit cycle
+        tau2s = np.round(np.linspace(2e-2, 25.0, n_grid_points)[::-1], decimals=4).tolist()
+        tau1_alpha_hb2_lc_solutions, tau1_alpha_hb2_lc_cont = a.run(starting_point='LP1', c='qif3', ICP=[4, 3, 11],
+                                                                    NMX=4000, DSMAX=0.01, UZR={4: tau2s}, STOP=[],
+                                                                    origin=eta_hb2_cont, bidirectional=True, RL0=0.001,
+                                                                    name='tau_r/alpha/lc_lp1')
+
+        # continue the period doubling region of the limit cycle
+        tau1_alpha_pd_solutions, tau1_alpha_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[4, 3, 11],
+                                                            NMX=4000, DSMAX=0.01, UZR={4: tau2s}, STOP=[],
+                                                            origin=tau1_lc_cont, bidirectional=True, RL0=0.001,
+                                                            name='tau_r/alpha/lc_pd1')
 
         # get limit cycle periods
         if period_mapping:
@@ -108,30 +134,6 @@ if codim1:
                             idx_r = np.argwhere(np.round(point_info_tmp['PAR(5)'], decimals=4) == tau2s)
                             period_solutions[idx_r, idx_c] = point_info_tmp['period']
 
-        # continuation in eta and tau1
-        ##############################
-
-        # continue the limit cycle borders in eta and tau1
-        eta_tau1_hb2_solution, eta_tau1_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[1, 4], DSMAX=0.01,
-                                                         NMX=4000, origin=eta_cont, bidirectional=True)
-
-        # continue the stable region of the limit cycle
-        eta_tau1_lp2_solution, eta_tau1_lp2_cont = a.run(starting_point='LP2', c='qif3', ICP=[1, 11, 4], NMX=4000,
-                                                         DSMAX=0.01, STOP='LP2', origin=eta_hb2_cont,
-                                                         bidirectional=True)
-
-        # continuation in tau1 and tau2
-        ###############################
-
-        # continue the limit cycle borders in alpha and tau1
-        a.run(starting_point='HB2', c='qif2', ICP=[5, 4], DSMAX=0.01, NMX=4000, RL0=0.0, origin=eta_cont)
-        tau2_tau1_hb2_solution, tau2_tau1_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 4], DSMAX=0.01,
-                                                           NMX=2000, RL0=0.0, DS='-', origin=eta_cont)
-
-        # continue the stable region of the limit cycle
-        a.run(starting_point='LP2', c='qif3', ICP=[5, 11, 4], NMX=1800, RL0=0.0, DSMAX=0.01, origin=tau2_hb2_cont)
-        tau2_tau1_hb2_lc_solution, tau2_tau1_hb2_lc_cont = a.run(starting_point='LP2', c='qif3', ICP=[5, 11, 4], DS='-',
-                                                                 NMX=8000, RL0=0.0, DSMAX=0.01, origin=tau2_hb2_cont)
 
 ################
 # save results #
