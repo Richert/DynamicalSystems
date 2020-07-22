@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = [True, False]
+c1 = [False, True]
 c2 = False
 
 # initial continuations
@@ -111,9 +111,9 @@ if any(c1):
 
         # driver parameter boundaries
         alpha_min = 0.0
-        alpha_max = 50.0
-        omega_min = 30.0
-        omega_max = 90.0
+        alpha_max = 60.0
+        omega_min = 25.0
+        omega_max = 100.0
 
         # driver parameter grid
         n = 100
