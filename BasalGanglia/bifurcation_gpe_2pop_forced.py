@@ -61,7 +61,7 @@ if any(c1):
 
         # driver parameter boundaries
         alpha_min = 0.0
-        alpha_max = 100.0
+        alpha_max = 60.0
         omega_min = 25.0
         omega_max = 100.0
 

@@ -44,9 +44,9 @@ starting_cont = t_cont
 # step 1: choose base level of GPe coupling strength
 s0_sols, s0_cont = a.run(starting_point=starting_point, c='qif', ICP=22, NPAR=n_params, name='k_gp', NDIM=n_dim,
                          RL0=0.99, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.2,
-                         UZR={22: [10.0, 20.0, 30.0, 40.0]}, STOP={})
+                         UZR={22: [10.0, 15.0, 20.0, 25.0, 30.0]}, STOP={})
 
-starting_point = 'UZ2'
+starting_point = 'UZ4'
 starting_cont = s0_cont
 
 # step 2: choose relative projection strength of GPe-p vs. GPe-a
@@ -570,7 +570,7 @@ if any(c3):
 
         c3_b3_cd2_1 = codim2_search(params=[26, 22], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
                                     periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=10.0, NMX=8000,
-                                    DSMAX=0.05, max_recursion_depth=3, name="c3.2", kwargs_2D_lc_cont={'c': 'qif3'},
+                                    DSMAX=0.05, max_recursion_depth=2, name="c3.2", kwargs_2D_lc_cont={'c': 'qif3'},
                                     kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
 
         # save results
@@ -582,7 +582,7 @@ if any(c3):
 
         c3_b3_cd2_2 = codim2_search(params=[24, 22], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
                                     periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=10.0, NMX=8000,
-                                    DSMAX=0.05, max_recursion_depth=3, name="c3.2")
+                                    DSMAX=0.05, max_recursion_depth=2, name="c3.2")
 
         # save results
         kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys()),
@@ -594,7 +594,7 @@ if any(c3):
 
         c3_b3_cd2_3 = codim2_search(params=[26, 24], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
                                     periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=10.0, NMX=8000,
-                                    DSMAX=0.05, max_recursion_depth=3)
+                                    DSMAX=0.05, max_recursion_depth=2)
 
         # save results
         kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys()),

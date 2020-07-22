@@ -69,7 +69,7 @@ for pd in a.additional_attributes['pd_solutions']:
 # cmaps = ['Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds']
 # for cm, pd in zip(cmaps, a.additional_attributes['pd_solutions'][:-2]):
 #     ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=pd, ax=ax2, linewidths=2.0, point='PD1',
-#                             cmap=plt.get_cmap(cm), force_axis_lim_update=True)
+#                             cmap=plt.get_cmap(cm), force_axis_lim_update=True, cutoff=0.0)
 # ax2 = a.plot_trajectory(vars=['U(1)', 'U(2)', 'U(3)'], cont=a.additional_attributes['pd_solutions'][-1], ax=ax2,
 #                         linewidths=2.0, point='PD1', cmap=plt.get_cmap('magma'))
 
