@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = [True, False]
+c1 = [False, True]
 c2 = False
 
 # initial continuations
@@ -61,19 +61,19 @@ if any(c1):
 
         # driver parameter boundaries
         alpha_min = 0.0
-        alpha_max = 50.0
-        omega_min = 30.0
-        omega_max = 90.0
+        alpha_max = 100.0
+        omega_min = 25.0
+        omega_max = 100.0
 
         # step 1: codim 1 investigation of driver strength
         c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
                                  NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
-                                 RL1=alpha_max, STOP={}, UZR={23: [20.0]})
+                                 RL1=alpha_max, STOP={}, UZR={23: [35.0]})
 
         # step 2: codim 1 investigation of driver period
         c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
                                  NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=omega_min,
-                                 RL1=omega_max, STOP={}, UZR={25: [20.0]}, bidirectional=True)
+                                 RL1=omega_max, STOP={}, UZR={}, bidirectional=True)
 
         # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
         i, j = 0, 0
@@ -96,7 +96,7 @@ if any(c1):
                         p2_tmp = f'PD{j}'
                         c2_sols, c2_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
                                                  NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
-                                                 DSMAX=0.05, RL0=omega_min, RL1=omega_max, STOP={'BP1', 'R25'}, UZR={},
+                                                 DSMAX=0.05, RL0=omega_min, RL1=omega_max, STOP={'BP1', 'R22'}, UZR={},
                                                  bidirectional=True)
 
             # save results
@@ -117,8 +117,8 @@ if any(c1):
 
         # driver parameter grid
         n = 20
-        alphas = np.linspace(32.0, 38.0, num=n)
-        omegas = np.linspace(54.0, 62.0, num=n)
+        alphas = np.round(np.linspace(32.0, 38.0, num=n), decimals=3)
+        omegas = np.round(np.linspace(54.0, 62.0, num=n), decimals=3)
 
         # step 1: codim 1 investigation of driver strength
         c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
@@ -143,6 +143,7 @@ if any(c1):
                         omega_col.append(data[2])
                         le_max_col.append(np.max(data[3]))
                         fd_col.append(fractal_dimension(data[3]))
+                i += 1
 
         # save results
         fname = '../results/gpe_2pop_forced_lc_chaos.pkl'

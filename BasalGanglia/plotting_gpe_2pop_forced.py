@@ -40,10 +40,10 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
-c1 = False  # oscillatory
-c2 = True  # bistable
+c1 = [True, False]  # oscillatory
+c2 = False  # bistable
 
-if c1:
+if c1[0]:
 
     fname = 'results/gpe_2pop_forced_lc.pkl'
     a = PyAuto.from_file(fname)
@@ -93,35 +93,60 @@ if c1:
     ax.set_ylabel(r'$\omega$')
     fig1.canvas.draw()
     #ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
-    ax.set_xlim([0.0, 50.0])
-    ax.set_ylim([10.0, 80.0])
+    #ax.set_xlim([0.0, 50.0])
+    #ax.set_ylim([10.0, 80.0])
 
     plt.tight_layout()
     plt.show()
 
+if c1[1]:
+
+    fname = 'results/gpe_2pop_forced_lc_chaos.pkl'
+    a = PyAuto.from_file(fname)
+
     # lyapunov exponents and fractal dimension
     ##########################################
 
-    # fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
-    # grid2 = gs.GridSpec(1, 2)
-    #
-    # # maximal lyapunov exponent
-    # ax = fig2.add_subplot(grid2[0, 0])
-    # ax = plot_connectivity(a.LE_max.T, ax=ax, threshold=False)
-    # ax.invert_yaxis()
-    # ax.set_xticks(ax.get_xticks()[0::4])
-    # ax.set_yticks(ax.get_yticks()[0::4])
-    # ax.set_xticklabels(np.round(a.omega[0::4], decimals=1))
-    # ax.set_yticklabels(np.round(a.alpha[0::4], decimals=1))
-    #
-    # # fractal dimension
-    # ax = fig2.add_subplot(grid2[0, 1])
-    # ax = plot_connectivity(a.D_ky.T, ax=ax)
-    # ax.invert_yaxis()
-    # ax.set_xticks(ax.get_xticks()[0::4])
-    # ax.set_yticks(ax.get_yticks()[0::4])
-    # ax.set_xticklabels(np.round(a.omega[0::4], decimals=1))
-    # ax.set_yticklabels(np.round(a.alpha[0::4], decimals=1))
+    # extract data
+    alphas = np.round(a.additional_attributes['alphas'], decimals=3)
+    omegas = np.round(a.additional_attributes['omegas'], decimals=3)
+    le_max = a.additional_attributes['lyapunovs']
+    fds = a.additional_attributes['fractal_dimensions']
+
+    alphas_sorted = np.sort(np.unique(alphas))
+    omegas_sorted = np.sort(np.unique(omegas))
+    n, m = len(alphas_sorted), len(omegas_sorted)
+
+    le_mat = np.zeros((n, m))
+    fd_mat = np.zeros_like(le_mat)
+
+    for a, o, le, fd in zip(alphas, omegas, le_max, fds):
+        idx_r = np.argwhere(alphas_sorted == a)
+        idx_c = np.argwhere(omegas_sorted == o)
+        le_mat[idx_r, idx_c] = le
+        fd_mat[idx_r, idx_c] = fd
+
+    # plotting
+    fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
+    grid2 = gs.GridSpec(1, 2)
+
+    # maximal lyapunov exponent
+    ax = fig2.add_subplot(grid2[0, 0])
+    ax = plot_connectivity(le_mat, ax=ax, threshold=False)
+    ax.invert_yaxis()
+    ax.set_xticks(ax.get_xticks()[0::4])
+    ax.set_yticks(ax.get_yticks()[0::4])
+    ax.set_xticklabels(np.round(omegas_sorted[0::4], decimals=1))
+    ax.set_yticklabels(np.round(alphas_sorted[0::4], decimals=1))
+
+    # fractal dimension
+    ax = fig2.add_subplot(grid2[0, 1])
+    ax = plot_connectivity(fd_mat, ax=ax)
+    ax.invert_yaxis()
+    ax.set_xticks(ax.get_xticks()[0::4])
+    ax.set_yticks(ax.get_yticks()[0::4])
+    ax.set_xticklabels(np.round(omegas_sorted, decimals=1))
+    ax.set_yticklabels(np.round(alphas_sorted, decimals=1))
 
     plt.show()
 
