@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 n_dim = 20
 n_params = 25
 a = PyAuto("auto_files")
-c1 = [False, True]
+c1 = [True, False]
 c2 = False
 
 # initial continuations
