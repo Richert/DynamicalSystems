@@ -12,11 +12,11 @@
 	double precision E_a, x_a, I_a, y_a
 	double precision eta_p, eta_a, eta_s, eta_e
 	double precision k_pe, k_ae, k_pp, k_ap, k_pa, k_aa, k_ps, k_as
-	double precision delta_p, delta_a
+	double precision delta_p, delta_a, delta
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
 	double precision k_p_d, k_a_d
-	double precision PI, k_gp, k_i, k_p, k_po
+	double precision PI, k_gp, k_i, k_p, k_po, eta, k
 	double precision x1, x2, s1, s2, alpha, omega, slope, t_on, t_off
 
 	! declare parameters
@@ -56,21 +56,24 @@
 	PI = 3.141592653589793
 	slope = 100.0
 	omega = 2.0*PI/(t_on+t_off)
+	delta = 10.0
+	k = 10.0
+	eta = 100.0
 
-	delta_p = delta_p*tau_p*tau_p
-	delta_a = delta_a*tau_a*tau_a
+	delta_p = delta_p*delta
+	delta_a = delta_a*delta
 
-	eta_p = eta_p*delta_p
-	eta_a = eta_a*delta_a
+	eta_p = eta_p*eta
+	eta_a = eta_a*eta
 
-	k_pe = k_pe*sqrt(delta_p)
-	k_ae = k_ae*sqrt(delta_a)
-	k_pp = k_pp*sqrt(delta_p)*k_gp*k_p*k_po/k_i
-	k_ap = k_ap*sqrt(delta_a)*k_gp*k_i*k_p*k_po
-	k_pa = k_pa*sqrt(delta_p)*k_gp*k_i/k_p
-	k_aa = k_aa*sqrt(delta_a)*k_gp/(k_i*k_p)
-	k_ps = k_ps*sqrt(delta_p)
-	k_as = k_as*sqrt(delta_a)
+	k_pe = k_pe*k
+	k_ae = k_ae*k
+	k_pp = k_pp*k_gp*k_p*k_po*k/k_i
+	k_ap = k_ap*k_gp*k_i*k_p*k_po*k
+	k_pa = k_pa*k_gp*k_i*k/k_p
+	k_aa = k_aa*k_gp*k/(k_i*k_p)
+	k_ps = k_ps*k
+	k_as = k_as*k
 
 	! extract state variables from input vector
 	r_e = y(1)
@@ -168,8 +171,8 @@
 	k_i = 1.0
 	k_po = 1.0
 
-	delta_p = 0.1
-	delta_a = 0.2
+	delta_p = 9.0
+	delta_a = 12.0
 
 	eta_e = 0.02
 	eta_p = 0.0

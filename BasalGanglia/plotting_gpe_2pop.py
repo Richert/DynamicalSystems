@@ -38,9 +38,9 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
-c1 = False  # strong GPe-p projections
+c1 = True  # strong GPe-p projections
 c2 = False  # strong bidirectional coupling between GPe-p and GPe-a
-c3 = True  # weak bidirectional coupling between GPe-p and GPe-a
+c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
 
 ##########################################################################
 # c1: investigation of GPe behavior for strong GPe-p to GPe-a connection #
@@ -51,52 +51,129 @@ if c1:
     fname = 'results/gpe_2pop_c1.pkl'
     a = PyAuto.from_file(fname)
 
-    # continuation of eta_a and k_pp
-    ################################
+    # codim 1 bifurcation diagrams
+    ##############################
 
-    fig1 = plt.figure(tight_layout=True, figsize=(8.0, 8.0), dpi=dpi)
-    grid1 = gs.GridSpec(2, 6)
+    fig1 = plt.figure(tight_layout=True, figsize=(10.0, 8.0), dpi=dpi)
+    grid1 = gs.GridSpec(3, 6)
 
-    # codim 1: eta_a
-    ax = fig1.add_subplot(grid1[0, 4:])
-    for i in range(len(a.additional_attributes['k_i'])):
-        ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v{i}', ax=ax, line_color_stable='#76448A',
-                                 line_color_unstable='#5D6D7E', default_size=markersize1,
-                                 custom_bf_styles={'HB': {'color': 'k'}})
+    # codim 1: eta_a / hopf
+    ax = fig1.add_subplot(grid1[0, :3])
+    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1', ax=ax, line_color_stable='#76448A',
+                             line_color_unstable='#5D6D7E', default_size=markersize1,
+                             custom_bf_styles={'HB': {'color': 'k'}})
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel('Firing rate')
-    ax.set_xlim([-6.5, 9.0])
-    ax.set_ylim([0.0, 0.13])
-    ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([0.0, 25.0, 50.0, 75.0, 100.0, 125.0])
+    # ax.set_xlim([-6.5, 9.0])
+    # ax.set_ylim([0.0, 0.13])
+    # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
+    # ax.set_yticklabels([0.0, 25.0, 50.0, 75.0, 100.0, 125.0])
 
-    # codim 2: eta_a and k_i
-    ax = fig1.add_subplot(grid1[1, :3])
+    # codim 1: eta_a / fold
+    ax = fig1.add_subplot(grid1[0, 3:])
+    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v2', ax=ax, line_color_stable='#76448A',
+                             line_color_unstable='#5D6D7E', default_size=markersize1,
+                             custom_bf_styles={'HB': {'color': 'k'}})
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel('Firing rate')
+    # ax.set_xlim([-6.5, 9.0])
+    # ax.set_ylim([0.0, 0.13])
+    # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
+    # ax.set_yticklabels([0.0, 25.0, 50.0, 75.0, 100.0, 125.0])
+
+    # codim 2 investigations of hopf
+    ################################
+
+    # codim 2: eta_a and eta_p
+    ax = fig1.add_subplot(grid1[1, :2])
     for i in [0, 3, 6]:
-        for cont in a.additional_attributes[f'c{i}:k_i/eta_a:names']:
+        for cont in a.additional_attributes[f'v1:eta_p/eta_a:names']:
             if "(LP)" in cont:
                 color = '#8299b0'
             else:
                 color = '#3689c9'
-            ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont=cont, ax=ax, line_color_stable=color,
+            ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont=cont, ax=ax, line_color_stable=color,
                                      line_color_unstable=color, default_size=markersize1,
                                      line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a')
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$\eta_p$')
+    plt.tight_layout()
+
+    # codim 2: eta_a and k_i
+    ax = fig1.add_subplot(grid1[1, 2:4])
+    for i in [0, 2, 4]:
+        for cont in a.additional_attributes[f'v1:k_i/eta_a:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+    ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel(r'$k_{i}$')
     plt.tight_layout()
 
-    # codim 2: k_ap and k_i
-    ax = fig1.add_subplot(grid1[1, 3:])
+    # codim 2: eta_p and k_i
+    ax = fig1.add_subplot(grid1[1, 4:])
     for i in [0, 2, 4]:
-        for cont in a.additional_attributes[f'c{i}:k_i/k_ap:names']:
+        for cont in a.additional_attributes[f'v1:k_p/eta_a:names']:
             if "(LP)" in cont:
                 color = '#8299b0'
             else:
                 color = '#3689c9'
-            ax = a.plot_continuation('PAR(21)', 'PAR(7)', cont=cont, ax=ax, line_color_stable=color,
+            ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont=cont, ax=ax, line_color_stable=color,
                                      line_color_unstable=color, default_size=markersize1,
                                      line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$k_{ap}$')
+    ax.set_xlabel(r'$\eta_p$')
+    ax.set_ylabel(r'$k_{i}$')
+    plt.tight_layout()
+
+    # codim 2 investigations of fold
+    ################################
+
+    # codim 2: v1 eta_a and eta_p
+    ax = fig1.add_subplot(grid1[2, :2])
+    for i in [0, 3, 6]:
+        for cont in a.additional_attributes[f'v2:eta_p/eta_a:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$\eta_p$')
+    plt.tight_layout()
+
+    # codim 2: eta_a and k_i
+    ax = fig1.add_subplot(grid1[2, 2:4])
+    for i in [0, 2, 4]:
+        for cont in a.additional_attributes[f'v2:k_i/eta_a:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$k_{i}$')
+    plt.tight_layout()
+
+    # codim 2: eta_p and k_i
+    ax = fig1.add_subplot(grid1[2, 4:])
+    for i in [0, 2, 4]:
+        for cont in a.additional_attributes[f'v2:k_p/eta_a:names']:
+            if "(LP)" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+    ax.set_xlabel(r'$\eta_p$')
     ax.set_ylabel(r'$k_{i}$')
     plt.tight_layout()
 

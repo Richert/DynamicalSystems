@@ -214,7 +214,7 @@
 	k_gp_s = 1.0
 	k_a_out = 1.0
 
-	delta_e = 0.2
+	delta_e = 0.05
 	delta_p = 0.1
 	delta_a = 0.2
 
@@ -226,7 +226,7 @@
 	k_ee = 6.0
 	k_pe = 80.0
 	k_ae = 80.0
-	k_ep = 100.0
+	k_ep = 160.0
 	k_pp = 1.0
 	k_ap = 1.0
 	k_pa = 1.0

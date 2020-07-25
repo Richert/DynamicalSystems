@@ -32,7 +32,7 @@ c3 = [  # strong GPe-p <-> GPe-a coupling
 # continuation in time
 ######################
 
-t_sols, t_cont = a.run(e='stn_gpe_syns', c='ivp', ICP=14, NMX=1000000, name='t', UZR={14: 10000.0}, STOP={'UZ1'},
+t_sols, t_cont = a.run(e='stn_gpe_syns', c='ivp', ICP=14, NMX=1000000, name='t', UZR={14: 2000.0}, STOP={'UZ1'},
                        NDIM=n_dim, NPAR=n_params)
 
 starting_point = 'UZ1'
@@ -527,8 +527,8 @@ if any(c3):
 
         # step 1: codim 1 investigation
         c3_b0_sols, c3_b0_cont = a.run(starting_point=starting_point, c='qif', ICP=1, NPAR=n_params,
-                                       name='c3.2:eta_e', NDIM=n_dim, RL0=-10.0, RL1=10.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={1: [6.0]})
+                                       name='c3.2:eta_e', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={1: [12.0]})
 
         starting_point = 'UZ1'
         starting_cont = c3_b0_cont
@@ -539,7 +539,7 @@ if any(c3):
         # step 1: codim 1 investigation
         c3_b1_sols, c3_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params,
                                        name='c3.2:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={2: [-5.0]})
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={2: [-2.0]})
 
         starting_point = 'UZ1'
         starting_cont = c3_b1_cont
@@ -550,7 +550,7 @@ if any(c3):
         # step 1: codim 1 investigation
         c3_b2_sols, c3_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
                                        name=f'c3.2:eta_a', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={3: [4.0]})
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={3: [3.0]})
 
         starting_point = 'UZ1'
         starting_cont = c3_b2_cont
@@ -562,16 +562,17 @@ if any(c3):
 
         # step 1: 1D continuation in k_gp
         c3_b3_sols, c3_b3_cont = a.run(starting_point=starting_point, c='qif', ICP=22, NPAR=n_params,
-                                       name=f'c3.2:k_gp', NDIM=n_dim, RL1=60.0, origin=starting_cont, NMX=6000,
+                                       name=f'c3.2:k_gp', NDIM=n_dim, RL1=100.0, origin=starting_cont, NMX=6000,
                                        DSMAX=0.1, UZR={})
 
         # 2D bifurcation analysis: k_gp x k_gp_e
         ########################################
 
         c3_b3_cd2_1 = codim2_search(params=[26, 22], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
-                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=10.0, NMX=8000,
-                                    DSMAX=0.05, max_recursion_depth=2, name="c3.2", kwargs_2D_lc_cont={'c': 'qif3'},
-                                    kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
+                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.2, RL1=5.0, NMX=8000,
+                                    DSMAX=0.05, max_recursion_depth=2, name="k_gp/k_gp_e",
+                                    kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                    kwargs_lc_cont={'c': 'qif2b'})
 
         # save results
         kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys())}
@@ -581,8 +582,9 @@ if any(c3):
         #####################################
 
         c3_b3_cd2_2 = codim2_search(params=[24, 22], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
-                                    periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=10.0, NMX=8000,
-                                    DSMAX=0.05, max_recursion_depth=2, name="c3.2")
+                                    periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.2, RL1=5.0, NMX=8000,
+                                    DSMAX=0.05, max_recursion_depth=2, name="k_gp/k_i", kwargs_2D_lc_cont={'c': 'qif3'},
+                                    kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
 
         # save results
         kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys()),
@@ -593,11 +595,46 @@ if any(c3):
         #######################################
 
         c3_b3_cd2_3 = codim2_search(params=[26, 24], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
-                                    periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=10.0, NMX=8000,
-                                    DSMAX=0.05, max_recursion_depth=2)
+                                    periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.2, RL1=5.0, NMX=8000,
+                                    DSMAX=0.05, max_recursion_depth=2, name="k_i/k_gp_e",
+                                    kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                    kwargs_lc_cont={'c': 'qif2b'})
 
         # save results
         kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys()),
                   'k_gp/k_i:names': list(c3_b3_cd2_2.keys()),
                   'k_i/k_gp_e:names': list(c3_b3_cd2_3.keys())}
+        a.to_file(fname, **kwargs)
+
+        # 2D bifurcation analysis: eta_a x k_gp_e
+        #########################################
+
+        c3_b3_cd2_4 = codim2_search(params=[26, 3], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
+                                    periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.2, RL1=5.0, NMX=8000,
+                                    DSMAX=0.05, max_recursion_depth=2, name="k_gp_e/eta_p",
+                                    kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                    kwargs_lc_cont={'c': 'qif2b'})
+
+        # save results
+        kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys()),
+                  'k_gp/k_i:names': list(c3_b3_cd2_2.keys()),
+                  'k_i/k_gp_e:names': list(c3_b3_cd2_3.keys()),
+                  'k_gp_e/eta_a:names': list(c3_b3_cd2_4.keys())}
+        a.to_file(fname, **kwargs)
+
+        # 2D bifurcation analysis: eta_p x k_i
+        ######################################
+
+        c3_b3_cd2_5 = codim2_search(params=[24, 2], starting_points=['HB1'], origin=c3_b3_cont, pyauto_instance=a,
+                                    periodic=False, c='qif2', NDIM=n_dim, NPAR=n_params, RL0=0.2, RL1=5.0, NMX=8000,
+                                    DSMAX=0.05, max_recursion_depth=2, name="k_i/eta_p",
+                                    kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                    kwargs_lc_cont={'c': 'qif2b'})
+
+        # save results
+        kwargs = {'k_gp/k_gp_e:names': list(c3_b3_cd2_1.keys()),
+                  'k_gp/k_i:names': list(c3_b3_cd2_2.keys()),
+                  'k_i/k_gp_e:names': list(c3_b3_cd2_3.keys()),
+                  'k_gp_e/eta_p:names': list(c3_b3_cd2_4.keys()),
+                  'k_i/eta_p:names': list(c3_b3_cd2_5.keys())}
         a.to_file(fname, **kwargs)
