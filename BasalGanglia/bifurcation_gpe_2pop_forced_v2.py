@@ -21,8 +21,13 @@ store_vars = ['U(2)', 'U(4)', 'U(19)', 'U(20)']
 
 # continuation of total intrinsic coupling strengths inside GPe
 s0_sols, s0_cont = a.run(e='gpe_2pop_forced', c='qif_lc', ICP=[19, 11], NPAR=n_params, name='k_gp',
-                         NDIM=n_dim, RL0=0.0, RL1=100.0, NMX=6000, DSMAX=0.5, UZR={19: [10.0, 15.0, 20.0, 25.0]},
-                         STOP={'UZ4'}, variables=store_vars, params=store_params)
+                         NDIM=n_dim, RL0=0.0, RL1=100.0, NMX=6000, DSMAX=0.5, UZR={19: [10.0, 15.0, 20.0, 25.0, 30.0]},
+                         STOP={'UZ5'}, variables=store_vars, params=store_params)
+
+# continuation of GPe-p projection strength
+s1_sols, s1_cont = a.run(starting_point='UZ5', ICP=[20, 11], NPAR=n_params, name='k_p',
+                         NDIM=n_dim, RL0=0.0, RL1=100.0, NMX=6000, DSMAX=0.5, UZR={20: [1.5]},
+                         STOP={'UZ1'}, variables=store_vars, params=store_params, origin=s0_cont)
 
 ###################################
 # condition 1: oscillatory regime #
@@ -30,14 +35,13 @@ s0_sols, s0_cont = a.run(e='gpe_2pop_forced', c='qif_lc', ICP=[19, 11], NPAR=n_p
 
 if any(c1):
 
-    starting_point = 'UZ4'
-    starting_cont = s0_cont
+    starting_point = 'UZ1'
+    starting_cont = s1_cont
 
     # continuation of between vs. within population coupling strengths
     s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[21, 11], NPAR=n_params, name='c1:k_i',
-                             NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                             bidirectional=True, UZR={21: [0.5, 0.75, 1.5, 2.0]}, STOP={'UZ2'},
-                             variables=store_vars, params=store_params)
+                             NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, DS='-',
+                             UZR={21: [0.75]}, STOP={'UZ1'}, variables=store_vars, params=store_params)
 
     starting_point = 'UZ1'
     starting_cont = s2_cont
@@ -45,7 +49,7 @@ if any(c1):
     # continuation of eta_p
     s3_sols, s3_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[2, 11], NPAR=n_params,
                              name='c1:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                             NMX=6000, DSMAX=0.1, UZR={2: [4.0]}, STOP={'UZ1'}, variables=store_vars,
+                             NMX=6000, DSMAX=0.1, UZR={2: [5.5]}, STOP={'UZ1'}, variables=store_vars,
                              params=store_params)
 
     starting_point = 'UZ1'
@@ -54,7 +58,7 @@ if any(c1):
     # continuation of eta_a
     s4_sols, s4_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[3, 11], NPAR=n_params,
                              name='c1:eta_a', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                             NMX=6000, DSMAX=0.1, UZR={3: [-5.0]}, STOP={'UZ1'}, DS='-', variables=store_vars,
+                             NMX=6000, DSMAX=0.1, UZR={3: [-6.0]}, STOP={'UZ1'}, DS='-', variables=store_vars,
                              params=store_params)
 
     starting_point = 'UZ1'
@@ -157,10 +161,10 @@ if any(c1):
                             fd_col.append(0.0)
                 i += 1
 
-            # save results
-            fname = '../results/gpe_2pop_forced_lc_chaos.pkl'
-            kwargs = {'alphas': alpha_col, 'omegas': omega_col, 'lyapunovs': le_max_col, 'fractal_dimensions': fd_col}
-            a.to_file(fname, **kwargs)
+        # save results
+        fname = '../results/gpe_2pop_forced_lc_chaos.pkl'
+        kwargs = {'alphas': alpha_col, 'omegas': omega_col, 'lyapunovs': le_max_col, 'fractal_dimensions': fd_col}
+        a.to_file(fname, **kwargs)
 
 ################################
 # condition 2: bistable regime #
