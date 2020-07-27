@@ -46,7 +46,7 @@ s0_sols, s0_cont = a.run(starting_point=starting_point, c='qif', ICP=22, NPAR=n_
                          RL0=0.99, RL1=100.0, origin=starting_cont, NMX=6000, DSMAX=0.2,
                          UZR={22: [10.0, 15.0, 20.0, 25.0, 30.0]}, STOP={})
 
-starting_point = 'UZ4'
+starting_point = 'UZ5'
 starting_cont = s0_cont
 
 # step 2: choose relative projection strength of GPe-p vs. GPe-a
@@ -423,7 +423,7 @@ if any(c2):
 
 if any(c3):
 
-    starting_point = 'UZ4'
+    starting_point = 'UZ3'
     starting_cont = s2_cont
 
     # step 4: choose balance between STN -> GPe-p vs. STN -> GPe-a projection
@@ -528,7 +528,7 @@ if any(c3):
         # step 1: codim 1 investigation
         c3_b0_sols, c3_b0_cont = a.run(starting_point=starting_point, c='qif', ICP=1, NPAR=n_params,
                                        name='c3.2:eta_e', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={1: [12.0]})
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={1: [6.0]})
 
         starting_point = 'UZ1'
         starting_cont = c3_b0_cont
@@ -539,10 +539,10 @@ if any(c3):
         # step 1: codim 1 investigation
         c3_b1_sols, c3_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params,
                                        name='c3.2:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={2: [-2.0]})
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={2: [1.0]})
 
         starting_point = 'UZ1'
-        starting_cont = c3_b1_cont
+        starting_cont = c3_b0_cont
 
         # continuation of eta_a
         #######################
@@ -550,10 +550,10 @@ if any(c3):
         # step 1: codim 1 investigation
         c3_b2_sols, c3_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
                                        name=f'c3.2:eta_a', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
-                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={3: [3.0]})
+                                       NMX=6000, DSMAX=0.1, bidirectional=True, UZR={3: [1.0]})
 
         starting_point = 'UZ1'
-        starting_cont = c3_b2_cont
+        starting_cont = c3_b0_cont
 
         # continuation of k_gp
         ######################

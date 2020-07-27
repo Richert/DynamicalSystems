@@ -11,12 +11,12 @@
 	double precision E_e, x_e, I_e, y_e
 	double precision E_p, x_p, I_p, y_p
 	double precision E_a, x_a, I_a, y_a
-	double precision eta_e, eta_p, eta_a, eta_s
+	double precision eta_e, eta_p, eta_a, eta_s, eta
 	double precision k_ee, k_pe, k_ae
 	double precision k_ep, k_pp, k_ap
 	double precision k_pa, k_aa
-	double precision k_ps, k_as
-	double precision delta_e, delta_p, delta_a
+	double precision k_ps, k_as, k
+	double precision delta_e, delta_p, delta_a, delta
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
 	double precision tau_gabaa_r2, tau_gabaa_d2
@@ -67,25 +67,28 @@
 	k_p_d = 1.33
 	k_a_d = 1.33
 	PI = 3.141592653589793
+	delta = 10.0
+	k = 10.0
+	eta = 100.0
 
-	delta_e = delta_e*tau_e*tau_e
-	delta_p = delta_p*tau_p*tau_p
-	delta_a = delta_a*tau_a*tau_a
+	delta_e = delta_e*delta
+	delta_p = delta_p*delta
+	delta_a = delta_a*delta
 
-	eta_e = eta_e*delta_e
-	eta_p = eta_p*delta_p
-	eta_a = eta_a*delta_a
+	eta_e = eta_e*eta
+	eta_p = eta_p*eta
+	eta_a = eta_a*eta
 
-	k_ee = k_ee*sqrt(delta_e)*k_e
-	k_pe = k_pe*sqrt(delta_p)*k_gp_e
-	k_ae = k_ae*sqrt(delta_a)/k_gp_e
-	k_ep = k_ep*sqrt(delta_e)*k_e
-	k_pp = k_pp*sqrt(delta_p)*k_gp*k_p*k_p_out/k_i
-	k_ap = k_ap*sqrt(delta_a)*k_gp*k_i*k_p_out*k_p
-	k_pa = k_pa*sqrt(delta_p)*k_gp*k_i*k_a_out/k_p
-	k_aa = k_aa*sqrt(delta_a)*k_gp*k_a_out/(k_i*k_p)
-	k_ps = k_ps*sqrt(delta_p)*k_gp_s
-	k_as = k_as*sqrt(delta_a)/k_gp_s
+	k_ee = k_ee*k*k_e
+	k_pe = k_pe*k*k_gp_e
+	k_ae = k_ae*k/k_gp_e
+	k_ep = k_ep*k*k_e
+	k_pp = k_pp*k*k_gp*k_p*k_p_out/k_i
+	k_ap = k_ap*k*k_gp*k_i*k_p_out*k_p
+	k_pa = k_pa*k*k_gp*k_i*k_a_out/k_p
+	k_aa = k_aa*k*k_gp*k_a_out/(k_i*k_p)
+	k_ps = k_ps*k*k_gp_s
+	k_as = k_as*k/k_gp_s
 
 	! extract state variables from input vector
 	r_e = y(1)
@@ -214,19 +217,19 @@
 	k_gp_s = 1.0
 	k_a_out = 1.0
 
-	delta_e = 0.05
-	delta_p = 0.1
-	delta_a = 0.2
+	delta_e = 3.0
+	delta_p = 9.0
+	delta_a = 12.0
 
 	eta_e = 0.0
 	eta_p = 0.0
 	eta_a = 0.0
 	eta_s = 0.002
 
-	k_ee = 6.0
+	k_ee = 3.0
 	k_pe = 80.0
 	k_ae = 80.0
-	k_ep = 160.0
+	k_ep = 120.0
 	k_pp = 1.0
 	k_ap = 1.0
 	k_pa = 1.0
