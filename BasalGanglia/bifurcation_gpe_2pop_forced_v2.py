@@ -78,7 +78,7 @@ if any(c1):
         # step 1: codim 1 investigation of driver strength
         c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
                                  NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
-                                 RL1=alpha_max, STOP={}, UZR={23: [45.0]}, variables=store_vars, params=store_params)
+                                 RL1=alpha_max, STOP={}, UZR={23: [60.0]}, variables=store_vars, params=store_params)
 
         # step 2: codim 1 investigation of driver period
         c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
@@ -128,9 +128,9 @@ if any(c1):
         omega_max = 100.0
 
         # driver parameter grid
-        n = 100
-        alphas = np.round(np.linspace(70.0, 90.0, num=n), decimals=3)
-        omegas = np.round(np.linspace(60.0, 70.0, num=n), decimals=3)
+        n = 40
+        alphas = np.round(np.linspace(78.0, 98.0, num=n), decimals=3)
+        omegas = np.round(np.linspace(72.5, 81.5, num=n), decimals=3)
 
         # step 1: codim 1 investigation of driver strength
         c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],

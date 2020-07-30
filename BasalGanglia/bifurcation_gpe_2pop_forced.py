@@ -78,7 +78,7 @@ if any(c1):
         # step 1: codim 1 investigation of driver strength
         c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
                                  NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
-                                 RL1=alpha_max, STOP={}, UZR={23: [45.0]}, variables=store_vars, params=store_params)
+                                 RL1=alpha_max, STOP={}, UZR={23: [60.0]}, variables=store_vars, params=store_params)
 
         # step 2: codim 1 investigation of driver period
         c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],

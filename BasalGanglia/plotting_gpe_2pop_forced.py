@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 from pyrates.utility.visualization import plot_connectivity
 import matplotlib.gridspec as gs
 import numpy as np
