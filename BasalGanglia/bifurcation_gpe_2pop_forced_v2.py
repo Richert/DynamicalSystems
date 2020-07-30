@@ -161,10 +161,11 @@ if any(c1):
                             fd_col.append(0.0)
                 i += 1
 
-        # save results
-        fname = '../results/gpe_2pop_forced_lc_chaos.pkl'
-        kwargs = {'alphas': alpha_col, 'omegas': omega_col, 'lyapunovs': le_max_col, 'fractal_dimensions': fd_col}
-        a.to_file(fname, **kwargs)
+                # save results
+                fname = '../results/gpe_2pop_forced_lc_chaos.pkl'
+                kwargs = {'alphas': alpha_col, 'omegas': omega_col, 'lyapunovs': le_max_col,
+                          'fractal_dimensions': fd_col}
+                a.to_file(fname, **kwargs)
 
 ################################
 # condition 2: bistable regime #
