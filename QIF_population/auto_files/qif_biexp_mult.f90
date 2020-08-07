@@ -31,7 +31,7 @@
        F(1) = D/PI + 2.0*R*V
        F(2) = V*V + J*R*(1.0-E) - PI*PI*R*R + eta
        F(3) = X
-       F(4) = (alpha*R - X*(tau_r+tau_d) - E)/(tau_r*tau_d)
+       F(4) = (alpha*R*tau_d - X*(tau_r+tau_d) - E)/(tau_r*tau_d)
 
       END SUBROUTINE FUNC
 

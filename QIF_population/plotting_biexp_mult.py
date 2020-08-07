@@ -1,7 +1,11 @@
+import sys
+sys.path.append('../')
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
-from pyauto import PyAuto
+#from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
+
 
 # plotting parameters
 linewidth = 0.5
@@ -15,11 +19,11 @@ plt.style.use('seaborn-whitegrid')
 mpl.rcParams['font.family'] = 'Roboto'
 mpl.rcParams['font.size'] = fontsize1
 mpl.rcParams['lines.linewidth'] = linewidth
-mpl.rcParams['ax_data.titlesize'] = fontsize2
-mpl.rcParams['ax_data.titleweight'] = 'bold'
-mpl.rcParams['ax_data.labelsize'] = fontsize2
-mpl.rcParams['ax_data.labelcolor'] = 'black'
-mpl.rcParams['ax_data.labelweight'] = 'bold'
+#mpl.rcParams['ax_data.titlesize'] = fontsize2
+#mpl.rcParams['ax_data.titleweight'] = 'bold'
+#mpl.rcParams['ax_data.labelsize'] = fontsize2
+#mpl.rcParams['ax_data.labelcolor'] = 'black'
+#mpl.rcParams['ax_data.labelweight'] = 'bold'
 mpl.rcParams['xtick.labelsize'] = fontsize1
 mpl.rcParams['ytick.labelsize'] = fontsize1
 mpl.rcParams['xtick.color'] = 'black'
@@ -33,7 +37,7 @@ mpl.rc('text', usetex=True)
 # file loading #
 ################
 
-fname = 'auto_files/biexp_mult.hdf5'
+fname = 'results/biexp_mult.hdf5'
 a = PyAuto.from_file(fname)
 #period_solutions = np.fromfile(f"{fname}_period")
 
@@ -48,15 +52,106 @@ fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
 
 # plot principle eta continuation for different alphas
 ax = axes[0]
-n_alphas = 5
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_0', ax=ax)
-for i in range(2, n_alphas+2):
-    ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax)
+n_alphas = 6 #5
+for i in range(n_alphas):
+    try:
+        ax=a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax)
+    except KeyError:
+        pass
+ax.set_xlabel(r'$\eta$')
 
 # plot eta continuation for single alpha with limit cycle continuation
 ax = axes[1]
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_4', ax=ax)
-ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax)
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax)
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax, ignore=['UZ', 'BP'])
+ax.set_xlim((-6.5, -4))
+ax.set_xlabel(r'$\eta$')
+
+plt.tight_layout()
+
+
+############# Codimension 1 bifurcation diagrams
+fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
+ax = axes[0]
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax)
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax,  ignore=['UZ', 'BP'])
+ax.set_xlim((-6.5, -4))
+ax.axvline(-5.2,0,1, color='orange')
+ax.set_xlabel(r'$\eta$')
+
+
+ax = axes[1]
+#a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/hb2', ax=ax)
+a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/lc', ax=ax)
+ax.set_xlabel(r'$\tau_r$')
+ax.set_xlim((-0.1, 0.6))
+
+plt.tight_layout()
+
+
+############# Codimension 2 bifurcation diagrams
+
+# tau and eta
+
+fig2, ax = plt.subplots(figsize=(3.5, 1.8), dpi=dpi, ncols=1)
+
+# plot eta-tau continuation of the limit cycle
+
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/hb2', ax=ax, ignore=['LP', 'BP', 'UZ'],
+                         line_style_unstable='solid', default_size=markersize1)
+
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_lp1', ax=ax, ignore=['LP', 'BP', 'UZ'],
+                         line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E', line_style_unstable='dotted',
+                         default_size=markersize1)
+
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_pd1', ax=ax, ignore=['LP', 'BP', 'UZ', 'R1', 'R2'],
+                         line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
+                         default_size=markersize1)
+#ax.set_ylim((-15,15))
+
+# cosmetics
+ax.set_xlabel(r'$\bar\eta$')
+ax.set_ylabel(r'$\tau$')
+# ax.set_xticks(xticklabels[::3])
+# ax.set_yticks(yticklabels[::3])
+# ax.set_xlim([-6.5, -2.5])
+# ax.set_ylim([0., 0.2])
+ax.set_title('2D Limit Cycle Continuation')
+plt.tight_layout()
+#plt.savefig('fig2.svg')
+
+
+############# Codimension 2 bifurcation diagrams
+
+# tau and alpha
+
+fig3, ax = plt.subplots(figsize=(3.5, 1.8), dpi=dpi, ncols=1)
+
+# plot eta-tau continuation of the limit cycle
+
+# ax = a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/hb2', ax=ax, ignore=['LP', 'BP', 'UZ'],
+#                          line_style_unstable='solid', default_size=markersize1)
+
+ax = a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/lc_lp1', ax=ax, ignore=['LP', 'BP', 'UZ'],
+                         line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E', line_style_unstable='dotted',
+                         default_size=markersize1)
+
+ax = a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/lc_pd1', ax=ax, ignore=['LP', 'BP', 'UZ', 'R1', 'R2'],
+                         line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
+                         default_size=markersize1)
+#ax.set_ylim((-15,15))
+
+# cosmetics
+ax.set_xlabel(r'$\alpha$')
+ax.set_ylabel(r'$\tau$')
+# ax.set_xticks(xticklabels[::3])
+# ax.set_yticks(yticklabels[::3])
+# ax.set_xlim([-6.5, -2.5])
+# ax.set_ylim([0., 0.2])
+ax.set_title('2D Limit Cycle Continuation')
+plt.tight_layout()
+#plt.savefig('fig2.svg')
+
 plt.show()
 
 #     # plot eta continuation for different alphas
@@ -307,3 +402,42 @@ plt.show()
 #     plt.savefig('fig4.svg')
 #
 # plt.show()
+
+
+
+'''
+# load pyauto instance from file
+fname = 'results/biexp_mult_strange_attractor.pkl'
+a = PyAuto.from_file(fname)
+
+chaos_data = a.additional_attributes['chaos_analysis']
+
+fig = plt.figure()
+
+
+etas = chaos_data['eta']
+eta_rounded = list(map(lambda x : round(x,2), chaos_data['eta'])) 
+lps = chaos_data['lyapunov_exponents']
+fract_dim = chaos_data['fractal_dim']
+
+n_per_row = 4
+n_rows = int(np.ceil(len(etas)/n_per_row))
+gs = fig.add_gridspec(n_rows, n_per_row)
+
+row = 0
+col = 0
+for i, elem in enumerate(eta_rounded):
+    f_ax1 = fig.add_subplot(gs[row, col], projection='3d')
+    ax = a.plot_trajectory(['U(1)', 'U(2)', 'U(3)'], ax=f_ax1, cont=f'eta_{i+1}_t', force_axis_lim_update=True, cmap=plt.get_cmap('magma'),cutoff=200)
+    max_LP = round(max(chaos_data['lyapunov_exponents'][i]), 3)
+    fract_dim = round(chaos_data['fractal_dim'][i], 3)
+    ax.set_title(fr'$\eta$ ={elem}'+f'\nMax LP: {max_LP}'+f'\nDim: {fract_dim}')
+    col+=1
+    if not (i+1)%n_per_row:
+        row+=1
+        col=0
+
+imagepath='../../plots/'+f'biexp_mult_{eta_rounded}'+'.png'
+plt.savefig(imagepath)
+plt.show()
+'''

@@ -343,16 +343,16 @@ if any(c3):
         fig2 = plt.figure(tight_layout=True, figsize=(6.0, 6.0), dpi=dpi)
         grid2 = gs.GridSpec(2, 2)
         ax = fig2.add_subplot(grid2[:, :])
-        for cont in a.additional_attributes['k_gp/k_i:names']:
+        for cont in a.additional_attributes['k_gp/eta_e:names']:
             if "(LP)" in cont:
                 color = '#8299b0'
             else:
                 color = '#3689c9'
-            ax = a.plot_continuation('PAR(22)', 'PAR(24)', cont=cont, ax=ax, line_color_stable=color,
+            ax = a.plot_continuation('PAR(22)', 'PAR(1)', cont=cont, ax=ax, line_color_stable=color,
                                      line_color_unstable=color, default_size=markersize1,
                                      line_style_unstable='solid', ignore=['LP'])
         ax.set_xlabel(r'$k_{gp}$')
-        ax.set_ylabel(r'$k_{i}$')
+        ax.set_ylabel(r'$\eta_p$')
         plt.tight_layout()
 
         # 2D continuation k_i x k_gp_e

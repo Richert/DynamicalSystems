@@ -53,9 +53,9 @@ if c1:
     # step 1: codim 1 investigation
     s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif', ICP=21, NPAR=n_params, name='k_i', NDIM=n_dim,
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
-                             UZR={21: [0.75, 1.8]}, STOP={})
+                             UZR={21: [0.9, 1.8]}, STOP={})
 
-    eta_min = -20.0
+    eta_min = -12.0
     eta_max = 10.0
     c = 1
     kwargs = {}
@@ -66,7 +66,7 @@ if c1:
     # step 1: codim 1 investigation in eta_p
     c1_b1_sols, c1_b1_cont = a.run(starting_point='UZ1', c='qif', ICP=2, NPAR=n_params,
                                    name=f'c1:eta_p/v1', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=s2_cont,
-                                   NMX=6000, DSMAX=0.1, UZR={2: [5.5]})
+                                   NMX=6000, DSMAX=0.1, UZR={2: [4.8]})
     c1_b2_sols, c1_b2_cont = a.run(starting_point='UZ2', c='qif', ICP=2, NPAR=n_params,
                                    name=f'c1:eta_p/v2', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=s2_cont,
                                    NMX=6000, DSMAX=0.1, UZR={2: [3.2]})
@@ -123,9 +123,9 @@ if c1:
                                 kwargs_lc_cont={'c': 'qif2b'})
 
     # step 5: continuation of limit cycle
-    c1_b11_sols, c1_b11_cont = a.run(starting_point='HB1', c='qif2b', ICP=3, NPAR=n_params,
+    c1_b11_sols, c1_b11_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], NPAR=n_params,
                                      name=f'c1:eta_a/v1/lc', NDIM=n_dim, RL0=eta_min, RL1=eta_max, origin=c1_b3_cont,
-                                     NMX=2000, DSMAX=0.1)
+                                     NMX=2000, DSMAX=0.05)
 
     # save results
     kwargs.update({f'v2:eta_p/eta_a:names': list(c1_b8_sols.keys()),
@@ -217,8 +217,8 @@ if c2:
                                    bidirectional=True)
 
     # step 2: codim 2 investigation of fold found in step 1
-    c2_b2_fp1_sols, c2_b2_fp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[19, 3], NPAR=n_params,
-                                           name='c2:eta_a/k_gp', NDIM=n_dim, RL0=10.0, RL1=60.0, origin=c2_b2_cont,
+    c2_b2_fp1_sols, c2_b2_fp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[2, 3], NPAR=n_params,
+                                           name='c2:eta_a/eta_p', NDIM=n_dim, RL0=-10.0, RL1=10.0, origin=c2_b2_cont,
                                            NMX=6000, DSMAX=0.1, STOP={'CP3'}, bidirectional=True)
     c2_b2_fp2_sols, c2_b2_fp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[20, 3], NPAR=n_params,
                                            name='c2:eta_a/k_p', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b2_cont,
@@ -226,6 +226,9 @@ if c2:
     c2_b2_fp3_sols, c2_b2_fp3_cont = a.run(starting_point='LP1', c='qif2', ICP=[21, 3], NPAR=n_params,
                                            name='c2:eta_a/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c2_b2_cont,
                                            NMX=6000, DSMAX=0.1, bidirectional=True, STOP={'CP3'})
+    c2_b2_fp4_sols, c2_b2_fp4_cont = a.run(starting_point='LP1', c='qif2', ICP=[19, 3], NPAR=n_params,
+                                           name='c2:eta_a/k_gp', NDIM=n_dim, RL0=10.0, RL1=50.0, origin=c2_b2_cont,
+                                           NMX=6000, DSMAX=0.1, STOP={'CP3'}, bidirectional=True)
 
     # save results
     fname = '../results/gpe_2pop_c2.pkl'
@@ -263,7 +266,7 @@ if c3:
     # step 1: codim 1 investigation
     s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif', ICP=21, NPAR=n_params, name='k_i', NDIM=n_dim,
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
-                             UZR={21: [0.5, 0.75, 2.0, 4.0]}, STOP={})
+                             UZR={21: [0.5, 0.7, 2.0, 4.0]}, STOP={})
 
     starting_point = 'UZ2'
     starting_cont = s2_cont
@@ -273,7 +276,7 @@ if c3:
                              RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, bidirectional=True,
                              UZR={22: [0.25, 0.5, 2.0, 4.0]}, STOP={})
 
-    starting_point = 'UZ1'
+    starting_point = 'UZ2'
     starting_cont = s2_cont
 
     # continuation of eta_p
@@ -282,7 +285,7 @@ if c3:
     # step 1: codim 1 investigation
     c3_b2_sols, c3_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params, name='c3:eta_p',
                                    NDIM=n_dim, RL0=-5.0, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
-                                   bidirectional=True, UZR={2: [5.0]})
+                                   bidirectional=True, UZR={2: [4.5]})
 
     starting_point = 'UZ1'
     starting_cont = c3_b2_cont
@@ -293,7 +296,7 @@ if c3:
     # step 1: codim 1 investigation
     c3_b1_sols, c3_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params, name='c3:eta_a',
                                    NDIM=n_dim, RL0=-25.0, RL1=15.0, origin=starting_cont, NMX=6000, DSMAX=0.05,
-                                   bidirectional=True, UZR={3: [-10.0]})
+                                   bidirectional=True, UZR={})
 
     # step 2: codim 2 investigation of hopf 1 found in step 1
     c3_b1_hb1_sols, c3_b1_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[19, 3], NPAR=n_params,
@@ -304,6 +307,9 @@ if c3:
                                            NMX=6000, DSMAX=0.1, bidirectional=True)
     c3_b1_hb3_sols, c3_b1_hb3_cont = a.run(starting_point='HB1', c='qif2', ICP=[21, 3], NPAR=n_params,
                                            name='c3:eta_a/k_i', NDIM=n_dim, RL0=0.1, RL1=10.0, origin=c3_b1_cont,
+                                           NMX=6000, DSMAX=0.1, bidirectional=True)
+    c3_b1_hb4_sols, c3_b1_hb4_cont = a.run(starting_point='HB1', c='qif2', ICP=[2, 3], NPAR=n_params,
+                                           name='c3:eta_a/eta_p', NDIM=n_dim, RL0=-10.0, RL1=10.0, origin=c3_b1_cont,
                                            NMX=6000, DSMAX=0.1, bidirectional=True)
 
     # step 3: continuation of periodic orbit of hopf from step 1

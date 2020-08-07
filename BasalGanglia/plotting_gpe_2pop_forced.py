@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from pyrates.utility.pyauto import PyAuto
-from pyrates.utility.visualization import plot_connectivity
+from pyrates.utility.visualization import plot_connectivity, create_cmap
 import matplotlib.gridspec as gs
 import numpy as np
 
@@ -127,27 +127,34 @@ if c1[1]:
         fd_mat[idx_r, idx_c] = fd
 
     # plotting
-    fig2 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
-    grid2 = gs.GridSpec(1, 2)
+    cmap1 = create_cmap("pyrates_green", n_colors=32, as_cmap=False, reverse=True)
+    cmap2 = create_cmap("pyrates_blue", n_colors=64, as_cmap=False, reverse=False)
+    fig2 = plt.figure(tight_layout=True, figsize=(4.0, 6.0), dpi=dpi)
+    grid2 = gs.GridSpec(2, 1)
 
     # maximal lyapunov exponent
     ax = fig2.add_subplot(grid2[0, 0])
-    ax = plot_connectivity(le_mat, ax=ax, threshold=False)
+    ax = plot_connectivity(le_mat.T, ax=ax, threshold=False, cmap=cmap1)
     ax.invert_yaxis()
     ax.set_xticks(ax.get_xticks()[0::4])
     ax.set_yticks(ax.get_yticks()[0::4])
-    ax.set_xticklabels(np.round(omegas_sorted[0::4], decimals=1))
-    ax.set_yticklabels(np.round(alphas_sorted[0::4], decimals=1))
+    ax.set_yticklabels(np.round(omegas_sorted[0::4], decimals=1))
+    ax.set_xticklabels(np.round(alphas_sorted[0::4], decimals=1))
+    ax.set_ylabel(r'$\omega$')
+    ax.set_xlabel(r'$\alpha$')
 
     # fractal dimension
-    ax = fig2.add_subplot(grid2[0, 1])
-    ax = plot_connectivity(fd_mat, ax=ax)
+    ax = fig2.add_subplot(grid2[1, 0])
+    ax = plot_connectivity(fd_mat.T, ax=ax, threshold=False)
     ax.invert_yaxis()
     ax.set_xticks(ax.get_xticks()[0::4])
     ax.set_yticks(ax.get_yticks()[0::4])
-    ax.set_xticklabels(np.round(omegas_sorted, decimals=1))
-    ax.set_yticklabels(np.round(alphas_sorted, decimals=1))
+    ax.set_yticklabels(np.round(omegas_sorted[0::4], decimals=1))
+    ax.set_xticklabels(np.round(alphas_sorted[0::4], decimals=1))
+    ax.set_ylabel(r'$\omega$')
+    ax.set_xlabel(r'$\alpha$')
 
+    plt.tight_layout()
     plt.show()
 
 if c2:
