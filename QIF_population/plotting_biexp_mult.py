@@ -97,17 +97,17 @@ fig2, ax = plt.subplots(figsize=(3.5, 1.8), dpi=dpi, ncols=1)
 
 # plot eta-tau continuation of the limit cycle
 
-ax = a.plot_continuation('PAR(5)', 'PAR(4)', cont='tau_r/tau_d/hb2', ax=ax, ignore=['LP', 'BP', 'UZ'],
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/hb2', ax=ax, ignore=['LP', 'BP', 'UZ'],
                          line_style_unstable='solid', default_size=markersize1)
-ax = a.plot_continuation('PAR(5)', 'PAR(4)', cont='tau_r/tau_d/gh1', ax=ax, ignore=['BP', 'UZ'],
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/gh1', ax=ax, ignore=['BP', 'UZ'],
                          line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E', line_style_unstable='dotted',
                          default_size=markersize1)
-ax = a.plot_continuation('PAR(5)', 'PAR(4)', cont='tau_r/tau_d/lc_pd1', ax=ax, ignore=['BP', 'UZ'],
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_pd1', ax=ax, ignore=['BP', 'UZ'],
                          line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
                          default_size=markersize1)
-ax = a.plot_continuation('PAR(5)', 'PAR(4)', cont='tau_r/tau_d/lc_lp1', ax=ax, ignore=['BP', 'UZ'],
-                         line_color_stable='#76448A', line_color_unstable='#76448A', line_style_unstable='dotted',
-                         default_size=markersize1)
+# ax = a.plot_continuation('PAR(5)', 'PAR(4)', cont='tau_r/tau_d/lc_lp1', ax=ax, ignore=['BP', 'UZ'],
+#                          line_color_stable='#76448A', line_color_unstable='#76448A', line_style_unstable='dotted',
+#                          default_size=markersize1)
 #ax.set_ylim((-15,15))
 
 # cosmetics

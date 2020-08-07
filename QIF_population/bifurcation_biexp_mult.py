@@ -90,29 +90,29 @@ if codim1:
         tau_max = 11.0
 
         # continue the limit cycle borders in tau_r and tau_d
-        eta_tau2_hb2_solutions, eta_tau2_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[4, 5], DSMAX=0.01,
+        eta_tau2_hb2_solutions, eta_tau2_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[4, 1], DSMAX=0.01,
                                                           NMX=4000, bidirectional=True, origin=eta_cont, RL0=tau_min,
-                                                          RL1=tau_max, name='tau_r/tau_d/hb2', ILP=0,
+                                                          RL1=tau_max, name='tau_r/eta/hb2', ILP=0,
                                                           NDIM=n_dim, NPAR=n_params)
 
         # continue the generalized hopf in tau_r
-        tau_r_gh_solutions, tau_r_gh_cont = a.run(starting_point='GH1', c='qif2b', ICP=[4, 5, 11], DSMAX=0.005,
+        tau_r_gh_solutions, tau_r_gh_cont = a.run(starting_point='GH1', c='qif2b', ICP=[4, 1, 11], DSMAX=0.005,
                                                   RL0=tau_min, NDIM=n_dim, NPAR=n_params, RL1=tau_max, NMX=1000,
-                                                  origin=eta_tau2_hb2_cont, name='tau_r/tau_d/gh1')
+                                                  origin=eta_tau2_hb2_cont, name='tau_r/eta/gh1')
 
         # continue the period doubling region of the limit cycle
-        eta_tau2_pd_solutions, eta_tau2_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[4, 5, 11],
+        eta_tau2_pd_solutions, eta_tau2_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[4, 1, 11],
                                                         NMX=4000, DSMAX=0.01, STOP=[], NDIM=n_dim, NPAR=n_params,
                                                         origin=tau_r_gh_cont, bidirectional=True, RL0=tau_min,
-                                                        RL1=tau_max, name='tau_r/tau_d/lc_pd1',
+                                                        RL1=tau_max, name='tau_r/eta/lc_pd1',
                                                         )
 
-        # continue the period doubling region of the limit cycle
-        eta_tau2_lp_solutions, eta_tau2_lp_cont = a.run(starting_point='LP1', c='qif3', ICP=[4, 5, 11],
-                                                        NMX=4000, DSMAX=0.01, STOP=[], NDIM=n_dim, NPAR=n_params,
-                                                        origin=eta_tau2_pd_cont, bidirectional=True, RL0=tau_min,
-                                                        RL1=tau_max, name='tau_r/tau_d/lc_lp1',
-                                                        )
+        # # continue the period doubling region of the limit cycle
+        # eta_tau2_lp_solutions, eta_tau2_lp_cont = a.run(starting_point='LP1', c='qif3', ICP=[4, 5, 11],
+        #                                                 NMX=4000, DSMAX=0.01, STOP=[], NDIM=n_dim, NPAR=n_params,
+        #                                                 origin=eta_tau2_pd_cont, bidirectional=True, RL0=tau_min,
+        #                                                 RL1=tau_max, name='tau_r/tau_d/lc_lp1',
+        #                                                 )
 
         # continue the limit cycle borders in alpha and tau1
         tau1_alpha_hb2_solution, tau1_alpha_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[4, 3],
