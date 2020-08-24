@@ -156,8 +156,8 @@ f_ax2.set_ylabel('Firing rate (r)')
 #plt.tight_layout()
 
 
-shared_top_y = 5
-shared_bottom_y = -0.05
+shared_top_y = 4.0
+shared_bottom_y = 0.0
 
 f_ax3 = fig.add_subplot(gs[1, 0])
 
@@ -175,7 +175,7 @@ a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_pd1', ax=f_ax3, ignor
 
 f_ax3.set_xlabel(r'$\bar\eta$')
 f_ax3.set_ylabel(r'$\tau_r$')
-# ax.set_xlim([-6.5, -2.5])
+f_ax3.set_xlim([-4.95, -5.25])
 f_ax3.set_ylim([shared_bottom_y, shared_top_y])
 f_ax3.set_title(r'2D Limit Cycle Continuation in $\tau_r and \bar\eta$')
 
@@ -195,11 +195,9 @@ a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/lc_pd1', ax=f_ax4, ign
 
 f_ax4.set_xlabel(r'$\alpha$')
 f_ax4.set_ylabel(r'$\tau$')
-# ax.set_xlim([-6.5, -2.5])
+f_ax4.set_xlim([0.048, 0.058])
 f_ax4.set_ylim([shared_bottom_y, shared_top_y])
 f_ax4.set_title(r'2D Limit Cycle Continuation in $\tau_r and \alpha$')
-
-
 
 
 imagepath='../../plots/'+f'bif_biexp_mult_eta_tau'+'.pdf'
