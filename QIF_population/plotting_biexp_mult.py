@@ -41,13 +41,14 @@ fname = 'results/biexp_mult.hdf5'
 a = PyAuto.from_file(fname)
 #period_solutions = np.fromfile(f"{fname}_period")
 
+
 ############
 # plotting #
 ############
 
 # principle continuation in eta
 ###############################
-
+'''
 fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
 
 # plot principle eta continuation for different alphas
@@ -68,32 +69,152 @@ ax.set_xlim((-6.5, -4))
 ax.set_xlabel(r'$\eta$')
 
 plt.tight_layout()
+plt.show()
+'''
+
+
+cutoff=50
+top=400
+
+fig, axes = plt.subplots(3)
+
+
+fname = 'results/biexp_mult_time_steady.pkl'
+b = PyAuto.from_file(fname)
+ax = axes[0]
+ax = b.plot_continuation('PAR(14)', 'U(1)', cont='steady', ax=ax)
+ax.set_xlim((cutoff, top)) # top limit from above
+ax.set_xlabel('time')
+ax.set_ylabel('firing rate (r)')
+ax.set_title(r'Steady state, $\eta=-4.0, \tau_{r}=10.0, \tau_{d}=10.0$')
+ax.set_ylim(0,2.5)
+
+
+fname = 'results/biexp_mult_time_burst.pkl'
+b = PyAuto.from_file(fname)
+ax = axes[1]
+ax = b.plot_continuation('PAR(14)', 'U(1)', cont='burst', ax=ax)
+ax.set_xlim((cutoff, top))
+ax.set_xlabel('time')
+ax.set_ylabel('firing rate (r)')
+ax.set_title(r'Oscillatory bursting, $\eta=-5.02, \tau_{r}=10.0, \tau_{d}=10.0$')
+ax.set_ylim(0,2.5)
+
+
+fname = 'results/biexp_mult_time_chaos.pkl'
+b = PyAuto.from_file(fname)
+ax = axes[2]
+ax = b.plot_continuation('PAR(14)', 'U(1)', cont='chaos', ax=ax)
+ax.set_xlim((cutoff, top)) # top limit from above
+ax.set_xlabel('time')
+ax.set_ylabel('firing rate (r)')
+ax.set_title(r'Chaotic, $\eta=-5.22, \tau_{r}=0.01, \tau_{d}=10.0$')
+ax.set_ylim(0,2.5)
+
+plt.tight_layout()
+imagepath='../../plots/'+f'bif_exp_mult_time_time_series.pdf'
+plt.savefig(imagepath, format='pdf')
+
+plt.show()
+
+
 
 
 ############# Codimension 1 bifurcation diagrams
-fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
-ax = axes[0]
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax)
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax,  ignore=['UZ', 'BP'])
-ax.set_xlim((-6.5, -4))
-ax.axvline(-5.2,0,1, color='orange')
-ax.set_xlabel(r'$\eta$')
+fig = plt.figure(constrained_layout=True)
+gs = fig.add_gridspec(2, 2)
+
+# plot eta continuation
+#######################
+f_ax1 = fig.add_subplot(gs[0, 0])
+
+#fig, axes = plt.subplots(ncols=2, figsize=(6, 1.8), dpi=dpi)
+#ax = axes[0]
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=f_ax1)
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=f_ax1,  ignore=['UZ', 'BP'])
+f_ax1.set_title(r'1D Continuation in $\bar\eta$ with constant $\tau_r=10$')
+f_ax1.set_xlim((-6.5, -4))
+f_ax1.axvline(-5.2,0,1, color='blue')
+f_ax1.set_xlabel(r'$\bar\eta$')
+f_ax1.set_ylabel('Firing rate (r)')
+f_ax1.set_ylim(0,2.5)
 
 
-ax = axes[1]
+f_ax2 = fig.add_subplot(gs[0, 1])
+#ax = axes[1]
 #a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/hb2', ax=ax)
-a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/lc', ax=ax)
-ax.set_xlabel(r'$\tau_r$')
-ax.set_xlim((-0.1, 0.6))
+a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/lc', ax=f_ax2)
+f_ax2.set_title(r'1D Continuation in $\tau_r$ with constant $\bar\eta=5.2$')
+f_ax2.set_xlabel(r'$\tau_r$')
+f_ax2.axvline(10,0,1, color='blue')
+f_ax2.set_xscale('log')
+f_ax2.set_xticks([10,1,0.1])
+f_ax2.set_xticklabels([10,1,0.1], fontsize=fontsize1, fontweight='bold')
+f_ax2.set_xlim(11, 0.05)  
+f_ax2.set_ylim(0,2.5)
+f_ax2.set_ylabel('Firing rate (r)')
+#plt.tight_layout()
 
-plt.tight_layout()
+
+shared_top_y = 5
+shared_bottom_y = -0.05
+
+f_ax3 = fig.add_subplot(gs[1, 0])
+
+a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/hb2', ax=f_ax3, ignore=['LP', 'BP', 'UZ'],
+                         line_style_unstable='solid', default_size=markersize1)
+a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/gh1', ax=f_ax3, ignore=['BP', 'UZ'],
+                         line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E', line_style_unstable='dotted',
+                         default_size=markersize1)
+a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_pd1', ax=f_ax3, ignore=['BP', 'UZ'],
+                         line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
+                         default_size=markersize1)
 
 
+
+
+f_ax3.set_xlabel(r'$\bar\eta$')
+f_ax3.set_ylabel(r'$\tau_r$')
+# ax.set_xlim([-6.5, -2.5])
+f_ax3.set_ylim([shared_bottom_y, shared_top_y])
+f_ax3.set_title(r'2D Limit Cycle Continuation in $\tau_r and \bar\eta$')
+
+
+f_ax4 = fig.add_subplot(gs[1, 1])
+
+
+a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/hb2', ax=f_ax4, ignore=['LP', 'BP', 'UZ'],
+                         line_style_unstable='solid', default_size=markersize1)
+a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/gh1', ax=f_ax4, ignore=['LP', 'BP', 'UZ'],
+                         line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E', line_style_unstable='dotted',
+                         default_size=markersize1)
+a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/lc_pd1', ax=f_ax4, ignore=['LP', 'BP', 'UZ', 'R1', 'R2'],
+                         line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
+                         default_size=markersize1)
+#ax.set_ylim((-15,15))
+
+f_ax4.set_xlabel(r'$\alpha$')
+f_ax4.set_ylabel(r'$\tau$')
+# ax.set_xlim([-6.5, -2.5])
+f_ax4.set_ylim([shared_bottom_y, shared_top_y])
+f_ax4.set_title(r'2D Limit Cycle Continuation in $\tau_r and \alpha$')
+
+
+
+
+imagepath='../../plots/'+f'bif_biexp_mult_eta_tau'+'.pdf'
+plt.savefig(imagepath)
+
+plt.show()
+
+
+
+'''
 ############# Codimension 2 bifurcation diagrams
 
 # tau and eta
 
-fig2, ax = plt.subplots(figsize=(3.5, 1.8), dpi=dpi, ncols=1)
+fig2, ax = plt.subplots(ncols=1, figsize=(3.5, 1.8), dpi=dpi)
 
 # plot eta-tau continuation of the limit cycle
 
@@ -119,7 +240,7 @@ ax.set_ylabel(r'$\tau$')
 # ax.set_ylim([0., 0.2])
 ax.set_title('2D Limit Cycle Continuation')
 plt.tight_layout()
-#plt.savefig('fig2.svg')
+plt.savefig('fig2D_tau_eta.svg')
 
 
 ############# Codimension 2 bifurcation diagrams
@@ -140,6 +261,7 @@ ax = a.plot_continuation('PAR(3)', 'PAR(4)', cont='tau_r/alpha/lc_pd1', ax=ax, i
                          default_size=markersize1)
 #ax.set_ylim((-15,15))
 
+
 # cosmetics
 ax.set_xlabel(r'$\alpha$')
 ax.set_ylabel(r'$\tau$')
@@ -152,6 +274,42 @@ plt.tight_layout()
 #plt.savefig('fig2.svg')
 
 plt.show()
+'''
+
+############# Codimension 2 bifurcation diagrams
+
+# tau and eta
+
+fig2, ax = plt.subplots(figsize=(3.5,1.8), dpi=dpi, ncols=1)
+
+# plot eta-tau continuation of the limit cycle
+
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/hb2', ax=ax, ignore=['LP', 'BP', 'UZ'],
+                         line_style_unstable='dashed', default_size=markersize1)
+
+ax = a.plot_continuation('PAR(1)', 'PAR(3)', cont='tau_r/eta/gh1', ax=ax, ignore=['LP', 'BP', 'UZ'],
+                         line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E', line_style_unstable='solid',
+                         default_size=markersize1)
+
+ax = a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_pd1', ax=ax, ignore=['LP', 'BP', 'UZ', 'R1', 'R2'],
+                         line_color_stable='#148F77', line_color_unstable='#148F77', line_style_unstable='dotted',
+                         default_size=markersize1)
+ax.set_ylim((-15,15))
+
+# cosmetics
+ax.set_xlabel(r'$\bar\eta$')
+ax.set_ylabel(r'$\tau$')
+# ax.set_xticks(xticklabels[::3])
+# ax.set_yticks(yticklabels[::3])
+# ax.set_xlim([-6.5, -2.5])
+# ax.set_ylim([0., 0.2])
+ax.set_title('2D Limit Cycle Continuation')
+plt.tight_layout()
+#plt.savefig('fig2.svg')
+
+plt.show()
+
+
 
 #     # plot eta continuation for different alphas
 #     ############################################
