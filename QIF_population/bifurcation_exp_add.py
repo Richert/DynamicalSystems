@@ -1,4 +1,4 @@
-from pyauto import PyAuto, continue_period_doubling_bf
+from pyrates.utility.pyauto import PyAuto, continue_period_doubling_bf, fractal_dimension, get_from_solutions
 
 #########################################
 # configs, descriptions and definitions #
@@ -13,6 +13,7 @@ Performs continuation of extended Montbrio population given the initial conditio
  U1: r_0 = 0.114741, 
  U2: v_0 = -2.774150,
  U3: e_0 = 0.0,
+ U4: a_0 = 0.0
 
 with parameters:
 
@@ -24,17 +25,17 @@ with parameters:
 
 """
 
-
 # configuration
 ###############
 
 # configuration
 codim1 = True
-codim2 = True
+codim2 = False
+extract_lyapunovs = False
 n_grid_points = 100
 n_dim = 3
 n_params = 6
-eta_cont_idx = 4
+eta_cont_idx = 2
 
 ###################################
 # parameter continuations in auto #
@@ -43,7 +44,7 @@ eta_cont_idx = 4
 a = PyAuto("auto_files")
 
 # initial continuation in the adaptation strength alpha
-alpha_0 = [0.1, 0.2, 0.4, 0.8, 1.6]
+alpha_0 = [0.5, 0.7, 0.9, 1.1]
 alpha_solutions, alpha_cont = a.run(e='qif_exp_add', c='qif', ICP=3, UZR={3: alpha_0}, NDIM=n_dim,
                                     STOP=['UZ' + str(len(alpha_0))], DSMAX=0.005, NMX=4000, name='s0')
 
@@ -68,19 +69,39 @@ eta_points, eta_cont = solutions_eta[eta_cont_idx]
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.005, NMX=3000,
-                                            origin=eta_cont, name='eta_hb1', NDIM=n_dim, EPSL=1e-05, EPSU=1e-05,
-                                            EPSS=1e-04, DSMIN=1e-10, NTST=600, NCOL=7)
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.005, NMX=3000,
-                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_lyapunov_exp=True,
-                                            get_timeseries=True, EPSL=1e-05, EPSU=1e-05,
-                                            EPSS=1e-04, DSMIN=1e-10, NTST=600, NCOL=7)
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=2000,
+                                            origin=eta_cont, name='eta_hb1', NDIM=n_dim, STOP={'BP1'})
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=2000,
+                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_timeseries=True,
+                                            NPR=10, STOP={'BP1'})
 
     # continue the period doubling bifurcations in eta that we found above
     pds, a = continue_period_doubling_bf(solution=eta_hb2_solutions, continuation=eta_hb2_cont, pyauto_instance=a,
-                                         c='qif2b', ICP=1, NMX=3000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
-                                         get_timeseries=True, get_lyapunov_exp=True,)
+                                         c='qif2b', ICP=[1, 11], NMX=2000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
+                                         get_timeseries=True, NPR=10, STOP={'BP1'}, precision=5)
     pds.append('eta_hb2')
+
+    # extract Lyapunov exponents from solutions (RICHARD: moved this part to after the period doubling continuations)
+    chaos_analysis_hb2 = dict()
+
+    # RICHARD: iterate over the names of all limit cycle continuations stored in pds
+    if extract_lyapunovs:
+        for s in pds:
+            # RICHARD: extract the solution curve for a given continuation
+            sol_tmp = a.get_summary(cont=s)
+
+            # RICHARD: extract eta and lyapunov exponent from each solution on the solution curve (returned as a list of lists by get_from_solutions, which I import above)
+            data = get_from_solutions(keys=['PAR(1)', 'lyapunov_exponents'], solutions=sol_tmp)
+            etas = [d[0] for d in data]
+            lyapunovs = [d[1] for d in data]
+
+            # create a dictionary with point as key, save eta and Lyapunov exponents in it
+            chaos_analysis_hb2[s] = dict()
+            chaos_analysis_hb2[s]['eta'] = etas
+            chaos_analysis_hb2[s]['lyapunov_exponents'] = lyapunovs
+
+            # compute fractal dimension of attractor at each solution point
+            chaos_analysis_hb2[s]['fractal_dim'] = [fractal_dimension(lp) for lp in lyapunovs]
 
     # continuation in eta and alpha
     ###############################
@@ -89,14 +110,14 @@ if codim1:
 
         # continue the limit cycle borders in alpha and eta
         eta_alpha_hb2_solutions, eta_alpha_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[1, 3], DSMAX=0.01,
-                                                            NMX=4000, bidirectional=True, origin=eta_cont,
-                                                            name='eta_alpha_hb2', NDIM=n_dim)
+                                                            NMX=2000, bidirectional=True, origin=eta_cont,
+                                                            name='eta_alpha_hb2', NDIM=n_dim, NPR=10)
 
         # continue the first period doubling of the limit cycle
-        eta_alpha_pd_solutions, eta_alpha_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[1, 3],
-                                                          NMX=5000, DSMAX=0.05, origin=eta_hb2_cont,
+        eta_alpha_pd_solutions, eta_alpha_pd_cont = a.run(starting_point='PD1', c='qif3', ICP=[1, 3, 11],
+                                                          NMX=3000, DSMAX=0.05, origin=eta_hb2_cont,
                                                           bidirectional=True, name='eta_alpha_pd', NTST=600,
-                                                          NDIM=n_dim)
+                                                          NDIM=n_dim, ILP=0, NPR=10)
 
 ################
 # save results #
@@ -107,4 +128,6 @@ fname = '../results/exp_add.pkl'
 kwargs = {}
 if codim1:
     kwargs['pd_solutions'] = pds
+if extract_lyapunovs:
+    kwargs['chaos_analysis_hb2'] = chaos_analysis_hb2
 a.to_file(fname, **kwargs)

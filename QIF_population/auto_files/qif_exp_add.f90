@@ -43,10 +43,10 @@
       DOUBLE PRECISION eta,J,alpha,tau,D
 
        eta  = -10.0
-       J  = 15.0*SQRT(2.0)
        alpha  = 0.0
        tau  = 10.0
        D  = 2.0
+       J  = 15.0*SQRT(D)
 
        PAR(1)=eta
        PAR(2)=J
