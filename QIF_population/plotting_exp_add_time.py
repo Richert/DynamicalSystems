@@ -91,7 +91,7 @@ for pd in a.additional_attributes['pd_solutions']:
     #ax.set_xlim((-6, -5))
 for i, eta in enumerate(eta_rounded):
     ax.axvline(eta,0,1, color=colors[i], linewidth=1)
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
 ax.set_ylabel('firing rate (r)')
 
 
@@ -101,9 +101,9 @@ for i, eta in enumerate(eta_rounded):
     ax = b.plot_continuation('PAR(14)', 'U(1)', cont=f'eta_{indices_to_select[i]+1}_t', ax=f_ax2)
     bottom, top = ax.get_xlim()
     ax.set_xlim((cutoff, top))
-    ax.set_xlabel('time')
+    ax.set_xlabel('time step')
     ax.set_ylabel('firing rate (r)')
-    ax.set_title(fr'$\eta$ ={eta}', color=colors[i])
+    ax.set_title(fr'$\bar\eta$ ={eta}', color=colors[i])
 
 
 for i, eta in enumerate(eta_rounded):
