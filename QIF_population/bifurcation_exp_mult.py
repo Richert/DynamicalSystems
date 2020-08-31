@@ -34,7 +34,7 @@ codim2 = True
 n_grid_points = 100
 n_dim = 3
 n_params = 6
-eta_cont_idx = 3
+eta_cont_idx = 2
 
 ###################################
 # parameter continuations in auto #
@@ -72,34 +72,34 @@ if codim1:
                                             origin=eta_cont, name='eta_hb1', NDIM=n_dim)
     eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=2500,
                                             origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_lyapunov_exp=True,
-                                            get_timeseries=True, NPR=10, STOP={'BP1'})
+                                            get_timeseries=True, NPR=20, STOP={'BP1'})
 
     # continue the period doubling bifurcations in eta that we found above
     pds, a = continue_period_doubling_bf(solution=eta_hb2_solutions, continuation=eta_hb2_cont, pyauto_instance=a,
                                          c='qif2b', ICP=[1, 11], NMX=2500, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
-                                         get_timeseries=True, get_lyapunov_exp=True, NPR=10, STOP={'BP1'})
+                                         get_timeseries=True, NPR=20, STOP={'BP1'})
     pds.append('eta_hb2')
 
     # extract Lyapunov exponents from solutions (RICHARD: moved this part to after the period doubling continuations)
     chaos_analysis_hb2 = dict()
 
-    # RICHARD: iterate over the names of all limit cycle continuations stored in pds
-    for s in pds:
-        # RICHARD: extract the solution curve for a given continuation
-        sol_tmp = a.get_summary(cont=s)
-
-        # RICHARD: extract eta and lyapunov exponent from each solution on the solution curve (returned as a list of lists by get_from_solutions, which I import above)
-        data = get_from_solutions(keys=['PAR(1)', 'lyapunov_exponents'], solutions=sol_tmp)
-        etas = [d[0] for d in data]
-        lyapunovs = [d[1] for d in data]
-
-        # create a dictionary with point as key, save eta and Lyapunov exponents in it 
-        chaos_analysis_hb2[s] = dict()
-        chaos_analysis_hb2[s]['eta'] = etas
-        chaos_analysis_hb2[s]['lyapunov_exponents'] = lyapunovs
-
-        # compute fractal dimension of attractor at each solution point
-        chaos_analysis_hb2[s]['fractal_dim'] = [fractal_dimension(lp) for lp in lyapunovs]
+    # # RICHARD: iterate over the names of all limit cycle continuations stored in pds
+    # for s in pds:
+    #     # RICHARD: extract the solution curve for a given continuation
+    #     sol_tmp = a.get_summary(cont=s)
+    #
+    #     # RICHARD: extract eta and lyapunov exponent from each solution on the solution curve (returned as a list of lists by get_from_solutions, which I import above)
+    #     data = get_from_solutions(keys=['PAR(1)', 'lyapunov_exponents'], solutions=sol_tmp)
+    #     etas = [d[0] for d in data]
+    #     lyapunovs = [d[1] for d in data]
+    #
+    #     # create a dictionary with point as key, save eta and Lyapunov exponents in it
+    #     chaos_analysis_hb2[s] = dict()
+    #     chaos_analysis_hb2[s]['eta'] = etas
+    #     chaos_analysis_hb2[s]['lyapunov_exponents'] = lyapunovs
+    #
+    #     # compute fractal dimension of attractor at each solution point
+    #     chaos_analysis_hb2[s]['fractal_dim'] = [fractal_dimension(lp) for lp in lyapunovs]
 
     # continuation in eta and alpha
     ###############################
@@ -125,5 +125,5 @@ fname = '../results/exp_mult.pkl'
 kwargs = {}
 if codim1:
     kwargs['pd_solutions'] = pds
-    kwargs['chaos_analysis_hb2'] = chaos_analysis_hb2
+    #kwargs['chaos_analysis_hb2'] = chaos_analysis_hb2
 a.to_file(fname, **kwargs)

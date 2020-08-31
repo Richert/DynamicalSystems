@@ -57,6 +57,7 @@ for i in range(1, n_alphas+1):
 ax = axes[1]
 a.update_bifurcation_style('PD', color='k')
 ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_2', ax=ax, default_size=markersize1)
+ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb1', ax=ax, default_size=markersize1, ignore=['LP', 'BP'])
 for pd in a.additional_attributes['pd_solutions']:
     try:
         ax = a.plot_continuation('PAR(1)', 'U(1)', cont=pd, ax=ax, ignore=['LP', 'BP'], default_size=markersize1)

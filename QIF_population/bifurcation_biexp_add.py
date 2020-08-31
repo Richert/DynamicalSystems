@@ -1,6 +1,6 @@
-import sys
-sys.path.append('../')
-from pyrates.utility.pyauto import PyAuto
+import os
+import numpy as np
+from pyrates.utility.pyauto import PyAuto, continue_period_doubling_bf
 
 #########################################
 # configs, descriptions and definitions #
@@ -31,7 +31,7 @@ codim2 = False
 period_mapping = False
 n_grid_points = 100
 n_dim = 4
-n_params = 7
+n_params = 6
 
 ###################################
 # parameter continuations in auto #
@@ -40,36 +40,50 @@ n_params = 7
 a = PyAuto("auto_files")
 
 # initial continuation in the adaptation strength alpha
-alpha_0 = [0.01, 0.02, 0.04, 0.06, 0.08]
-alpha_solutions, alpha_cont = a.run(e='qif_tsodyks', c='qif', ICP=3, UZR={3: alpha_0},
-                                    STOP=['UZ' + str(len(alpha_0))], DSMAX=0.05, NMX=4000, name='s0',
+alpha_0 = [0.5]
+alpha_solutions, alpha_cont = a.run(e='qif_biexp_add', c='qif', ICP=3, UZR={3: alpha_0},
+                                    STOP=['UZ' + str(len(alpha_0))], DSMAX=0.005, NMX=4000, name='s0',
                                     NDIM=n_dim, NPAR=n_params)
+
+# principle continuation in eta
+###############################
 
 # continue in eta for each adaptation rate alpha
 solutions_eta = []
-solutions_eta.append(a.run(starting_point='EP1', ICP=1, DSMAX=0.05, RL1=2.0, RL0=-12.0, NMX=2000, origin=alpha_cont,
+solutions_eta.append(a.run(starting_point='EP1', ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=2000, origin=alpha_cont,
                            bidirectional=True, name='eta_0', NDIM=n_dim, NPAR=n_params))
 
 i = 1
 for point, point_info in alpha_solutions.items():
     if 'UZ' in point_info['bifurcation']:
-        solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=4000,
+        solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.005, RL1=3.0, RL0=-12.0, NMX=4000,
                                    origin=alpha_cont, bidirectional=True, name=f"eta_{i}", NDIM=n_dim, NPAR=n_params))
         i += 1
 
 # choose a continuation in eta to run further continuations on
-eta_points, eta_cont = solutions_eta[3]
+eta_points, eta_cont = solutions_eta[-1]
 
 if codim1:
 
     # 1D continuations in eta and tau1
     ##################################
 
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=1000,
-                                            origin=eta_cont, name='eta/hb1', STOP={'BP1', 'LP10'}, NDIM=n_dim,
-                                            NPAR=n_params)
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=2000,
-                                            origin=eta_cont, name='eta/hb2', NDIM=n_dim, NPAR=n_params)
+    # limit cycle continuation of hopf bifurcations in eta
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.1, NMX=3000,
+                                            origin=eta_cont, name='eta/hb1', STOP={'BP1'}, NDIM=n_dim, NPAR=n_params)
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, NMX=3000,
+                                            origin=eta_cont, name='eta/hb2', UZR={1: [-3.93]}, NDIM=n_dim, NPAR=n_params)
+
+    # limit cycle continuation in tau1
+    tau1_lc_solutions, tau1_lc_cont = a.run(starting_point='UZ1', c='qif_lc', ICP=[4, 11], DSMAX=0.01, NMX=4000,
+                                            RL0=0.0001, origin=eta_hb2_cont, name='tau_r/lc', DS='-',
+                                            NDIM=n_dim, NPAR=n_params)
+
+    # continue the period doubling bifurcations in eta that we found above
+    pds, a = continue_period_doubling_bf(solution=tau1_lc_solutions, continuation=tau1_lc_cont, pyauto_instance=a,
+                                         c='qif2b', ICP=[4, 11], NMX=2000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
+                                         RL0=0.0001, RL1=10.0, STOP={'BP1'}, precision=5, max_iter=10, NPR=20)
+    pds.append('tau_r/lc')
 
     if codim2:
 
@@ -145,8 +159,8 @@ if codim1:
 # save results #
 ################
 
-fname = '../results/tsodyks.hdf5'
-a.to_file(fname)
+fname = '../results/biexp_mult.hdf5'
+a.to_file(fname, pd_solutions=pds)
 
 #if period_mapping:
 #    period_solutions.tofile(f"biexp_mult_period")

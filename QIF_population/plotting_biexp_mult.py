@@ -82,9 +82,11 @@ ax.set_xlabel(r'$\eta$')
 
 ax = axes[1]
 #a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/hb2', ax=ax)
-a.plot_continuation('PAR(4)', 'U(1)', cont=f'tau_r/lc', ax=ax)
+a.update_bifurcation_style('PD', color='k')
+for pd in a.additional_attributes['pd_solutions']:
+    ax = a.plot_continuation('PAR(4)', 'U(1)', cont=pd, ax=ax, ignore=['LP', 'BP'], default_size=markersize1)
 ax.set_xlabel(r'$\tau_r$')
-ax.set_xlim((-0.1, 0.6))
+#ax.set_xlim((-0.1, 0.6))
 
 plt.tight_layout()
 
