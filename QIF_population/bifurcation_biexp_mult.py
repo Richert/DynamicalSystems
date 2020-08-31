@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from pyrates.utility.pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto, continue_period_doubling_bf
 
 #########################################
 # configs, descriptions and definitions #
@@ -9,20 +9,16 @@ from pyrates.utility.pyauto import PyAuto
 # problem description
 """
 Performs continuation of extended Montbrio population given the initial condition:
-
  U1: r_0 = 0.114741, 
  U2: v_0 = -2.774150,
  U3: e_0 = 0.0,
  U4: a_0 = 0.0
-
 with initial parameters:
-
  PAR1: eta = -10.0
  PAR2: J = 15.0
  PAR3: alpha = 0.0
  PAR4: tau = 1.0
  PAR5: D = 2.0
-
 """
 
 # configuration
@@ -69,17 +65,36 @@ if codim1:
     ##################################
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.1, NMX=2000,
+    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=10000,
                                             origin=eta_cont, name='eta/hb1', STOP={'BP1'}, NDIM=n_dim, NPAR=n_params)
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, NMX=2000,
-                                            origin=eta_cont, name='eta/hb2', UZR={1: [-5.2]}, NDIM=n_dim, NPAR=n_params)
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=10000,
+                                            origin=eta_cont, name='eta/hb2', UZR={1: [-5.22]}, NDIM=n_dim, NPAR=n_params)
 
     # limit cycle continuation in tau1
     # tau1_hb2_solutions, tau1_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[4, 11], DSMAX=0.1, NMX=2000,
     #                                           RL0=0.001, origin=eta_cont, name='tau_r/hb2', STOP={'BP1'})
-    tau1_lc_solutions, tau1_lc_cont = a.run(starting_point='UZ1', c='qif_lc', ICP=[4, 11], DSMAX=0.1, NMX=2000,
-                                            RL0=0.001, origin=eta_hb2_cont, name='tau_r/lc', STOP={'BP1'}, DS='-',
+    
+    # continue until user specified point
+    tau_lc_solutions, tau_lc_cont = a.run(starting_point='UZ1', c='qif_lc', ICP=[4, 11], DSMAX=0.01, NMX=30000,
+                                            RL0=0.0001, UZR={4: 0.0001}, origin=eta_hb2_cont, name='tau_r/lc', STOP={'UZ1'}, DS='-',
                                             NDIM=n_dim, NPAR=n_params)
+    
+    # continue until branching point
+    #tau_lc_solutions, tau_lc_cont = a.run(starting_point='UZ1', c='qif_lc', ICP=[4, 11], DSMAX=0.01, NMX=50000,
+    #                                        RL0=0.0001, origin=eta_hb2_cont, name='tau_r/lc', STOP={'BP1'}, DS='-',
+    #                                        NDIM=n_dim, NPAR=n_params)
+    # continue after branching point
+    #tau_bp_solutions, tau_bp_cont = a.run(starting_point='BP1', c='qif2b', ICP=4, DSMAX=0.01, NMX=20000,
+    #                                        RL0=0.0001, bidirectional=True, origin=tau_lc_cont, name='tau_r/bp', DS='-',
+    #                                        NDIM=n_dim, NPAR=n_params)
+
+    
+	# continue the period doubling bifurcations in tau that we found above
+    pds, a = continue_period_doubling_bf(solution=tau_lc_solutions, continuation=tau_lc_cont, pyauto_instance=a,
+										 c='qif2b', ICP=[4, 11], NMX=2000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
+										 get_timeseries=True, get_lyapunov_exp=False, NPR=10)
+    pds.append('tau_r/lc')                              
+    
 
     if codim2:
 
@@ -156,7 +171,12 @@ if codim1:
 ################
 
 fname = '../results/biexp_mult.hdf5'
-a.to_file(fname)
+
+kwargs = {}
+if codim1:
+	kwargs['pd_solutions'] = pds
+
+a.to_file(fname, **kwargs)
 
 #if period_mapping:
 #    period_solutions.tofile(f"biexp_mult_period")
