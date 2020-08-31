@@ -44,7 +44,7 @@ eta_cont_idx = 2
 a = PyAuto("auto_files")
 
 # initial continuation in the adaptation strength alpha
-alpha_0 = [0.5, 0.7, 0.9, 1.1]
+alpha_0 = [0.3, 0.5, 0.7, 0.9]
 alpha_solutions, alpha_cont = a.run(e='qif_exp_add', c='qif', ICP=3, UZR={3: alpha_0}, NDIM=n_dim,
                                     STOP=['UZ' + str(len(alpha_0))], DSMAX=0.005, NMX=4000, name='s0')
 
@@ -73,12 +73,12 @@ if codim1:
                                             origin=eta_cont, name='eta_hb1', NDIM=n_dim, STOP={'BP1'})
     eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=2000,
                                             origin=eta_cont, name='eta_hb2', NDIM=n_dim, get_timeseries=True,
-                                            NPR=10, STOP={'BP1'})
+                                            NPR=20, STOP={'BP1'})
 
     # continue the period doubling bifurcations in eta that we found above
     pds, a = continue_period_doubling_bf(solution=eta_hb2_solutions, continuation=eta_hb2_cont, pyauto_instance=a,
                                          c='qif2b', ICP=[1, 11], NMX=2000, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
-                                         get_timeseries=True, NPR=10, STOP={'BP1'}, precision=5)
+                                         get_timeseries=True, NPR=20, STOP={'BP1'}, precision=5)
     pds.append('eta_hb2')
 
     # extract Lyapunov exponents from solutions (RICHARD: moved this part to after the period doubling continuations)
