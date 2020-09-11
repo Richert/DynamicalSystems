@@ -40,7 +40,7 @@ n_params = 7
 a = PyAuto("auto_files")
 
 # initial continuation in the adaptation strength alpha
-alpha_0 = [0.01, 0.02, 0.04, 0.06, 0.08]
+alpha_0 = [0.02, 0.04, 0.08, 0.16, 0.32]
 alpha_solutions, alpha_cont = a.run(e='qif_tsodyks', c='qif', ICP=3, UZR={3: alpha_0},
                                     STOP=['UZ' + str(len(alpha_0))], DSMAX=0.05, NMX=4000, name='s0',
                                     NDIM=n_dim, NPAR=n_params)
@@ -58,7 +58,7 @@ for point, point_info in alpha_solutions.items():
         i += 1
 
 # choose a continuation in eta to run further continuations on
-eta_points, eta_cont = solutions_eta[3]
+eta_points, eta_cont = solutions_eta[4]
 
 if codim1:
 
@@ -67,9 +67,9 @@ if codim1:
 
     eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=1000,
                                             origin=eta_cont, name='eta/hb1', STOP={'BP1', 'LP10'}, NDIM=n_dim,
-                                            NPAR=n_params)
+                                            NPAR=n_params, NPR=20)
     eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=2000,
-                                            origin=eta_cont, name='eta/hb2', NDIM=n_dim, NPAR=n_params)
+                                            origin=eta_cont, name='eta/hb2', NDIM=n_dim, NPAR=n_params, NPR=20)
 
     if codim2:
 

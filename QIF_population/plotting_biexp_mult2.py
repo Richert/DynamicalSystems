@@ -46,7 +46,7 @@ a = PyAuto.from_file(fname)
 # principle continuation in eta
 ###############################
 
-fig, axes = plt.subplots(ncols= 2, figsize=(7, 1.8), dpi=dpi)
+fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
 
 # plot principle eta continuation for different alphas
 ax = axes[0]
@@ -60,7 +60,7 @@ ax.set_xlabel(r'$\eta$')
 
 # plot eta continuation for single alpha with limit cycle continuation
 ax = axes[1]
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax)
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_4', ax=ax)
 a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb1', ax=ax, ignore=['UZ', 'BP'])
 a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax, ignore=['UZ', 'BP'])
 ax.set_xlabel(r'$\eta$')
