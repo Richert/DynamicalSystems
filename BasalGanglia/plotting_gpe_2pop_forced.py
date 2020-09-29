@@ -57,19 +57,20 @@ if c1[0]:
     # continuation of the limit cycle in alpha
     ax = fig1.add_subplot(grid1[0, :])
     ax = a.plot_continuation('PAR(23)', 'U(2)', cont='c1:alpha', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'],
+                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ', 'BP'],
                              custom_bf_styles={'TR': {'marker': 'X'}})
     ax.set_xlabel(r'$\alpha$')
     ax.set_ylabel('Firing rate')
     ax.set_yticks([0.04, 0.06, 0.08])
     ax.set_yticklabels([40.0, 60.0, 80.0])
+    ax.set_xlim([0.0, 80.0])
 
     # continuation of the torus bifurcation in alpha and omega
     ax = fig1.add_subplot(grid1[1:, :])
     i = 1
     while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ', 'BR'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ', 'BP'],
                                      line_color_stable='#148F77', line_color_unstable='#148F77',
                                      custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
                                                        'R2': {'marker': 'h', 'color': 'g'},
@@ -82,7 +83,7 @@ if c1[0]:
     i = 1
     while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ', 'BR'],
+            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ', 'BP'],
                                      line_color_stable='#3689c9', line_color_unstable='#3689c9',
                                      line_style_unstable='solid', default_size=markersize1)
             i += 1
@@ -93,8 +94,8 @@ if c1[0]:
     ax.set_ylabel(r'$\omega$')
     fig1.canvas.draw()
     #ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
-    #ax.set_xlim([0.0, 50.0])
-    #ax.set_ylim([10.0, 80.0])
+    ax.set_xlim([0.0, 60.0])
+    ax.set_ylim([28.0, 92.0])
 
     plt.tight_layout()
     plt.show()

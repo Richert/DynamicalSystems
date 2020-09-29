@@ -11,8 +11,8 @@ n_params = 23
 a = PyAuto("auto_files")
 
 # choice of conditions to run bifurcation analysis for
-c1 = True  # strong GPe-p projections
-c2 = False  # strong bidirectional coupling between GPe-p and GPe-a
+c1 = False  # strong GPe-p projections
+c2 = True  # strong bidirectional coupling between GPe-p and GPe-a
 c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
 
 ################################
