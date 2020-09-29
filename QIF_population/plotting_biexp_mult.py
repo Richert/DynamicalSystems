@@ -207,7 +207,7 @@ a.plot_continuation('PAR(1)', 'PAR(4)', cont='tau_r/eta/lc_pd1', ax=f_ax3, ignor
 
 f_ax3.set_xlabel(r'$\bar\eta$')
 f_ax3.set_ylabel(r'$\tau_r$')
-f_ax3.set_xlim([-4.45, -5.25])
+f_ax3.set_xlim(( -5.25, -4.45))
 f_ax3.set_ylim([shared_bottom_y, shared_top_y])
 f_ax3.set_title(r'2D Limit Cycle Continuation in $\tau_r$ and $\bar\eta$')
 

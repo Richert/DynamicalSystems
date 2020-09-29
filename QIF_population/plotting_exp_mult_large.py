@@ -47,6 +47,8 @@ etas = chaos_data['eta']
 eta_rounded = list(map(lambda x : round(x,3), chaos_data['eta'])) 
 lps = chaos_data['lyapunov_exponents']
 fract_dim = chaos_data['fractal_dim']
+print(lps)
+print(fract_dim)
 
 if len(eta_rounded)>3:
     indices_to_select=[]
@@ -106,7 +108,7 @@ for i, eta in enumerate(eta_rounded):
     max_LP = round(max(lps[i]), 3)
     fract_dimen = round(fract_dim[i], 3)
     ax=b.plot_trajectory(['U(1)', 'U(2)', 'U(3)'], ax=f_ax3, cont=f'eta_{indices_to_select[i]+1}_t', force_axis_lim_update=True, cutoff=cutoff, cmap=plt.get_cmap('magma'))
-    ax.set_title(fr'$\bar\eta$ ={eta}'+f'\nMax LP: {max_LP}'+f'\nDim: {fract_dimen}', color=colors[i])
+    ax.set_title(fr'$\bar\eta$ ={eta}'+f'\nMax LP = {max_LP}'+f'\nDim = {fract_dimen}', color=colors[i])
 
 
 imagepath='../../plots/'+f'bif_exp_mult_time_{eta_rounded}'+'.pdf'
