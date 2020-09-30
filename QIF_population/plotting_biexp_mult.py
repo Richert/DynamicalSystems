@@ -247,7 +247,7 @@ b.plot_continuation('PAR(14)', 'U(1)', cont='steady', ax=f_ax_time1 )
 f_ax_time1 .set_xlim((cutoff, top)) # top limit from above
 f_ax_time1 .set_xlabel('time')
 f_ax_time1 .set_ylabel('firing rate (r)')
-f_ax_time1 .set_title(r'Time Continuation during Steady State, $\eta='+str(eta_steady)+r', \tau_{r}='+str(tau_steady)+r', \tau_{d}=10.0$', color=colors[0])
+f_ax_time1 .set_title(r'Time Continuation during Steady State, $\bar \eta='+str(eta_steady)+r', \tau_{r}='+str(tau_steady)+r', \tau_{d}=10.0$', color=colors[0])
 f_ax_time1 .set_ylim(0,2.5)
 
 f_ax_time2 = fig.add_subplot(gs[2, 1:])
@@ -258,7 +258,7 @@ b.plot_continuation('PAR(14)', 'U(1)', cont='burst', ax=f_ax_time2)
 f_ax_time2.set_xlim((cutoff, top))
 f_ax_time2.set_xlabel('time')
 f_ax_time2.set_ylabel('firing rate (r)')
-f_ax_time2.set_title(r'Time Continuation during Oscillatory Bursting, $\eta='+str(eta_burst)+r', \tau_{r}='+str(tau_burst)+r', \tau_{d}=10.0$', color=colors[1])
+f_ax_time2.set_title(r'Time Continuation during Oscillatory Bursting, $\bar \eta='+str(eta_burst)+r', \tau_{r}='+str(tau_burst)+r', \tau_{d}=10.0$', color=colors[1])
 f_ax_time2.set_ylim(0,2.5)
 
 f_ax_time3 = fig.add_subplot(gs[3, 1:])
@@ -269,7 +269,7 @@ b.plot_continuation('PAR(14)', 'U(1)', cont='chaos', ax=f_ax_time3)
 f_ax_time3.set_xlim((cutoff, top)) 
 f_ax_time3.set_xlabel('time')
 f_ax_time3.set_ylabel('firing rate (r)')
-f_ax_time3.set_title(r'Time Continuation in Chaotic Regime, $\eta='+str(eta_chaos)+r', \tau_{r}='+str(tau_chaos)+r', \tau_{d}=10.0$', color=colors[2])
+f_ax_time3.set_title(r'Time Continuation in Chaotic Regime, $\bar \eta='+str(eta_chaos)+r', \tau_{r}='+str(tau_chaos)+r', \tau_{d}=10.0$', color=colors[2])
 f_ax_time3.set_ylim(0,2.5)
 
 
