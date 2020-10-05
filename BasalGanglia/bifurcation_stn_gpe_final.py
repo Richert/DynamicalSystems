@@ -13,11 +13,11 @@ a = PyAuto("auto_files")
 # choice of conditions to run bifurcation analysis for
 c1 = [  # bistable state
       False,  # STN -> GPe-p < STN -> GPe-a
-      False,   # STN -> GPe-p > STN -> GPe-a
+      True,   # STN -> GPe-p > STN -> GPe-a
       #False   # STN -> GPe-p == STN -> GPe-a
 ]
 c2 = [  # oscillatory state
-    True,  # STN -> GPe-p < STN -> GPe-a
+    False,  # STN -> GPe-p < STN -> GPe-a
     False,  # STN -> GPe-p > STN -> GPe-a
 ]
 
@@ -181,8 +181,8 @@ if any(c1):
 
         # step 1: increase background excitability of STN
         c1_b2_sols, c1_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=1, NPAR=n_params,
-                                       name='c1.2:eta_e', NDIM=n_dim, RL0=-5.0, RL1=3.5, origin=starting_cont,
-                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={1: [3.0]})
+                                       name='c1.2:eta_e', NDIM=n_dim, RL0=-5.0, RL1=4.5, origin=starting_cont,
+                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={1: [4.0]})
 
         starting_point = 'UZ1'
         starting_cont = c1_b2_cont
@@ -190,7 +190,7 @@ if any(c1):
         # step 2: increase coupling strength from GPe-p to STN
         c1_b3_sols, c1_b3_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
                                        name='c1.2:k_ep', NDIM=n_dim, RL0=0.0, RL1=30.0, origin=starting_cont,
-                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={7: [9.0]})
+                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={7: [10.0]})
 
         starting_point = 'UZ1'
         starting_cont = c1_b3_cont
@@ -216,21 +216,24 @@ if any(c1):
         # bifurcation analysis of hopf bifurcation identified in previous continuation
         ##############################################################################
 
-        # step 1: 2D continuation in k_gp_e and k_gp
-        c1_b6_cd2_1 = codim2_search(params=[26, 22], starting_points=['HB1'], origin=c1_b6_cont, pyauto_instance=a,
-                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=2.0, NMX=8000,
-                                    DSMAX=0.06, max_recursion_depth=2, name="c1.2:k_gp/k_gp_e",
+        # step 1: 2D continuation in k_gp_e and k_a_out
+        c1_b6_cd2_1 = codim2_search(params=[29, 22], starting_points=['HB1'], origin=c1_b6_cont, pyauto_instance=a,
+                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000,
+                                    DSMAX=0.06, max_recursion_depth=2, name="c1.2:k_a_out/k_gp",
                                     kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
                                     kwargs_lc_cont={'c': 'qif2b'}, STOP={'CP3', 'GH5', 'ZH5'})
 
-        kwargs = {'k_gp/k_gp_e:names': list(c1_b6_cd2_1.keys())}
+        kwargs = {'k_a_out/k_gp:names': list(c1_b6_cd2_1.keys())}
         a.to_file(fname, **kwargs)
 
-        # step 2: continuation of limit cycle
-        c1_b6_lc_sols, c1_b6_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[22, 11], NPAR=n_params,
-                                             name='c1.2:k_gp/lc', NDIM=n_dim, RL0=0.0, RL1=20.0, origin=c1_b6_cont,
-                                             NMX=2000, DSMAX=0.2)
+        # step 1: 2D continuation in k_pp and k_a_out
+        c1_b6_cd2_2 = codim2_search(params=[29, 8], starting_points=['HB1'], origin=c1_b6_cont, pyauto_instance=a,
+                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=2.0, NMX=8000,
+                                    DSMAX=0.06, max_recursion_depth=2, name="c1.2:k_a_out/k_pp",
+                                    kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                    kwargs_lc_cont={'c': 'qif2b'}, STOP={'CP3', 'GH5', 'ZH5'})
 
+        kwargs.update({'k_a_out/k_pp:names': list(c1_b6_cd2_2.keys())})
         a.to_file(fname, **kwargs)
 
 
@@ -290,7 +293,7 @@ if any(c2):
         # step 2: increase coupling strength from GPe-p to STN
         c2_b3_sols, c2_b3_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
                                        name='c2.1:k_ep', NDIM=n_dim, RL0=0.0, RL1=40.0, origin=starting_cont,
-                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={7: [9.0]})
+                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={7: [10.0]})
 
         starting_point = 'UZ1'
         starting_cont = c2_b3_cont
@@ -298,19 +301,19 @@ if any(c2):
         # investigation of effects of GPe inhibition
         ############################################
 
-        # step 1: k_ps continuation
-        c2_b4_sols, c2_b4_cont = a.run(starting_point=starting_point, c='qif', ICP=16, NPAR=n_params,
-                                       name='c2.2:k_ps', NDIM=n_dim, RL0=0.1, RL1=200.0, origin=starting_cont,
-                                       NMX=4000, DSMAX=0.1)
-
-        # step 2: k_as continuation
-        c2_b5_sols, c2_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=17, NPAR=n_params,
-                                       name='c2.2:k_as', NDIM=n_dim, RL0=0.1, RL1=200.0, origin=starting_cont,
-                                       NMX=4000, DSMAX=0.1)
-
         # step 3: k_gp continuation
-        c2_b6_sols, c2_b6_cont = a.run(starting_point=starting_point, c='qif', ICP=22, NPAR=n_params,
+        c2_b4_sols, c2_b4_cont = a.run(starting_point=starting_point, c='qif', ICP=22, NPAR=n_params,
                                        name='c2.2:k_gp', NDIM=n_dim, RL0=0.0, RL1=20.0, origin=starting_cont,
+                                       NMX=4000, DSMAX=0.1)
+
+        # step 3: k_pa continuation
+        c2_b5_sols, c2_b5_cont = a.run(starting_point=starting_point, c='qif', ICP=10, NPAR=n_params,
+                                       name='c2.2:k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=starting_cont,
+                                       NMX=4000, DSMAX=0.1)
+
+        # step 3: k_pp continuation
+        c2_b6_sols, c2_b6_cont = a.run(starting_point=starting_point, c='qif', ICP=8, NPAR=n_params,
+                                       name='c2.2:k_pp', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=starting_cont,
                                        NMX=4000, DSMAX=0.1)
 
         # save results
@@ -328,7 +331,7 @@ if any(c2):
 
         c2_b0_sols, c2_b0_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params,
                                        name='c2.2:eta_p', NDIM=n_dim, RL0=-10.0, RL1=10.0, origin=starting_cont,
-                                       NMX=4000, DSMAX=0.1, bidirectional=True, UZR={2: [4.2]})
+                                       NMX=4000, DSMAX=0.1, bidirectional=True, UZR={2: [4.0]})
 
         starting_point = 'UZ1'
         starting_cont = c2_b0_cont
@@ -348,8 +351,8 @@ if any(c2):
 
         # step 1: increase background excitability of STN
         c2_b2_sols, c2_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=1, NPAR=n_params,
-                                       name='c2.2:eta_e', NDIM=n_dim, RL0=-5.0, RL1=4.0, origin=starting_cont,
-                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={1: [3.5]})
+                                       name='c2.2:eta_e', NDIM=n_dim, RL0=-5.0, RL1=4.5, origin=starting_cont,
+                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={1: [4.0]})
 
         starting_point = 'UZ1'
         starting_cont = c2_b2_cont
@@ -357,7 +360,7 @@ if any(c2):
         # step 2: increase coupling strength from GPe-p to STN
         c2_b3_sols, c2_b3_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params,
                                        name='c2.2:k_ep', NDIM=n_dim, RL0=0.0, RL1=30.0, origin=starting_cont,
-                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={7: [8.5]})
+                                       NMX=8000, DSMAX=0.4, bidirectional=True, UZR={7: [10.0]})
 
         starting_point = 'UZ1'
         starting_cont = c2_b3_cont
@@ -380,27 +383,35 @@ if any(c2):
                                        name='c2.2:k_gp', NDIM=n_dim, RL0=0.0, RL1=20.0, origin=starting_cont,
                                        NMX=4000, DSMAX=0.1)
 
-        # step 4: eta_a continuation
-        c2_b7_sols, c2_b7_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
-                                       name='c2.2:k_gp', NDIM=n_dim, RL0=-20.0, RL1=0.0, origin=starting_cont,
-                                       NMX=4000, DSMAX=0.1, DS='-')
+        # step 4: k_pa continuation
+        c2_b7_sols, c2_b7_cont = a.run(starting_point=starting_point, c='qif', ICP=10, NPAR=n_params,
+                                       name='c2.2:k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=starting_cont,
+                                       NMX=4000, DSMAX=0.1)
+
+        # step 5: k_pp continuation
+        c2_b8_sols, c2_b8_cont = a.run(starting_point=starting_point, c='qif', ICP=8, NPAR=n_params,
+                                       name='c2.2:k_pp', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=starting_cont,
+                                       NMX=4000, DSMAX=0.1)
 
         # bifurcation analysis of hopf bifurcation identified in previous continuation
         ##############################################################################
 
-        # step 1: 2D continuation in k_gp_e and k_gp
-        c2_b6_cd2_1 = codim2_search(params=[26, 22], starting_points=['HB1'], origin=c2_b6_cont, pyauto_instance=a,
-                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1, RL1=2.0, NMX=8000,
-                                    DSMAX=0.06, max_recursion_depth=2, name="c2.2:k_gp/k_gp_e",
+        # step 1: 2D continuation in k_gp_e and k_a_out
+        c2_b6_cd2_1 = codim2_search(params=[29, 22], starting_points=['HB1'], origin=c2_b6_cont, pyauto_instance=a,
+                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000,
+                                    DSMAX=0.06, max_recursion_depth=2, name="c2.2:k_a_out/k_gp",
                                     kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
                                     kwargs_lc_cont={'c': 'qif2b'}, STOP={'CP3', 'GH5', 'ZH5'})
 
-        kwargs = {'k_gp/k_gp_e:names': list(c2_b6_cd2_1.keys())}
+        kwargs = {'k_a_out/k_gp:names': list(c2_b6_cd2_1.keys())}
         a.to_file(fname, **kwargs)
 
-        # step 2: continuation of limit cycle
-        c2_b6_lc_sols, c2_b6_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[22, 11], NPAR=n_params,
-                                             name='c2.2:k_gp/lc', NDIM=n_dim, RL0=0.0, RL1=15.0, origin=c2_b6_cont,
-                                             NMX=2000, DSMAX=0.2)
+        # step 1: 2D continuation in k_pp and k_a_out
+        c2_b6_cd2_2 = codim2_search(params=[29, 8], starting_points=['HB1'], origin=c2_b6_cont, pyauto_instance=a,
+                                    periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000,
+                                    DSMAX=0.06, max_recursion_depth=2, name="c2.2:k_a_out/k_pp",
+                                    kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
+                                    kwargs_lc_cont={'c': 'qif2b'}, STOP={'CP3', 'GH5', 'ZH5'})
 
+        kwargs.update({'k_a_out/k_pp:names': list(c2_b6_cd2_2.keys())})
         a.to_file(fname, **kwargs)

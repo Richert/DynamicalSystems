@@ -50,20 +50,40 @@ fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
 
 # plot principle eta continuation for different alphas
 ax = axes[0]
-n_alphas = 6
+n_alphas = 5
 for i in range(n_alphas):
     try:
         ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax)
     except KeyError:
         pass
-ax.set_xlabel(r'$\eta$')
+ax.set_xlabel(r'$\bar\eta$')
+ax.set_ylabel('r')
 
 # plot eta continuation for single alpha with limit cycle continuation
 ax = axes[1]
 a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_4', ax=ax)
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb1', ax=ax, ignore=['UZ', 'BP'])
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax, ignore=['UZ', 'BP'])
-ax.set_xlabel(r'$\eta$')
-
+a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb1', ax=ax, ignore=['UZ', 'BP', 'LP'])
+#a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax, ignore=['UZ', 'BP', 'LP'])
+ax.set_xlabel(r'$\bar\eta$')
+ax.set_ylabel('r')
 plt.tight_layout()
+
+# 2D continuations in eta and (alpha, U0)
+#########################################
+
+fig2, axes2 = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
+ax = axes2[0]
+a.plot_continuation('PAR(1)', 'PAR(6)', cont='u0/eta/hb2', ax=ax, line_style_unstable='solid')
+a.plot_continuation('PAR(1)', 'PAR(6)', cont='u0/eta/lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_style_stable='dashed', line_style_unstable='dashed')
+ax.set_xlabel(r'$\eta$')
+ax.set_ylabel(r'$U_0$')
+ax = axes2[1]
+a.plot_continuation('PAR(1)', 'PAR(3)', cont='alpha/eta/hb2', ax=ax, line_style_unstable='solid')
+a.plot_continuation('PAR(1)', 'PAR(3)', cont='alpha/eta/lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_style_stable='dashed', line_style_unstable='dashed')
+ax.set_xlabel(r'$\eta$')
+ax.set_ylabel(r'$\alpha$')
+plt.tight_layout()
+
 plt.show()
