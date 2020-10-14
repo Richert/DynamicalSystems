@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import matplotlib.gridspec as gs
 
 # plotting parameters
@@ -39,12 +39,12 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 ############################################
 
 c1 = [  # bistable state
-      False,  # STN -> GPe-p < STN -> GPe-a
+      True,  # STN -> GPe-p < STN -> GPe-a
       False,   # STN -> GPe-p > STN -> GPe-a
 ]
 c2 = [  # oscillatory state
     False,  # STN -> GPe-p < STN -> GPe-a
-    True,  # STN -> GPe-p > STN -> GPe-a
+    False,  # STN -> GPe-p > STN -> GPe-a
 ]
 
 if any(c1):
@@ -65,26 +65,26 @@ else:
     fname = 'results/stn_gpe_final.pkl'
     condition = ''
 
-a = PyAuto.from_file(fname)
+a = PyAuto.from_file(fname, auto_dir='~/PycharmProjects/auto-07p')
 
-# continuation of k_gp
-######################
+# continuation of k_p_out
+#########################
 
 fig1 = plt.figure(tight_layout=True, figsize=(6.0, 9.0), dpi=dpi)
 grid1 = gs.GridSpec(2, 2)
 
 # codim 1: eta_e
 ax = fig1.add_subplot(grid1[:, :])
-ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp', ax=ax, line_color_stable='#76448A',
+ax = a.plot_continuation('PAR(2)', 'U(3)', cont=f'{condition}:eta_p', ax=ax, line_color_stable='#76448A',
                          line_color_unstable='#5D6D7E', default_size=markersize1)
 
 # codim 1: k_ep
 try:
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp/lc', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(2)', 'U(3)', cont=f'{condition}:eta_p/lc', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1)
 except KeyError:
     pass
-ax.set_xlabel(r'$k_{gp}$')
+ax.set_xlabel(r'$\eta_{p}$')
 ax.set_ylabel('Firing rate')
 
 # 2D continuation of Hopf curve
@@ -97,24 +97,57 @@ branch_color = {'HB': '#8299b0',
 ################################
 
 if hasattr(a, 'additional_attributes'):
+    fig2 = plt.figure(tight_layout=True, figsize=(10.0, 4.0), dpi=dpi)
+    grid2 = gs.GridSpec(1, 3)
     try:
-        fig2 = plt.figure(tight_layout=True, figsize=(6.0, 6.0), dpi=dpi)
-        grid2 = gs.GridSpec(2, 2)
-        ax = fig2.add_subplot(grid2[:, :])
-        for cont in a.additional_attributes['k_gp/k_gp_e:names']:
+        ax = fig2.add_subplot(grid2[:, 0])
+        for cont in a.additional_attributes['k_pa/eta_p:names']:
             if "LP" in cont:
                 color = '#8299b0'
             else:
                 color = '#3689c9'
-            ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=cont, ax=ax, line_color_stable=color,
+            ax = a.plot_continuation('PAR(10)', 'PAR(2)', cont=cont, ax=ax, line_color_stable=color,
                                      line_color_unstable=color, default_size=markersize1,
                                      line_style_unstable='solid', ignore=['LP'])
-        ax.set_xlabel(r'$k_{gp}$')
-        ax.set_ylabel(r'$k_{stn}$')
+        ax.set_xlabel(r'$k_{pa}$')
+        ax.set_ylabel(r'$\eta_{p}$')
         #ax.set_xlim([0.0, 20.0])
         #ax.set_ylim([0.75, 2.0])
         plt.tight_layout()
     except KeyError:
         pass
-
+    try:
+        ax = fig2.add_subplot(grid2[:, 1])
+        for cont in a.additional_attributes['k_stn/eta_p:names']:
+            if "LP" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(26)', 'PAR(2)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+        ax.set_xlabel(r'$k_{stn}$')
+        ax.set_ylabel(r'$\eta_{p}$')
+        #ax.set_xlim([0.0, 20.0])
+        #ax.set_ylim([0.75, 2.0])
+        plt.tight_layout()
+    except KeyError:
+        pass
+    try:
+        ax = fig2.add_subplot(grid2[:, 2])
+        for cont in a.additional_attributes['k_stn/k_pa:names']:
+            if "LP" in cont:
+                color = '#8299b0'
+            else:
+                color = '#3689c9'
+            ax = a.plot_continuation('PAR(26)', 'PAR(10)', cont=cont, ax=ax, line_color_stable=color,
+                                     line_color_unstable=color, default_size=markersize1,
+                                     line_style_unstable='solid', ignore=['LP'])
+        ax.set_xlabel(r'$k_{stn}$')
+        ax.set_ylabel(r'$k_{pa}$')
+        #ax.set_xlim([0.0, 20.0])
+        #ax.set_ylim([0.75, 2.0])
+        plt.tight_layout()
+    except KeyError:
+        pass
 plt.show()

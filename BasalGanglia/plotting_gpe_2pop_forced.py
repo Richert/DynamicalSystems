@@ -12,8 +12,8 @@ import numpy as np
 # markersize1 = 80
 # markersize2 = 80
 linewidth = 1.2
-fontsize1 = 10
-fontsize2 = 12
+fontsize1 = 14
+fontsize2 = 16
 markersize1 = 60
 markersize2 = 40
 dpi = 200
@@ -70,7 +70,7 @@ if c1[0]:
     i = 1
     while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ', 'BP'],
+            ax = a.plot_continuation('PAR(25)', 'PAR(23)', cont=f'c1:omega/alpha/TR{i}', ax=ax, ignore=['UZ', 'BP'],
                                      line_color_stable='#148F77', line_color_unstable='#148F77',
                                      custom_bf_styles={'R1': {'marker': 'h', 'color': 'k'},
                                                        'R2': {'marker': 'h', 'color': 'g'},
@@ -83,19 +83,19 @@ if c1[0]:
     i = 1
     while i < 11:
         try:
-            ax = a.plot_continuation('PAR(23)', 'PAR(25)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ', 'BP'],
+            ax = a.plot_continuation('PAR(25)', 'PAR(23)', cont=f'c1:omega/alpha/PD{i}', ax=ax, ignore=['UZ', 'BP'],
                                      line_color_stable='#3689c9', line_color_unstable='#3689c9',
                                      line_style_unstable='solid', default_size=markersize1)
             i += 1
         except KeyError:
             i += 1
 
-    ax.set_xlabel(r'$\alpha$')
-    ax.set_ylabel(r'$\omega$')
+    ax.set_ylabel(r'$\alpha$')
+    ax.set_xlabel(r'$\omega$')
     fig1.canvas.draw()
     #ax.set_yticklabels([label._y + 5.0 for label in ax.get_yticklabels()])
-    ax.set_xlim([0.0, 60.0])
-    ax.set_ylim([28.0, 92.0])
+    ax.set_ylim([0.0, 60.0])
+    ax.set_xlim([28.0, 91.5])
 
     plt.tight_layout()
     plt.show()
