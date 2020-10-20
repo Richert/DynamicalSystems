@@ -1,13 +1,17 @@
 from pyrates.utility.pyauto import PyAuto, get_from_solutions
 import numpy as np
-import matplotlib.pyplot as plt
+import sys
+
 """Bifurcation analysis of STN-GPe model with two GPe populations (arkypallidal and prototypical) and 
 gamma-distributed axonal delays and bi-exponential synapses."""
+
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 # config
 n_dim = 37
 n_params = 29
-a = PyAuto("auto_files", auto_dir="~/PycharmProjects/auto-07p")
+a = PyAuto("auto_files", auto_dir=auto_dir)
 kwargs = dict()
 
 # choose condition
