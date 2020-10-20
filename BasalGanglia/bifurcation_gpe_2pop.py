@@ -90,14 +90,14 @@ if c1:
                                RL0=-10.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
                                name=f"v1:eta_p/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
                                kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b6_sols = codim2_search(params=[21, 3], starting_points=['HB1'], origin=c1_b3_cont,
+    c1_b6_sols = codim2_search(params=[7, 3], starting_points=['HB1'], origin=c1_b3_cont,
                                pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
-                               RL0=0.1, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
-                               name=f"v1:k_i/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
+                               RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
+                               name=f"v1:k_ap/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
                                kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b7_sols = codim2_search(params=[20, 3], starting_points=['HB1'], origin=c1_b3_cont,
-                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1,
-                               RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v1:k_p/eta_a",
+    c1_b7_sols = codim2_search(params=[8, 3], starting_points=['HB1'], origin=c1_b3_cont,
+                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0,
+                               RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v1:k_pa/eta_a",
                                kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
                                kwargs_lc_cont={'c': 'qif2b'})
 
@@ -116,14 +116,14 @@ if c1:
                                RL0=-10.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
                                name=f"v2:eta_p/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
                                kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b9_sols = codim2_search(params=[21, 3], starting_points=['LP1'], origin=c1_b4_cont,
+    c1_b9_sols = codim2_search(params=[7, 3], starting_points=['LP1'], origin=c1_b4_cont,
                                pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
-                               RL0=0.1, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
-                               name=f"v2:k_i/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
+                               RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
+                               name=f"v2:k_ap/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
                                kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b10_sols = codim2_search(params=[20, 3], starting_points=['LP1'], origin=c1_b4_cont,
-                                pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.1,
-                                RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v2:k_p/eta_a",
+    c1_b10_sols = codim2_search(params=[8, 3], starting_points=['LP1'], origin=c1_b4_cont,
+                                pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0,
+                                RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v2:k_pa/eta_a",
                                 kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
                                 kwargs_lc_cont={'c': 'qif2b'})
 
