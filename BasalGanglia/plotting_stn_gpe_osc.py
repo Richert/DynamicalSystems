@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from pyrates.utility.pyauto import PyAuto, get_from_solutions
+from pyrates.utility.visualization import create_cmap
 import matplotlib.gridspec as gs
 import pandas as pd
+import numpy as np
 
 # plotting parameters
 # linewidth = 2.0
@@ -42,8 +44,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 c1 = False  # bistable state
 c2 = True  # oscillatory state
 
-f1 = False  # stn - gpe-p bifurcations
-f2 = True  # stn - gpe-p - gpe-a bifurcations (without stn to gpe-a projection)
+f1 = True  # stn - gpe-p bifurcations
+f2 = False  # stn - gpe-p - gpe-a bifurcations (without stn to gpe-a projection)
 f3 = False   # stn - gpe-p - gpe-a bifurcations (including stn to gpe-a projection)
 
 fname = 'results/stn_gpe_osc_c1.pkl' if c1 else 'results/stn_gpe_osc_c2.pkl'
@@ -55,8 +57,8 @@ a = PyAuto.from_file(fname, auto_dir='~/PycharmProjects/auto-07p')
 
 if f1:
 
-    fig1 = plt.figure(tight_layout=True, figsize=(6.0, 4.0), dpi=dpi)
-    grid1 = gs.GridSpec(2, 2)
+    fig1 = plt.figure(tight_layout=True, figsize=(6.0, 6.0), dpi=dpi)
+    grid1 = gs.GridSpec(3, 2)
 
     # codim 1
     ax = fig1.add_subplot(grid1[0, :])
@@ -110,6 +112,47 @@ if f1:
         ax.set_ylim([0.0, 5.0])
         ax.set_xlim([-5.0, 15.0])
 
+    ax = fig1.add_subplot(grid1[2, 0])
+    ax = a.plot_continuation('PAR(2)', 'PAR(8)', cont=f'{condition}:k_pp/eta_p:hb1', ax=ax,
+                             line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP', 'UZ'])
+    ax = a.plot_continuation('PAR(2)', 'PAR(8)', cont=f'{condition}:k_pp/eta_p:hb2', ax=ax,
+                             line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP', 'UZ'],
+                             custom_bf_styles={'ZH': {'marker': 'X'}})
+    ax = a.plot_continuation('PAR(2)', 'PAR(8)', cont=f'{condition}:k_pp/eta_p:zh1', ax=ax,
+                             line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP', 'UZ'])
+    ax.set_ylabel(r'$k_{pp}$')
+    ax.set_xlabel(r'$\eta_p$')
+    if c1:
+        ax.set_ylim([0.0, 10.0])
+        ax.set_xlim([-50.0, 25.0])
+    else:
+        ax.set_ylim([0.0, 10.0])
+        ax.set_xlim([-50.0, 25.0])
+
+    ax = fig1.add_subplot(grid1[2, 1])
+    ax = a.plot_continuation('PAR(9)', 'PAR(10)', cont=f'{condition}.2:k_ap/k_pa:hb1', ax=ax,
+                             line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP', 'UZ'])
+    ax = a.plot_continuation('PAR(9)', 'PAR(10)', cont=f'{condition}.2:k_ap/k_pa:hb2', ax=ax,
+                             line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP', 'UZ'])
+    ax.set_ylabel(r'$k_{pa}$')
+    ax.set_xlabel(r'$k_{ap}$')
+    # if c1:
+    #     ax.set_ylim([0.0, 4.0])
+    #     ax.set_xlim([-4.0, 8.0])
+    # else:
+    #     ax.set_ylim([0.0, 4.0])
+    #     ax.set_xlim([-4.0, 8.0])
+
     plt.tight_layout()
     plt.savefig(f'stn_gpe_{condition}_fig1.svg')
 
@@ -158,12 +201,13 @@ if f2:
         #ax.set_xlim([-3.0, 3.0])
 
     ax = fig2.add_subplot(grid2[1, 1])
-    k_pa = a.additional_attributes['k_pa']
-    eta_p = a.additional_attributes['eta_p']
+    k_pa = np.round(a.additional_attributes['k_pa'], decimals=1)
+    eta_p = np.round(a.additional_attributes['eta_p'], decimals=1)
     vmax = 100.0
     data = a.additional_attributes['period_solutions']
     # data[data > vmax] = vmax
     df = pd.DataFrame(data, index=k_pa, columns=eta_p)
+    cmap = create_cmap('magma', as_cmap=False, n_colors=100, )
     ax = a.plot_heatmap(df, ax=ax, cmap='magma', mask=df.values == 0)
     ax.set_ylabel(r'$k_{pa}$')
     ax.set_xlabel(r'$\eta_p$')

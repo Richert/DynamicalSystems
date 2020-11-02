@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto, get_from_solutions
+from pyrates.utility.visualization import create_cmap
 import matplotlib.gridspec as gs
+import pandas as pd
+import numpy as np
 
 # plotting parameters
 # linewidth = 2.0
@@ -34,168 +37,170 @@ mpl.rcParams['ytick.alignment'] = 'center'
 mpl.rcParams['legend.fontsize'] = fontsize1
 
 
-################
-# file loading #
-################
+############################################
+# file loading and condition specification #
+############################################
 
-fname = 'results/stn_gpe_3pop.pkl'
-a = PyAuto.from_file(fname)
+c1 = False  # bistable state
+c2 = True  # oscillatory state
 
-############
-# plotting #
-############
+fname = 'results/stn_gpe_osc_c1.pkl' if c1 else 'results/stn_gpe_osc_c2.pkl'
+condition = 'c1' if c1 else 'c2'
+a = PyAuto.from_file(fname, auto_dir='~/PycharmProjects/auto-07p')
 
-# principle continuation in dopa
-################################
+# oscillatory regime
+####################
 
-fig1 = plt.figure(tight_layout=True, figsize=(8.0, 6.0), dpi=dpi)
-grid1 = gs.GridSpec(3, 2)
+fig1 = plt.figure(tight_layout=True, figsize=(9.0, 3.0), dpi=dpi)
+grid1 = gs.GridSpec(1, 3)
 
-# codim 1 bifurcations
-ax = fig1.add_subplot(grid1[0, :])
-ax = a.plot_continuation('PAR(1)', 'U(2)', cont='dopa', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax = a.plot_continuation('PAR(1)', 'U(2)', cont='dopa_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'd')
-ax.set_ylabel('Firing rate (STN)')
-ax.set_title(r'Bursting Limit Cycle')
+if c2:
 
-# codim 2 bifurcations
-ax = fig1.add_subplot(grid1[1, 0])
-ax = a.plot_continuation('PAR(1)', 'PAR(16)', cont='dopa/delta_p', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'd')
-ax.set_ylabel(r'$\Delta_p$')
-ax = fig1.add_subplot(grid1[1, 1])
-ax = a.plot_continuation('PAR(1)', 'PAR(17)', cont='dopa/delta_a', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'd')
-ax.set_ylabel(r'$\Delta_a$')
-ax = fig1.add_subplot(grid1[2, 0])
-ax = a.plot_continuation('PAR(1)', 'PAR(8)', cont='dopa/k_ap', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'd')
-ax.set_ylabel(r'$k_{ap}$')
-ax = fig1.add_subplot(grid1[2, 1])
-ax = a.plot_continuation('PAR(1)', 'PAR(5)', cont='dopa/k_pa', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'd')
-ax.set_ylabel(r'$k_{pa}$')
-plt.tight_layout()
+    # healthy condition
+    ax = fig1.add_subplot(grid1[0, 0])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:lp1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb2', ax=ax, line_color_stable='#ee2b2b',
+                             line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax.set_ylabel(r'$k_{ae}$')
+    ax.set_xlabel(r'$k_{pe}$')
+    ax.set_xlim([0.0, 20.0])
+    ax.set_ylim([0.0, 20.0])
 
-# continuation in delta_p
-#########################
+    # early PD stage
+    ax = fig1.add_subplot(grid1[0, 1])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:lp1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb2', ax=ax, line_color_stable='#ee2b2b',
+                             line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb3', ax=ax,
+                             line_color_stable='#ea2ecb', line_color_unstable='#ea2ecb', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb4', ax=ax, default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'], line_color_stable='#2cc7d8')
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb5', ax=ax, default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_ae', ax=ax, default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax.set_ylabel(r'$k_{ae}$')
+    ax.set_xlabel(r'$k_{pe}$')
+    ax.set_xlim([0.0, 20.0])
+    ax.set_ylim([0.0, 20.0])
 
-fig2 = plt.figure(tight_layout=True, figsize=(6.0, 3.0), dpi=dpi)
-grid2 = gs.GridSpec(1, 2)
+    # advanced PD stage
+    ax = fig1.add_subplot(grid1[0, 2])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:lp1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb2', ax=ax, line_color_stable='#ee2b2b',
+                             line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb3', ax=ax,
+                             line_color_stable='#ea2ecb', line_color_unstable='#ea2ecb', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb4', ax=ax,
+                             line_color_stable='#2cc7d8', line_color_unstable='#2cc7d8', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb5', ax=ax, default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_ae', ax=ax, default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax.set_ylabel(r'$k_{ae}$')
+    ax.set_xlabel(r'$k_{pe}$')
+    ax.set_xlim([0.0, 20.0])
+    ax.set_ylim([0.0, 20.0])
 
-# plot eta continuation for single alpha with limit cycle continuation
-ax = fig2.add_subplot(grid2[0, :])
-ax = a.plot_continuation('PAR(16)', 'U(2)', cont='delta_p', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax = a.plot_continuation('PAR(16)', 'U(2)', cont='delta_p_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'$\Delta_p$')
-ax.set_ylabel('Firing rate (STN)')
-ax.set_title(r'Bursting Limit Cycle')
+    plt.tight_layout()
+    plt.savefig(f'stn_gpe_{condition}_fig1.svg')
 
-plt.tight_layout()
+elif c1:
 
-# continuation in k_ae
-######################
+    # healthy condition
+    ax = fig1.add_subplot(grid1[0, 0])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe:2', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:lp1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb2', ax=ax, line_color_stable='#ee2b2b',
+                             line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax.set_ylabel(r'$k_{ae}$')
+    ax.set_xlabel(r'$k_{pe}$')
+    ax.set_xlim([0.0, 30.0])
+    ax.set_ylim([0.0, 30.0])
 
-fig3 = plt.figure(tight_layout=True, figsize=(6.0, 3.0), dpi=dpi)
-grid3 = gs.GridSpec(1, 2)
+    # early PD stage
+    ax = fig1.add_subplot(grid1[0, 1])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe:2', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:lp1', ax=ax,
+                             line_color_stable='#3689c9', line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb1', ax=ax,
+                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb2', ax=ax,
+                             line_color_stable='#ee2b2b', line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb3', ax=ax,
+                             line_color_stable='#ea2ecb', line_color_unstable='#ea2ecb', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax.set_ylabel(r'$k_{ae}$')
+    ax.set_xlabel(r'$k_{pe}$')
+    # ax.set_xlim([0.0, 30.0])
+    # ax.set_ylim([0.0, 30.0])
 
-# plot eta continuation for single alpha with limit cycle continuation
-ax = fig3.add_subplot(grid3[0, :])
-ax = a.plot_continuation('PAR(7)', 'U(2)', cont='k_ae', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax = a.plot_continuation('PAR(7)', 'U(2)', cont='k_ae_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'$k_{ae}$')
-ax.set_ylabel('Firing rate (STN)')
-ax.set_title(r'Bursting Limit Cycle')
+    # advanced PD stage
+    ax = fig1.add_subplot(grid1[0, 2])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe:2', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:lp1', ax=ax,
+                             line_color_stable='#3689c9', line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb1', ax=ax,
+                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb2', ax=ax,
+                             line_color_stable='#ee2b2b', line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb3', ax=ax,
+                             line_color_stable='#ea2ecb', line_color_unstable='#ea2ecb', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb4', ax=ax,
+                             line_color_stable='#2cc7d8', line_color_unstable='#2cc7d8', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax.set_ylabel(r'$k_{ae}$')
+    ax.set_xlabel(r'$k_{pe}$')
+    ax.set_xlim([0.0, 30.0])
+    ax.set_ylim([0.0, 30.0])
 
-plt.tight_layout()
-
-# continuation in k_p
-#####################
-
-fig4 = plt.figure(tight_layout=True, figsize=(6.0, 3.0), dpi=dpi)
-grid4 = gs.GridSpec(1, 2)
-
-# plot eta continuation for single alpha with limit cycle continuation
-ax = fig4.add_subplot(grid4[0, :])
-ax = a.plot_continuation('PAR(25)', 'U(2)', cont='k_p', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax = a.plot_continuation('PAR(25)', 'U(2)', cont='k_p_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'$k_{p}$')
-ax.set_ylabel('Firing rate (STN)')
-ax.set_title(r'Bursting Limit Cycle')
-
-plt.tight_layout()
-
-# continuation in k_gp
-######################
-
-fig5 = plt.figure(tight_layout=True, figsize=(6.0, 3.0), dpi=dpi)
-grid5 = gs.GridSpec(1, 2)
-
-# plot eta continuation for single alpha with limit cycle continuation
-ax = fig5.add_subplot(grid5[0, :])
-ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-#ax = a.plot_continuation('PAR(26)', 'U(2)', cont='k_gp_lc2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-#                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'$k_{gp}$')
-ax.set_ylabel('Firing rate (STN)')
-ax.set_title(r'Bursting Limit Cycle')
-
-plt.tight_layout()
-
-# principle continuation in eta_e
-#################################
-
-fig6 = plt.figure(tight_layout=True, figsize=(8.0, 6.0), dpi=dpi)
-grid6 = gs.GridSpec(3, 2)
-
-# codim 1 bifurcations
-ax = fig6.add_subplot(grid6[0, :])
-ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-#ax = a.plot_continuation('PAR(18)', 'U(2)', cont='eta_e_lc2', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-#                         default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
-ax.set_xlabel(r'$\eta_e$')
-ax.set_ylabel('Firing rate (STN)')
-ax.set_title(r'Bursting Limit Cycle')
-
-# codim 2 bifurcations
-ax = fig6.add_subplot(grid6[1, 0])
-ax = a.plot_continuation('PAR(18)', 'PAR(2)', cont='eta_e/k_ep', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'$\eta_e$')
-ax.set_ylabel(r'$k_{ep}$')
-ax = fig6.add_subplot(grid6[1, 1])
-ax = a.plot_continuation('PAR(18)', 'PAR(16)', cont='eta_e/delta_e', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'$\eta_e$')
-ax.set_ylabel(r'$\Delta_{p}$')
-ax = fig6.add_subplot(grid6[2, 0])
-ax = a.plot_continuation('PAR(18)', 'PAR(19)', cont='eta_e/eta_p', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'$\eta_e$')
-ax.set_ylabel(r'$\eta_p$')
-ax = fig6.add_subplot(grid6[2, 1])
-ax = a.plot_continuation('PAR(18)', 'PAR(20)', cont='eta_e/eta_a', ax=ax, line_color_stable='#76448A',
-                         line_color_unstable='#5D6D7E', default_size=markersize1)
-ax.set_xlabel(r'$\eta_e$')
-ax.set_ylabel(r'$\eta_a$')
-plt.tight_layout()
 plt.show()

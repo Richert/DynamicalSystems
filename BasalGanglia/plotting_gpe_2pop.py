@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import matplotlib.gridspec as gs
 
 # plotting parameters
@@ -38,6 +38,7 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
+auto_dir = '~/PycharmProjects/auto-07p'
 c1 = True  # strong GPe-p projections
 c2 = False  # strong bidirectional coupling between GPe-p and GPe-a
 c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
@@ -49,7 +50,7 @@ c3 = False  # weak bidirectional coupling between GPe-p and GPe-a
 if c1:
 
     fname = 'results/gpe_2pop_c1.pkl'
-    a = PyAuto.from_file(fname)
+    a = PyAuto.from_file(fname, auto_dir=auto_dir)
 
     # codim 1 bifurcation diagrams
     ##############################
@@ -62,7 +63,7 @@ if c1:
     ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
-    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1/lc', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1:lc', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
     ax.set_xlabel(r'$\eta_a$')
@@ -70,7 +71,7 @@ if c1:
     ax.set_xlim([-12.0, 6.0])
     ax.set_ylim([0.02, 0.11])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([0.0, 25.0, 50.0, 75.0, 100.0])
+    ax.set_yticklabels([20.0, 40.0, 60.0, 80.0, 100.0])
 
     # codim 1: eta_a / fold
     ax = fig1.add_subplot(grid1[0, 2:])
@@ -82,106 +83,69 @@ if c1:
     ax.set_xlim([-5.0, 7.0])
     # ax.set_ylim([0.0, 0.13])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([0.0, 25.0, 50.0, 75.0])
+    ax.set_yticklabels([0.0, 20.0, 40.0, 60.0, 80.0])
 
-    # codim 2 investigations of hopf
-    ################################
+    # codim 2 investigations
+    ########################
 
-    # codim 2: eta_a and eta_p
-    ax = fig1.add_subplot(grid1[1, 1])
-    for cont in a.additional_attributes[f'v1:eta_p/eta_a:names']:
-        if "(LP)" in cont:
-            color = '#8299b0'
-        else:
-            color = '#3689c9'
-        ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont=cont, ax=ax, line_color_stable=color,
-                                 line_color_unstable=color, default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$\eta_p$')
-    ax.set_xlim([-20.0, 20.0])
-    ax.set_ylim([2.0, 10.0])
-    plt.tight_layout()
-
-    # codim 2: eta_a and k_i
+    # Hopf curve: eta_a and k_pa
     ax = fig1.add_subplot(grid1[1, 0])
-    for cont in a.additional_attributes[f'v1:k_i/eta_a:names']:
-        if "(LP)" in cont:
-            color = '#8299b0'
-        else:
-            color = '#3689c9'
-        ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=cont, ax=ax, line_color_stable=color,
-                                 line_color_unstable=color, default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:hb1', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:zh1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
     ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_{i}$')
-    ax.set_xlim([-20.0, 20.0])
-    ax.set_ylim([0.6, 2.2])
+    ax.set_ylabel(r'$J_{ap}$')
+    ax.set_xlim([-10.0, 40.0])
+    ax.set_ylim([0.0, 8.0])
     plt.tight_layout()
 
-    # # codim 2: eta_p and k_i
-    # ax = fig1.add_subplot(grid1[1, 1])
-    # for i in [0, 2, 4]:
-    #     for cont in a.additional_attributes[f'v1:k_p/eta_a:names']:
-    #         if "(LP)" in cont:
-    #             color = '#8299b0'
-    #         else:
-    #             color = '#3689c9'
-    #         ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont=cont, ax=ax, line_color_stable=color,
-    #                                  line_color_unstable=color, default_size=markersize1,
-    #                                  line_style_unstable='solid', ignore=['LP'])
-    # ax.set_xlabel(r'$\eta_a$')
-    # ax.set_ylabel(r'$k_{p}$')
-    # plt.tight_layout()
-
-    # codim 2 investigations of fold
-    ################################
-
-    # codim 2: v1 eta_a and eta_p
-    ax = fig1.add_subplot(grid1[1, 3])
-    for cont in a.additional_attributes[f'v2:eta_p/eta_a:names']:
-        if "(LP)" in cont:
-            color = '#8299b0'
-        else:
-            color = '#3689c9'
-        ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont=cont, ax=ax, line_color_stable=color,
-                                 line_color_unstable=color, default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
+    # Hopf curve: eta_a and k_pp
+    ax = fig1.add_subplot(grid1[1, 1])
+    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:hb1', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:zh1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:zh2', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
     ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$\eta_p$')
-    ax.set_xlim([-20.0, 20.0])
-    ax.set_ylim([2.0, 10.0])
+    ax.set_ylabel(r'$J_{pp}$')
+    ax.set_xlim([-10.0, 20.0])
+    ax.set_ylim([0.0, 1.3])
     plt.tight_layout()
 
-    # codim 2: eta_a and k_i
+    # Fold curve: eta_a and k_ap
     ax = fig1.add_subplot(grid1[1, 2])
-    for cont in a.additional_attributes[f'v2:k_i/eta_a:names']:
-        if "(LP)" in cont:
-            color = '#8299b0'
-        else:
-            color = '#3689c9'
-        ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont=cont, ax=ax, line_color_stable=color,
-                                 line_color_unstable=color, default_size=markersize1,
-                                 line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:lp1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:zh2', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:zh3', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
     ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_{i}$')
-    ax.set_xlim([-20.0, 20.0])
-    ax.set_ylim([0.5, 10.0])
+    ax.set_ylabel(r'$k_{ap}$')
+    ax.set_xlim([-50.0, 120.0])
+    ax.set_ylim([0.0, 10.0])
     plt.tight_layout()
 
-    # # codim 2: eta_p and k_i
-    # ax = fig1.add_subplot(grid1[1, 3])
-    # for cont in a.additional_attributes[f'v2:k_p/eta_a:names']:
-    #     if "(LP)" in cont:
-    #         color = '#8299b0'
-    #     else:
-    #         color = '#3689c9'
-    #     ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont=cont, ax=ax, line_color_stable=color,
-    #                              line_color_unstable=color, default_size=markersize1,
-    #                              line_style_unstable='solid', ignore=['LP'])
-    # ax.set_xlabel(r'$\eta_a$')
-    # ax.set_ylabel(r'$k_{p}$')
-    # plt.tight_layout()
+    # FOld curve: eta_a and k_pp
+    ax = fig1.add_subplot(grid1[1, 3])
+    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:lp1', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel(r'$k_{pp}$')
+    ax.set_xlim([-10.0, 20.0])
+    ax.set_ylim([0.0, 1.3])
+    plt.tight_layout()
 
     plt.show()
 
@@ -192,7 +156,7 @@ if c1:
 if c2:
 
     fname = 'results/gpe_2pop_c2.pkl'
-    a = PyAuto.from_file(fname)
+    PyAuto.from_file(fname, auto_dir=auto_dir)
 
     # continuation of eta_p
     #######################
@@ -305,7 +269,7 @@ if c2:
 if c3:
 
     fname = 'results/gpe_2pop_c3.pkl'
-    a = PyAuto.from_file(fname)
+    PyAuto.from_file(fname, auto_dir=auto_dir)
 
     # continuation of delta_a
     #########################

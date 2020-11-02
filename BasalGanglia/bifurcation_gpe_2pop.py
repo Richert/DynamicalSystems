@@ -80,62 +80,51 @@ if c1:
                                    origin=c1_b2_cont, NMX=6000, DSMAX=0.05, bidirectional=True)
 
     # step 3: codim 2 investigation of hopf curves
-    c1_b12_sols = codim2_search(params=[8, 6], starting_points=['HB1'], origin=c1_b3_cont,
-                                pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0,
-                                RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v1:k_pa/k_pp",
-                                kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
-                                kwargs_lc_cont={'c': 'qif2b'})
-    c1_b5_sols = codim2_search(params=[2, 3], starting_points=['HB1'], origin=c1_b3_cont,
-                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
-                               RL0=-10.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
-                               name=f"v1:eta_p/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
-                               kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b6_sols = codim2_search(params=[7, 3], starting_points=['HB1'], origin=c1_b3_cont,
-                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
-                               RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
-                               name=f"v1:k_ap/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
-                               kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b7_sols = codim2_search(params=[8, 3], starting_points=['HB1'], origin=c1_b3_cont,
-                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0,
-                               RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v1:k_pa/eta_a",
-                               kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
-                               kwargs_lc_cont={'c': 'qif2b'})
-
-    # save results
-    kwargs.update({f'v1:eta_p/eta_a:names': list(c1_b5_sols.keys()),
-                   f'v1:k_i/eta_a:names': list(c1_b6_sols.keys()),
-                   f'v1:k_p/eta_a:names': list(c1_b7_sols.keys())})
-
-    # save results
-    fname = '../results/gpe_2pop_c1.pkl'
-    a.to_file(fname, **kwargs)
+    c1_b5_sols, c1_b5_cont = a.run(starting_point='HB1', origin=c1_b3_cont, c='qif2', ICP=[7, 3], NDIM=n_dim,
+                                   NPAR=n_params, RL0=-20.0, RL1=40.0, NMX=16000, DSMAX=0.1, name='c1:k_ap/eta_a:hb1',
+                                   bidirectional=True)
+    c1_b6_sols, c1_b6_cont = a.run(starting_point='HB1', origin=c1_b3_cont, c='qif2', ICP=[6, 3], NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name='c1:k_pp/eta_a:hb1',
+                                   bidirectional=True)
 
     # step 4: codim 2 investigation of fold curves
-    c1_b8_sols = codim2_search(params=[2, 3], starting_points=['LP1'], origin=c1_b4_cont,
-                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
-                               RL0=-10.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
-                               name=f"v2:eta_p/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
-                               kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b9_sols = codim2_search(params=[7, 3], starting_points=['LP1'], origin=c1_b4_cont,
-                               pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params,
-                               RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3,
-                               name=f"v2:k_ap/eta_a", kwargs_2D_lc_cont={'c': 'qif3'},
-                               kwargs_2D_cont={'c': 'qif2'}, kwargs_lc_cont={'c': 'qif2b'})
-    c1_b10_sols = codim2_search(params=[8, 3], starting_points=['LP1'], origin=c1_b4_cont,
-                                pyauto_instance=a, periodic=False, c='qif', NDIM=n_dim, NPAR=n_params, RL0=0.0,
-                                RL1=10.0, NMX=8000, DSMAX=0.05, max_recursion_depth=3, name=f"v2:k_pa/eta_a",
-                                kwargs_2D_lc_cont={'c': 'qif3'}, kwargs_2D_cont={'c': 'qif2'},
-                                kwargs_lc_cont={'c': 'qif2b'})
+    c1_b7_sols, c1_b7_cont = a.run(starting_point='LP1', origin=c1_b4_cont, c='qif2', ICP=[7, 3], NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name='c1:k_ap/eta_a:lp1',
+                                   bidirectional=True, UZR={3: [100.0]})
+    c1_b8_sols, _ = a.run(starting_point='LP1', origin=c1_b4_cont, c='qif2', ICP=[6, 3], NDIM=n_dim, NPAR=n_params,
+                          RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name='c1:k_pp/eta_a:lp1', bidirectional=True)
+
+    # complete 2D  bifurcation diagram for hopf curves
+    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b6_cont, c='qif', ICP=3, NDIM=n_dim, NPAR=n_params,
+                        RL0=-20.0, RL1=20.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
+    a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[6, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
+          NMX=8000, DSMAX=0.2, name='c1:k_pp/eta_a:zh1', bidirectional=True)
+
+    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b6_cont, c='qif', ICP=6, NDIM=n_dim, NPAR=n_params,
+                        RL0=0.0, RL1=20.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
+    a.run(starting_point='LP1', origin=cont_tmp, c='qif2', ICP=[6, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
+          NMX=8000, DSMAX=0.2, name='c1:k_pp/eta_a:zh2', bidirectional=True)
+
+    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b5_cont, c='qif', ICP=7, NDIM=n_dim, NPAR=n_params,
+                        RL0=0.0, RL1=10.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
+    a.run(starting_point='LP1', origin=cont_tmp, c='qif2', ICP=[7, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
+          NMX=8000, DSMAX=0.2, name='c1:k_ap/eta_a:zh1', bidirectional=True)
+
+    # complete 2D  bifurcation diagram for fold curves
+    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b7_cont, c='qif', ICP=7, NDIM=n_dim, NPAR=n_params,
+                        RL0=0.0, RL1=10.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
+    a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[7, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
+          NMX=8000, DSMAX=0.2, name='c1:k_ap/eta_a:zh2', bidirectional=True)
+
+    _, cont_tmp = a.run(starting_point='UZ1', origin=c1_b7_cont, c='qif', ICP=3, NDIM=n_dim, NPAR=n_params,
+                        RL0=90.0, RL1=120.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
+    a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[7, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
+          NMX=8000, DSMAX=0.2, name='c1:k_ap/eta_a:zh3', bidirectional=True)
 
     # step 5: continuation of limit cycle
-    c1_b11_sols, c1_b11_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], NPAR=n_params,
-                                     name=f'c1:eta_a/v1/lc', NDIM=n_dim, RL0=eta_min, RL1=eta_max, origin=c1_b3_cont,
+    c1_b13_sols, c1_b13_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], NPAR=n_params,
+                                     name=f'c1:eta_a/v1:lc', NDIM=n_dim, RL0=eta_min, RL1=eta_max, origin=c1_b3_cont,
                                      NMX=2000, DSMAX=0.05)
-
-    # save results
-    kwargs.update({f'v2:eta_p/eta_a:names': list(c1_b8_sols.keys()),
-                   f'v2:k_i/eta_a:names': list(c1_b9_sols.keys()),
-                   f'v2:k_p/eta_a:names': list(c1_b10_sols.keys())})
 
     # save results
     fname = '../results/gpe_2pop_c1.pkl'

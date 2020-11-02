@@ -1,199 +1,294 @@
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto, get_from_solutions
 import numpy as np
-import matplotlib.pyplot as plt
+import sys
 
-#####################################
-# bifurcation analysis of qif model #
-#####################################
+"""Bifurcation analysis of STN-GPe model with two GPe populations (arkypallidal and prototypical) and 
+gamma-distributed axonal delays and bi-exponential synapses."""
+
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 # config
-n_dim = 47
-n_params = 27
-a = PyAuto("auto_files")
-fname = '../results/stn_gpe_3pop_tmp.pkl'
-
-# initial continuation in time
-##############################
-
-t_sols, t_cont = a.run(e='stn_gpe_47d', c='ivp', ICP=14, DS=5e-2, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
-                       UZR={14: 10000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
-
-# continuation in dopamine depletion (downscaling of deltas in GPe and upscaling of GPe to GPe-a coupling)
-##########################################################################################################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c0_sols, c0_cont = a.run(starting_point=starting_point, c='qif', ICP=1, NPAR=n_params, name='dopa', NDIM=n_dim,
-                         RL0=0.99, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.05)
-
-# step 2: codim 2 investigation of branch point found in step 1
-c0_2d1_sols, c0_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[16, 1], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='dopa/delta_p', origin=c0_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=0.01, RL1=1.0)
-c0_2d2_sols, c0_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 1], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='dopa/delta_a', origin=c0_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=0.01, RL1=1.0)
-c0_2d3_sols, c0_2d3_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 1], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='dopa/k_ap', origin=c0_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=1.0, RL1=200.0)
-c0_2d4_sols, c0_2d4_cont = a.run(starting_point='HB1', c='qif2', ICP=[5, 1], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='dopa/k_pa', origin=c0_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=1.0, RL1=200.0)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c0_lc1_sols, c0_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='dopa_lc', origin=c0_cont, NDIM=n_dim,
-                                 RL0=0.99, RL1=10.0, STOP={'PD1', 'BP2'})
-
-# save results
+n_dim = 37
+n_params = 29
+a = PyAuto("auto_files", auto_dir=auto_dir)
 kwargs = dict()
-a.to_file(fname, **kwargs)
 
-# continuation in delta_p
+c1 = False   # bistable
+c2 = True   # oscillatory
+
+#########################
+# initial continuations #
 #########################
 
+# continuation in time
+t_sols, t_cont = a.run(e='stn_gpe_3pop', c='ivp', ICP=14, NMX=1000000, name='t', UZR={14: 1000.0}, STOP={'UZ1'},
+                       NDIM=n_dim, NPAR=n_params)
 starting_point = 'UZ1'
 starting_cont = t_cont
 
-# step 1: codim 1 investigation
-c1_sols, c1_cont = a.run(starting_point=starting_point, c='qif', ICP=16, NPAR=n_params, name='delta_p', NDIM=n_dim,
-                         RL0=0.01, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={'UZ6'},
-                         bidirectional=True)
+# choose relative strength of inter- vs. intra-population coupling inside GPe
+ki_sols, ki_cont = a.run(starting_point=starting_point, c='qif', ICP=24, NPAR=n_params, name='k_i', NDIM=n_dim,
+                         RL0=0.8, RL1=2.0, origin=starting_cont, NMX=2000, DSMAX=0.1, bidirectional=True,
+                         UZR={24: [0.9, 1.8]}, STOP={})
 
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c1_lc1_sols, c1_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[16, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='delta_p_lc', origin=c1_cont, NDIM=n_dim,
-                                 RL0=0.01, RL1=1.0, STOP={'PD1', 'BP2'})
+################################################################################
+# c2: investigation of STN-GPe behavior near the oscillatory regime of the GPe #
+################################################################################
+
+if c2:
+
+    fname = '../results/stn_gpe_osc_c2.pkl'
+    starting_point = 'UZ1'
+    starting_cont = ki_cont
+    cond = "c2"
+
+    # preparation of healthy state
+    ##############################
+
+    # continuation of eta_p
+    c2_b1_sols, c2_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params,
+                                   name=f'{cond}:eta_p:tmp', NDIM=n_dim, RL0=-10.0, RL1=20.0, origin=starting_cont,
+                                   NMX=4000, DSMAX=0.1, UZR={2: [6.0]}, bidirectional=True)
+    starting_point = 'UZ1'
+    starting_cont = c2_b1_cont
+
+    # continuation of eta_a
+    c2_b2_sols, c2_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
+                                   name=f'{cond}:eta_a:tmp', NDIM=n_dim, RL0=-10.0, RL1=10.0, origin=starting_cont,
+                                   NMX=4000, DSMAX=0.1, UZR={3: [-2.0]}, bidirectional=True)
+    starting_point = 'UZ1'
+    starting_cont = c2_b2_cont
+
+    # continuation of k_ae
+    c2_b3_sols, c2_b3_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=6, NDIM=n_dim,
+                                   NPAR=n_params, RL1=10.0, NMX=4000, DSMAX=0.05, name=f'{cond}:k_ae:tmp',
+                                   UZR={6: [4.0]})
+
+    # continuaiton of k_gp
+    c2_b4_sols, c2_b4_cont = a.run(starting_point='UZ1', origin=c2_b3_cont, c='qif', ICP=22, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name=f'{cond}:k_gp',
+                                   UZR={22: [3.5, 7.0, 14.0]})
+
+    # STN control over GPe behavior in healthy state
+    ################################################
+
+    # continuation of k_pe
+    c2_b5_sols, c2_b5_cont = a.run(starting_point='UZ1', origin=c2_b4_cont, c='qif', ICP=5, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'{cond}:k_pe',
+                                   bidirectional=True, UZR={5: [5.0]})
+
+    # continuation of k_ae
+    _, c2_b6_cont = a.run(starting_point='UZ1', origin=c2_b5_cont, c='qif', ICP=6, NDIM=n_dim,
+                          NPAR=n_params, RL0=0.0, RL1=30.0, NMX=16000, DSMAX=0.1, name=f'{cond}:k_ae',
+                          bidirectional=True)
+
+    # 2D continuation of k_pe and k_ae
+    c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}:k_pe/k_ae:hb1', bidirectional=True)
+    c2_b6_2d1_sols, c2_b6_2d1_cont = a.run(starting_point='LP1', origin=c2_b6_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}:k_pe/k_ae:lp1', bidirectional=True)
+    c2_b6_2d2_sols, c2_b6_2d2_cont = a.run(starting_point='HB1', origin=c2_b6_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}:k_pe/k_ae:hb2', bidirectional=True)
+
+    # STN control over GPe behavior in early PD state
+    #################################################
+
+    # continuation of k_pe
+    c2_b7_sols, c2_b7_cont = a.run(starting_point='UZ2', origin=c2_b4_cont, c='qif', ICP=5, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'{cond}.2:k_pe',
+                                   bidirectional=True, UZR={5: [6.0]})
+
+    # continuation of k_ae
+    _, c2_b8_cont = a.run(starting_point='UZ1', origin=c2_b7_cont, c='qif', ICP=6, NDIM=n_dim,
+                          NPAR=n_params, RL0=0.0, RL1=30.0, NMX=30000, DSMAX=0.1, name=f'{cond}.2:k_ae',
+                          bidirectional=True)
+
+    # 2D continuation of k_pe and k_ae
+    c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP1', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:lp1', bidirectional=True)
+    c2_b7_2d2_sols, c2_b7_2d2_cont = a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb1', bidirectional=True)
+    c2_b7_2d3_sols, c2_b7_2d3_cont = a.run(starting_point='HB2', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb2', bidirectional=True)
+    c2_b7_2d4_sols, c2_b7_2d4_cont = a.run(starting_point='HB3', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb3', bidirectional=True)
+    c2_b8_2d1_sols, c2_b8_2d1_cont = a.run(starting_point='HB3', origin=c2_b8_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=24000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb4', bidirectional=True)
+    c2_b8_2d2_sols, c2_b8_2d2_cont = a.run(starting_point='HB1', origin=c2_b8_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=24000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb5', bidirectional=True)
+
+    # STN control over GPe behavior in advanced PD state
+    ####################################################
+
+    # continuation of k_pe
+    c2_b9_sols, c2_b9_cont = a.run(starting_point='UZ3', origin=c2_b4_cont, c='qif', ICP=5, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'{cond}.3:k_pe',
+                                   bidirectional=True, UZR={5: [11.0]})
+
+    # continuation of k_ae
+    _, c2_b10_cont = a.run(starting_point='UZ1', origin=c2_b9_cont, c='qif', ICP=6, NDIM=n_dim,
+                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=20000, DSMAX=0.1, name=f'{cond}.3:k_ae',
+                           bidirectional=True)
+
+    # 2D continuation of k_pe and k_ae
+    c2_b9_2d1_sols, c2_b9_2d1_cont = a.run(starting_point='HB1', origin=c2_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb1', bidirectional=True)
+    c2_b9_2d2_sols, c2_b9_2d2_cont = a.run(starting_point='HB2', origin=c2_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb2', bidirectional=True)
+    c2_b9_2d3_sols, c2_b9_2d3_cont = a.run(starting_point='HB3', origin=c2_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=30000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb3', bidirectional=True)
+    c2_b9_2d4_sols, c2_b9_2d4_cont = a.run(starting_point='HB4', origin=c2_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb4', bidirectional=True)
+    c2_b10_2d1_sols, c2_b10_2d1_cont = a.run(starting_point='LP1', origin=c2_b10_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                             NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                             name=f'{cond}.3:k_pe/k_ae:lp1', bidirectional=True)
+    c2_b10_2d2_sols, c2_b10_2d2_cont = a.run(starting_point='HB3', origin=c2_b10_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                             NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                             name=f'{cond}.3:k_pe/k_ae:hb5', bidirectional=True)
+
+elif c1:
+
+    fname = '../results/stn_gpe_osc_c1.pkl'
+    starting_point = 'UZ2'
+    starting_cont = ki_cont
+    cond = "c1"
+
+    # preparation of healthy state
+    ##############################
+
+    # continuation of eta_p
+    c1_b1_sols, c1_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=2, NPAR=n_params,
+                                   name=f'{cond}:eta_p:tmp', NDIM=n_dim, RL0=-10.0, RL1=20.0, origin=starting_cont,
+                                   NMX=4000, DSMAX=0.1, UZR={2: [3.2]}, bidirectional=True)
+    starting_point = 'UZ1'
+    starting_cont = c1_b1_cont
+
+    # continuation of eta_a
+    c1_b2_sols, c1_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
+                                   name=f'{cond}:eta_a:tmp', NDIM=n_dim, RL0=-10.0, RL1=10.0, origin=starting_cont,
+                                   NMX=4000, DSMAX=0.1, UZR={3: [2.0]}, bidirectional=True)
+    starting_point = 'UZ1'
+    starting_cont = c1_b2_cont
+
+    # continuation of k_ae
+    c1_b3_sols, c1_b3_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=6, NDIM=n_dim,
+                                   NPAR=n_params, RL1=10.0, NMX=4000, DSMAX=0.05, name=f'{cond}:k_ae:tmp',
+                                   UZR={6: [4.0]})
+
+    # continuaiton of k_gp
+    c1_b4_sols, c1_b4_cont = a.run(starting_point='UZ1', origin=c1_b3_cont, c='qif', ICP=22, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1, name=f'{cond}:k_gp',
+                                   UZR={22: [3.0, 6.0, 9.0]})
+
+    # STN control over GPe behavior in healthy state
+    ################################################
+
+    # continuation of k_pe
+    c1_b5_sols, c1_b5_cont = a.run(starting_point='UZ1', origin=c1_b4_cont, c='qif', ICP=5, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=30.0, NMX=16000, DSMAX=0.1, name=f'{cond}:k_pe',
+                                   bidirectional=True, UZR={5: [10.0]})
+
+    # continuation of k_ae
+    # _, c1_b6_cont = a.run(starting_point='UZ1', origin=c1_b5_cont, c='qif', ICP=6, NDIM=n_dim,
+    #                       NPAR=n_params, RL0=0.0, RL1=30.0, NMX=24000, DSMAX=0.1, name=f'{cond}:k_ae',
+    #                       bidirectional=True, UZR={6: [25.0]})
+    #
+    # # second continuation of k_pe
+    # _, c1_b5_cont2 = a.run(starting_point='UZ1', origin=c1_b6_cont, c='qif', ICP=5, NDIM=n_dim,
+    #                        NPAR=n_params, RL0=0.0, RL1=60.0, NMX=20000, DSMAX=0.1, name=f'{cond}:k_pe:2',
+    #                        bidirectional=True)
+
+    # 2D continuation of k_pe and k_ae
+    c1_b5_2d1_sols, c1_b5_2d1_cont = a.run(starting_point='LP1', origin=c1_b5_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}:k_pe/k_ae:lp1', bidirectional=True)
+    c1_b5_2d2_sols, c1_b5_2d2_cont = a.run(starting_point='HB1', origin=c1_b5_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}:k_pe/k_ae:hb1', bidirectional=True)
+    c1_b5_2d3_sols, c1_b5_2d3_cont = a.run(starting_point='HB3', origin=c1_b5_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}:k_pe/k_ae:hb2', bidirectional=True)
+
+    # STN control over GPe behavior in early PD state
+    #################################################
+
+    # continuation of k_pe
+    c1_b7_sols, c1_b7_cont = a.run(starting_point='UZ2', origin=c1_b4_cont, c='qif', ICP=5, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=30.0, NMX=16000, DSMAX=0.1, name=f'{cond}.2:k_pe',
+                                   bidirectional=True, UZR={5: [15.0]})
+
+    # continuation of k_ae
+    # _, c1_b8_cont = a.run(starting_point='UZ1', origin=c1_b7_cont, c='qif', ICP=6, NDIM=n_dim,
+    #                       NPAR=n_params, RL0=0.0, RL1=30.0, NMX=24000, DSMAX=0.1, name=f'{cond}.2:k_ae',
+    #                       bidirectional=True, UZR={6: [5.0]})
+    #
+    # # second continuation of k_pe
+    # _, c1_b7_cont2 = a.run(starting_point='UZ1', origin=c1_b8_cont, c='qif', ICP=5, NDIM=n_dim,
+    #                        NPAR=n_params, RL0=0.0, RL1=60.0, NMX=20000, DSMAX=0.1, name=f'{cond}.2:k_pe:2',
+    #                        bidirectional=True)
+
+    # 2D continuation of k_pe and k_ae
+    c1_b7_2d1_sols, c1_b7_2d1_cont = a.run(starting_point='LP1', origin=c1_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:lp1', bidirectional=True)
+    c1_b7_2d2_sols, c1_b7_2d2_cont = a.run(starting_point='HB1', origin=c1_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb1', bidirectional=True)
+    c1_b7_2d3_sols, c1_b7_2d3_cont = a.run(starting_point='HB2', origin=c1_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb2', bidirectional=True)
+    c1_b7_2d4_sols, c1_b7_2d4_cont = a.run(starting_point='HB4', origin=c1_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.2:k_pe/k_ae:hb3', bidirectional=True)
+
+    # STN control over GPe behavior in advanced PD state
+    ####################################################
+
+    # continuation of k_pe
+    c1_b9_sols, c1_b9_cont = a.run(starting_point='UZ3', origin=c1_b4_cont, c='qif', ICP=5, NDIM=n_dim,
+                                   NPAR=n_params, RL0=0.0, RL1=30.0, NMX=16000, DSMAX=0.1, name=f'{cond}.3:k_pe',
+                                   bidirectional=True, UZR={5: [15.0]})
+
+    # continuation of k_ae
+    # _, c1_b10_cont = a.run(starting_point='UZ1', origin=c1_b9_cont, c='qif', ICP=6, NDIM=n_dim,
+    #                        NPAR=n_params, RL0=0.0, RL1=30.0, NMX=24000, DSMAX=0.4, name=f'{cond}.3:k_ae',
+    #                        bidirectional=True, UZR={6: [25.0]})
+    #
+    # # second continuation of k_pe
+    # _, c1_b9_cont2 = a.run(starting_point='UZ1', origin=c1_b10_cont, c='qif', ICP=5, NDIM=n_dim,
+    #                        NPAR=n_params, RL0=0.0, RL1=60.0, NMX=20000, DSMAX=0.1, name=f'{cond}.3:k_pe:2',
+    #                        bidirectional=True)
+
+    # 2D continuation of k_pe and k_ae
+    c1_b9_2d1_sols, c1_b9_2d1_cont = a.run(starting_point='LP1', origin=c1_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:lp1', bidirectional=True)
+    c1_b9_2d2_sols, c1_b9_2d2_cont = a.run(starting_point='HB1', origin=c1_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb1', bidirectional=True)
+    c1_b9_2d3_sols, c1_b9_2d3_cont = a.run(starting_point='HB3', origin=c1_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb2', bidirectional=True)
+    c1_b9_2d4_sols, c1_b9_2d4_cont = a.run(starting_point='HB4', origin=c1_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb3', bidirectional=True)
+    c1_b9_2d5_sols, c1_b9_2d5_cont = a.run(starting_point='HB5', origin=c1_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=30.0, NMX=10000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_pe/k_ae:hb4', bidirectional=True)
 
 # save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
-# continuation in delta_a
-#########################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c2_sols, c2_cont = a.run(starting_point=starting_point, c='qif', ICP=17, NPAR=n_params, name='delta_a', NDIM=n_dim,
-                         RL0=0.01, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={'UZ6'},
-                         bidirectional=True)
-
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
-# continuation in delta_e
-#########################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c3_sols, c3_cont = a.run(starting_point=starting_point, c='qif', ICP=15, NPAR=n_params, name='delta_e', NDIM=n_dim,
-                         RL0=0.01, RL1=1.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={'UZ6'},
-                         bidirectional=True)
-
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
-# continuation in k_ae
-######################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c4_sols, c4_cont = a.run(starting_point=starting_point, c='qif', ICP=7, NPAR=n_params, name='k_ae', NDIM=n_dim,
-                         RL0=0.0, RL1=200.0, origin=starting_cont, NMX=6000, DSMAX=0.5, STOP={},
-                         bidirectional=True)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c4_lc1_sols, c4_lc1_cont = a.run(starting_point='HB2', c='qif2b', ICP=[7, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_ae_lc', origin=c4_cont, NDIM=n_dim,
-                                 RL0=1.0, RL1=200.0, STOP={'PD1', 'BP2'})
-
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
-# continuation in k_p (scaling of all synaptic inputs to prototypical population)
-#################################################################################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c5_sols, c5_cont = a.run(starting_point=starting_point, c='qif', ICP=25, NPAR=n_params, name='k_p', NDIM=n_dim,
-                         RL0=0.0, RL1=5.5, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={},
-                         bidirectional=True)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c5_lc1_sols, c5_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[25, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_p_lc', origin=c5_cont, NDIM=n_dim,
-                                 RL0=0.0, RL1=5.5, STOP={'PD1', 'BP2'})
-
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
-# continuation in k_p (scaling of all synaptic inputs to prototypical population)
-#################################################################################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c6_sols, c6_cont = a.run(starting_point=starting_point, c='qif', ICP=26, NPAR=n_params, name='k_gp', NDIM=n_dim,
-                         RL0=0.0, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={},
-                         bidirectional=True)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c6_lc1_sols, c6_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[26, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_lc', origin=c6_cont, NDIM=n_dim,
-                                 RL0=0.0, RL1=10.0, STOP={'PD1', 'BP2', 'TR2'})
-c6_lc2_sols, c6_lc2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[26, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='k_gp_lc2', origin=c6_cont, NDIM=n_dim,
-                                 RL0=0.0, RL1=10.0, STOP={'PD1', 'BP2', 'TR2'})
-
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
-
-# continuation in eta_e
-#######################
-
-starting_point = 'UZ1'
-starting_cont = t_cont
-
-# step 1: codim 1 investigation
-c7_sols, c7_cont = a.run(starting_point=starting_point, c='qif', ICP=18, NPAR=n_params, name='eta_e', NDIM=n_dim,
-                         RL0=-10.0, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.05, STOP={},
-                         bidirectional=True)
-
-# step 2: codim 2 investigation of branch point found in step 1
-c7_2d1_sols, c7_2d1_cont = a.run(starting_point='HB1', c='qif2', ICP=[2, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/k_ep', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=10.0, RL1=100.0)
-c7_2d2_sols, c7_2d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[16, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/delta_p', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=0.01, RL1=0.4)
-c7_2d3_sols, c7_2d3_cont = a.run(starting_point='HB1', c='qif2', ICP=[19, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/eta_p', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=-10.0, RL1=10.0)
-c7_2d4_sols, c7_2d4_cont = a.run(starting_point='HB1', c='qif2', ICP=[20, 18], NMX=4000, DSMAX=0.1,
-                                 NPAR=n_params, name='eta_e/eta_a', origin=c7_cont, NDIM=n_dim,
-                                 bidirectional=True, RL0=-10.0, RL1=10.0)
-
-# step 3: codim 1 investigation of periodic orbit found in step 1
-c7_lc1_sols, c7_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 11], NMX=4000, DSMAX=0.5,
-                                 NPAR=n_params, name='eta_e_lc', origin=c7_cont, NDIM=n_dim,
-                                 RL0=-10.0, RL1=10.0, STOP={'PD1', 'BP2'})
-
-# save results
-kwargs = dict()
 a.to_file(fname, **kwargs)
