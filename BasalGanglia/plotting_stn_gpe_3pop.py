@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyrates.utility.pyauto import PyAuto, get_from_solutions
-from pyrates.utility.visualization import create_cmap
+from pyrates.utility.pyauto import PyAuto
 import matplotlib.gridspec as gs
-import pandas as pd
-import numpy as np
+import sys
 
 # plotting parameters
 # linewidth = 2.0
@@ -41,12 +39,15 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 # file loading and condition specification #
 ############################################
 
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+
 c1 = False  # bistable state
 c2 = True  # oscillatory state
 
 fname = 'results/stn_gpe_osc_c1.pkl' if c1 else 'results/stn_gpe_osc_c2.pkl'
 condition = 'c1' if c1 else 'c2'
-a = PyAuto.from_file(fname, auto_dir='~/PycharmProjects/auto-07p')
+a = PyAuto.from_file(fname, auto_dir=auto_dir)
 
 # oscillatory regime
 ####################
