@@ -42,8 +42,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
-c1 = False  # bistable state
-c2 = True  # oscillatory state
+c1 = True  # bistable state
+c2 = False  # oscillatory state
 
 fname = 'results/stn_gpe_osc_c1.pkl' if c1 else 'results/stn_gpe_osc_c2.pkl'
 condition = 'c1' if c1 else 'c2'
@@ -68,6 +68,7 @@ if c2:
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb2', ax=ax, line_color_stable='#ee2b2b',
                              line_color_unstable='#ee2b2b', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_ae', ax=ax)
     ax.set_ylabel(r'$k_{ae}$')
     ax.set_xlabel(r'$k_{pe}$')
     ax.set_xlim([0.0, 20.0])
@@ -131,12 +132,6 @@ elif c1:
 
     # healthy condition
     ax = fig1.add_subplot(grid1[0, 0])
-    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
-    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe:2', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:lp1', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
@@ -146,52 +141,49 @@ elif c1:
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb2', ax=ax, line_color_stable='#ee2b2b',
                              line_color_unstable='#ee2b2b', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}:k_pe/k_ae:hb3', ax=ax, line_color_stable='#ea2ecb',
+                             line_color_unstable='#ea2ecb', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
     ax.set_ylabel(r'$k_{ae}$')
     ax.set_xlabel(r'$k_{pe}$')
-    ax.set_xlim([0.0, 30.0])
-    ax.set_ylim([0.0, 30.0])
+    ax.set_xlim([0.0, 20.0])
+    ax.set_ylim([0.0, 20.0])
 
     # early PD stage
     ax = fig1.add_subplot(grid1[0, 1])
-    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
-    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe:2', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:lp1', ax=ax,
-                             line_color_stable='#3689c9', line_color_unstable='#3689c9', default_size=markersize1,
+                             line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb1', ax=ax,
-                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
+                             line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb2', ax=ax,
-                             line_color_stable='#ee2b2b', line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_color_stable='#ee2b2b',
+                             line_color_unstable='#ee2b2b', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.2:k_pe/k_ae:hb3', ax=ax,
                              line_color_stable='#ea2ecb', line_color_unstable='#ea2ecb', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax.set_ylabel(r'$k_{ae}$')
     ax.set_xlabel(r'$k_{pe}$')
-    # ax.set_xlim([0.0, 30.0])
-    # ax.set_ylim([0.0, 30.0])
+    ax.set_xlim([0.0, 20.0])
+    ax.set_ylim([0.0, 20.0])
 
     # advanced PD stage
     ax = fig1.add_subplot(grid1[0, 2])
-    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
-    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe:2', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:lp1', ax=ax,
-                             line_color_stable='#3689c9', line_color_unstable='#3689c9', default_size=markersize1,
+                             line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb1', ax=ax,
-                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
+                             line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb2', ax=ax,
-                             line_color_stable='#ee2b2b', line_color_unstable='#ee2b2b', default_size=markersize1,
+                             line_color_stable='#ee2b2b',
+                             line_color_unstable='#ee2b2b', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb3', ax=ax,
                              line_color_stable='#ea2ecb', line_color_unstable='#ea2ecb', default_size=markersize1,
@@ -199,9 +191,14 @@ elif c1:
     ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb4', ax=ax,
                              line_color_stable='#2cc7d8', line_color_unstable='#2cc7d8', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(5)', 'PAR(6)', cont=f'{condition}.3:k_pe/k_ae:hb5', ax=ax,
+                             default_size=markersize1, line_style_unstable='solid', ignore=['UZ'])
     ax.set_ylabel(r'$k_{ae}$')
     ax.set_xlabel(r'$k_{pe}$')
-    ax.set_xlim([0.0, 30.0])
-    ax.set_ylim([0.0, 30.0])
+    ax.set_xlim([0.0, 20.0])
+    ax.set_ylim([0.0, 20.0])
+
+    plt.tight_layout()
+    plt.savefig(f'stn_gpe_{condition}_fig1.svg')
 
 plt.show()

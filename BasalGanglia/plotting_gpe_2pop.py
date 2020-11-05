@@ -58,93 +58,84 @@ if c1:
     fig1 = plt.figure(tight_layout=True, figsize=(9.0, 4.0), dpi=dpi)
     grid1 = gs.GridSpec(2, 4)
 
-    # codim 1: eta_a / hopf
+    # codim 1: k_pa / hopf
     ax = fig1.add_subplot(grid1[0, :2])
-    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1', ax=ax, line_color_stable='#76448A',
+    ax = a.plot_continuation('PAR(8)', 'U(2)', cont=f'c1:k_pa/v1', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
-    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1:lc', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(8)', 'U(2)', cont=f'c1:k_pa/v1:lc', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
-    ax.set_xlabel(r'$\eta_a$')
+    ax.set_xlabel(r'$k_{pa}$')
     ax.set_ylabel('Firing rate')
-    ax.set_xlim([-12.0, 6.0])
-    ax.set_ylim([0.02, 0.11])
+    ax.set_xlim([0.7, 1.4])
+    ax.set_ylim([0.02, 0.12])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([20.0, 40.0, 60.0, 80.0, 100.0])
+    #ax.set_yticklabels([20.0, 40.0, 60.0, 80.0, 100.0])
 
-    # codim 1: eta_a / fold
+    # codim 1: k_pa / fold
     ax = fig1.add_subplot(grid1[0, 2:])
-    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v2', ax=ax, line_color_stable='#76448A',
+    ax = a.plot_continuation('PAR(8)', 'U(2)', cont=f'c1:k_pa/v2', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
-    ax.set_xlabel(r'$\eta_a$')
+    ax.set_xlabel(r'$k_{pa}$')
     ax.set_ylabel('Firing rate')
-    ax.set_xlim([-5.0, 7.0])
-    # ax.set_ylim([0.0, 0.13])
+    ax.set_xlim([0.7, 1.4])
+    ax.set_ylim([0.0, 0.1])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([0.0, 20.0, 40.0, 60.0, 80.0])
+    #ax.set_yticklabels([0.0, 20.0, 40.0, 60.0, 80.0])
 
     # codim 2 investigations
     ########################
 
-    # Hopf curve: eta_a and k_pa
+    # Hopf curve: k_pa and k_pp
     ax = fig1.add_subplot(grid1[1, 0])
-    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:hb1', ax=ax, line_color_stable='#8299b0',
+    ax = a.plot_continuation('PAR(8)', 'PAR(6)', cont='c1:k_pa/k_pp:hb1', ax=ax, line_color_stable='#8299b0',
                              line_color_unstable='#8299b0', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
-    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:zh1', ax=ax, line_color_stable='#3689c9',
-                             line_color_unstable='#3689c9', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$J_{ap}$')
-    ax.set_xlim([-10.0, 40.0])
-    ax.set_ylim([0.0, 8.0])
+    ax.set_xlabel(r'$k_{pa}$')
+    ax.set_ylabel(r'$k_{pp}$')
+    ax.set_xlim([0.0, 3.0])
+    ax.set_ylim([0.0, 1.5])
     plt.tight_layout()
 
-    # Hopf curve: eta_a and k_pp
+    # Hopf curve: k_pa and k_ap
     ax = fig1.add_subplot(grid1[1, 1])
-    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:hb1', ax=ax, line_color_stable='#8299b0',
+    ax = a.plot_continuation('PAR(8)', 'PAR(7)', cont='c1:k_pa/k_ap:hb1', ax=ax, line_color_stable='#8299b0',
                              line_color_unstable='#8299b0', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
-    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:zh1', ax=ax, line_color_stable='#148F77',
-                             line_color_unstable='#148F77', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['LP'])
-    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:zh2', ax=ax, line_color_stable='#3689c9',
-                             line_color_unstable='#3689c9', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$J_{pp}$')
-    ax.set_xlim([-10.0, 20.0])
-    ax.set_ylim([0.0, 1.3])
-    plt.tight_layout()
-
-    # Fold curve: eta_a and k_ap
-    ax = fig1.add_subplot(grid1[1, 2])
-    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:lp1', ax=ax, line_color_stable='#3689c9',
-                             line_color_unstable='#3689c9', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['LP'])
-    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:zh2', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#8299b0', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['LP'])
-    ax = a.plot_continuation('PAR(3)', 'PAR(7)', cont='c1:k_ap/eta_a:zh3', ax=ax, line_color_stable='#148F77',
-                             line_color_unstable='#148F77', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
+    ax.set_xlabel(r'$k_{pa}$')
     ax.set_ylabel(r'$k_{ap}$')
-    ax.set_xlim([-50.0, 120.0])
+    ax.set_xlim([0.0, 3.0])
     ax.set_ylim([0.0, 10.0])
     plt.tight_layout()
 
-    # FOld curve: eta_a and k_pp
-    ax = fig1.add_subplot(grid1[1, 3])
-    ax = a.plot_continuation('PAR(3)', 'PAR(6)', cont='c1:k_pp/eta_a:lp1', ax=ax, line_color_stable='#8299b0',
+    # Fold curve: k_pa and k_pp
+    ax = fig1.add_subplot(grid1[1, 2])
+    ax = a.plot_continuation('PAR(8)', 'PAR(6)', cont='c1:k_pa/k_pp:lp1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(8)', 'PAR(6)', cont='c1:k_pa/k_pp:hb2', ax=ax, line_color_stable='#8299b0',
                              line_color_unstable='#8299b0', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
+    ax.set_xlabel(r'$k_{pa}$')
     ax.set_ylabel(r'$k_{pp}$')
-    ax.set_xlim([-10.0, 20.0])
-    ax.set_ylim([0.0, 1.3])
+    ax.set_xlim([0.0, 3.0])
+    ax.set_ylim([0.0, 1.5])
+    plt.tight_layout()
+
+    # Fold curve: k_pa and k_ap
+    ax = fig1.add_subplot(grid1[1, 3])
+    ax = a.plot_continuation('PAR(8)', 'PAR(7)', cont='c1:k_pa/k_ap:lp1', ax=ax, line_color_stable='#8299b0',
+                             line_color_unstable='#8299b0', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax = a.plot_continuation('PAR(8)', 'PAR(7)', cont='c1:k_pa/k_ap:hb2', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['LP'])
+    ax.set_xlabel(r'$k_{pa}$')
+    ax.set_ylabel(r'$k_{ap}$')
+    ax.set_xlim([0.0, 3.0])
+    ax.set_ylim([0.0, 2.0])
     plt.tight_layout()
 
     plt.show()

@@ -1,14 +1,18 @@
 from pyrates.utility.pyauto import PyAuto, codim2_search
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
 """Bifurcation analysis of GPe model with two populations (arkypallidal and prototypical) and 
 gamma-dstributed axonal delays and bi-exponential synapses."""
 
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+
 # config
 n_dim = 18
 n_params = 23
-a = PyAuto("auto_files", auto_dir='/home/rgast/PycharmProjects/auto-07p')
+a = PyAuto("auto_files", auto_dir=auto_dir)
 
 # choice of conditions to run bifurcation analysis for
 c1 = True  # strong GPe-p projections
@@ -74,57 +78,44 @@ if c1:
     # step 2: codim 1 investigation in eta_a
     c1_b3_sols, c1_b3_cont = a.run(starting_point='UZ1', c='qif', ICP=3, NPAR=n_params,
                                    name=f'c1:eta_a/v1', NDIM=n_dim, RL0=eta_min, RL1=eta_max,
-                                   origin=c1_b1_cont, NMX=6000, DSMAX=0.05, bidirectional=True)
+                                   origin=c1_b1_cont, NMX=6000, DSMAX=0.05, bidirectional=True, UZR={3: [-2.0]})
     c1_b4_sols, c1_b4_cont = a.run(starting_point='UZ1', c='qif', ICP=3, NPAR=n_params,
                                    name=f'c1:eta_a/v2', NDIM=n_dim, RL0=eta_min, RL1=eta_max,
-                                   origin=c1_b2_cont, NMX=6000, DSMAX=0.05, bidirectional=True)
+                                   origin=c1_b2_cont, NMX=6000, DSMAX=0.05, bidirectional=True, UZR={3: [3.0]})
+
+    # step 3: codim 1 investigation in k_pa
+    c1_b5_sols, c1_b5_cont = a.run(starting_point='UZ1', origin=c1_b3_cont, ICP=8, NPAR=n_params, NDIM=n_dim, RL0=0.0,
+                                   RL1=10.0, NMX=6000, DSMAX=0.02, bidirectional=True, name='c1:k_pa/v1')
+    c1_b6_sols, c1_b6_cont = a.run(starting_point='UZ1', origin=c1_b4_cont, ICP=8, NPAR=n_params, NDIM=n_dim, RL0=0.0,
+                                   RL1=10.0, NMX=6000, DSMAX=0.02, bidirectional=True, name='c1:k_pa/v2')
 
     # step 3: codim 2 investigation of hopf curves
-    c1_b5_sols, c1_b5_cont = a.run(starting_point='HB1', origin=c1_b3_cont, c='qif2', ICP=[7, 3], NDIM=n_dim,
-                                   NPAR=n_params, RL0=-20.0, RL1=40.0, NMX=16000, DSMAX=0.1, name='c1:k_ap/eta_a:hb1',
-                                   bidirectional=True)
-    c1_b6_sols, c1_b6_cont = a.run(starting_point='HB1', origin=c1_b3_cont, c='qif2', ICP=[6, 3], NDIM=n_dim,
-                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name='c1:k_pp/eta_a:hb1',
-                                   bidirectional=True)
+    c1_b5_2d1_sols, c1_b5_2d1_cont = a.run(starting_point='HB1', origin=c1_b5_cont, c='qif2', ICP=[8, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                           name='c1:k_pa/k_pp:hb1', bidirectional=True)
+    c1_b5_2d2_sols, c1_b5_2d2_cont = a.run(starting_point='HB1', origin=c1_b5_cont, c='qif2', ICP=[8, 7], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                           name='c1:k_pa/k_ap:hb1', bidirectional=True)
 
     # step 4: codim 2 investigation of fold curves
-    c1_b7_sols, c1_b7_cont = a.run(starting_point='LP1', origin=c1_b4_cont, c='qif2', ICP=[7, 3], NDIM=n_dim,
-                                   NPAR=n_params, RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name='c1:k_ap/eta_a:lp1',
-                                   bidirectional=True, UZR={3: [100.0]})
-    c1_b8_sols, _ = a.run(starting_point='LP1', origin=c1_b4_cont, c='qif2', ICP=[6, 3], NDIM=n_dim, NPAR=n_params,
-                          RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.1, name='c1:k_pp/eta_a:lp1', bidirectional=True)
+    c1_b6_2d1_sols, c1_b6_2d1_cont = a.run(starting_point='LP1', origin=c1_b6_cont, c='qif2', ICP=[8, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                           name='c1:k_pa/k_pp:lp1', bidirectional=True)
+    c1_b6_2d2_sols, c1_b6_2d2_cont = a.run(starting_point='LP1', origin=c1_b6_cont, c='qif2', ICP=[8, 7], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                           name='c1:k_pa/k_ap:lp1', bidirectional=True)
 
-    # complete 2D  bifurcation diagram for hopf curves
-    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b6_cont, c='qif', ICP=3, NDIM=n_dim, NPAR=n_params,
-                        RL0=-20.0, RL1=20.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
-    a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[6, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
-          NMX=8000, DSMAX=0.2, name='c1:k_pp/eta_a:zh1', bidirectional=True)
-
-    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b6_cont, c='qif', ICP=6, NDIM=n_dim, NPAR=n_params,
-                        RL0=0.0, RL1=20.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
-    a.run(starting_point='LP1', origin=cont_tmp, c='qif2', ICP=[6, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
-          NMX=8000, DSMAX=0.2, name='c1:k_pp/eta_a:zh2', bidirectional=True)
-
-    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b5_cont, c='qif', ICP=7, NDIM=n_dim, NPAR=n_params,
-                        RL0=0.0, RL1=10.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
-    a.run(starting_point='LP1', origin=cont_tmp, c='qif2', ICP=[7, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
-          NMX=8000, DSMAX=0.2, name='c1:k_ap/eta_a:zh1', bidirectional=True)
-
-    # complete 2D  bifurcation diagram for fold curves
-    _, cont_tmp = a.run(starting_point='ZH1', origin=c1_b7_cont, c='qif', ICP=7, NDIM=n_dim, NPAR=n_params,
-                        RL0=0.0, RL1=10.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
-    a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[7, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
-          NMX=8000, DSMAX=0.2, name='c1:k_ap/eta_a:zh2', bidirectional=True)
-
-    _, cont_tmp = a.run(starting_point='UZ1', origin=c1_b7_cont, c='qif', ICP=3, NDIM=n_dim, NPAR=n_params,
-                        RL0=90.0, RL1=120.0, NMX=4000, DSMAX=0.1, bidirectional=True, STOP=['LP1', 'HB1'])
-    a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[7, 3], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0,
-          NMX=8000, DSMAX=0.2, name='c1:k_ap/eta_a:zh3', bidirectional=True)
+    c1_b6_2d3_sols, c1_b6_2d3_cont = a.run(starting_point='HB1', origin=c1_b6_cont, c='qif2', ICP=[8, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                           name='c1:k_pa/k_pp:hb2', bidirectional=True)
+    c1_b6_2d4_sols, c1_b6_2d4_cont = a.run(starting_point='HB1', origin=c1_b6_cont, c='qif2', ICP=[8, 7], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                           name='c1:k_pa/k_ap:hb2', bidirectional=True)
 
     # step 5: continuation of limit cycle
-    c1_b13_sols, c1_b13_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], NPAR=n_params,
-                                     name=f'c1:eta_a/v1:lc', NDIM=n_dim, RL0=eta_min, RL1=eta_max, origin=c1_b3_cont,
-                                     NMX=2000, DSMAX=0.05)
+    c1_b5_lc_sols, c1_b5_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[8, 11], NPAR=n_params,
+                                         name=f'c1:k_pa/v1:lc', NDIM=n_dim, origin=c1_b5_cont, NMX=2000, DSMAX=0.02,
+                                         RL0=0.0)
 
     # save results
     fname = '../results/gpe_2pop_c1.pkl'

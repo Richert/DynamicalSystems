@@ -1,6 +1,7 @@
 from pyrates.utility.pyauto import PyAuto, get_from_solutions
 import numpy as np
 import sys
+from matplotlib.pyplot import show
 
 """Bifurcation analysis of STN-GPe model with two GPe populations (arkypallidal and prototypical) and 
 gamma-distributed axonal delays and bi-exponential synapses."""
@@ -84,15 +85,15 @@ if c2:
                           bidirectional=True)
 
     # 2D continuation of k_pe and k_ae
-    c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
-                                           name=f'{cond}:k_pe/k_ae:hb1', bidirectional=True)
-    c2_b6_2d1_sols, c2_b6_2d1_cont = a.run(starting_point='LP1', origin=c2_b6_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
-                                           name=f'{cond}:k_pe/k_ae:lp1', bidirectional=True)
-    c2_b6_2d2_sols, c2_b6_2d2_cont = a.run(starting_point='HB1', origin=c2_b6_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
-                                           name=f'{cond}:k_pe/k_ae:hb2', bidirectional=True)
+    # c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+    #                                        name=f'{cond}:k_pe/k_ae:hb1', bidirectional=True)
+    # c2_b6_2d1_sols, c2_b6_2d1_cont = a.run(starting_point='LP1', origin=c2_b6_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+    #                                        name=f'{cond}:k_pe/k_ae:lp1', bidirectional=True, UZR={5: [3.2]})
+    # c2_b6_2d2_sols, c2_b6_2d2_cont = a.run(starting_point='HB3', origin=c2_b6_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+    #                                        name=f'{cond}:k_pe/k_ae:hb2', bidirectional=True)
 
     # STN control over GPe behavior in early PD state
     #################################################
@@ -100,32 +101,49 @@ if c2:
     # continuation of k_pe
     c2_b7_sols, c2_b7_cont = a.run(starting_point='UZ2', origin=c2_b4_cont, c='qif', ICP=5, NDIM=n_dim,
                                    NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'{cond}.2:k_pe',
-                                   bidirectional=True, UZR={5: [6.0]})
+                                   bidirectional=True, UZR={5: [7.6]})
 
     # continuation of k_ae
-    _, c2_b8_cont = a.run(starting_point='UZ1', origin=c2_b7_cont, c='qif', ICP=6, NDIM=n_dim,
-                          NPAR=n_params, RL0=0.0, RL1=30.0, NMX=30000, DSMAX=0.1, name=f'{cond}.2:k_ae',
-                          bidirectional=True)
-
-    # 2D continuation of k_pe and k_ae
-    c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP1', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
-                                           name=f'{cond}.2:k_pe/k_ae:lp1', bidirectional=True)
-    c2_b7_2d2_sols, c2_b7_2d2_cont = a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
-                                           name=f'{cond}.2:k_pe/k_ae:hb1', bidirectional=True)
-    c2_b7_2d3_sols, c2_b7_2d3_cont = a.run(starting_point='HB2', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
-                                           name=f'{cond}.2:k_pe/k_ae:hb2', bidirectional=True)
-    c2_b7_2d4_sols, c2_b7_2d4_cont = a.run(starting_point='HB3', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
-                                           name=f'{cond}.2:k_pe/k_ae:hb3', bidirectional=True)
-    c2_b8_2d1_sols, c2_b8_2d1_cont = a.run(starting_point='HB3', origin=c2_b8_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=24000, DSMAX=0.1,
-                                           name=f'{cond}.2:k_pe/k_ae:hb4', bidirectional=True)
-    c2_b8_2d2_sols, c2_b8_2d2_cont = a.run(starting_point='HB1', origin=c2_b8_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
-                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=24000, DSMAX=0.1,
-                                           name=f'{cond}.2:k_pe/k_ae:hb5', bidirectional=True)
+    # _, c2_b8_cont = a.run(starting_point='UZ1', origin=c2_b7_cont, c='qif', ICP=6, NDIM=n_dim,
+    #                       NPAR=n_params, RL0=0.0, RL1=30.0, NMX=30000, DSMAX=0.1, name=f'{cond}.2:k_ae')
+    # _, c2_b8_lc_cont = a.run(starting_point='HB1', origin=c2_b8_cont, c='qif2b', ICP=[6, 11], NDIM=n_dim,
+    #                          NPAR=n_params, RL0=12.0, RL1=20.0, STOP=['PD4'], DSMAX=0.4, NMX=2000,
+    #                          name=f'{cond}.2:k_ae:lc')
+    # _, c2_b8_lc2_cont = a.run(starting_point='HB2', origin=c2_b8_cont, c='qif2b', ICP=[6, 11], NDIM=n_dim,
+    #                           NPAR=n_params, RL0=12.0, RL1=20.0, STOP=['PD4'], DSMAX=0.4, NMX=2000,
+    #                           name=f'{cond}.2:k_ae:lc2')
+    # _, c2_b8_lc3_cont = a.run(starting_point='HB4', origin=c2_b8_cont, c='qif2b', ICP=[6, 11], NDIM=n_dim,
+    #                           NPAR=n_params, RL0=12.0, RL1=20.0, STOP=['BP1'], DSMAX=0.4, NMX=2000,
+    #                           name=f'{cond}.2:k_ae:lc4')
+    #
+    # ax = a.plot_continuation('PAR(6)', 'U(5)', cont=f'{cond}.2:k_ae')
+    # ax = a.plot_continuation('PAR(6)', 'U(5)', ax=ax, cont=f'{cond}.2:k_ae:lc')
+    # ax = a.plot_continuation('PAR(6)', 'U(5)', ax=ax, cont=f'{cond}.2:k_ae:lc2')
+    # ax = a.plot_continuation('PAR(6)', 'U(5)', ax=ax, cont=f'{cond}.2:k_ae:lc4')
+    # show()
+    #
+    # # 2D continuation of k_pe and k_ae
+    # c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP1', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:lp1', bidirectional=True)
+    # c2_b7_2d2_sols, c2_b7_2d2_cont = a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:hb1', bidirectional=True)
+    # c2_b7_2d3_sols, c2_b7_2d3_cont = a.run(starting_point='HB2', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:hb2', bidirectional=True)
+    # c2_b7_2d4_sols, c2_b7_2d4_cont = a.run(starting_point='HB3', origin=c2_b7_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:hb3', bidirectional=True)
+    # c2_b8_2d1_sols, c2_b8_2d1_cont = a.run(starting_point='HB3', origin=c2_b8_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=24000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:hb4', bidirectional=True)
+    # c2_b8_2d2_sols, c2_b8_2d2_cont = a.run(starting_point='HB1', origin=c2_b8_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=24000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:hb5', bidirectional=True)
+    # c2_b8_2d3_sols, c2_b8_2d3_cont = a.run(starting_point='LP1', origin=c2_b8_lc_cont, c='qif3', ICP=[5, 6], NDIM=n_dim,
+    #                                        NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+    #                                        name=f'{cond}.2:k_pe/k_ae:flc1', bidirectional=True)
 
     # STN control over GPe behavior in advanced PD state
     ####################################################
@@ -139,6 +157,16 @@ if c2:
     _, c2_b10_cont = a.run(starting_point='UZ1', origin=c2_b9_cont, c='qif', ICP=6, NDIM=n_dim,
                            NPAR=n_params, RL0=0.0, RL1=30.0, NMX=20000, DSMAX=0.1, name=f'{cond}.3:k_ae',
                            bidirectional=True)
+    _, c2_b10_lc_cont = a.run(starting_point='HB3', origin=c2_b10_cont, c='qif2b', ICP=[6, 11], NDIM=n_dim,
+                              NPAR=n_params, RL0=15.0, RL1=25.0, DSMAX=0.4, NMX=2000, name=f'{cond}.3:k_ae:lc')
+    _, c2_b10_lc2_cont = a.run(starting_point='PD1', origin=c2_b10_lc_cont, c='qif2b', ICP=[6, 11], NDIM=n_dim,
+                               NPAR=n_params, RL0=15.0, RL1=25.0, DSMAX=0.4, NMX=2000, name=f'{cond}.3:k_ae:lc2')
+
+    ax = a.plot_continuation('PAR(6)', 'U(5)', cont=f'{cond}.3:k_ae')
+    ax = a.plot_continuation('PAR(6)', 'U(5)', ax=ax, cont=f'{cond}.3:k_ae:lc')
+    ax = a.plot_continuation('PAR(6)', 'U(5)', ax=ax, cont=f'{cond}.3:k_ae:lc2')
+    # ax = a.plot_continuation('PAR(6)', 'U(5)', ax=ax, cont=f'{cond}.2:k_ae:lc4')
+    show()
 
     # 2D continuation of k_pe and k_ae
     c2_b9_2d1_sols, c2_b9_2d1_cont = a.run(starting_point='HB1', origin=c2_b9_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
@@ -159,6 +187,9 @@ if c2:
     c2_b10_2d2_sols, c2_b10_2d2_cont = a.run(starting_point='HB3', origin=c2_b10_cont, c='qif2', ICP=[5, 6], NDIM=n_dim,
                                              NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
                                              name=f'{cond}.3:k_pe/k_ae:hb5', bidirectional=True)
+    c2_b10_2d3_sols, c2_b10_2d3_cont = a.run(starting_point='LP1', origin=c2_b10_lc_cont, c='qif3', ICP=[5, 6, 11],
+                                             NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.1,
+                                             name=f'{cond}.3:k_pe/k_ae:flc1', bidirectional=True)
 
 elif c1:
 
