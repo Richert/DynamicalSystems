@@ -1,5 +1,6 @@
 from pyrates.utility.pyauto import PyAuto
 import numpy as np
+import sys
 
 #########################################
 # configs, descriptions and definitions #
@@ -25,6 +26,10 @@ with parameters:
 """
 
 # configuration
+
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+
 codim1 = True
 codim2 = False
 period_mapping = False
@@ -38,7 +43,7 @@ eta_cont_idx = 1
 # parameter continuations in auto #
 ###################################
 
-a = PyAuto("auto_files", auto_dir='~/PycharmProjects/auto-07p')
+a = PyAuto("auto_files", auto_dir=auto_dir)
 
 # initial continuation in time to converge to fixed point
 t_sols, t_cont = a.run(e='qif_xu_fp', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',

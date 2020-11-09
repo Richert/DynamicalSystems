@@ -2,7 +2,7 @@ import sys
 sys.path.append('../')
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-import numpy as np
+import sys
 from pyrates.utility.pyauto import PyAuto
 
 
@@ -36,8 +36,11 @@ mpl.rc('text', usetex=True)
 # file loading #
 ################
 
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+
 fname = 'results/tsodyks_mf.hdf5'
-a = PyAuto.from_file(fname)
+a = PyAuto.from_file(fname, auto_dir=auto_dir)
 
 ############
 # plotting #
