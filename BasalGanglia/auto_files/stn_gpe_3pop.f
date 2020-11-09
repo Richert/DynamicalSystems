@@ -208,7 +208,7 @@
 	double precision delta_e, delta_p, delta_a, k_a_out
 	double precision k_gp, k_p, k_i, k_p_out, k_gp_e, k_e, k_gp_s
 
-	k_gp = 2.0
+	k_gp = 3.0
 	k_p = 1.5
 	k_i = 1.0
 	k_p_out = 1.0
