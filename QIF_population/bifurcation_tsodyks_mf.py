@@ -63,7 +63,7 @@ i = 1
 for point, point_info in alpha_solutions.items():
     if 'UZ' in point_info['bifurcation']:
         solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.1, RL1=5.0, RL0=-21.0, NMX=8000,
-                                   origin=alpha_cont, bidirectional=True, name=f"eta_{i}", NDIM=n_dim))
+                                   origin=alpha_cont, bidirectional=True, name=f"eta_{i}", NDIM=n_dim, NPR=20))
         i += 1
 
 # choose a continuation in eta to run further continuations on

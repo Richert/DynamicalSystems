@@ -294,7 +294,7 @@ elif c1:
                                            name=f'{cond}.3:k_ae/k_gp:hb1', bidirectional=True, UZR={22: [1.4]})
 
     _, cont_tmp = a.run(starting_point='UZ1', origin=c1_b7_2d2_cont, c='qif', ICP=22, NMX=1000, DSMAX=0.05, RL0=1.0,
-                        RL1=1.5, NDIM=n_dim, NPAR=n_params)
+                        RL1=1.5, NDIM=n_dim, NPAR=n_params, DS='-')
     c1_b7_2d3_sols, c1_b7_2d3_cont = a.run(starting_point='LP1', origin=cont_tmp, c='qif2', ICP=[22, 6], NDIM=n_dim,
                                            NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
                                            name=f'{cond}.3:k_ae/k_gp:lp1', bidirectional=True)
