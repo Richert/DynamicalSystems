@@ -35,7 +35,7 @@ codim2 = False
 period_mapping = False
 n_grid_points = 100
 m = 100
-n_dim = 4*m
+n_dim = 3*m
 n_params = 9
 eta_cont_idx = 1
 

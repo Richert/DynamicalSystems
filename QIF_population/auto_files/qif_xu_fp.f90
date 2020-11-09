@@ -10,7 +10,7 @@
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: NDIM, ICP(*), IJAC
       INTEGER :: n, M
-      DOUBLE PRECISION :: R((NDIM)/4),V((NDIM)/4),XA((NDIM)/4),UA((NDIM)/4)
+      DOUBLE PRECISION :: R((NDIM)/3),V((NDIM)/3),XA((NDIM)/3),UA((NDIM)/3)
       DOUBLE PRECISION, INTENT(IN) :: U(NDIM), PAR(*)
       DOUBLE PRECISION, INTENT(OUT) :: F(NDIM)
       DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,NDIM), DFDP(NDIM,*)
@@ -27,24 +27,22 @@
        alph = PAR(8)
        U0   = PAR(9)
        PI   = 4*ATAN(1.0D0)
-       M    = (NDIM)/4
+       M    = (NDIM)/3
 
        do n=1,M
          R(n) = U(n)
          V(n) = U(n+M)
          XA(n) = U(n+2*M)
-         UA(n) = U(n+3*M)
        end do 
        RM = 0
        do n=1,M
-         RM = RM + XA(n)*UA(n)*R(n)/M
+         RM = RM + XA(n)*R(n)/M
        end do
        
        do n=1,M
          F(n) = D*(TAN(0.5*PI*(2*n-M-0.5)/M)-TAN(0.5*PI*(2*n-M-1.5)/M)) + 2.0*R(n)*V(n)
          F(n+M) = V(n)*V(n) + J*RM - PI*PI*R(n)*R(n) + I+D*TAN(0.5*PI*(2*n-M-1)/M)
-         F(n+2*M) = (1-XA(n))/taux - alph*XA(n)*UA(n)*R(n)
-         F(n+3*M) = (U0-UA(n))/tauu + U0*(1-UA(n))*R(n)
+         F(n+2*M) = (1-XA(n))/taux - alph*XA(n)*R(n)
        end do
 
       END SUBROUTINE FUNC
@@ -81,7 +79,7 @@
        PAR(8)=alph
        PAR(9)=U0
        TPI=8.0*ATAN(1.0D0)
-       M  =(NDIM)/4
+       M  =(NDIM)/3
 
        !U(1)=1.457484
        !U(2)=-0.218397
@@ -93,7 +91,6 @@
          U(n) = 0
          U(n+M) = -SQRT(-(I-D+(n-0.5)*(2.0*D/M)))
          U(n+2*M) = 1;
-         U(n+3*M) = U0
        end do
 
       END SUBROUTINE STPNT
