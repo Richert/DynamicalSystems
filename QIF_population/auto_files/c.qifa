@@ -1,9 +1,9 @@
-NDIM=   4, IPS =   1, IRS =   0, ILP =   1
+NDIM=   400, IPS =   1, IRS =   0, ILP =   1
 ICP =  [1]
-NTST=  100, NCOL=   4, IAD =   3, ISP =   2, ISW = 1, IPLT= 9, NBC= 0, NINT= 0
+NTST=  100, NCOL=   4, IAD =   3, ISP =   1, ISW = 1, IPLT= 9, NBC= 0, NINT= 0
 NMX=   2000, NPR=  100, MXBF=   5, IID =   2, ITMX= 8, ITNW= 20, NWTN= 10, JAC= 0
-EPSL= 1e-08, EPSU = 1e-08, EPSS = 1e-05
-DS  =  0.0005, DSMIN= 0.0001, DSMAX=   0.01, IADS=   1
-NPAR = 14, THL =  {}, THU =  {}
-UZR =  {5:0.06}
-STOP = {'UZ1'}
+EPSL= 1e-05, EPSU = 1e-05, EPSS = 1e-04
+DS  =  0.05, DSMIN= 0.001, DSMAX=   1, IADS=   1
+NPAR = 9, THL =  {}, THU =  {}
+UZR =  {3: -0.01, 3: 1, 4: 20}
+!STOP = {'UZ1'}

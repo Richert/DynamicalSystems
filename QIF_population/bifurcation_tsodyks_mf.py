@@ -26,13 +26,13 @@ with parameters:
 
 # configuration
 codim1 = True
-codim2 = True
+codim2 = False
 period_mapping = False
 n_grid_points = 100
 m = 100
 n_dim = 4*m
 n_params = 9
-eta_cont_idx = 3
+eta_cont_idx = 1
 
 ###################################
 # parameter continuations in auto #
@@ -45,22 +45,19 @@ t_sols, t_cont = a.run(e='qif_xu_fp', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMA
                        UZR={14: 1000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 # continuation in the adaptation strength alpha
-alpha_0 = [0.0125, 0.025, 0.05, 0.1, 0.2]
-alpha_solutions, alpha_cont = a.run(starting_point='UZ1', origin=t_cont, c='qif', ICP=8, UZR={8: alpha_0}, NDIM=n_dim,
-                                    RL1=0.25, DSMAX=0.005, NMX=4000, name='s0', STOP=[])
+alpha_0 = [0.25, 0.5, 0.75]
+alpha_solutions, alpha_cont = a.run(starting_point='UZ1', origin=t_cont, c='qifa', ICP=8, UZR={8: alpha_0}, NDIM=n_dim,
+                                    RL0=0.2, DSMAX=0.005, NMX=4000, name='s0', STOP=['UZ5'], DS='-')
 
 # principle continuation in eta
 ###############################
 
 # continue in eta for each adaptation rate alpha
 solutions_eta = list()
-solutions_eta.append(a.run(starting_point='EP1', ICP=1, DSMAX=0.1, RL1=2.0, RL0=-21.0, NMX=8000, origin=alpha_cont,
-                           bidirectional=True, name='eta_0', NDIM=n_dim))
-
 i = 1
 for point, point_info in alpha_solutions.items():
     if 'UZ' in point_info['bifurcation']:
-        solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.1, RL1=2.0, RL0=-21.0, NMX=8000,
+        solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.1, RL1=5.0, RL0=-21.0, NMX=8000,
                                    origin=alpha_cont, bidirectional=True, name=f"eta_{i}", NDIM=n_dim))
         i += 1
 
@@ -70,8 +67,9 @@ eta_points, eta_cont = solutions_eta[eta_cont_idx]
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.05, NMX=4000,
-                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim)
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qifa', ICP=[1, 11], DSMAX=0.2, NMX=2000,
+                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, RL0=-20.0, RL1=5.0, NPR=10,
+                                            ISW=-1, IPS=2, ISP=2)
 
     # continuation in eta and alpha
     ###############################
@@ -120,7 +118,7 @@ if codim1:
 # save results #
 ################
 
-fname = '../results/alpha_mult.pkl'
+fname = '../results/tsodyks_mf.pkl'
 kwargs = dict()
 if period_mapping:
     kwargs['period_solutions'] = period_solutions
