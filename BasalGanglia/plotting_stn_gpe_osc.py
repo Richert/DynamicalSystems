@@ -235,9 +235,12 @@ elif c1:
 
     # k_ae x k_pe: late PD state
     ax = fig1.add_subplot(grid1[1, 1])
-    ax = a.plot_continuation('PAR(22)', 'PAR(6)', cont=f'{condition}.3:k_ae/k_gp:hb1', ax=ax,
+    ax = a.plot_continuation('PAR(22)', 'PAR(6)', cont=f'{condition}.3:k_ae/k_gp:lp1', ax=ax,
                              line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1,
+                             line_style_unstable='solid', ignore=['UZ'])
+    ax = a.plot_continuation('PAR(22)', 'PAR(6)', cont=f'{condition}.3:k_ae/k_gp:hb1', ax=ax,
+                             line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
     ax.set_ylabel(r'$k_{ae}$')
     ax.set_xlabel(r'$k_{gp}$')
