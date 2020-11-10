@@ -279,6 +279,9 @@ elif c1:
     c1_b6_2d6_sols, c1_b6_2d6_cont = a.run(starting_point='LP1', origin=c1_b8_cont, c='qif2', ICP=[22, 6], NDIM=n_dim,
                                            NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
                                            name=f'{cond}.2:k_ae/k_gp:lp1', bidirectional=True)
+    # c1_b6_2d7_sols, c1_b6_2d7_cont = a.run(starting_point='LP2', origin=c1_b6_lc4_cont, c='qif3', ICP=[22, 6, 11],
+    #                                        NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=20.0, NMX=8000, DSMAX=0.4,
+    #                                        name=f'{cond}.2:k_ae/k_gp:flc1', bidirectional=True)
 
     # advanced PD state
     ###################
@@ -297,7 +300,13 @@ elif c1:
                         RL1=1.5, NDIM=n_dim, NPAR=n_params, DS='-')
     c1_b7_2d3_sols, c1_b7_2d3_cont = a.run(starting_point='LP1', origin=cont_tmp, c='qif2', ICP=[22, 6], NDIM=n_dim,
                                            NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
-                                           name=f'{cond}.3:k_ae/k_gp:lp1', bidirectional=True)
+                                           name=f'{cond}.3:k_ae/k_gp:lp1', bidirectional=True, UZR={22: [15.0]})
+
+    _, cont_tmp = a.run(starting_point='UZ1', origin=c1_b7_2d3_cont, c='qif', ICP=6, NMX=1000, DSMAX=0.05, RL0=10.0,
+                        RL1=20.0, NDIM=n_dim, NPAR=n_params, bidirectional=True)
+    c1_b7_2d4_sols, c1_b7_2d4_cont = a.run(starting_point='HB1', origin=cont_tmp, c='qif2', ICP=[22, 6], NDIM=n_dim,
+                                           NPAR=n_params, RL0=0.0, RL1=20.0, NMX=20000, DSMAX=0.1,
+                                           name=f'{cond}.3:k_ae/k_gp:hb2', bidirectional=True)
 
 # save results
 a.to_file(fname, **kwargs)
