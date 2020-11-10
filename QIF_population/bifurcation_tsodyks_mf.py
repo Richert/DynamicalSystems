@@ -72,8 +72,8 @@ eta_points, eta_cont = solutions_eta[eta_cont_idx]
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qifa', ICP=[1, 11], DSMAX=0.2, NMX=2000,
-                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, RL0=-20.0, RL1=5.0, NPR=10,
+    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB1', c='qifa', ICP=[1, 11], DSMAX=0.2, NMX=2000,
+                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, RL0=-5.0, RL1=5.0, NPR=10,
                                             ISW=-1, IPS=2, ISP=2)
 
     # continuation in eta and alpha
