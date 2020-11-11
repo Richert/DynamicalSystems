@@ -42,8 +42,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
-c1 = True  # bistable state
-c2 = False  # oscillatory state
+c1 = False  # bistable state
+c2 = True  # oscillatory state
 
 fname = 'results/stn_gpe_lcs_c1.pkl' if c1 else 'results/stn_gpe_lcs_c2.pkl'
 condition = 'c1' if c1 else 'c2'
@@ -140,7 +140,7 @@ if c2:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ'])
     ax.set_ylabel('$firing rate (GPe-p)$')
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_xlim([0.0, 20.0])
+    ax.set_xlim([2.0, 10.0])
     # ax.set_ylim([0.0, 20.0])
 
     # early PD stage
@@ -153,7 +153,7 @@ if c2:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ'])
     #ax.set_ylabel('$firing rate (GPe-p)$')
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_xlim([0.0, 20.0])
+    ax.set_xlim([3.0, 11.0])
     # ax.set_ylim([0.0, 20.0])
 
     # late PD stage
@@ -168,7 +168,7 @@ if c2:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ'])
     #ax.set_ylabel('$firing rate (GPe-p)$')
     ax.set_xlabel(r'$k_{pe}$')
-    ax.set_xlim([0.0, 20.0])
+    ax.set_xlim([1.0, 16.0])
     # ax.set_ylim([0.0, 20.0])
 
     plt.tight_layout()
@@ -235,10 +235,10 @@ elif c1:
 
     # k_ae x k_pe: late PD state
     ax = fig1.add_subplot(grid1[1, 1])
-    ax = a.plot_continuation('PAR(22)', 'PAR(6)', cont=f'{condition}.3:k_ae/k_gp:lp1', ax=ax,
-                             line_color_stable='#3689c9',
-                             line_color_unstable='#3689c9', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
+    # ax = a.plot_continuation('PAR(22)', 'PAR(6)', cont=f'{condition}.3:k_ae/k_gp:lp1', ax=ax,
+    #                          line_color_stable='#3689c9',
+    #                          line_color_unstable='#3689c9', default_size=markersize1,
+    #                          line_style_unstable='solid', ignore=['UZ'])
     ax = a.plot_continuation('PAR(22)', 'PAR(6)', cont=f'{condition}.3:k_ae/k_gp:hb1', ax=ax,
                              line_color_stable='#148F77', line_color_unstable='#148F77', default_size=markersize1,
                              line_style_unstable='solid', ignore=['UZ'])
@@ -261,7 +261,7 @@ elif c1:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ'])
     ax.set_ylabel('$firing rate (GPe-p)$')
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_xlim([0.0, 20.0])
+    ax.set_xlim([0.0, 5.0])
     # ax.set_ylim([0.0, 20.0])
 
     # early PD stage
@@ -280,7 +280,7 @@ elif c1:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ'])
     # ax.set_ylabel('$firing rate (GPe-p)$')
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_xlim([0.0, 20.0])
+    ax.set_xlim([2.0, 7.0])
     # ax.set_ylim([0.0, 20.0])
 
     # late PD stage
@@ -295,7 +295,7 @@ elif c1:
     #                          line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ'])
     # ax.set_ylabel('$firing rate (GPe-p)$')
     ax.set_xlabel(r'$k_{pe}$')
-    ax.set_xlim([0.0, 20.0])
+    ax.set_xlim([6.0, 11.0])
     # ax.set_ylim([0.0, 20.0])
 
     plt.tight_layout()
