@@ -36,13 +36,13 @@
        end do
        RM = 0
        do n=1,M
-         RM = RM + (2.0*XA(n)/(2-alph*U0))*U0*R(n)/M
+         RM = RM + XA(n)*R(n)
        end do
 
        do n=1,M
-         F(n) = D*(TAN(0.5*PI*(2*n-M-0.5)/M)-TAN(0.5*PI*(2*n-M-1.5)/M)) + 2.0*R(n)*V(n)
-         F(n+M) = V(n)*V(n) + J*RM - PI*PI*R(n)*R(n) + I+D*TAN(0.5*PI*(2*n-M-1)/M)
-         F(n+2*M) = (1-XA(n))/taux - alph*(2.0*XA(n)/(2-alph*U0))*U0*R(n)
+         F(n) = D*(TAN(0.5*PI*(2*n-M-0.5)/(M+1))-TAN(0.5*PI*(2*n-M-1.5)/(M+1)))/PI + 2.0*R(n)*V(n)
+         F(n+M) = V(n)*V(n) + J*RM/M - PI*PI*R(n)*R(n) + I+D*TAN(0.5*PI*(2*n-M-1)/(M+1))
+         F(n+2*M) = (1-XA(n))/taux - alph*XA(n)*R(n)
        end do
 
       END SUBROUTINE FUNC
