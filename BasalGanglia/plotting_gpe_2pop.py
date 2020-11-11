@@ -55,8 +55,8 @@ if c1:
     # codim 1 bifurcation diagrams
     ##############################
 
-    fig1 = plt.figure(tight_layout=True, figsize=(9.0, 4.0), dpi=dpi)
-    grid1 = gs.GridSpec(2, 4)
+    fig1 = plt.figure(tight_layout=True, figsize=(9.3, 4.6), dpi=dpi)
+    grid1 = gs.GridSpec(2, 4, height_ratios=[1.5, 2.0])
 
     # codim 1: k_pa / hopf
     ax = fig1.add_subplot(grid1[0, :2])
@@ -71,7 +71,7 @@ if c1:
     ax.set_xlim([0.7, 1.4])
     ax.set_ylim([0.02, 0.12])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    #ax.set_yticklabels([20.0, 40.0, 60.0, 80.0, 100.0])
+    ax.set_yticklabels([20.0, 40.0, 60.0, 80.0, 100.0, 120.0])
 
     # codim 1: k_pa / fold
     ax = fig1.add_subplot(grid1[0, 2:])
@@ -83,7 +83,7 @@ if c1:
     ax.set_xlim([0.7, 1.4])
     ax.set_ylim([0.0, 0.1])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    #ax.set_yticklabels([0.0, 20.0, 40.0, 60.0, 80.0])
+    ax.set_yticklabels([0.0, 20.0, 40.0, 60.0, 80.0, 100.0])
 
     # codim 2 investigations
     ########################
@@ -97,7 +97,6 @@ if c1:
     ax.set_ylabel(r'$k_{pp}$')
     ax.set_xlim([0.0, 3.0])
     ax.set_ylim([0.0, 1.5])
-    plt.tight_layout()
 
     # Hopf curve: k_pa and k_ap
     ax = fig1.add_subplot(grid1[1, 1])
@@ -108,7 +107,6 @@ if c1:
     ax.set_ylabel(r'$k_{ap}$')
     ax.set_xlim([0.0, 3.0])
     ax.set_ylim([0.0, 10.0])
-    plt.tight_layout()
 
     # Fold curve: k_pa and k_pp
     ax = fig1.add_subplot(grid1[1, 2])
@@ -122,7 +120,6 @@ if c1:
     ax.set_ylabel(r'$k_{pp}$')
     ax.set_xlim([0.0, 3.0])
     ax.set_ylim([0.0, 1.5])
-    plt.tight_layout()
 
     # Fold curve: k_pa and k_ap
     ax = fig1.add_subplot(grid1[1, 3])
@@ -136,7 +133,9 @@ if c1:
     ax.set_ylabel(r'$k_{ap}$')
     ax.set_xlim([0.0, 3.0])
     ax.set_ylim([0.0, 2.0])
+
     plt.tight_layout()
+    plt.savefig(f'gpe_2pop_c1.svg')
 
     plt.show()
 
