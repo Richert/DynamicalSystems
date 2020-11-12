@@ -34,7 +34,7 @@ codim1 = True
 codim2 = False
 period_mapping = False
 n_grid_points = 100
-m = 500
+m = 200
 n_dim = 3*m
 n_params = 9
 eta_cont_idx = 0
@@ -52,7 +52,7 @@ t_sols, t_cont = a.run(e='qif_xu_fp', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMA
 # continuation in the adaptation strength alpha
 alpha_0 = [0.6]
 alpha_solutions, alpha_cont = a.run(starting_point='UZ1', origin=t_cont, c='qifa', ICP=8, UZR={8: alpha_0}, NDIM=n_dim,
-                                    RL0=0.1, DSMAX=0.005, NMX=4000, name='s0', STOP=['UZ5'], DS='-')
+                                    RL0=0.1, DSMAX=0.005, NMX=4000, name='s0', STOP=[f'UZ{len(alpha_0)}'], DS='-')
 
 # principle continuation in eta
 ###############################
