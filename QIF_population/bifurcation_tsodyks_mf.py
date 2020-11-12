@@ -34,10 +34,10 @@ codim1 = True
 codim2 = False
 period_mapping = False
 n_grid_points = 100
-m = 400
+m = 500
 n_dim = 3*m
 n_params = 9
-eta_cont_idx = 2
+eta_cont_idx = 0
 
 ###################################
 # parameter continuations in auto #
@@ -50,7 +50,7 @@ t_sols, t_cont = a.run(e='qif_xu_fp', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMA
                        UZR={14: 1000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 # continuation in the adaptation strength alpha
-alpha_0 = [0.125, 0.25, 0.5, 0.75]
+alpha_0 = [0.6]
 alpha_solutions, alpha_cont = a.run(starting_point='UZ1', origin=t_cont, c='qifa', ICP=8, UZR={8: alpha_0}, NDIM=n_dim,
                                     RL0=0.1, DSMAX=0.005, NMX=4000, name='s0', STOP=['UZ5'], DS='-')
 
@@ -73,7 +73,7 @@ if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta
     eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qifa', ICP=[1, 11], DSMAX=0.5, NMX=2000,
-                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, RL0=-5.0, RL1=10.0, NPR=10,
+                                            origin=eta_cont, name='eta_hb2', NDIM=n_dim, RL0=-10.0, RL1=10.0, NPR=10,
                                             ISW=-1, IPS=2, ISP=2)
 
     # continuation in eta and alpha
