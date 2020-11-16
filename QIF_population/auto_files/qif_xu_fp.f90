@@ -59,8 +59,8 @@
       DOUBLE PRECISION I,J,A,W,D,taux,tauu,alph,U0,TPI
 
        D  = 0.01
-       I  = -5.0
-       J  = 80.0*sqrt(D)
+       I  = -3.0
+       J  = 8.0
        A  = 0.0
        W  = 10
        !W = 5.0*8.0*ATAN(1.0D0)/50.0

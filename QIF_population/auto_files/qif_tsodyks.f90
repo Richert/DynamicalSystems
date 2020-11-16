@@ -48,7 +48,7 @@
 
        D  = 0.01
        eta  = -3.0
-       J  = 80.0*sqrt(D)
+       J  = 8.0
        alpha  = 0.0
        tau_f  = 20.0
        tau_d  = 50.0

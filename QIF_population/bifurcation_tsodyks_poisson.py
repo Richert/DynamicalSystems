@@ -83,38 +83,44 @@ eta3_sols, eta3_cont = a.run(starting_point='UZ1', c='qif', ICP=1, DSMAX=0.001, 
 if codim1:
 
     # limit cycle continuation of hopf bifurcations in eta for delta = 0.4
-    eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.02, NMX=12000,
-                                            STOP=['BP1'], origin=eta_cont, name='eta_hb1', NDIM=n_dim, NPAR=n_params,
-                                            RL0=-5.0, RL1=5.0, NPR=10)
-    eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.02, NMX=12000,
-                                            STOP=['BP1'], origin=eta_cont, name='eta_hb2', NDIM=n_dim, NPAR=n_params,
-                                            RL0=-5.0, RL1=5.0, NPR=10)
+    # eta_hb1_solutions, eta_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.02, NMX=12000,
+    #                                         STOP=['BP1', 'LP1'], origin=eta_cont, name='eta_hb1', NDIM=n_dim,
+    #                                         NPAR=n_params, RL0=-5.0, RL1=5.0, NPR=10)
+    # eta_hb2_solutions, eta_hb2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.02, NMX=12000,
+    #                                         STOP=['BP1', 'LP1'], origin=eta_cont, name='eta_hb2', NDIM=n_dim,
+    #                                         NPAR=n_params, RL0=-5.0, RL1=5.0, NPR=10)
 
     # limit cycle continuation of hopf bifurcations in eta for delta = 0.01
-    eta2_hb1_solutions, eta2_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=4000,
-                                              STOP=['BP1'], origin=eta2_cont, name='eta_2_hb1', NDIM=n_dim,
-                                              NPAR=n_params, RL0=-5.0, RL1=5.0, NPR=10)
+    # eta2_hb1_solutions, eta2_hb1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.01, NMX=4000,
+    #                                           STOP=['BP1'], origin=eta2_cont, name='eta_2_hb1', NDIM=n_dim,
+    #                                           NPAR=n_params, RL0=-5.0, RL1=5.0, NPR=10)
 
     # continuation in eta and alpha
     ###############################
 
     if codim2:
 
-        # continue the limit cycle borders in alpha and eta
-        eta_alpha_hb2_solutions, eta_alpha_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[7, 1], DSMAX=0.001,
+        # continue the limit cycle borders in Delta and eta
+        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[7, 1], DSMAX=0.001,
                                                             NMX=12000, origin=eta2_cont, name='eta_Delta_hb1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                             bidirectional=True)
 
-        # continue the fold borders in alpha and eta
-        eta_alpha_lp1_solutions, eta_alpha_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 1], DSMAX=0.001,
+        # continue the fold borders in Delta and eta
+        delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 1], DSMAX=0.001,
                                                             NMX=12000, origin=eta2_cont, name='eta_Delta_lp1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                             bidirectional=True)
-        eta_alpha_lp2_solutions, eta_alpha_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 1], DSMAX=0.001,
+        delta_eta_lp2_solutions, delta_eta_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 1], DSMAX=0.001,
                                                             NMX=12000, origin=eta3_cont, name='eta_Delta_lp2',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                             bidirectional=True)
+
+        # continue the fold borders in Delta and J
+        delta_J_lp2_solutions, delta_J_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 2], DSMAX=0.001,
+                                                        NMX=12000, origin=eta3_cont, name='J_Delta_lp1',
+                                                        NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
+                                                        bidirectional=True)
 
 ################
 # save results #
