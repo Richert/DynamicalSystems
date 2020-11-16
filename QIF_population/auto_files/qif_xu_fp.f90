@@ -58,15 +58,15 @@
 
       DOUBLE PRECISION I,J,A,W,D,taux,tauu,alph,U0,TPI
 
-       I  = -21.0
-       J  = 80.0
+       D  = 0.01
+       I  = -5.0
+       J  = 80.0*sqrt(D)
        A  = 0.0
        W  = 10
        !W = 5.0*8.0*ATAN(1.0D0)/50.0
-       D  = 1.0
-       taux = 10.0
-       tauu = 40.0
-       alph = 1.0
+       taux = 50.0
+       tauu = 20.0
+       alph = 0.0
        U0 = 1.0
 
        PAR(1)=I
