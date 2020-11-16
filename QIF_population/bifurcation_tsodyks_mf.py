@@ -49,7 +49,7 @@ t_sols, t_cont = a.run(e='qif_xu_fp', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMA
                        UZR={14: 1000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 # 1D continuation in delta
-delta_sols, delta_cont = a.run(starting_point='UZ1', c='qifa', ICP=5, DSMAX=0.005, RL0=0.05, RL1=2.0, NMX=8000,
+delta_sols, delta_cont = a.run(starting_point='UZ1', c='qifa', ICP=5, DSMAX=0.005, RL0=0.0001, RL1=2.0, NMX=8000,
                                NPAR=n_params, origin=t_cont, name=f"delta", NDIM=n_dim, NPR=20, DS=1e-3,
                                UZR={5: [0.4]}, STOP=['UZ1'])
 
