@@ -31,7 +31,7 @@ path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 codim1 = True
-codim2 = True
+codim2 = False
 n_grid_points = 100
 n_dim = 4
 n_params = 9
@@ -57,13 +57,16 @@ alpha_sols, alpha_cont = a.run(starting_point='UZ1', c='qif', ICP=3, DSMAX=0.005
                                NPAR=n_params, origin=delta_cont, name=f"alpha", NDIM=n_dim, NPR=20, DS=1e-3,
                                UZR={3: [0.04]}, STOP=['UZ1'])
 alpha2_sols, alpha2_cont = a.run(starting_point='UZ1', c='qif', ICP=3, DSMAX=0.005, RL0=0.0, RL1=1.0, NMX=8000,
-                                 NPAR=n_params, origin=t_cont, name=f"alpha2", NDIM=n_dim, NPR=20, DS=1e-3,
+                                 NPAR=n_params, origin=t_cont, name=f"alpha_2", NDIM=n_dim, NPR=20, DS=1e-3,
                                  UZR={3: [0.04]}, STOP=['UZ1'])
 
 # 1D continuation in U0
 u0_sols, u0_cont = a.run(starting_point='UZ1', c='qif', ICP=6, DSMAX=0.005, RL0=0.0, RL1=1.0, NMX=8000,
-                         NPAR=n_params, origin=delta_cont, name=f"alpha", NDIM=n_dim, NPR=20, DS='-',
+                         NPAR=n_params, origin=delta_cont, name=f"u0", NDIM=n_dim, NPR=20, DS='-',
                          UZR={6: [0.2]}, STOP=['UZ1'])
+u02_sols, u02_cont = a.run(starting_point='UZ1', c='qif', ICP=6, DSMAX=0.005, RL0=0.0, RL1=1.0, NMX=8000,
+                           NPAR=n_params, origin=t_cont, name=f"u0_2", NDIM=n_dim, NPR=20, DS='-',
+                           UZR={6: [0.2]}, STOP=['UZ1'])
 
 # principle continuation in eta
 ###############################
@@ -79,6 +82,10 @@ eta2_sols, eta2_cont = a.run(starting_point='UZ1', c='qif', ICP=1, DSMAX=0.001, 
 # 1D continuation in eta for delta = 0.4, alpha = 0.0 and U0 = 0.2
 eta3_sols, eta3_cont = a.run(starting_point='UZ1', c='qif', ICP=1, DSMAX=0.001, RL0=-5.0, RL1=5.0, NMX=8000,
                              origin=u0_cont, name=f"eta_3", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
+
+# 1D continuation in eta for delta = 0.01, alpha = 0.0 and U0 = 0.2
+eta4_sols, eta4_cont = a.run(starting_point='UZ1', c='qif', ICP=1, DSMAX=0.001, RL0=-5.0, RL1=5.0, NMX=8000,
+                             origin=u02_cont, name=f"eta_4", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
 if codim1:
 

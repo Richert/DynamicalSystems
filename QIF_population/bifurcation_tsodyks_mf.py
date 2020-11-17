@@ -36,7 +36,6 @@ n_grid_points = 100
 m = 100
 n_dim = 4*m
 n_params = 9
-eta_cont_idx = 0
 
 ###################################
 # parameter continuations in auto #
@@ -95,18 +94,21 @@ if codim1:
         # 2D continuations of hopf and fold curves
         ##########################################
 
-        # continue the limit cycle borders in Delta and eta
-        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.1,
-                                                            NMX=8000, origin=eta_cont, name='eta_Delta_hb2',
-                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0, DS='-')
-
         # continue the fold borders in Delta and eta
         delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=8000, origin=eta_cont, name='eta_Delta_lp1',
-                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0, DS='-')
+                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0, DS='-',
+                                                            ILP=0, ISP=0)
         delta_eta_lp2_solutions, delta_eta_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=8000, origin=eta3_cont, name='eta_Delta_lp2',
-                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0, DS='-')
+                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0, DS='-',
+                                                            ILP=0, ISP=0)
+
+        # continue the limit cycle borders in Delta and eta
+        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.1,
+                                                            NMX=8000, origin=eta_cont, name='eta_Delta_hb2',
+                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0, DS='-',
+                                                            ILP=0, ISP=0)
 
 ################
 # save results #
