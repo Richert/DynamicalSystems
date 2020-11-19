@@ -29,6 +29,8 @@ with parameters:
 
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+fname = '../results/tsodyks_mf.pkl'
+kwargs = dict()
 
 codim1 = True
 codim2 = True
@@ -89,6 +91,8 @@ if codim1:
     eta4_sols, eta4_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.005, RL0=-5.0, RL1=2.0, NMX=8000,
                                  origin=u02_cont, name=f"eta_4", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
+    a.to_file(fname, **kwargs)
+
     if codim2:
 
         # 2D continuations of hopf and fold curves
@@ -99,21 +103,17 @@ if codim1:
                                                             NMX=8000, origin=eta_cont, name='eta_Delta_lp1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
                                                             ILP=0, ISP=0, NPR=10, bidirectional=True)
+        a.to_file(fname, **kwargs)
+
         delta_eta_lp2_solutions, delta_eta_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=8000, origin=eta3_cont, name='eta_Delta_lp2',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
                                                             ILP=0, ISP=0, NPR=10, bidirectional=True)
+        a.to_file(fname, **kwargs)
 
         # continue the limit cycle borders in Delta and eta
         delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=8000, origin=eta_cont, name='eta_Delta_hb2',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
                                                             ILP=0, ISP=0, NPR=10, bidirectional=True)
-
-################
-# save results #
-################
-
-fname = '../results/tsodyks_mf.pkl'
-kwargs = dict()
-a.to_file(fname, **kwargs)
+        a.to_file(fname, **kwargs)
