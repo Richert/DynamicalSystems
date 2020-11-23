@@ -76,19 +76,19 @@ if codim1:
     ###############################
 
     # 1D continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
-    eta_sols, eta_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.005, RL0=-5.0, RL1=2.0, NMX=8000,
+    eta_sols, eta_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.05, RL0=-5.0, RL1=2.0, NMX=8000,
                                origin=alpha_cont, name=f"eta", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
     # 1D continuation in eta for delta = 0.01, alpha = 0.04 and U0 = 1.0
-    eta2_sols, eta2_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.005, RL0=-5.0, RL1=2.0, NMX=8000,
+    eta2_sols, eta2_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.05, RL0=-5.0, RL1=2.0, NMX=8000,
                                  origin=alpha2_cont, name=f"eta_2", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
     # 1D continuation in eta for delta = 0.4, alpha = 0.0 and U0 = 0.2
-    eta3_sols, eta3_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.005, RL0=-5.0, RL1=2.0, NMX=8000,
+    eta3_sols, eta3_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.05, RL0=-5.0, RL1=2.0, NMX=8000,
                                  origin=u0_cont, name=f"eta_3", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
     # 1D continuation in eta for delta = 0.01, alpha = 0.0 and U0 = 0.2
-    eta4_sols, eta4_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.005, RL0=-5.0, RL1=2.0, NMX=8000,
+    eta4_sols, eta4_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.05, RL0=-5.0, RL1=2.0, NMX=8000,
                                  origin=u02_cont, name=f"eta_4", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
     a.to_file(fname, **kwargs)
