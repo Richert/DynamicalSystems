@@ -31,7 +31,7 @@ path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 codim1 = True
-codim2 = False
+codim2 = True
 n_grid_points = 100
 n_dim = 4
 n_params = 9

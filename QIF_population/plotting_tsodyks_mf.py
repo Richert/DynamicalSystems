@@ -39,8 +39,10 @@ mpl.rc('text', usetex=True)
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
-fname = 'results/tsodyks_mf.hdf5'
+fname = 'results/tsodyks_mf.pkl'
+fname2 = 'results/tsodyks_poisson.pkl'
 a = PyAuto.from_file(fname, auto_dir=auto_dir)
+a2 = PyAuto.from_file(fname2, auto_dir=auto_dir)
 
 ############
 # plotting #
@@ -49,44 +51,47 @@ a = PyAuto.from_file(fname, auto_dir=auto_dir)
 # principle continuation in eta
 ###############################
 
-fig, axes = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
+fig, axes = plt.subplots(nrows=4, figsize=(6, 6), dpi=dpi)
 
 # plot principle eta continuation for different alphas
-ax = axes[0]
-n_alphas = 5
-for i in range(n_alphas):
-    try:
-        ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i}', ax=ax)
-    except KeyError:
-        pass
-ax.set_xlabel(r'$\bar\eta$')
-ax.set_ylabel('r')
-
-# plot eta continuation for single alpha with limit cycle continuation
-ax = axes[1]
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_1', ax=ax)
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['UZ', 'BP'])
-#a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta/hb2', ax=ax, ignore=['UZ', 'BP', 'LP'])
-ax.set_xlabel(r'$\bar\eta$')
-ax.set_ylabel('r')
+n_etas = 4
+for i in range(n_etas):
+    ax = axes[i]
+    if i == 0:
+        ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta', ax=ax)
+    else:
+        ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_{i + 1}', ax=ax)
+    ax.set_xlabel(r'$\bar\eta$')
+    ax.set_ylabel('r')
 plt.tight_layout()
 
 # 2D continuations in eta and (alpha, U0)
 #########################################
 
-# fig2, axes2 = plt.subplots(ncols=2, figsize=(7, 1.8), dpi=dpi)
-# ax = axes2[0]
-# a.plot_continuation('PAR(1)', 'PAR(6)', cont='u0/eta/hb2', ax=ax, line_style_unstable='solid')
-# a.plot_continuation('PAR(1)', 'PAR(6)', cont='u0/eta/lp1', ax=ax, line_color_stable='#5D6D7E',
-#                     line_style_stable='dashed', line_style_unstable='dashed')
+fig2, axes2 = plt.subplots(ncols=3, figsize=(6, 2), dpi=dpi)
+
+ax = axes2[0]
+a.plot_continuation('PAR(1)', 'PAR(5)', cont='eta_Delta_lp1', ax=ax, line_style_unstable='solid')
+a2.plot_continuation('PAR(1)', 'PAR(7)', cont='eta_Delta_lp1', ax=ax, line_style_unstable='dotted',
+                     line_style_stable='dotted')
+ax.set_xlabel(r'$\eta$')
+ax.set_ylabel(r'$\Delta$')
+ax.set_title(r'$\alpha = 0.04$, $U_0 = 1.0$')
+
+ax = axes2[1]
+a.plot_continuation('PAR(1)', 'PAR(5)', cont='eta_Delta_lp2', ax=ax, line_style_unstable='solid')
+a2.plot_continuation('PAR(1)', 'PAR(7)', cont='eta_Delta_lp2', ax=ax, line_style_unstable='dotted',
+                     line_style_stable='dotted')
+ax.set_xlabel(r'$\eta$')
+ax.set_ylabel(r'$\Delta$')
+ax.set_title(r'$\alpha = 0.0$, $U_0 = 0.2$')
+
+# ax = axes2[2]
+# a.plot_continuation('PAR(1)', 'PAR(5)', cont='eta_Delta_hb2', ax=ax, line_style_unstable='solid')
 # ax.set_xlabel(r'$\eta$')
-# ax.set_ylabel(r'$U_0$')
-# ax = axes2[1]
-# a.plot_continuation('PAR(1)', 'PAR(3)', cont='alpha/eta/hb2', ax=ax, line_style_unstable='solid')
-# a.plot_continuation('PAR(1)', 'PAR(3)', cont='alpha/eta/lp1', ax=ax, line_color_stable='#5D6D7E',
-#                     line_style_stable='dashed', line_style_unstable='dashed')
-# ax.set_xlabel(r'$\eta$')
-# ax.set_ylabel(r'$\alpha$')
-# plt.tight_layout()
+# ax.set_ylabel(r'$\Delta$')
+# ax.set_title(r'$\alpha = 0.04$, $U_0 = 1.0$')
+
+plt.tight_layout()
 
 plt.show()

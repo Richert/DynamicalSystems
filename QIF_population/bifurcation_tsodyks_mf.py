@@ -34,8 +34,8 @@ kwargs = dict()
 
 codim1 = True
 codim2 = True
-n_grid_points = 100
-m = 100
+
+m = 200
 n_dim = 4*m
 n_params = 9
 
@@ -98,6 +98,13 @@ if codim1:
         # 2D continuations of hopf and fold curves
         ##########################################
 
+        # continue the limit cycle borders in Delta and eta
+        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.1,
+                                                            NMX=8000, origin=eta_cont, name='eta_Delta_hb1',
+                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
+                                                            ILP=0, ISP=0, NPR=10, bidirectional=True)
+        a.to_file(fname, **kwargs)
+
         # continue the fold borders in Delta and eta
         delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=8000, origin=eta_cont, name='eta_Delta_lp1',
@@ -107,13 +114,6 @@ if codim1:
 
         delta_eta_lp2_solutions, delta_eta_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=8000, origin=eta3_cont, name='eta_Delta_lp2',
-                                                            NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
-                                                            ILP=0, ISP=0, NPR=10, bidirectional=True)
-        a.to_file(fname, **kwargs)
-
-        # continue the limit cycle borders in Delta and eta
-        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.1,
-                                                            NMX=8000, origin=eta_cont, name='eta_Delta_hb2',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
                                                             ILP=0, ISP=0, NPR=10, bidirectional=True)
         a.to_file(fname, **kwargs)
