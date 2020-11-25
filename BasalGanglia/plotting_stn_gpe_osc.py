@@ -42,8 +42,8 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
-c1 = False  # bistable state
-c2 = True  # oscillatory state
+c1 = True  # bistable state
+c2 = False  # oscillatory state
 
 fname = 'results/stn_gpe_lcs_c1.pkl' if c1 else 'results/stn_gpe_lcs_c2.pkl'
 condition = 'c1' if c1 else 'c2'
@@ -52,24 +52,24 @@ a = PyAuto.from_file(fname, auto_dir=auto_dir)
 # oscillatory regime
 ####################
 
-fig1 = plt.figure(tight_layout=True, figsize=(9.0, 4.0), dpi=dpi)
-grid1 = gs.GridSpec(2, 3)
+fig1 = plt.figure(tight_layout=True, figsize=(10.0, 6.0), dpi=dpi)
+grid1 = gs.GridSpec(3, 5)
 
 
 if c2:
 
     # 2d: k_stn x k_gp
-    ax = fig1.add_subplot(grid1[:, 0])
+    ax = fig1.add_subplot(grid1[:, :2])
     ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn/k_gp:lp1', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
+                             line_style_unstable='solid', ignore=['UZ', 'GH'])
     ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn/k_gp:hb1', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
+                             line_style_unstable='solid', ignore=['UZ', 'GH'])
     ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn/k_gp:hb2', ax=ax,
                              line_color_stable='#ee2b2b',
                              line_color_unstable='#ee2b2b', default_size=markersize1,
-                             line_style_unstable='solid', ignore=['UZ'])
+                             line_style_unstable='solid', ignore=['UZ', 'GH'])
     # ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}.2:k_stn/k_gp:hb1', ax=ax, default_size=markersize1,
     #                          line_style_unstable='solid', ignore=['UZ'], line_color_stable='#2cc7d8',
     #                          line_color_unstable='#2cc7d8')
@@ -82,38 +82,57 @@ if c2:
     #                          line_style_unstable='solid', ignore=['UZ'])
     ax.set_ylabel(r'$k_{stn}$')
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_xlim([0.0, 28.0])
+    ax.set_xlim([0.0, 25.0])
     ax.set_ylim([0.0, 4.8])
 
-    # 1D: k_stn
-    ax = fig1.add_subplot(grid1[0, 1:])
-    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:2', ax=ax, line_color_stable='#3689c9',
+    # 1D: k_stn continuation for k_gp = 3.0
+    ax = fig1.add_subplot(grid1[0, 2:])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
-    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:2:lc1', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:lc1', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
-    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:2:lc2', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:lc2', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:lc3', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
     ax.set_xlabel(r'$k_{stn}$')
-    ax.set_ylabel(r'Firing rate (GPe-p)')
-    ax.set_xlim([0.5, 3.0])
-    ax.set_ylim([0.0, 0.26])
-    ax.set_yticklabels([0, 50, 100, 150, 200, 250])
+    #ax.set_ylabel(r'Firing rate (GPe-p)')
+    ax.set_xlim([0.3, 2.0])
+    ax.set_ylim([0.0, 0.2])
+    ax.set_yticks([0.0, 0.1, 0.2])
+    ax.set_yticklabels([0, 100, 200])
 
-    # 1D: k_stn
-    ax = fig1.add_subplot(grid1[1, 1:])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:3', ax=ax, line_color_stable='#3689c9',
+    # 1D: k_gp continuation for k_stn = 1.5
+    ax = fig1.add_subplot(grid1[1, 2:])
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:3:lc1', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:lc1', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:3:lc2', ax=ax, line_color_stable='#148F77',
-                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:3:lc3', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:lc2', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_ylabel(r'Firing rate (GPe-p)')
-    ax.set_xlim([0.0, 15.0])
+    #ax.set_ylabel(r'Firing rate (GPe-p)')
+    ax.set_xlim([2.0, 11.0])
+    ax.set_ylim([0.0, 0.4])
+    ax.set_yticks([0.0, 0.2, 0.4])
+    ax.set_yticklabels([0, 200, 400])
+
+    # 1D: k_gp continuation for k_stn = 3.0
+    ax = fig1.add_subplot(grid1[2, 2:])
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2:lc1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2:lc2', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2:lc3', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax.set_xlabel(r'$k_{gp}$')
+    #ax.set_ylabel(r'Firing rate (GPe-p)')
+    ax.set_xlim([4.0, 16.0])
     ax.set_ylim([0.0, 0.26])
-    ax.set_yticklabels([0, 50, 100, 150, 200, 250])
+    ax.set_yticks([0.0, 0.1, 0.2])
+    ax.set_yticklabels([0, 100, 200])
 
     plt.tight_layout()
     plt.savefig(f'stn_gpe_{condition}_bf.svg')
@@ -127,7 +146,7 @@ elif c1:
     #########
 
     # k_stn x k_gp
-    ax = fig1.add_subplot(grid1[:, 0])
+    ax = fig1.add_subplot(grid1[:, :2])
     ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn/k_gp:lp1', ax=ax,
                              line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1,
@@ -151,15 +170,45 @@ elif c1:
     #                          line_style_unstable='solid', ignore=['UZ'])
     # ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn', ax=ax, default_size=markersize1,
     #                          line_style_unstable='solid', ignore=['UZ'])
-    # ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn:2', ax=ax, default_size=markersize1,
+    # ax = a.plot_continuation('PAR(22)', 'PAR(26)', cont=f'{condition}:k_stn:4', ax=ax, default_size=markersize1,
     #                          line_style_unstable='solid', ignore=['UZ'])
     ax.set_ylabel(r'$k_{stn}$')
     ax.set_xlabel(r'$k_{gp}$')
-    ax.set_xlim([0.0, 28.0])
+    ax.set_xlim([0.0, 25.0])
     ax.set_ylim([0.0, 4.8])
 
-    # 1D: k_stn
-    ax = fig1.add_subplot(grid1[0, 1:])
+    # 1D: k_stn for k_gp = 3.0
+    ax = fig1.add_subplot(grid1[0, 2:])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:1', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:1:lc1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:1:lc2', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax.set_xlabel(r'$k_{stn}$')
+    # ax.set_ylabel(r'Firing rate (GPe-p)')
+    ax.set_xlim([0.5, 4.0])
+    ax.set_ylim([0.0, 0.15])
+    ax.set_yticks([0.0, 0.05, 0.1, 0.15])
+    ax.set_yticklabels([0, 50, 100, 150])
+
+    # 1D: k_stn for k_gp = 5.5
+    ax = fig1.add_subplot(grid1[1, 2:])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:2', ax=ax, line_color_stable='#3689c9',
+                             line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:2:lc1', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:2:lc2', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax.set_xlabel(r'$k_{stn}$')
+    # ax.set_ylabel(r'Firing rate (GPe-p)')
+    ax.set_xlim([0.75, 1.5])
+    ax.set_ylim([0.0, 0.1])
+    ax.set_yticks([0.0, 0.05, 0.1])
+    ax.set_yticklabels([0, 50, 100])
+
+    # 1D: k_stn for k_gp = 10.0
+    ax = fig1.add_subplot(grid1[2, 2:])
     ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:3', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
     ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:3:lc1', ax=ax, line_color_stable='#148F77',
@@ -168,27 +217,14 @@ elif c1:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
     ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:3:lc3', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:3:lc4', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
     ax.set_xlabel(r'$k_{stn}$')
-    ax.set_ylabel(r'Firing rate (GPe-p)')
-    ax.set_xlim([0.5, 4.0])
-    ax.set_ylim([0.0, 0.2])
-    ax.set_yticklabels([0, 50, 100, 150, 200])
-
-    # 1D: k_stn
-    ax = fig1.add_subplot(grid1[1, 1:])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2', ax=ax, line_color_stable='#3689c9',
-                             line_color_unstable='#3689c9', default_size=markersize1, ignore=['UZ'])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2:lc1', ax=ax, line_color_stable='#148F77',
-                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2:lc2', ax=ax, line_color_stable='#148F77',
-                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
-    ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'{condition}:k_gp:2:lc3', ax=ax, line_color_stable='#148F77',
-                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
-    ax.set_xlabel(r'$k_{gp}$')
-    ax.set_ylabel(r'Firing rate (GPe-p)')
-    ax.set_xlim([5.0, 25.0])
-    ax.set_ylim([0.0, 0.2])
-    ax.set_yticklabels([0, 50, 100, 150, 200])
+    # ax.set_ylabel(r'Firing rate (GPe-p)')
+    ax.set_xlim([1.5, 5.0])
+    ax.set_ylim([0.0, 0.32])
+    ax.set_yticks([0.0, 0.1, 0.2, 0.3])
+    ax.set_yticklabels([0, 100, 200, 300])
 
     plt.tight_layout()
     plt.savefig(f'stn_gpe_{condition}_bf.svg')

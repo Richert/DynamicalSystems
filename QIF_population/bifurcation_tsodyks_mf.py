@@ -35,7 +35,7 @@ kwargs = dict()
 codim1 = True
 codim2 = True
 
-m = 200
+m = 100
 n_dim = 4*m
 n_params = 9
 
