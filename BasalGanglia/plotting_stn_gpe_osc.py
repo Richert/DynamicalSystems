@@ -185,6 +185,8 @@ elif c1:
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
     ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:1:lc2', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
+    ax = a.plot_continuation('PAR(26)', 'U(3)', cont=f'{condition}:k_stn:1:lc3', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1, ignore=['UZ', 'BP'])
     ax.set_xlabel(r'$k_{stn}$')
     # ax.set_ylabel(r'Firing rate (GPe-p)')
     ax.set_xlim([0.5, 4.0])
