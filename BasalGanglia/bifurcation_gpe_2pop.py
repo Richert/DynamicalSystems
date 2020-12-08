@@ -78,16 +78,16 @@ if c1:
     # step 2: codim 1 investigation in eta_a
     c1_b3_sols, c1_b3_cont = a.run(starting_point='UZ1', c='qif', ICP=3, NPAR=n_params,
                                    name=f'c1:eta_a/v1', NDIM=n_dim, RL0=eta_min, RL1=eta_max,
-                                   origin=c1_b1_cont, NMX=6000, DSMAX=0.05, bidirectional=True, UZR={3: [-2.0]})
+                                   origin=c1_b1_cont, NMX=8000, DSMAX=0.01, bidirectional=True, UZR={3: [-2.0]})
     c1_b4_sols, c1_b4_cont = a.run(starting_point='UZ1', c='qif', ICP=3, NPAR=n_params,
                                    name=f'c1:eta_a/v2', NDIM=n_dim, RL0=eta_min, RL1=eta_max,
-                                   origin=c1_b2_cont, NMX=6000, DSMAX=0.05, bidirectional=True, UZR={3: [3.0]})
+                                   origin=c1_b2_cont, NMX=8000, DSMAX=0.01, bidirectional=True, UZR={3: [3.0]})
 
     # step 3: codim 1 investigation in k_pa
     c1_b5_sols, c1_b5_cont = a.run(starting_point='UZ1', origin=c1_b3_cont, ICP=8, NPAR=n_params, NDIM=n_dim, RL0=0.0,
-                                   RL1=10.0, NMX=6000, DSMAX=0.02, bidirectional=True, name='c1:k_pa/v1')
+                                   RL1=10.0, NMX=8000, DSMAX=0.01, bidirectional=True, name='c1:k_pa/v1')
     c1_b6_sols, c1_b6_cont = a.run(starting_point='UZ1', origin=c1_b4_cont, ICP=8, NPAR=n_params, NDIM=n_dim, RL0=0.0,
-                                   RL1=10.0, NMX=6000, DSMAX=0.02, bidirectional=True, name='c1:k_pa/v2')
+                                   RL1=10.0, NMX=8000, DSMAX=0.01, bidirectional=True, name='c1:k_pa/v2')
 
     # step 3: codim 2 investigation of hopf curves
     c1_b5_2d1_sols, c1_b5_2d1_cont = a.run(starting_point='HB1', origin=c1_b5_cont, c='qif2', ICP=[8, 6], NDIM=n_dim,
@@ -112,7 +112,10 @@ if c1:
                                            NPAR=n_params, RL0=0.0, RL1=10.0, NMX=8000, DSMAX=0.1,
                                            name='c1:k_pa/k_ap:hb2', bidirectional=True)
 
-    # step 5: continuation of limit cycle
+    # step 5: continuation of limit cycles
+    c1_b3_lc_sols, c1_b3_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], NPAR=n_params,
+                                         name=f'c1:eta_a/v1:lc', NDIM=n_dim, origin=c1_b3_cont, NMX=2000, DSMAX=0.02,
+                                         RL0=-12.0)
     c1_b5_lc_sols, c1_b5_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[8, 11], NPAR=n_params,
                                          name=f'c1:k_pa/v1:lc', NDIM=n_dim, origin=c1_b5_cont, NMX=2000, DSMAX=0.02,
                                          RL0=0.0)
@@ -198,19 +201,19 @@ if c2:
 
     # step 1: codim 1 investigation
     c2_b2_sols, c2_b2_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params, name='c2:eta_a',
-                                   NDIM=n_dim, RL0=-40.0, RL1=20.0, origin=starting_cont, NMX=6000, DSMAX=0.05,
+                                   NDIM=n_dim, RL0=-40.0, RL1=20.0, origin=starting_cont, NMX=8000, DSMAX=0.01,
                                    bidirectional=True)
 
-    # step 2: codim 2 investigation of fold found in step 1
-    c2_b2_fp1_sols, c2_b2_fp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[8, 3], NPAR=n_params,
-                                           name='c2:eta_a/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c2_b2_cont,
-                                           NMX=6000, DSMAX=0.1, STOP={'CP3'}, bidirectional=True)
-    c2_b2_fp2_sols, c2_b2_fp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[6, 3], NPAR=n_params,
-                                           name='c2:eta_a/k_pp', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c2_b2_cont,
-                                           NMX=6000, DSMAX=0.1, STOP={'CP3'}, bidirectional=True)
-    c2_b2_fp3_sols, c2_b2_fp3_cont = a.run(starting_point='LP1', c='qif2', ICP=[8, 6], NPAR=n_params,
-                                           name='c2:k_pp/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c2_b2_cont,
-                                           NMX=6000, DSMAX=0.1, bidirectional=True, STOP={'CP3'})
+    # # step 2: codim 2 investigation of fold found in step 1
+    # c2_b2_fp1_sols, c2_b2_fp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[8, 3], NPAR=n_params,
+    #                                        name='c2:eta_a/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c2_b2_cont,
+    #                                        NMX=6000, DSMAX=0.1, STOP={'CP3'}, bidirectional=True)
+    # c2_b2_fp2_sols, c2_b2_fp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[6, 3], NPAR=n_params,
+    #                                        name='c2:eta_a/k_pp', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c2_b2_cont,
+    #                                        NMX=6000, DSMAX=0.1, STOP={'CP3'}, bidirectional=True)
+    # c2_b2_fp3_sols, c2_b2_fp3_cont = a.run(starting_point='LP1', c='qif2', ICP=[8, 6], NPAR=n_params,
+    #                                        name='c2:k_pp/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c2_b2_cont,
+    #                                        NMX=6000, DSMAX=0.1, bidirectional=True, STOP={'CP3'})
 
     # save results
     fname = '../results/gpe_2pop_c2.pkl'
@@ -277,27 +280,27 @@ if c3:
 
     # step 1: codim 1 investigation
     c3_b1_sols, c3_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params, name='c3:eta_a',
-                                   NDIM=n_dim, RL0=-25.0, RL1=15.0, origin=starting_cont, NMX=6000, DSMAX=0.05,
+                                   NDIM=n_dim, RL0=-25.0, RL1=15.0, origin=starting_cont, NMX=8000, DSMAX=0.01,
                                    bidirectional=True, UZR={})
 
     # step 2: codim 2 investigation of hopf 1 found in step 1
-    c3_b1_hb1_sols, c3_b1_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 3], NPAR=n_params,
-                                           name='c3:eta_a/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c3_b1_cont,
-                                           NMX=6000, DSMAX=0.1, bidirectional=True)
-    c3_b1_hb2_sols, c3_b1_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[6, 3], NPAR=n_params,
-                                           name='c3:eta_a/k_pp', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c3_b1_cont,
-                                           NMX=6000, DSMAX=0.1, bidirectional=True)
-    c3_b1_hb3_sols, c3_b1_hb3_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 6], NPAR=n_params,
-                                           name='c3:k_pp/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c3_b1_cont,
-                                           NMX=6000, DSMAX=0.1, bidirectional=True)
+    # c3_b1_hb1_sols, c3_b1_hb1_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 3], NPAR=n_params,
+    #                                        name='c3:eta_a/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c3_b1_cont,
+    #                                        NMX=6000, DSMAX=0.1, bidirectional=True)
+    # c3_b1_hb2_sols, c3_b1_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[6, 3], NPAR=n_params,
+    #                                        name='c3:eta_a/k_pp', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c3_b1_cont,
+    #                                        NMX=6000, DSMAX=0.1, bidirectional=True)
+    # c3_b1_hb3_sols, c3_b1_hb3_cont = a.run(starting_point='HB1', c='qif2', ICP=[8, 6], NPAR=n_params,
+    #                                        name='c3:k_pp/k_pa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=c3_b1_cont,
+    #                                        NMX=6000, DSMAX=0.1, bidirectional=True)
 
     # step 3: continuation of periodic orbit of hopf from step 1
     c3_b1_lc1_sols, c3_b1_lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], NPAR=n_params,
-                                           name='c3:eta_a_lc', NDIM=n_dim, RL0=-25.0, RL1=0.0, origin=c3_b1_cont,
-                                           NMX=6000, DSMAX=0.05, STOP={'BP1', 'PD1'})
+                                           name='c3:eta_a_lc', NDIM=n_dim, RL0=-12.0, RL1=0.0, origin=c3_b1_cont,
+                                           NMX=6000, DSMAX=0.02, STOP={'BP1', 'PD1'})
     c3_b1_lc2_sols, c3_b1_lc2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[3, 11], NPAR=n_params,
-                                           name='c3:eta_a_lc2', NDIM=n_dim, RL0=0.0, RL1=15.0, origin=c3_b1_cont,
-                                           NMX=6000, DSMAX=0.05, STOP={'BP1', 'PD1', 'LP1'})
+                                           name='c3:eta_a_lc2', NDIM=n_dim, RL0=0.0, RL1=12.0, origin=c3_b1_cont,
+                                           NMX=6000, DSMAX=0.02, STOP={'BP1', 'PD1', 'LP3'})
 
     starting_point = 'UZ1'
     starting_cont = c3_b1_cont

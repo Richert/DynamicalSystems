@@ -109,23 +109,23 @@ if codim1:
 
         # continue the limit cycle borders in Delta and eta
         delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB1', c='qif2', ICP=[7, 1], DSMAX=0.001,
-                                                            NMX=12000, origin=eta2_cont, name='eta_Delta_hb1',
+                                                            NMX=18000, origin=eta2_cont, name='eta_Delta_hb1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                             bidirectional=True)
 
         # continue the fold borders in Delta and eta
         delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 1], DSMAX=0.001,
-                                                            NMX=12000, origin=eta2_cont, name='eta_Delta_lp1',
+                                                            NMX=18000, origin=eta2_cont, name='eta_Delta_lp1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                             bidirectional=True)
         delta_eta_lp2_solutions, delta_eta_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 1], DSMAX=0.001,
-                                                            NMX=12000, origin=eta3_cont, name='eta_Delta_lp2',
+                                                            NMX=18000, origin=eta3_cont, name='eta_Delta_lp2',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                             bidirectional=True)
 
         # continue the fold borders in Delta and J
         delta_J_lp2_solutions, delta_J_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[7, 2], DSMAX=0.001,
-                                                        NMX=12000, origin=eta3_cont, name='J_Delta_lp1',
+                                                        NMX=18000, origin=eta3_cont, name='J_Delta_lp1',
                                                         NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                         bidirectional=True)
 

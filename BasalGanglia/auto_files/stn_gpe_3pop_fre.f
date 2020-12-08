@@ -88,105 +88,102 @@
 
 	! extract state variables from input vector
 	r_e = y(1)
-	v_e = y(2)
-	r_p = y(3)
-	v_p = y(4)
-	r_a = y(5)
-	v_a = y(6)
-	r_s = y(7)
-	E_e = y(8)
-	x_e = y(9)
-	I_e = y(10)
-	y_e = y(11)
-	E_p = y(12)
-	x_p = y(13)
-	I_p = y(14)
-	y_p = y(15)
-	E_a = y(16)
-	x_a = y(17)
-	I_a = y(18)
-	y_a = y(19)
-	r_xe = y(27)
-	r_ep = y(31)
-	r_xp = y(33)
-	r_xa = y(35)
-	r_ee = y(37)
+	r_p = y(2)
+	r_a = y(3)
+	r_s = y(4)
+	E_e = y(5)
+	x_e = y(6)
+	I_e = y(7)
+	y_e = y(8)
+	E_p = y(9)
+	x_p = y(10)
+	I_p = y(11)
+	y_p = y(12)
+	E_a = y(13)
+	x_a = y(14)
+	I_a = y(15)
+	y_a = y(16)
+	r_xe = y(24)
+	r_ep = y(28)
+	r_xp = y(30)
+	r_xa = y(32)
+	r_ee = y(34)
 
 	! calculate right-hand side update of equation system
 
     ! 1. population updates
 
 	! STN
-	y_delta(1) = delta_e / (PI*tau_e**2) + (2.0*r_e*v_e) / tau_e
-	y_delta(2) = (v_e**2 + eta_e + (E_e-I_e)*tau_e
-     & - (tau_e*PI*r_e)**2) / tau_e
+	y_delta(1) = -r_e / tau_e + (1.0/(SQRT(2.0)*PI*tau_e*tau_e))
+     & * SQRT(eta_e + (E_e-I_e)*tau_e + SQRT((eta_e+(E_e-I_e)*tau_e)**2
+     & + delta_e*delta_e))
 
 	! GPe-p
-	y_delta(3) = delta_p / (PI*tau_p**2) + (2.0*r_p*v_p) / tau_p
-	y_delta(4) = (v_p**2 + eta_p + (E_p-I_p)*tau_p
-     & - (tau_p*PI*r_p)**2) / tau_p
+	y_delta(2) = -r_p / tau_p + (1.0/(SQRT(2.0)*PI*tau_p*tau_p))
+     & * SQRT(eta_p + (E_p-I_p)*tau_p + SQRT((eta_p+(E_p-I_p)*tau_p)**2
+     & + delta_p*delta_p))
 
     ! GPe-a
-	y_delta(5) = delta_a / (PI*tau_a**2) + (2.0*r_a*v_a) / tau_a
-	y_delta(6) = (v_a**2 + eta_a + (E_a-I_a)*tau_a
-     & - (tau_a*PI*r_a)**2) / tau_a
+	y_delta(3) = -r_a / tau_a + (1.0/(SQRT(2.0)*PI*tau_a*tau_a))
+     & * SQRT(eta_a + (E_a-I_a)*tau_a + SQRT((eta_a+(E_a-I_a)*tau_a)**2
+     & + delta_a*delta_a))
 
 	! STR
-	y_delta(7) = (eta_s - r_s) / tau_s
+	y_delta(4) = (eta_s - r_s) / tau_s
 
 	! 2. synapse dynamics
 
 	! at STN
-	y_delta(8) = x_e
-	y_delta(9) = (k_ee*r_ee - x_e*(tau_ampa_r+tau_ampa_d) - E_e)
+	y_delta(5) = x_e
+	y_delta(6) = (k_ee*r_ee - x_e*(tau_ampa_r+tau_ampa_d) - E_e)
      & / (tau_ampa_r*tau_ampa_d)
-	y_delta(10) = y_e
-	y_delta(11) = (k_ep*r_ep - y_e*(tau_gabaa_r2+tau_gabaa_d2) - I_e)
+	y_delta(7) = y_e
+	y_delta(8) = (k_ep*r_ep - y_e*(tau_gabaa_r2+tau_gabaa_d2) - I_e)
      & / (tau_gabaa_r2*tau_gabaa_d2)
 
 	! at GPe-p
-	y_delta(12) = x_p
-	y_delta(13) = (k_pe*r_xe - x_p*(tau_ampa_r+tau_ampa_d) - E_p)
+	y_delta(9) = x_p
+	y_delta(10) = (k_pe*r_xe - x_p*(tau_ampa_r+tau_ampa_d) - E_p)
      & / (tau_ampa_r*tau_ampa_d)
-	y_delta(14) = y_p
-	y_delta(15) = (k_pp*r_xp + k_pa*r_xa + k_ps*r_s
+	y_delta(11) = y_p
+	y_delta(12) = (k_pp*r_xp + k_pa*r_xa + k_ps*r_s
      & - y_p*(tau_gabaa_r+tau_gabaa_d) - I_p)/(tau_gabaa_r*tau_gabaa_d)
 
 	! at GPe-a
-	y_delta(16) = x_a
-	y_delta(17) = (k_ae*r_xe - x_a*(tau_ampa_r+tau_ampa_d) - E_a)
+	y_delta(13) = x_a
+	y_delta(14) = (k_ae*r_xe - x_a*(tau_ampa_r+tau_ampa_d) - E_a)
      & / (tau_ampa_r*tau_ampa_d)
-	y_delta(18) = y_a
-	y_delta(19) = (k_ap*r_xp + k_aa*r_xa + k_as*r_s
+	y_delta(15) = y_a
+	y_delta(16) = (k_ap*r_xp + k_aa*r_xa + k_as*r_s
      & - y_a*(tau_gabaa_r+tau_gabaa_d) - I_a)/(tau_gabaa_r*tau_gabaa_d)
 
 	! STN to both GPe
-	y_delta(20) = k_pe_d * (r_e - y(20))
+	y_delta(17) = k_pe_d * (r_e - y(17))
+	y_delta(18) = k_pe_d * (y(17) - y(18))
+	y_delta(19) = k_pe_d * (y(18) - y(19))
+	y_delta(20) = k_pe_d * (y(19) - y(20))
 	y_delta(21) = k_pe_d * (y(20) - y(21))
 	y_delta(22) = k_pe_d * (y(21) - y(22))
 	y_delta(23) = k_pe_d * (y(22) - y(23))
 	y_delta(24) = k_pe_d * (y(23) - y(24))
-	y_delta(25) = k_pe_d * (y(24) - y(25))
-	y_delta(26) = k_pe_d * (y(25) - y(26))
-	y_delta(27) = k_pe_d * (y(26) - y(27))
 
 	! GPe-p to STN
-	y_delta(28) = k_ep_d * (r_p - y(28))
-	y_delta(29) = k_ep_d * (y(28) - y(29))
-	y_delta(30) = k_ep_d * (y(29) - y(30))
-	y_delta(31) = k_ep_d * (y(30) - y(31))
+	y_delta(25) = k_ep_d * (r_p - y(25))
+	y_delta(26) = k_ep_d * (y(25) - y(26))
+	y_delta(27) = k_ep_d * (y(26) - y(27))
+	y_delta(28) = k_ep_d * (y(27) - y(28))
 
 	! Gpe-p to both GPes
-	y_delta(32) = k_p_d * (r_p - y(32))
-	y_delta(33) = k_p_d * (y(32) - y(33))
+	y_delta(29) = k_p_d * (r_p - y(29))
+	y_delta(30) = k_p_d * (y(29) - y(30))
 
 	! Gpe-a to both GPes
-	y_delta(34) = k_a_d * (r_a - y(34))
-	y_delta(35) = k_a_d * (y(34) - y(35))
+	y_delta(31) = k_a_d * (r_a - y(31))
+	y_delta(32) = k_a_d * (y(31) - y(32))
 
 	! STN to STN
-	y_delta(36) = k_ee_d * (r_e - y(36))
-	y_delta(37) = k_ee_d * (y(36) - y(37))
+	y_delta(33) = k_ee_d * (r_e - y(33))
+	y_delta(34) = k_ee_d * (y(33) - y(34))
 
 	end subroutine func
 
@@ -252,12 +249,9 @@
 	args(25) = k_stn
 
 	y(1) = 0.02
-	y(3) = 0.06
-	y(5) = 0.03
-	y(7) = 0.002
-	y(2) = -4.0
-	y(4) = -2.0
-	y(6) = -4.0
+	y(2) = 0.06
+	y(3) = 0.03
+	y(4) = 0.002
 
 	end subroutine stpnt
 

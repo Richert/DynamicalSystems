@@ -7,7 +7,6 @@
 	double precision, intent(inout) :: dfdu(ndim,ndim),
      & dfdp(ndim,*)
 	double precision r_e, v_e, r_p, v_p, r_a, v_a, r_s
-	double precision r_xe, r_ep, r_xp, r_xa, r_ee
 	double precision E_e, x_e, I_e, y_e
 	double precision E_p, x_p, I_p, y_p
 	double precision E_a, x_a, I_a, y_a
@@ -20,7 +19,6 @@
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
 	double precision tau_gabaa_r2, tau_gabaa_d2
-	double precision k_ee_d, k_pe_d, k_ep_d, k_p_d, k_a_d
 	double precision PI, k_gp, k_p, k_i, k_stn
 
 	! declare parameters
@@ -57,11 +55,6 @@
 	tau_gabaa_d = 5.0
 	tau_gabaa_r2 = 0.8
 	tau_gabaa_d2 = 10.0
-	k_ee_d = 1.14
-	k_pe_d = 2.67
-	k_ep_d = 2.0
-	k_p_d = 1.33
-	k_a_d = 1.33
 	PI = 3.141592653589793
 	delta = 10.0
 	k = 100.0
@@ -106,11 +99,6 @@
 	x_a = y(17)
 	I_a = y(18)
 	y_a = y(19)
-	r_xe = y(27)
-	r_ep = y(31)
-	r_xp = y(33)
-	r_xa = y(35)
-	r_ee = y(37)
 
 	! calculate right-hand side update of equation system
 
@@ -138,55 +126,27 @@
 
 	! at STN
 	y_delta(8) = x_e
-	y_delta(9) = (k_ee*r_ee - x_e*(tau_ampa_r+tau_ampa_d) - E_e)
+	y_delta(9) = (k_ee*r_e - x_e*(tau_ampa_r+tau_ampa_d) - E_e)
      & / (tau_ampa_r*tau_ampa_d)
 	y_delta(10) = y_e
-	y_delta(11) = (k_ep*r_ep - y_e*(tau_gabaa_r2+tau_gabaa_d2) - I_e)
+	y_delta(11) = (k_ep*r_p - y_e*(tau_gabaa_r2+tau_gabaa_d2) - I_e)
      & / (tau_gabaa_r2*tau_gabaa_d2)
 
 	! at GPe-p
 	y_delta(12) = x_p
-	y_delta(13) = (k_pe*r_xe - x_p*(tau_ampa_r+tau_ampa_d) - E_p)
+	y_delta(13) = (k_pe*r_e - x_p*(tau_ampa_r+tau_ampa_d) - E_p)
      & / (tau_ampa_r*tau_ampa_d)
 	y_delta(14) = y_p
-	y_delta(15) = (k_pp*r_xp + k_pa*r_xa + k_ps*r_s
+	y_delta(15) = (k_pp*r_p + k_pa*r_a + k_ps*r_s
      & - y_p*(tau_gabaa_r+tau_gabaa_d) - I_p)/(tau_gabaa_r*tau_gabaa_d)
 
 	! at GPe-a
 	y_delta(16) = x_a
-	y_delta(17) = (k_ae*r_xe - x_a*(tau_ampa_r+tau_ampa_d) - E_a)
+	y_delta(17) = (k_ae*r_e - x_a*(tau_ampa_r+tau_ampa_d) - E_a)
      & / (tau_ampa_r*tau_ampa_d)
 	y_delta(18) = y_a
-	y_delta(19) = (k_ap*r_xp + k_aa*r_xa + k_as*r_s
+	y_delta(19) = (k_ap*r_p + k_aa*r_a + k_as*r_s
      & - y_a*(tau_gabaa_r+tau_gabaa_d) - I_a)/(tau_gabaa_r*tau_gabaa_d)
-
-	! STN to both GPe
-	y_delta(20) = k_pe_d * (r_e - y(20))
-	y_delta(21) = k_pe_d * (y(20) - y(21))
-	y_delta(22) = k_pe_d * (y(21) - y(22))
-	y_delta(23) = k_pe_d * (y(22) - y(23))
-	y_delta(24) = k_pe_d * (y(23) - y(24))
-	y_delta(25) = k_pe_d * (y(24) - y(25))
-	y_delta(26) = k_pe_d * (y(25) - y(26))
-	y_delta(27) = k_pe_d * (y(26) - y(27))
-
-	! GPe-p to STN
-	y_delta(28) = k_ep_d * (r_p - y(28))
-	y_delta(29) = k_ep_d * (y(28) - y(29))
-	y_delta(30) = k_ep_d * (y(29) - y(30))
-	y_delta(31) = k_ep_d * (y(30) - y(31))
-
-	! Gpe-p to both GPes
-	y_delta(32) = k_p_d * (r_p - y(32))
-	y_delta(33) = k_p_d * (y(32) - y(33))
-
-	! Gpe-a to both GPes
-	y_delta(34) = k_a_d * (r_a - y(34))
-	y_delta(35) = k_a_d * (y(34) - y(35))
-
-	! STN to STN
-	y_delta(36) = k_ee_d * (r_e - y(36))
-	y_delta(37) = k_ee_d * (y(36) - y(37))
 
 	end subroutine func
 

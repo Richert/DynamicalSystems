@@ -55,11 +55,38 @@ if c1:
     # codim 1 bifurcation diagrams
     ##############################
 
-    fig1 = plt.figure(tight_layout=True, figsize=(9.3, 4.6), dpi=dpi)
-    grid1 = gs.GridSpec(2, 4, height_ratios=[1.5, 2.0])
+    fig1 = plt.figure(tight_layout=True, figsize=(9.0, 5.4), dpi=dpi)
+    grid1 = gs.GridSpec(3, 4)
+
+    # codim 1: eta_a / hopf
+    ax = fig1.add_subplot(grid1[0, :2])
+    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1', ax=ax, line_color_stable='#76448A',
+                             line_color_unstable='#5D6D7E', default_size=markersize1,
+                             custom_bf_styles={'HB': {'color': 'k'}})
+    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v1:lc', ax=ax, line_color_stable='#148F77',
+                             line_color_unstable='#148F77', default_size=markersize1,
+                             custom_bf_styles={'HB': {'color': 'k'}})
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel('Firing rate')
+    ax.set_xlim([-10.0, 0.0])
+    ax.set_ylim([0.0, 0.1])
+    # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
+    ax.set_yticklabels([0, 50, 100])
+
+    # codim 1: eta_a / fold
+    ax = fig1.add_subplot(grid1[0, 2:])
+    ax = a.plot_continuation('PAR(3)', 'U(2)', cont=f'c1:eta_a/v2', ax=ax, line_color_stable='#76448A',
+                             line_color_unstable='#5D6D7E', default_size=markersize1,
+                             custom_bf_styles={'HB': {'color': 'k'}})
+    ax.set_xlabel(r'$\eta_a$')
+    ax.set_ylabel('Firing rate')
+    ax.set_xlim([2.0, 4.0])
+    ax.set_ylim([0.0, 0.1])
+    # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
+    ax.set_yticklabels([0, 50, 100])
 
     # codim 1: k_pa / hopf
-    ax = fig1.add_subplot(grid1[0, :2])
+    ax = fig1.add_subplot(grid1[1, :2])
     ax = a.plot_continuation('PAR(8)', 'U(2)', cont=f'c1:k_pa/v1', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
@@ -69,12 +96,12 @@ if c1:
     ax.set_xlabel(r'$k_{pa}$')
     ax.set_ylabel('Firing rate')
     ax.set_xlim([0.7, 1.4])
-    ax.set_ylim([0.02, 0.12])
+    ax.set_ylim([0.0, 0.1])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([20.0, 40.0, 60.0, 80.0, 100.0, 120.0])
+    ax.set_yticklabels([0, 50, 100])
 
     # codim 1: k_pa / fold
-    ax = fig1.add_subplot(grid1[0, 2:])
+    ax = fig1.add_subplot(grid1[1, 2:])
     ax = a.plot_continuation('PAR(8)', 'U(2)', cont=f'c1:k_pa/v2', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1,
                              custom_bf_styles={'HB': {'color': 'k'}})
@@ -83,13 +110,13 @@ if c1:
     ax.set_xlim([0.7, 1.4])
     ax.set_ylim([0.0, 0.1])
     # ax.set_yticks([0.0, 0.025, 0.05, 0.075, 0.1, 0.125])
-    ax.set_yticklabels([0.0, 20.0, 40.0, 60.0, 80.0, 100.0])
+    ax.set_yticklabels([0, 50, 100])
 
     # codim 2 investigations
     ########################
 
     # Hopf curve: k_pa and k_pp
-    ax = fig1.add_subplot(grid1[1, 0])
+    ax = fig1.add_subplot(grid1[2, 0])
     ax = a.plot_continuation('PAR(8)', 'PAR(6)', cont='c1:k_pa/k_pp:hb1', ax=ax, line_color_stable='#8299b0',
                              line_color_unstable='#8299b0', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
@@ -99,7 +126,7 @@ if c1:
     ax.set_ylim([0.0, 1.5])
 
     # Hopf curve: k_pa and k_ap
-    ax = fig1.add_subplot(grid1[1, 1])
+    ax = fig1.add_subplot(grid1[2, 1])
     ax = a.plot_continuation('PAR(8)', 'PAR(7)', cont='c1:k_pa/k_ap:hb1', ax=ax, line_color_stable='#8299b0',
                              line_color_unstable='#8299b0', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
@@ -109,7 +136,7 @@ if c1:
     ax.set_ylim([0.0, 10.0])
 
     # Fold curve: k_pa and k_pp
-    ax = fig1.add_subplot(grid1[1, 2])
+    ax = fig1.add_subplot(grid1[2, 2])
     ax = a.plot_continuation('PAR(8)', 'PAR(6)', cont='c1:k_pa/k_pp:lp1', ax=ax, line_color_stable='#3689c9',
                              line_color_unstable='#3689c9', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
@@ -122,7 +149,7 @@ if c1:
     ax.set_ylim([0.0, 1.5])
 
     # Fold curve: k_pa and k_ap
-    ax = fig1.add_subplot(grid1[1, 3])
+    ax = fig1.add_subplot(grid1[2, 3])
     ax = a.plot_continuation('PAR(8)', 'PAR(7)', cont='c1:k_pa/k_ap:lp1', ax=ax, line_color_stable='#8299b0',
                              line_color_unstable='#8299b0', default_size=markersize1,
                              line_style_unstable='solid', ignore=['LP'])
@@ -146,7 +173,7 @@ if c1:
 if c2:
 
     fname = 'results/gpe_2pop_c2.pkl'
-    PyAuto.from_file(fname, auto_dir=auto_dir)
+    a = PyAuto.from_file(fname, auto_dir=auto_dir)
 
     # continuation of eta_p
     #######################
@@ -201,55 +228,56 @@ if c2:
     # continuation of eta_a
     #######################
 
-    fig4 = plt.figure(tight_layout=True, figsize=(6.0, 9.0), dpi=dpi)
-    grid4 = gs.GridSpec(3, 2)
+    fig4 = plt.figure(tight_layout=True, figsize=(5.8, 1.8), dpi=dpi)
+    grid4 = gs.GridSpec(1, 1)
 
     # codim 1
-    ax = fig4.add_subplot(grid4[0, :])
+    ax = fig4.add_subplot(grid4[0, 0])
     ax = a.plot_continuation('PAR(3)', 'U(2)', cont='c2:eta_a', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'])
-    ax = a.plot_continuation('PAR(3)', 'U(4)', cont='c2:eta_a', ax=ax, line_color_stable='#8299b0',
-                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'])
+    # ax = a.plot_continuation('PAR(3)', 'U(4)', cont='c2:eta_a', ax=ax, line_color_stable='#8299b0',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'])
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel('Firing rate')
     ax.set_xlim([0.0, 0.5])
     ax.set_ylim([0.02, 0.085])
-    ax.set_yticklabels([0.0, 25.0, 50.0, 75.0])
+    ax.set_yticklabels([0, 25, 50, 75])
 
     # codim 2
-    ax = fig4.add_subplot(grid4[1, 0])
-    ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont='c2:eta_a/k_p', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_p$')
-    ax.set_ylim([0.0, 4.0])
-    ax.set_xlim([-2.0, 10.0])
-
-    ax = fig4.add_subplot(grid4[1, 1])
-    ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont='c2:eta_a/k_i', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_i$')
-    ax.set_ylim([0.0, 4.0])
-    ax.set_xlim([-4.0, 1.0])
-
-    ax = fig4.add_subplot(grid4[2, 0])
-    ax = a.plot_continuation('PAR(3)', 'PAR(19)', cont='c2:eta_a/k_gp', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_{gp}$')
-    ax.set_ylim([10, 35.0])
-    ax.set_xlim([-0.5, 4.5])
-
-    ax = fig4.add_subplot(grid4[2, 1])
-    ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont='c2:eta_a/eta_p', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$\eta_p$')
-    ax.set_ylim([3.5, 6.0])
-    ax.set_xlim([-0.5, 5.0])
+    # ax = fig4.add_subplot(grid4[1, 0])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont='c2:eta_a/k_p', ax=ax, line_color_stable='#5D6D7E',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$k_p$')
+    # ax.set_ylim([0.0, 4.0])
+    # ax.set_xlim([-2.0, 10.0])
+    #
+    # ax = fig4.add_subplot(grid4[1, 1])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont='c2:eta_a/k_i', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$k_i$')
+    # ax.set_ylim([0.0, 4.0])
+    # ax.set_xlim([-4.0, 1.0])
+    #
+    # ax = fig4.add_subplot(grid4[2, 0])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(19)', cont='c2:eta_a/k_gp', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$k_{gp}$')
+    # ax.set_ylim([10, 35.0])
+    # ax.set_xlim([-0.5, 4.5])
+    #
+    # ax = fig4.add_subplot(grid4[2, 1])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont='c2:eta_a/eta_p', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['LP'])
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$\eta_p$')
+    # ax.set_ylim([3.5, 6.0])
+    # ax.set_xlim([-0.5, 5.0])
 
     plt.tight_layout()
+    plt.savefig(f'gpe_2pop_c2.svg')
     plt.show()
 
 #######################################################################
@@ -259,7 +287,7 @@ if c2:
 if c3:
 
     fname = 'results/gpe_2pop_c3.pkl'
-    PyAuto.from_file(fname, auto_dir=auto_dir)
+    a = PyAuto.from_file(fname, auto_dir=auto_dir)
 
     # continuation of delta_a
     #########################
@@ -310,11 +338,11 @@ if c3:
     # continuation of eta_a
     #######################
 
-    fig5 = plt.figure(tight_layout=True, figsize=(6.0, 9.0), dpi=dpi)
-    grid5 = gs.GridSpec(3, 2)
+    fig5 = plt.figure(tight_layout=True, figsize=(5.8, 1.8), dpi=dpi)
+    grid5 = gs.GridSpec(1, 1)
 
     # codim 1
-    ax = fig5.add_subplot(grid5[0, :])
+    ax = fig5.add_subplot(grid5[0, 0])
     ax = a.plot_continuation('PAR(3)', 'U(2)', cont='c3:eta_a', ax=ax, line_color_stable='#76448A',
                              line_color_unstable='#5D6D7E', default_size=markersize1, ignore=['UZ'])
     ax = a.plot_continuation('PAR(3)', 'U(2)', cont='c3:eta_a_lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
@@ -323,42 +351,43 @@ if c3:
                              default_size=markersize1, custom_bf_styles={'LP': {'marker': 'p'}})
     ax.set_xlabel(r'$\eta_a$')
     ax.set_ylabel('Firing rate')
-    ax.set_xlim([-12.0, 12.0])
-    ax.set_ylim([0.02, 0.12])
+    ax.set_xlim([-10.0, 10.0])
+    ax.set_ylim([0.02, 0.1])
     ax.set_yticks([0.03, 0.06, 0.09])
-    ax.set_yticklabels([30.0, 60.0, 90.0])
+    ax.set_yticklabels([30, 60, 90])
 
     # codim 2
-    ax = fig5.add_subplot(grid5[1, 0])
-    ax = a.plot_continuation('PAR(3)', 'PAR(19)', cont='c3:eta_a/k_gp', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1)
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_{gp}$')
-    ax.set_xlim([-30.0, 20.0])
-    ax.set_ylim([10.0, 50.0])
-
-    ax = fig5.add_subplot(grid5[1, 1])
-    ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont='c3:eta_a/k_p', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#76448A', default_size=markersize1, line_style_unstable='solid')
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_{p}$')
-    ax.set_xlim([-30.0, 20.0])
-    ax.set_ylim([0.2, 1.2])
-
-    ax = fig5.add_subplot(grid5[2, 0])
-    ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont='c3:eta_a/k_i', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1)
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$k_i$')
-    ax.set_xlim([-30.0, 20.0])
-    ax.set_ylim([0.2, 1.5])
-
-    ax = fig5.add_subplot(grid5[2, 1])
-    ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont='c3:eta_a/eta_p', ax=ax, line_color_stable='#76448A',
-                             line_color_unstable='#5D6D7E', default_size=markersize1)
-    ax.set_xlabel(r'$\eta_a$')
-    ax.set_ylabel(r'$\eta_p$')
+    # ax = fig5.add_subplot(grid5[1, 0])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(19)', cont='c3:eta_a/k_gp', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1)
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$k_{gp}$')
+    # ax.set_xlim([-30.0, 20.0])
+    # ax.set_ylim([10.0, 50.0])
+    #
+    # ax = fig5.add_subplot(grid5[1, 1])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(20)', cont='c3:eta_a/k_p', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#76448A', default_size=markersize1, line_style_unstable='solid')
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$k_{p}$')
+    # ax.set_xlim([-30.0, 20.0])
+    # ax.set_ylim([0.2, 1.2])
+    #
+    # ax = fig5.add_subplot(grid5[2, 0])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(21)', cont='c3:eta_a/k_i', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1)
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$k_i$')
+    # ax.set_xlim([-30.0, 20.0])
+    # ax.set_ylim([0.2, 1.5])
+    #
+    # ax = fig5.add_subplot(grid5[2, 1])
+    # ax = a.plot_continuation('PAR(3)', 'PAR(2)', cont='c3:eta_a/eta_p', ax=ax, line_color_stable='#76448A',
+    #                          line_color_unstable='#5D6D7E', default_size=markersize1)
+    # ax.set_xlabel(r'$\eta_a$')
+    # ax.set_ylabel(r'$\eta_p$')
 
     plt.tight_layout()
+    plt.savefig(f'gpe_2pop_c3.svg')
 
     plt.show()
