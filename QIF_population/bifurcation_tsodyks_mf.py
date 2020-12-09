@@ -35,7 +35,7 @@ kwargs = dict()
 codim1 = True
 codim2 = True
 
-m = 20
+m = 100
 n_dim = 4*m
 n_params = 9
 
@@ -77,19 +77,19 @@ if codim1:
 
     # 1D continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
     eta_sols, eta_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.01, RL0=-5.0, RL1=2.0, NMX=8000,
-                               origin=alpha_cont, name=f"eta", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-7)
+                               origin=alpha_cont, name=f"eta", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-9)
 
     # 1D continuation in eta for delta = 0.01, alpha = 0.04 and U0 = 1.0
     eta2_sols, eta2_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.01, RL0=-5.0, RL1=2.0, NMX=8000,
-                                 origin=alpha2_cont, name=f"eta_2", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-7)
+                                 origin=alpha2_cont, name=f"eta_2", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-9)
 
     # 1D continuation in eta for delta = 0.4, alpha = 0.0 and U0 = 0.2
     eta3_sols, eta3_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.01, RL0=-5.0, RL1=2.0, NMX=8000,
-                                 origin=u0_cont, name=f"eta_3", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-7)
+                                 origin=u0_cont, name=f"eta_3", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-9)
 
     # 1D continuation in eta for delta = 0.01, alpha = 0.0 and U0 = 0.2
     eta4_sols, eta4_cont = a.run(starting_point='UZ1', c='qifa', ICP=1, DSMAX=0.01, RL0=-5.0, RL1=2.0, NMX=8000,
-                                 origin=u02_cont, name=f"eta_4", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-7)
+                                 origin=u02_cont, name=f"eta_4", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-9)
 
     a.to_file(fname, **kwargs)
 
@@ -102,18 +102,25 @@ if codim1:
         delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.05,
                                                             NMX=2000, origin=eta_cont, name='eta_Delta_hb1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
-                                                            ILP=0, ISP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
+                                                            ILP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
         a.to_file(fname, **kwargs)
 
         # continue the fold borders in Delta and eta
         delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.05,
                                                             NMX=2000, origin=eta_cont, name='eta_Delta_lp1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
-                                                            ILP=0, ISP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
+                                                            ILP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
         a.to_file(fname, **kwargs)
 
         delta_eta_lp2_solutions, delta_eta_lp2_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.05,
                                                             NMX=2000, origin=eta3_cont, name='eta_Delta_lp2',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
-                                                            ILP=0, ISP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
+                                                            ILP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
         a.to_file(fname, **kwargs)
+
+    # continuation of selected limit cycles
+    ########################################
+
+    # lc continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
+    a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, RL0=-5.0, RL1=2.0, NMX=2000,
+          origin=eta_cont, name=f"eta:lc", NDIM=n_dim, NPAR=n_params, NPR=10, DSMIN=1e-7)
