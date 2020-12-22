@@ -129,6 +129,13 @@ if codim1:
                                                         NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=20.0,
                                                         bidirectional=True)
 
+    # continuation of selected limit cycles
+    ########################################
+
+    # lc continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
+    a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, RL0=-5.0, RL1=2.0, NMX=4000,
+          origin=eta_cont, name=f"eta:lc", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-7)
+
 ################
 # save results #
 ################
