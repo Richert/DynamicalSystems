@@ -36,8 +36,8 @@ codim1 = True
 codim2 = True
 
 m = 50
-n_dim = 4*m
-n_params = 9
+n_dim = 3*m
+n_params = 7
 
 ###################################
 # parameter continuations in auto #
@@ -46,7 +46,7 @@ n_params = 9
 a = PyAuto("auto_files", auto_dir=auto_dir)
 
 # initial continuation in time to converge to fixed point
-t_sols, t_cont = a.run(e='qif_xu_fp', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
+t_sols, t_cont = a.run(e='qif_xu_reduced', c='ivp', ICP=14, DS=5e-3, DSMIN=1e-4, DSMAX=1.0, NMX=1000000, name='t',
                        UZR={14: 1000.0}, STOP={'UZ1'}, NDIM=n_dim, NPAR=n_params)
 
 # 1D continuation in delta
@@ -55,12 +55,12 @@ delta_sols, delta_cont = a.run(starting_point='UZ1', c='qifa', ICP=5, DSMAX=0.00
                                UZR={5: [0.4]}, STOP=['UZ1'])
 
 # 1D continuation in alpha
-alpha_sols, alpha_cont = a.run(starting_point='UZ1', c='qifa', ICP=8, DSMAX=0.05, RL0=0.0, RL1=1.0, NMX=8000,
+alpha_sols, alpha_cont = a.run(starting_point='UZ1', c='qifa', ICP=7, DSMAX=0.05, RL0=0.0, RL1=1.0, NMX=8000,
                                NPAR=n_params, origin=delta_cont, name=f"alpha", NDIM=n_dim, NPR=20, DS=1e-3,
-                               UZR={8: [0.04]}, STOP=['UZ1'])
-alpha2_sols, alpha2_cont = a.run(starting_point='UZ1', c='qifa', ICP=8, DSMAX=0.05, RL0=0.0, RL1=1.0, NMX=8000,
+                               UZR={7: [0.04]}, STOP=['UZ1'])
+alpha2_sols, alpha2_cont = a.run(starting_point='UZ1', c='qifa', ICP=7, DSMAX=0.05, RL0=0.0, RL1=1.0, NMX=8000,
                                  NPAR=n_params, origin=t_cont, name=f"alpha2", NDIM=n_dim, NPR=20, DS=1e-3,
-                                 UZR={8: [0.04]}, STOP=['UZ1'])
+                                 UZR={7: [0.04]}, STOP=['UZ1'])
 
 # 1D continuation in U0
 # u0_sols, u0_cont = a.run(starting_point='UZ1', c='qifa', ICP=9, DSMAX=0.05, RL0=0.0, RL1=1.0, NMX=8000,
@@ -99,14 +99,14 @@ if codim1:
         ##########################################
 
         # continue the limit cycle borders in Delta and eta
-        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.05,
+        delta_eta_hb2_solutions, delta_eta_hb2_cont = a.run(starting_point='HB2', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=2000, origin=eta_cont, name='eta_Delta_hb1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
                                                             ILP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
         a.to_file(fname, **kwargs)
 
         # continue the fold borders in Delta and eta
-        delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.05,
+        delta_eta_lp1_solutions, delta_eta_lp1_cont = a.run(starting_point='LP1', c='qif2', ICP=[5, 1], DSMAX=0.1,
                                                             NMX=2000, origin=eta_cont, name='eta_Delta_lp1',
                                                             NDIM=n_dim, NPAR=n_params, RL0=0.001, RL1=1.0,
                                                             ILP=0, NPR=10, bidirectional=True, DSMIN=1e-5)
@@ -122,7 +122,7 @@ if codim1:
     ########################################
 
     # lc continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
-    a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, RL0=-5.0, RL1=2.0, NMX=2000,
+    a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.5, RL0=-5.0, RL1=2.0, NMX=2000,
           origin=eta_cont, name=f"eta:lc", NDIM=n_dim, NPAR=n_params, NPR=10, DSMIN=1e-7)
 
 a.to_file(fname, **kwargs)
