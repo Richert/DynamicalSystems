@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto, get_from_solutions, fractal_dimension, continue_period_doubling_bf
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -7,227 +7,322 @@ import matplotlib.pyplot as plt
 #####################################
 
 # config
-n_dim = 48
-n_params = 32
-a = PyAuto("auto_files")
-fname = '../results/qif_stn_gpe_forced.pkl'
+n_dim = 39
+n_params = 31
+a = PyAuto("auto_files", auto_dir='~/PycharmProjects/auto-07p')
+c1 = [False, False, True]
+c2 = False
 
-# initial continuation in beta (driver amplitude)
-#################################################
+store_params = ['PAR(23)', 'PAR(25)', 'PAR(14)']
+store_vars = ['U(1)', 'U(3)', 'U(5)', 'U(38)']
 
-# step 1: codim 1 investigation
-init_sols, init_cont = a.run(e='stn_gpe_forced', c='qif_lc', ICP=[31, 11], NPAR=n_params, name='beta', NDIM=n_dim,
-                             RL0=0.0, RL1=70.0, bidirectional=True, NMX=6000, DSMAX=0.5, STOP={'UZ5'},
-                             UZR={31: [0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]})
-
-starting_point = 'UZ4'
-starting_cont = init_cont
-
-# continuation in alpha
+# initial continuations
 #######################
 
-# step 1: codim 1 investigation
-c0_sols, c0_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[26, 11], NPAR=n_params, name='alpha',
-                         NDIM=n_dim, RL0=0.0, RL1=1.0, origin=starting_cont, bidirectional=True, NMX=600, DSMAX=0.1)
+# continuation of total intrinsic coupling strengths inside GPe
+s0_sols, s0_cont = a.run(e='gpe_2pop_forced', c='qif_lc', ICP=[19, 11], NPAR=n_params, name='k_gp',
+                         NDIM=n_dim, RL0=0.0, RL1=100.0, NMX=6000, DSMAX=0.5, UZR={19: [10.0, 15.0, 20.0, 25.0, 30.0]},
+                         STOP={'UZ5'}, variables=store_vars, params=store_params)
 
-# step 2: codim 2 investigation of fold found in step 1
-c0_d2_sols, c0_d2_cont = a.run(starting_point='LP1', c='qif3', ICP=[3, 26, 11], DSMAX=0.1, NMX=1000,
-                               NPAR=n_params, name='eta_str/alpha', origin=c0_cont, NDIM=n_dim,
-                               bidirectional=True, RL0=-80.0, RL1=0.0)
-c0_d2_2_sols, c0_d2_2_cont = a.run(starting_point='LP1', c='qif3', ICP=[9, 26, 11], DSMAX=0.1, NMX=1000,
-                                   NPAR=n_params, name='k/alpha', origin=c0_cont, NDIM=n_dim,
-                                   bidirectional=True, RL0=0.0, RL1=10.0)
-# c0_d2_3_sols, c0_d2_3_cont = a.run(starting_point='LP1', c='qif2', ICP=[10, 26], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='k_i/alpha', origin=c0_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=10.0)
+# continuation of GPe-p projection strength
+s1_sols, s1_cont = a.run(starting_point='UZ5', ICP=[20, 11], NPAR=n_params, name='k_p',
+                         NDIM=n_dim, RL0=0.0, RL1=100.0, NMX=6000, DSMAX=0.5, UZR={20: [1.5]},
+                         STOP={'UZ1'}, variables=store_vars, params=store_params, origin=s0_cont)
 
-# step 3: codim 2 investigation of hopf codim 2 bifurcations found in step 2
+###################################
+# condition 1: oscillatory regime #
+###################################
 
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
+if any(c1):
 
-# continuation in k
-###################
+    starting_point = 'UZ1'
+    starting_cont = s1_cont
 
-# step 1: codim 1 investigation
-k_vals = [0.6, 0.8, 1.2, 1.4, 1.6, 1.8, 2.0]
-c2_sols, c2_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[9, 11], NPAR=n_params, name='k', NDIM=n_dim,
-                         RL0=0.5, RL1=2.1, origin=starting_cont, bidirectional=True, NMX=600, DSMAX=0.05,
-                         UZR={9: k_vals}, STOP={})
+    # continuation of between vs. within population coupling strengths
+    s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[21, 11], NPAR=n_params, name='c1:k_i',
+                             NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1, DS='-',
+                             UZR={21: [0.9]}, STOP={'UZ1'}, variables=store_vars, params=store_params)
 
-# step 2: continue each user point from step 1 in eta_str
-# for i, k in enumerate(k_vals):
-#     s_tmp, c_tmp = a.run(starting_point=f'UZ{i+1}', c='qif_lc', ICP=[3, 11], NPAR=n_params, name=f'eta_str_{i+1}',
-#                          NDIM=n_dim, RL0=-100.0, RL1=0.0, origin=c2_cont, bidirectional=True, NMX=600, DSMAX=0.5)
-#     bifs = [s['bifurcation'] for s in s_tmp.values()]
-    # if 'HB' in bifs:
-    #     s_lc_tmp, c_lc_tmp = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], DSMAX=0.1, NMX=1000,
-    #                                NPAR=n_params, name=f'eta_str_{i+1}_lc', origin=c_tmp, NDIM=n_dim, RL0=-100.0,
-    #                                RL1=0.0, STOP={'BP1'}, NPR=10)
-    #     if bifs.count('HB') > 2:
-    #         s_lc_tmp, c_lc_tmp = a.run(starting_point='HB3', c='qif2b', ICP=[3, 11], DSMAX=0.1, NMX=1000,
-    #                                    NPAR=n_params, name=f'eta_str_{i + 1}_hb2_lc', origin=c_tmp, NDIM=n_dim,
-    #                                    RL0=-100.0, RL1=0.0, STOP={'BP1'}, NPR=10)
+    starting_point = 'UZ1'
+    starting_cont = s2_cont
 
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
+    # continuation of eta_p
+    s3_sols, s3_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[2, 11], NPAR=n_params,
+                             name='c1:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
+                             NMX=6000, DSMAX=0.1, UZR={2: [4.8]}, STOP={'UZ1'}, variables=store_vars,
+                             params=store_params)
 
-# continuation in eta_str
-#########################
+    starting_point = 'UZ1'
+    starting_cont = s3_cont
 
-# step 1: codim 1 investigation
-c1_sols, c1_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[3, 11], NPAR=n_params, name='eta_str',
-                         NDIM=n_dim, RL0=-100.0, RL1=0.0, origin=starting_cont, bidirectional=True, NMX=800, DSMAX=0.05)
+    # continuation of eta_a
+    s4_sols, s4_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[3, 11], NPAR=n_params,
+                             name='c1:eta_a', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
+                             NMX=6000, DSMAX=0.1, UZR={3: [-6.5]}, STOP={'UZ1'}, DS='-', variables=store_vars,
+                             params=store_params)
 
-# # step 2: codim 1 continuation of limit cycles found in step 1
-# c1_lc_sols, c1_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[3, 11], DSMAX=0.05, NMX=2000,
-#                                NPAR=n_params, name='eta_str_lc', origin=c1_cont, NDIM=n_dim, RL0=-100.0,
-#                                RL1=0.0, STOP={'BP1'}, NPR=10)
-# c1_lc2_sols, c1_lc2_cont = a.run(starting_point='HB3', c='qif2b', ICP=[3, 11], DSMAX=0.05, NMX=2000,
-#                                  NPAR=n_params, name='eta_str_lc2', origin=c1_cont, NDIM=n_dim, RL0=-100.0,
-#                                  RL1=0.0, STOP={'BP1'}, NPR=10)
-#
-# # step 3: codim 2 continuation of limit cycles found in step 1
-# c1_lc_d2_sols, c1_lc_d2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[17, 3, 11], DSMAX=0.05, NMX=2000,
-#                                      NPAR=n_params, name='eta_str_delta_lc', origin=c1_cont, NDIM=n_dim, RL0=0.0,
-#                                      RL1=0.1, STOP={'TR1', 'BP3'}, NPR=10)
-# c1_lc2_d2_sols, c1_lc2_d2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[9, 3, 11], DSMAX=0.05, NMX=2000,
-#                                        NPAR=n_params, name='eta_str_k_lc', origin=c1_cont, NDIM=n_dim, RL0=-100.0,
-#                                        RL1=0.0, STOP={'TR1', 'BP3'}, NPR=10)
-#
-# # step 4: codim 2 investigations of hopf bifurcation found in step 1
-# c1_d2_sols, c1_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[9, 3], DSMAX=0.1, NMX=6000,
-#                                NPAR=n_params, name='k/eta_str', origin=c1_cont, NDIM=n_dim,
-#                                bidirectional=True, RL0=0.0, RL1=10.0)
-# c1_d2_2_sols, c1_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 3], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='alpha/eta_str', origin=c1_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=1.0)
-# c1_d2_3_sols, c1_d2_3_cont = a.run(starting_point='HB1', c='qif2', ICP=[10, 3], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='k_i/eta_str', origin=c1_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=10.0)
-# c1_d2_5_sols, c1_d2_5_cont = a.run(starting_point='HB3', c='qif2', ICP=[9, 3], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='k/eta_str_2', origin=c1_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=10.0)
-# c1_d2_6_sols, c1_d2_6_cont = a.run(starting_point='HB3', c='qif2', ICP=[17, 3], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='alpha/eta_str_2', origin=c1_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=1.0)
-# c1_d2_7_sols, c1_d2_7_cont = a.run(starting_point='HB3', c='qif2', ICP=[10, 3], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='k_i/eta_str_2', origin=c1_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=10.0)
-#
-# # step 5: codim 2 continuation of zero-hopf bifurcation found in step 4
-# c1_zh_d2_sols, c1_zh_d2_cont = a.run(starting_point='ZH1', c='qif2', ICP=[9, 3], DSMAX=0.1, NMX=6000,
-#                                      NPAR=n_params, name='k/eta_str_zh', origin=c1_d2_cont, NDIM=n_dim,
-#                                      bidirectional=True, RL0=0.0, RL1=10.0)
-# c1_zh_d2_2_sols, c1_zh_d2_2_cont = a.run(starting_point='ZH1', c='qif2', ICP=[17, 3], DSMAX=0.1, NMX=6000,
-#                                          NPAR=n_params, name='alpha/eta_str_zh', origin=c1_d2_cont, NDIM=n_dim,
-#                                          bidirectional=True, RL0=0.0, RL1=1.0)
-# c1_zh_dh2_3_sols, c1_zh_dh2_3_cont = a.run(starting_point='ZH1', c='qif2', ICP=[17, 9], DSMAX=0.1, NMX=6000,
-#                                            NPAR=n_params, name='alpha/k_zh', origin=c1_d2_cont, NDIM=n_dim,
-#                                            bidirectional=True, RL0=0.0, RL1=1.0)
+    starting_point = 'UZ1'
+    starting_cont = s4_cont
 
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
+    if c1[0]:
 
-# # step 2: codim 1 continuation of limit cycle found in step 1
-# c2_lc_sols, c2_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[9, 11], DSMAX=0.1, NMX=2000,
-#                                NPAR=n_params, name='k_lc', origin=c2_cont, NDIM=n_dim, RL0=0.0,
-#                                RL1=10.0, STOP={'BP2'}, NPR=10)
-#
-# # step 3: codim 2 investigations of hopf bifurcation found in step 1
-# c2_d2_sols, c2_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[10, 9], DSMAX=0.1, NMX=6000,
-#                                NPAR=n_params, name='k_i/k', origin=c2_cont, NDIM=n_dim,
-#                                bidirectional=True, RL0=0.0, RL1=10.0)
-# c2_d2_2_sols, c2_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 9], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='alpha/k', origin=c2_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=0.1)
-# c2_d2_3_sols, c2_d2_3_cont = a.run(starting_point='HB1', c='qif2', ICP=[18, 9], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='delta/k', origin=c2_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=2.0)
-# c2_d2_4_sols, c2_d2_4_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 9], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='eta_str/k', origin=c2_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=-100.0, RL1=0.0)
-#
-# # step 4: codim 2 continuation of limit cycle found in step 1
-# c2_lc_d2_sols, c2_lc_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[9, 3, 11], DSMAX=0.1, NMX=2000,
-#                                      NPAR=n_params, name='k/eta_str_lc', origin=c2_cont, NDIM=n_dim, RL0=0.0,
-#                                      RL1=10.0, STOP={'BP2'}, NPR=10)
-# c2_lc2_d2_sols, c2_lc2_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[9, 17, 11], DSMAX=0.05, NMX=2000,
-#                                        NPAR=n_params, name='k/alpha_lc', origin=c2_cont, NDIM=n_dim, RL0=0.0,
-#                                        RL1=10.0, STOP={'BP2'}, NPR=10)
-# c2_lc3_d2_sols, c2_lc3_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[9, 18, 11], DSMAX=0.05, NMX=2000,
-#                                        NPAR=n_params, name='k/delta_lc', origin=c2_cont, NDIM=n_dim, RL0=0.0,
-#                                        RL1=10.0, STOP={'BP2'}, NPR=10)
+        # continuation of driver
+        ########################
 
-# # continuation in k_i
-# #####################
-#
-# # # step 1: codim 1 investigation
-# # c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=10, NPAR=n_params, name='k_i', NDIM=n_dim,
-# #                          RL0=0.0, RL1=10.0, origin=t_cont, bidirectional=True, NMX=6000, DSMAX=0.005)
-# #
-# # # step 2: codim 1 continuation of limit cycle found in step 1
-# # c3_lc_sols, c3_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[10, 11], DSMAX=0.1, NMX=6000,
-# #                                NPAR=n_params, name='k_i_lc', origin=c3_cont, NDIM=n_dim, RL0=0.0,
-# #                                RL1=10.0)
-# #
-# # # step 3: codim 2 investigation of hopf bifurcation found in step 1
-# # c3_d2_sols, c3_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[9, 10], DSMAX=0.1, NMX=10000,
-# #                                NPAR=n_params, name='k/k_i', origin=c3_cont, NDIM=n_dim,
-# #                                bidirectional=True, RL0=0.0, RL1=10.0)
-# # c3_d2_2_sols, c3_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 10], DSMAX=0.1, NMX=10000,
-# #                                    NPAR=n_params, name='alpha/k_i', origin=c3_cont, NDIM=n_dim,
-# #                                    bidirectional=True, RL0=0.0, RL1=1.0)
-# #
-# # # step 4: codim 2 continuation of limit cycle found in step 1
-# # c3_lc_d2_sols, c3_lc_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[17, 10, 11], DSMAX=0.01, NMX=1000,
-# #                                      NPAR=n_params, name='k_i_alpha_lc', origin=c3_cont, NDIM=n_dim, RL0=0.0,
-# #                                      RL1=1.0, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04, DSMIN=1e-8, STOP={'BP2'})
+        # driver parameter boundaries
+        alpha_min = 0.0
+        alpha_max = 100.0
+        omega_min = 25.0
+        omega_max = 100.0
 
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
+        # step 1: codim 1 investigation of driver strength
+        c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
+                                 NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
+                                 RL1=alpha_max, STOP={}, UZR={23: [30.0]}, variables=store_vars, params=store_params)
 
-# continuation in delta
-#######################
+        # step 2: codim 1 investigation of driver period
+        c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
+                                 NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=omega_min,
+                                 RL1=omega_max, STOP={}, UZR={25: [77.3]}, bidirectional=True, variables=store_vars,
+                                 params=store_params)
 
-# # step 1: codim 1 investigation
-# c4_sols, c4_cont = a.run(starting_point=starting_point, c='qif', ICP=18, NPAR=n_params, name='delta', NDIM=n_dim,
-#                          RL0=0.0, RL1=2.0, origin=starting_cont, bidirectional=True, NMX=6000, DSMAX=0.005)
-#
-# # step 2: codim 1 continuation of limit cycle found in step 1
-# c4_lc_sols, c4_lc_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 11], DSMAX=0.05, NMX=2000,
-#                                NPAR=n_params, name='delta_lc', origin=c4_cont, NDIM=n_dim, RL0=0.0,
-#                                RL1=2.0, STOP={'BP2'}, NPR=10)
-#
-# # step 3: codim 2 investigation of hopf bifurcation found in step 1
-# c4_d2_sols, c4_d2_cont = a.run(starting_point='HB1', c='qif2', ICP=[9, 18], DSMAX=0.1, NMX=6000,
-#                                NPAR=n_params, name='k/delta', origin=c4_cont, NDIM=n_dim,
-#                                bidirectional=True, RL0=0.0, RL1=10.0)
-# c4_d2_2_sols, c4_d2_2_cont = a.run(starting_point='HB1', c='qif2', ICP=[17, 18], DSMAX=0.05, NMX=6000,
-#                                    NPAR=n_params, name='alpha/delta', origin=c4_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=0.1)
-# c4_d2_3_sols, c4_d2_3_cont = a.run(starting_point='HB1', c='qif2', ICP=[3, 18], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='eta_str/delta', origin=c4_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=-100.0, RL1=0.0)
-# c4_d2_4_sols, c4_d2_4_cont = a.run(starting_point='HB1', c='qif2', ICP=[10, 18], DSMAX=0.1, NMX=6000,
-#                                    NPAR=n_params, name='k_i/delta', origin=c4_cont, NDIM=n_dim,
-#                                    bidirectional=True, RL0=0.0, RL1=10.0)
-#
-# # step 4: codim 2 continuation of limit cycle found in step 1
-# c4_lc_d2_sols, c4_lc_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 3, 11], DSMAX=0.05, NMX=2000,
-#                                      NPAR=n_params, name='delta/eta_str_lc', origin=c4_cont, NDIM=n_dim, RL0=0.0,
-#                                      RL1=2.0, STOP={'BP2'}, NPR=10)
-# c4_lc2_d2_sols, c4_lc2_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 9, 11], DSMAX=0.05, NMX=2000,
-#                                        NPAR=n_params, name='delta/eta_str_lc', origin=c4_cont, NDIM=n_dim, RL0=0.0,
-#                                        RL1=10.0, STOP={'BP2'}, NPR=10)
-# c4_lc3_d2_sols, c4_lc3_d2_cont = a.run(starting_point='HB1', c='qif2b', ICP=[18, 17, 11], DSMAX=0.05, NMX=2000,
-#                                        NPAR=n_params, name='delta/alpha_lc', origin=c4_cont, NDIM=n_dim, RL0=0.0,
-#                                        RL1=2.0, STOP={'BP2'}, NPR=10, NTST=400)
+        # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
+        i, j = 0, 0
+        for s in c1_sols.values():
+            if 'TR' in s['bifurcation']:
+                i += 1
+                p_tmp = f'TR{i}'
+                c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[25, 23, 11],
+                                         NPAR=n_params, name=f'c1:omega/alpha/{p_tmp}', NDIM=n_dim, NMX=2000,
+                                         DSMAX=0.05, RL0=omega_min, RL1=omega_max, STOP={'BP1', 'R21', 'R11'}, UZR={},
+                                         bidirectional=True, variables=store_vars, params=store_params)
+                bfs = get_from_solutions(['bifurcation'], c2_sols)
+                if "R2" in bfs:
+                    s_tmp, c_tmp = a.run(starting_point='R21', origin=c2_cont, c='qif_lc', ICP=[25, 11],
+                                         NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=500, DSMAX=0.001,
+                                         RL0=omega_min, RL1=omega_max, STOP={'PD1', 'TR1'}, UZR={},
+                                         variables=store_vars, params=store_params, DS='-')
+                    pds = get_from_solutions(['bifurcation'], s_tmp)
+                    if "PD" in pds:
+                        j += 1
+                        p2_tmp = f'PD{j}'
+                        c2_sols, c2_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
+                                                 NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
+                                                 DSMAX=0.05, RL0=omega_min, RL1=omega_max, STOP={'BP1', 'R22'}, UZR={},
+                                                 bidirectional=True, variables=store_vars, params=store_params)
 
-# save results
-kwargs = dict()
-a.to_file(fname, **kwargs)
+                # save results
+                fname = '../results/gpe_2pop_forced_lc.pkl'
+                kwargs = {}
+                a.to_file(fname, **kwargs)
+
+        # step 4: continue the period doubling bifurcations in driver strength that we found above
+        c3_sols, c3_cont = a.run(starting_point='UZ1', origin=c1_cont, c='qif_lc', ICP=[23, 11],
+                                 NPAR=n_params, name='c1:alpha2', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=alpha_min,
+                                 RL1=alpha_max, STOP={}, bidirectional=True, variables=store_vars,
+                                 params=store_params)
+        pds, a = continue_period_doubling_bf(solution=c3_sols, continuation=c3_cont, pyauto_instance=a,
+                                             c='qif2b', ICP=[23, 11], NMX=2500, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
+                                             get_timeseries=True, get_lyapunov_exp=True, NPR=10, STOP={'BP1'},
+                                             RL0=alpha_min, RL1=alpha_max)
+        pds.append('c1:alpha2')
+
+        # save results
+        fname = '../results/gpe_2pop_forced_lc.pkl'
+        kwargs = {'pd_solutions': pds}
+        a.to_file(fname, **kwargs)
+
+    if c1[1]:
+
+        # lyapunov/dimension mapping
+        ############################
+
+        # driver parameter boundaries
+        alpha_min = 0.0
+        alpha_max = 100.0
+        omega_min = 25.0
+        omega_max = 100.0
+
+        # driver parameter grid
+        n = 100
+        alphas = np.round(np.linspace(70.0, 90.0, num=n), decimals=3)
+        omegas = np.round(np.linspace(60.0, 70.0, num=n), decimals=3)
+
+        # step 1: codim 1 investigation of driver strength
+        c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
+                                 NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
+                                 RL1=alpha_max, STOP={}, UZR={23: alphas}, variables=store_vars, params=store_params)
+
+        # step 2: codim 1 investigation of driver period with lyapunov exponent/fractal dimension extraction
+        alpha_col = []
+        omega_col = []
+        le_max_col = []
+        fd_col = []
+        i = 1
+        for point in c0_sols.values():
+            if 'UZ' in point['bifurcation']:
+                c1_sols, c1_cont = a.run(starting_point=f'UZ{i}', origin=c0_cont, c='qif_lc', ICP=[25, 11],
+                                         NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05,
+                                         RL0=omega_min, RL1=omega_max, STOP={}, UZR={25: omegas}, bidirectional=True,
+                                         get_lyapunov_exp=True, variables=store_vars, params=store_params)
+                for data in get_from_solutions(['bifurcation', 'PAR(23)', 'PAR(25)', 'lyapunov_exponents'], c1_sols):
+                    if 'UZ' in data[0]:
+                        alpha_col.append(data[1])
+                        omega_col.append(data[2])
+                        if len(data[3]) > 0:
+                            le_max_col.append(np.max(data[3]))
+                            fd_col.append(fractal_dimension(data[3]))
+                        else:
+                            le_max_col.append(0.0)
+                            fd_col.append(0.0)
+                i += 1
+
+        # save results
+        fname = '../results/gpe_2pop_forced_lc_chaos.pkl'
+        kwargs = {'alphas': alpha_col, 'omegas': omega_col, 'lyapunovs': le_max_col, 'fractal_dimensions': fd_col}
+        a.to_file(fname, **kwargs)
+
+    if c1[2]:
+
+        # continuation of k_ap
+        s5_sols, s5_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[7, 11], NPAR=n_params,
+                                 name='c1:k_pa', NDIM=n_dim, RL0=-0.01, RL1=2.0, origin=starting_cont,
+                                 NMX=6000, DSMAX=0.1, UZR={7: [0.0]}, STOP={'UZ1'}, DS='-', variables=store_vars,
+                                 params=store_params)
+
+        starting_point = 'UZ1'
+        starting_cont = s5_cont
+
+        # continuation of k_pp
+        s6_sols, s6_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[9, 11], NPAR=n_params,
+                                 name='c1:k_aa', NDIM=n_dim, RL0=0.0, RL1=10.0, origin=starting_cont,
+                                 NMX=6000, DSMAX=0.1, UZR={9: [5.0]}, variables=store_vars,
+                                 params=store_params, STOP=['UZ1'])
+
+        starting_point = 'UZ1'
+        starting_cont = s6_cont
+
+        # continuation of driver
+        ########################
+
+        # driver parameter boundaries
+        alpha_min = 0.0
+        alpha_max = 100.0
+        omega_min = 25.0
+        omega_max = 100.0
+
+        # step 1: codim 1 investigation of driver strength
+        c0_sols, c0_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
+                                 NPAR=n_params, name='c1:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
+                                 RL1=alpha_max, STOP={}, UZR={23: [30.0]}, variables=store_vars, params=store_params)
+
+        # step 2: codim 1 investigation of driver period
+        c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c0_cont, c='qif_lc', ICP=[25, 11],
+                                 NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=omega_min,
+                                 RL1=omega_max, STOP={}, UZR={25: [77.3]}, bidirectional=True, variables=store_vars,
+                                 params=store_params)
+
+        # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
+        i, j = 0, 0
+        for s in c1_sols.values():
+            if 'TR' in s['bifurcation']:
+                i += 1
+                p_tmp = f'TR{i}'
+                c2_sols, c2_cont = a.run(starting_point=p_tmp, origin=c1_cont, c='qif3', ICP=[25, 23, 11],
+                                         NPAR=n_params, name=f'c1:omega/alpha/{p_tmp}', NDIM=n_dim, NMX=2000,
+                                         DSMAX=0.05, RL0=omega_min, RL1=omega_max, STOP={'BP1', 'R21', 'R11'}, UZR={},
+                                         bidirectional=True, variables=store_vars, params=store_params)
+                bfs = get_from_solutions(['bifurcation'], c2_sols)
+                if "R2" in bfs:
+                    s_tmp, c_tmp = a.run(starting_point='R21', origin=c2_cont, c='qif_lc', ICP=[25, 11],
+                                         NPAR=n_params, name='c1:omega/R21', NDIM=n_dim, NMX=500, DSMAX=0.001,
+                                         RL0=omega_min, RL1=omega_max, STOP={'PD1', 'TR1'}, UZR={},
+                                         variables=store_vars, params=store_params, DS='-')
+                    pds = get_from_solutions(['bifurcation'], s_tmp)
+                    if "PD" in pds:
+                        j += 1
+                        p2_tmp = f'PD{j}'
+                        c2_sols, c2_cont = a.run(starting_point='PD1', origin=c_tmp, c='qif3', ICP=[25, 23, 11],
+                                                 NPAR=n_params, name=f'c1:omega/alpha/{p2_tmp}', NDIM=n_dim, NMX=2000,
+                                                 DSMAX=0.05, RL0=omega_min, RL1=omega_max, STOP={'BP1', 'R22'}, UZR={},
+                                                 bidirectional=True, variables=store_vars, params=store_params)
+
+                # save results
+                fname = '../results/gpe_2pop_forced_lc2.pkl'
+                kwargs = {}
+                a.to_file(fname, **kwargs)
+
+        # step 4: continue the period doubling bifurcations in driver strength that we found above
+        c3_sols, c3_cont = a.run(starting_point='UZ1', origin=c1_cont, c='qif_lc', ICP=[23, 11],
+                                 NPAR=n_params, name='c1:alpha2', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=alpha_min,
+                                 RL1=alpha_max, STOP={}, bidirectional=True, variables=store_vars,
+                                 params=store_params)
+        pds, a = continue_period_doubling_bf(solution=c3_sols, continuation=c3_cont, pyauto_instance=a,
+                                             c='qif2b', ICP=[23, 11], NMX=2500, DSMAX=0.05, NTST=800, ILP=0, NDIM=n_dim,
+                                             get_timeseries=True, get_lyapunov_exp=True, NPR=10, STOP={'BP1'},
+                                             RL0=alpha_min, RL1=alpha_max)
+        pds.append('c1:alpha2')
+
+        # save results
+        fname = '../results/gpe_2pop_forced_lc2.pkl'
+        kwargs = {'pd_solutions': pds}
+        a.to_file(fname, **kwargs)
+
+################################
+# condition 2: bistable regime #
+################################
+
+if c2:
+
+    starting_point = 'UZ4'
+    starting_cont = s0_cont
+
+    # continuation of between vs. within population coupling strengths
+    s2_sols, s2_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[21, 11], NPAR=n_params, name='c2:k_i',
+                             NDIM=n_dim, RL0=0.1, RL1=10.0, origin=starting_cont, NMX=6000, DSMAX=0.1,
+                             bidirectional=True, UZR={21: [0.5, 0.75, 1.5, 1.8]}, STOP={'UZ2'})
+
+    starting_point = 'UZ4'
+    starting_cont = s2_cont
+
+    # continuation of eta_p
+    s3_sols, s3_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[2, 11], NPAR=n_params,
+                             name='c2:eta_p', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
+                             NMX=1000, DSMAX=0.1, UZR={2: [3.2]}, STOP={'UZ1'})
+
+    starting_point = 'UZ1'
+    starting_cont = s3_cont
+
+    # continuation of eta_a
+    s4_sols, s4_cont = a.run(starting_point=starting_point, c='qif_lc', ICP=[3, 11], NPAR=n_params,
+                             name='c1:eta_a', NDIM=n_dim, RL0=-20.0, RL1=20.0, origin=starting_cont,
+                             NMX=6000, DSMAX=0.1, UZR={3: [3.0]}, STOP={'UZ1'}, variables=store_vars,
+                             params=store_params)
+
+    starting_point = 'UZ1'
+    starting_cont = s4_cont
+
+    # continuation of driver
+    ########################
+
+    # driver parameter boundaries
+    alpha_min = 0.0
+    alpha_max = 100.0
+    omega_min = 25.0
+    omega_max = 100.0
+
+    # step 1: codim 1 investigation of driver strength
+    c2_sols, c2_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif_lc', ICP=[23, 11],
+                             NPAR=n_params, name='c2:alpha', NDIM=n_dim, NMX=2000, DSMAX=0.05, RL0=alpha_min,
+                             RL1=alpha_max, STOP={}, UZR={23: [30.0]}, variables=store_vars, params=store_params)
+
+    # step 2: codim 1 investigation of driver period
+    c1_sols, c1_cont = a.run(starting_point='UZ1', origin=c2_cont, c='qif_lc', ICP=[25, 11],
+                             NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05, RL0=omega_min,
+                             RL1=omega_max, STOP={}, UZR={25: [77.3]}, bidirectional=True, variables=store_vars,
+                             params=store_params)
+
+    # save results
+    fname = '../results/gpe_2pop_forced_bs.pkl'
+    kwargs = {}
+    a.to_file(fname, **kwargs)
