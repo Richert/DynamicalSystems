@@ -22,7 +22,7 @@ fname = f'../results/{model}_conts.pkl'
 #########################
 
 # continuation in time
-t_sols, t_cont = a.run(e='stn_gpe_tmp', c='ivp', ICP=14, NMX=100000, name='t', UZR={14: 1000.0}, STOP={'UZ1'},
+t_sols, t_cont = a.run(e=model, c='ivp', ICP=14, NMX=100000, name='t', UZR={14: 1000.0}, STOP={'UZ1'},
                        NDIM=n_dim, NPAR=n_params)
 starting_point = 'UZ1'
 starting_cont = t_cont
@@ -73,35 +73,32 @@ c2_b5_sols, c2_b5_cont = a.run(starting_point='UZ1', origin=c2_b4_cont, c='qif',
                                NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'k_gp',
                                bidirectional=True)
 
-# 2D continuation of k_gp and eta_e
-c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[22, 1], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.5,
-                                       name=f'k_gp/eta_e:hb1', bidirectional=True)
-c2_b5_2d2_sols, c2_b5_2d2_cont = a.run(starting_point='HB2', origin=c2_b5_cont, c='qif2', ICP=[22, 1], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.5,
-                                       name=f'k_gp/eta_e:hb2', bidirectional=True)
-
 # 2D continuation of k_gp and k_stn
-c2_b5_2d3_sols, c2_b5_2d3_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[22, 25], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.5,
+c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[25, 22], NDIM=n_dim,
+                                       NPAR=n_params, RL0=0.0, RL1=6.0, NMX=10000, DSMAX=0.1,
                                        name=f'k_gp/k_stn:hb1', bidirectional=True)
-c2_b5_2d4_sols, c2_b5_2d4_cont = a.run(starting_point='HB2', origin=c2_b5_cont, c='qif2', ICP=[22, 25], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=20.0, NMX=10000, DSMAX=0.5,
-                                       name=f'k_gp/k_stn:hb2', bidirectional=True)
+c2_b5_2d2_sols, c2_b5_2d2_cont = a.run(starting_point='HB2', origin=c2_b5_cont, c='qif2', ICP=[25, 22], NDIM=n_dim,
+                                       NPAR=n_params, RL0=0.0, RL1=6.0, NMX=10000, DSMAX=0.1,
+                                       name=f'k_gp/k_stn:hb2', bidirectional=True, UZR={25: [0.41]})
+c2_b6_sols, c2_b6_cont = a.run(starting_point='UZ2', origin=c2_b5_2d2_cont, c='qif', ICP=25, NDIM=n_dim,
+                               NPAR=n_params, RL0=0.35, RL1=0.45, NMX=4000, DSMAX=0.1, name=f'k_stn',
+                               bidirectional=True)
+c2_b6_2d1_sols, c2_b5_2d4_cont = a.run(starting_point='LP1', origin=c2_b6_cont, c='qif2', ICP=[25, 22], NDIM=n_dim,
+                                       NPAR=n_params, RL0=0.0, RL1=6.0, NMX=10000, DSMAX=0.1,
+                                       name=f'k_gp/k_stn:lp1', bidirectional=True)
 
 # save results
 a.to_file(fname, **kwargs)
 
 # plotting
 import matplotlib.pyplot as plt
-fig, axes = plt.subplots(ncols=2)
+fig, ax = plt.subplots()
 
-ax = axes[0]
-a.plot_continuation('PAR(22)', 'PAR(1)', cont='k_gp/eta_e:hb1', ax=ax, line_style_unstable='solid')
-a.plot_continuation('PAR(22)', 'PAR(1)', cont='k_gp/eta_e:hb2', ax=ax, line_style_unstable='solid',
-                    line_color_stable='#148F77', line_color_unstable='#148F77')
-ax = axes[1]
 a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:hb1', ax=ax, line_style_unstable='solid')
 a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:hb2', ax=ax, line_style_unstable='solid',
                     line_color_stable='#148F77', line_color_unstable='#148F77')
+a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:lp1', ax=ax, line_style_unstable='solid',
+                    line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E')
+ax.set_xlim([0.0, 25.0])
+ax.set_ylim([0.0, 5.5])
 plt.show()

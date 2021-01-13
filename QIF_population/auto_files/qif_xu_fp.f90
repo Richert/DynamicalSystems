@@ -43,7 +43,7 @@
          F(n) = D*(TAN(0.5*PI*(2*n-M-0.5)/(M+1))-TAN(0.5*PI*(2*n-M-1.5)/(M+1)))/PI + 2.0*R(n)*V(n)
          F(n+M) = V(n)*V(n) + J*RM/M - PI*PI*R(n)*R(n) + I+D*TAN(0.5*PI*(2*n-M-1)/(M+1))
          F(n+2*M) = (1-XA(n))/taux - alph*XA(n)*(UA(n) + U0*(1-UA(n)))*R(n)
-         F(n+3*M) = (U0-UA(n))/tauu + U0*(1-UA(n))
+         F(n+3*M) = (U0-UA(n))/tauu + U0*(1-UA(n))*R(n)
        end do
 
       END SUBROUTINE FUNC

@@ -31,7 +31,7 @@ path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 codim1 = True
-codim2 = True
+codim2 = False
 n_grid_points = 100
 n_dim = 4
 n_params = 9
@@ -73,7 +73,7 @@ u02_sols, u02_cont = a.run(starting_point='UZ1', c='qif', ICP=6, DSMAX=0.005, RL
 
 # 1D continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
 eta_sols, eta_cont = a.run(starting_point='UZ1', c='qif', ICP=1, DSMAX=0.001, RL0=-5.0, RL1=5.0, NMX=8000,
-                           origin=alpha_cont, name=f"eta", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
+                           origin=alpha_cont, name=f"eta_1", NDIM=n_dim, NPAR=n_params, NPR=20, DS=1e-3)
 
 # 1D continuation in eta for delta = 0.01, alpha = 0.04 and U0 = 1.0
 eta2_sols, eta2_cont = a.run(starting_point='UZ1', c='qif', ICP=1, DSMAX=0.001, RL0=-5.0, RL1=5.0, NMX=8000,
@@ -134,7 +134,11 @@ if codim1:
 
     # lc continuation in eta for delta = 0.4, alpha = 0.04 and U0 = 1.0
     a.run(starting_point='HB2', c='qif2b', ICP=[1, 11], DSMAX=0.1, RL0=-5.0, RL1=2.0, NMX=4000,
-          origin=eta_cont, name=f"eta:lc", NDIM=n_dim, NPAR=n_params, NPR=20, DSMIN=1e-7)
+          origin=eta_cont, name=f"eta_1:lc", NDIM=n_dim, NPAR=n_params, NPR=5, DSMIN=1e-7, STOP=['LP3', 'BP1'])
+
+    # lc continuation in eta for delta = 0.01, alpha = 0.04 and U0 = 1.0
+    a.run(starting_point='HB1', c='qif2b', ICP=[1, 11], DSMAX=0.1, RL0=-5.0, RL1=2.0, NMX=4000,
+          origin=eta2_cont, name=f"eta_2:lc", NDIM=n_dim, NPAR=n_params, NPR=5, DSMIN=1e-7, STOP=['LP3', 'BP1'])
 
 ################
 # save results #

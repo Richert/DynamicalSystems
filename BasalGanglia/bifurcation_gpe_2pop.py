@@ -1,10 +1,14 @@
-from pyrates.utility.pyauto import PyAuto, codim2_search
-import numpy as np
-import matplotlib.pyplot as plt
+from pyrates.utility.pyauto import PyAuto
 import sys
 
-"""Bifurcation analysis of GPe model with two populations (arkypallidal and prototypical) and 
-gamma-dstributed axonal delays and bi-exponential synapses."""
+"""
+Bifurcation analysis of GPe model with two populations (arkypallidal and prototypical) and 
+gamma-dstributed axonal delays and bi-exponential synapses. Creates the bifurcation diagrams of Fig. 1 and 2 of
+(citation).
+
+To run this code, you need Python >= 3.6 with PyRates (https://github.com/pyrates-neuroscience/PyRates) and 
+auto-07p (https://github.com/auto-07p/auto-07p) installed.
+"""
 
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"

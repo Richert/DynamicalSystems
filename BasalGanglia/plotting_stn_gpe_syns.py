@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import matplotlib.gridspec as gs
 
 # plotting parameters

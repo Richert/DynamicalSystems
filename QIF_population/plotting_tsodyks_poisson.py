@@ -1,99 +1,80 @@
+from scipy.io import loadmat
+from matplotlib import gridspec
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import numpy as np
 from pyrates.utility.pyauto import PyAuto
 import sys
 sys.path.append('../')
 
+# preparations
+##############
 
-# plotting parameters
-linewidth = 1.2
-fontsize1 = 12
-fontsize2 = 12
-markersize1 = 120
-markersize2 = 100
-dpi = 200
-plt.style.reload_library()
-plt.style.use('seaborn-whitegrid')
-mpl.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath} \boldmath']
-#mpl.rc('text', usetex=True)
-mpl.rcParams["font.sans-serif"] = ["Roboto"]
-mpl.rcParams["font.size"] = fontsize1
-mpl.rcParams["font.weight"] = "bold"
-mpl.rcParams['lines.linewidth'] = linewidth
-mpl.rcParams['axes.titlesize'] = fontsize2
-mpl.rcParams['axes.titleweight'] = 'bold'
-mpl.rcParams['axes.labelsize'] = 'large'
-mpl.rcParams['axes.labelweight'] = 'bold'
-mpl.rcParams['xtick.color'] = 'black'
-mpl.rcParams['ytick.color'] = 'black'
-mpl.rcParams['ytick.alignment'] = 'center'
-mpl.rcParams['legend.fontsize'] = fontsize1
+# load matlab variables
+data = [loadmat(f'data/tsodyks_allscales_v{i}.mat') for i in range(1, 5)]
 
+# load python data
+a = PyAuto.from_file('results/tsodyks_poisson.pkl', auto_dir='~/PycharmProjects/auto-07p')
 
-################
-# file loading #
-################
+# plot settings
+plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.dpi'] = 150
+plt.rcParams['figure.figsize'] = (7, 7)
+plt.rcParams['font.size'] = 10.0
+plt.rcParams["font.family"] = "Times New Roman"
+markersize = 40
 
-fname = 'results/tsodyks_poisson.pkl'
-a = PyAuto.from_file(fname, auto_dir='~/PycharmProjects/auto-07p')
+# spike raster plot indices
+N = 10000
+cutoff = int(N * 0.05)
+n_neurons = 50
+idx = np.random.randint(cutoff, N-cutoff, n_neurons)
 
-############
-# plotting #
-############
+# continuation specific variables
+etas = ['eta_3', 'eta_4', 'eta_1', 'eta_2']
+xlims = [[-1.0, 0.2], [-1.0, 0.2], [-1.0, -0.7], [-1.0, 2.0]]
+ylims = [[0.0, 0.8], [0.0, 0.8], [0.0, 0.5], [0.0, 2.0]]
 
-# principle continuation in eta
-###############################
+# plotting
+##########
 
-fig, axes = plt.subplots(ncols=2, figsize=(8.6, 3.1), dpi=dpi)
+# create figure layout
+fig = plt.figure(1)
+grid = gridspec.GridSpec(nrows=8, ncols=3, figure=fig)
 
-# plot principle eta continuation for different alphas
-ax = axes[0]
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax, default_size=markersize1)
-# a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb1', ax=ax, ignore=['UZ', 'BP'], default_size=markersize2)
-# a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['UZ', 'BP', 'LP'], default_size=markersize2)
-ax.set_xlabel(r'$\bar\eta$')
-ax.set_ylabel('r')
-ax.set_xlim([-1.0, 0.2])
-ax.set_ylim([-0.05, 0.8])
+# start plotting
+for i in range(4):
 
-# plot eta continuation for single alpha with limit cycle continuation
-ax = axes[1]
-a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_4', ax=ax, default_size=markersize1)
-# a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_2_hb1', ax=ax, ignore=['UZ', 'BP', 'LP'], default_size=markersize2)
-ax.set_xlabel(r'$\bar\eta$')
-ax.set_ylabel('r')
-ax.set_xlim([-1.0, 0.2])
-ax.set_ylim([-0.05, 0.8])
+    # plot 1D continuation in eta
+    ax1 = fig.add_subplot(grid[2*i:2*(i+1), 0])
+    ax1 = a.plot_continuation('PAR(1)', 'U(1)', cont=etas[i], ax=ax1, default_size=markersize)
+    if i > 1:
+        ax1 = a.plot_continuation('PAR(1)', 'U(1)', cont=f"{etas[i]}:lc", ax=ax1, default_size=markersize,
+                                  ignore=['BP'], line_color_stable='#7f7f7f', line_color_unstable='#7f7f7f')
+    ax1.set_ylabel(r'$r$')
+    ax1.set_xlabel('')
+    ax1.set_xlim(xlims[i])
+    ax1.set_ylim(ylims[i])
 
-plt.tight_layout()
-plt.savefig('tsodyks_1d.svg')
+    # plot firing rates
+    ax2 = fig.add_subplot(grid[2*i, 1:])
+    ax2.plot(data[i]['times'].squeeze(), data[i]['r_rec_av'].squeeze(), color='k')
+    ax2.plot(data[i]['times'].squeeze(), data[i]['r_mes_rec_av'].squeeze(), color='tab:purple')
+    ax2.plot(data[i]['times'].squeeze(), data[i]['r_poisson_rec_av'].squeeze(), color='tab:orange')
+    ax2.set_ylabel(r'$r$')
+    ax2.set_xlim([0, 280])
 
-# 2D continuations in eta and (alpha, U0)
-#########################################
+    # plot spikes
+    ax3 = fig.add_subplot(grid[2*i+1, 1:])
+    ax3.eventplot([data[i]['raster'][0, j][:, 0] if len(data[i]['raster'][0, j]) > 0 else np.asarray([])
+                   for j in idx], colors='k')
+    ax3.set_xlim([500000, 3300000])
+    ax3.set_ylabel('neuron \#')
+    ax3.set_xticklabels(['0', '50', '100', '150', '200', '250'])
 
-# fig2, axes2 = plt.subplots(ncols=2, figsize=(8.6, 3.1), dpi=dpi)
-# ax = axes2[0]
-# a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_3', ax=ax, default_size=markersize1)
-# ax.set_xlabel(r'$\bar\eta$')
-# ax.set_ylabel('r')
-# ax.set_xlim([-1.0,-0.2])
-# ax.set_ylim([0.0, 0.6])
-# a.plot_continuation('PAR(1)', 'PAR(7)', cont='eta_Delta_lp2', ax=ax, line_color_stable='#5D6D7E',
-#                     line_style_stable='dashed', line_style_unstable='dashed', default_size=markersize2)
-# ax.set_xlabel(r'$\eta$')
-# ax.set_ylabel(r'$\Delta$')
-# ax = axes2[1]
-# a.plot_continuation('PAR(1)', 'PAR(7)', cont='eta_Delta_hb1', ax=ax, line_style_unstable='solid',
-#                     default_size=markersize2)
-# a.plot_continuation('PAR(2)', 'PAR(7)', cont='J_Delta_lp1', ax=ax, line_color_stable='#5D6D7E',
-#                     line_style_stable='dashed', line_style_unstable='dashed', default_size=markersize2)
-# ax.set_xlabel(r'$J$')
-# ax.set_ylabel(r'$\Delta$')
-# ax.set_xlim([-1.0, 1.0])
-# ax.set_ylim([0.0, 0.55])
+ax1.set_xlabel(r'$\bar \eta$')
+ax3.set_xlabel('time')
 
-# plt.tight_layout()
-# plt.savefig('tsodyks_2d.svg')
-
+fig.canvas.draw()
+fig.savefig('meanfield_bf.pdf')
 plt.show()
