@@ -218,10 +218,10 @@
 	eta_a = 0.0
 	eta_s = 0.002
 
-	k_ee = 1.0
-	k_pe = 5.0
+	k_ee = 0.6
+	k_pe = 8.0
 	k_ae = 0.0
-	k_ep = 10.0
+	k_ep = 8.0
 	k_pp = 1.0
 	k_ap = 1.0
 	k_pa = 1.0

@@ -1,5 +1,4 @@
-from pyrates.utility.pyauto import PyAuto, get_from_solutions
-import numpy as np
+from pyrates.utility.pyauto import PyAuto
 import sys
 from matplotlib.pyplot import show
 
@@ -91,14 +90,11 @@ c2_b6_2d1_sols, c2_b5_2d4_cont = a.run(starting_point='LP1', origin=c2_b6_cont, 
 a.to_file(fname, **kwargs)
 
 # plotting
-import matplotlib.pyplot as plt
-fig, ax = plt.subplots()
-
-a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:hb1', ax=ax, line_style_unstable='solid')
+ax = a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:hb1', line_style_unstable='solid')
 a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:hb2', ax=ax, line_style_unstable='solid',
                     line_color_stable='#148F77', line_color_unstable='#148F77')
 a.plot_continuation('PAR(22)', 'PAR(25)', cont='k_gp/k_stn:lp1', ax=ax, line_style_unstable='solid',
                     line_color_stable='#5D6D7E', line_color_unstable='#5D6D7E')
 ax.set_xlim([0.0, 25.0])
 ax.set_ylim([0.0, 5.5])
-plt.show()
+show()
