@@ -10,7 +10,7 @@ sys.path.append('../')
 # preparations
 ##############
 
-fname = 'stn_gpe_3pop'
+fname = 'stn_gpe_3pop_noax'
 
 # load matlab variables
 # data = pd.DataFrame.from_csv(f'results/{fname}.csv')
@@ -57,8 +57,8 @@ ax = a.plot_continuation('PAR(22)', 'PAR(25)', cont=f'k_gp/k_stn:hb3', ax=ax, li
                          line_style_unstable='solid', ignore=['UZ'])
 ax.set_ylabel(r'$k_{stn}$')
 ax.set_xlabel(r'$k_{gp}$')
-ax.set_xlim([0.0, 25.0])
-ax.set_ylim([0.0, 5.5])
+ax.set_xlim([0.0, 30.0])
+ax.set_ylim([0.0, 7.0])
 
 # 1D continuation in k_stn for k_gp = 5.0
 ax = fig.add_subplot(grid[0, 3:])
@@ -74,18 +74,12 @@ ax = fig.add_subplot(grid[1, 3:])
 ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1', ax=ax, default_size=markersize, ignore=['UZ'])
 ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1:lc1', ax=ax, default_size=markersize, ignore=['UZ'],
                          line_color_stable='#148F77', line_color_unstable='#148F77')
-ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1:lc2', ax=ax, default_size=markersize, ignore=['UZ'],
-                         line_color_stable='#148F77', line_color_unstable='#148F77')
 ax.set_xlabel('$k_{gp}$')
 #ax.set_ylabel('GPe-p firing rate')
 
 # 1D continuation in k_stn for k_gp = 5.0
 ax = fig.add_subplot(grid[2, 3:])
 ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:2', ax=ax, default_size=markersize, ignore=['UZ'])
-ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:2:lc1', ax=ax, default_size=markersize, ignore=['UZ'],
-                         line_color_stable='#148F77', line_color_unstable='#148F77')
-ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:2:lc2', ax=ax, default_size=markersize, ignore=['UZ'],
-                         line_color_stable='#148F77', line_color_unstable='#148F77')
 ax.set_xlabel('$k_{gp}$')
 
 # padding

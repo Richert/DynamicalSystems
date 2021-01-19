@@ -71,16 +71,30 @@ c2_b4_sols, c2_b4_cont = a.run(starting_point=starting_point, origin=starting_co
 c2_b5_sols, c2_b5_cont = a.run(starting_point='UZ1', origin=c2_b4_cont, c='qif', ICP=22, NDIM=n_dim,
                                NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'k_gp:1',
                                bidirectional=True, UZR={22: [5.0]})
+a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=6.0, RL1=20.0,
+      NMX=2000, DSMAX=0.4, name=f'k_gp:1:lc1', STOP=['BP1'])
+a.run(starting_point='HB2', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=10.0, RL1=20.0,
+      NMX=2000, DSMAX=0.4, name=f'k_gp:1:lc2', STOP=['BP1'])
 
 # continuations of k_gp for k_stn = 4.8
 c2_b6_sols, c2_b6_cont = a.run(starting_point='UZ2', origin=c2_b4_cont, c='qif', ICP=22, NDIM=n_dim,
-                               NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'k_gp:1',
+                               NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.1, name=f'k_gp:2',
                                bidirectional=True)
+a.run(starting_point='HB1', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=12.0,
+      NMX=2000, DSMAX=0.4, name=f'k_gp:2:lc1', STOP=['BP1', 'LP2'])
+a.run(starting_point='HB3', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=16.0, RL1=20.0,
+      NMX=2000, DSMAX=0.2, name=f'k_gp:2:lc2', STOP=['BP1', 'LP2'])
+a.run(starting_point='HB4', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=16.0, RL1=20.0,
+      NMX=2000, DSMAX=0.2, name=f'k_gp:2:lc3', STOP=['BP1', 'LP2'])
 
 # continuations of k_stn for k_gp = 5.0
 c2_b7_sols, c2_b7_cont = a.run(starting_point='UZ1', origin=c2_b5_cont, c='qif', ICP=25, NDIM=n_dim,
                                NPAR=n_params, RL0=0.0, RL1=10.0, NMX=12000, DSMAX=0.1, name=f'k_stn:1',
                                bidirectional=True)
+a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2b', ICP=[25, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=1.5,
+      NMX=2000, DSMAX=0.4, name=f'k_stn:1:lc1', STOP=['BP1'])
+a.run(starting_point='HB3', origin=c2_b7_cont, c='qif2b', ICP=[25, 11], NDIM=n_dim, NPAR=n_params, RL0=3.0, RL1=5.5,
+      NMX=2000, DSMAX=0.4, name=f'k_stn:1:lc2', STOP=['BP1'])
 
 # 2D continuation of k_gp and k_stn
 c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[25, 22], NDIM=n_dim,

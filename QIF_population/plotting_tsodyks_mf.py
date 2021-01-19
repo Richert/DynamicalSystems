@@ -7,9 +7,6 @@ from pyrates.utility.pyauto import PyAuto
 import sys
 sys.path.append('../')
 
-import matplotlib.colors as mc
-c = mc.TABLEAU_COLORS
-
 # preparations
 ##############
 
