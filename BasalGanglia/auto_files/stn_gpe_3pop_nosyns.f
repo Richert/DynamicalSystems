@@ -14,7 +14,7 @@
 	double precision k_ps, k_as, k
 	double precision delta_e, delta_p, delta_a, delta
 	double precision tau_e, tau_p, tau_a, tau_s
-	double precision PI, k_gp, k_p, k_i, k_stn
+	double precision PI, k_gp, k_p, k_i
 
 	! declare parameters
 	eta_e = args(1)
@@ -37,7 +37,6 @@
 	k_gp = args(22)
 	k_p = args(23)
 	k_i = args(24)
-	k_stn = args(25)
 
 	! declare constants
 	tau_e = 13.0
@@ -58,8 +57,8 @@
 	eta_a = eta_a*eta
 
 	k_ee = k_ee*k
-	k_pe = k_pe*k*k_stn
-	k_ae = k_ae*k/k_stn
+	k_pe = k_pe*k
+	k_ae = k_ae*k
 	k_ep = k_ep*k
 	k_pp = k_pp*k*k_gp*k_p/k_i
 	k_ap = k_ap*k*k_gp*k_i*k_p
@@ -113,24 +112,23 @@
 	double precision k_pa, k_aa
 	double precision k_ps, k_as
 	double precision delta_e, delta_p, delta_a
-	double precision k_gp, k_p, k_i, k_stn
+	double precision k_gp, k_p, k_i
 
 	k_gp = 3.0
 	k_p = 1.5
 	k_i = 1.0
-	k_stn = 1.0
 
 	delta_e = 3.0
 	delta_p = 9.0
 	delta_a = 12.0
 
-	eta_e = 3.0
+	eta_e = 0.0
 	eta_p = 0.0
 	eta_a = 0.0
 	eta_s = 0.002
 
-	k_ee = 1.0
-	k_pe = 5.0
+	k_ee = 0.8
+	k_pe = 4.0
 	k_ae = 0.0
 	k_ep = 10.0
 	k_pp = 1.0
@@ -160,7 +158,6 @@
 	args(22) = k_gp
 	args(23) = k_p
 	args(24) = k_i
-	args(25) = k_stn
 
 	y(1) = 0.02
 	y(2) = -4.0

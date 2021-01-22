@@ -30,6 +30,9 @@ starting_cont = t_cont
 kp_sols, kp_cont = a.run(starting_point=starting_point, c='qif', ICP=23, NPAR=n_params, name='k_p', NDIM=n_dim,
                          RL0=0.8, RL1=2.1, origin=starting_cont, NMX=2000, DSMAX=0.1, UZR={23: [2.0]}, STOP={})
 
+starting_point = 'UZ1'
+starting_cont = kp_cont
+
 # choose relative strength of inter- vs. intra-population coupling inside GPe
 ki_sols, ki_cont = a.run(starting_point=starting_point, c='qif', ICP=24, NPAR=n_params, name='k_i', NDIM=n_dim,
                          RL0=0.8, RL1=2.1, origin=starting_cont, NMX=2000, DSMAX=0.1, UZR={24: [1.5]}, STOP={})
@@ -39,6 +42,13 @@ starting_cont = ki_cont
 
 # preparation of healthy state
 ##############################
+
+# continuation of eta_a
+c2_b0_sols, c2_b0_cont = a.run(starting_point=starting_point, c='qif', ICP=3, NPAR=n_params,
+                               name=f'eta_a:tmp', NDIM=n_dim, RL0=-1.0, RL1=10.0, origin=starting_cont,
+                               NMX=8000, DSMAX=0.1, UZR={3: 1.0})
+starting_point = 'UZ1'
+starting_cont = c2_b0_cont
 
 # continuation of eta_e
 c2_b1_sols, c2_b1_cont = a.run(starting_point=starting_point, c='qif', ICP=1, NPAR=n_params,
@@ -57,22 +67,30 @@ starting_cont = c2_b2_cont
 # continuation of k_ae
 c2_b3_sols, c2_b3_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=6, NDIM=n_dim,
                                NPAR=n_params, RL1=10.0, NMX=4000, DSMAX=0.05, name=f'k_ae:tmp',
-                               UZR={6: [5.0]})
+                               UZR={6: [3.0]})
 
-# continuation of k_stn
-c2_b4_sols, c2_b4_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=25, NDIM=n_dim,
-                               NPAR=n_params, RL1=10.0, NMX=4000, DSMAX=0.05, name=f'k_stn:tmp',
-                               UZR={25: [1.5, 4.8]})
+starting_point = 'UZ1'
+starting_cont = c2_b3_cont
+
+# continuation of k_pe
+c2_b4_sols, c2_b4_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=5, NDIM=n_dim,
+                               NPAR=n_params, RL1=25.0, NMX=4000, DSMAX=0.05, name=f'k_pe:tmp',
+                               UZR={5: [16.0, 21.0]})
+
+starting_point = 'UZ1'
+starting_cont = c2_b4_cont
 
 # continuation of pd-related parameters
 #######################################
 
-# continuations of k_gp for k_stn = 1.5
-c2_b5_sols, c2_b5_cont = a.run(starting_point='UZ1', origin=c2_b4_cont, c='qif', ICP=22, NDIM=n_dim,
-                               NPAR=n_params, RL0=0.0, RL1=25.0, NMX=12000, DSMAX=0.1, name=f'k_gp:1',
+# continuations of k_gp for k_pe = 16.0
+c2_b5_sols, c2_b5_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=22, NDIM=n_dim,
+                               NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.05, name=f'k_gp:1',
                                bidirectional=True, UZR={22: [5.0]})
-a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=6.0, RL1=20.0,
-      NMX=2000, DSMAX=0.4, name=f'k_gp:1:lc1', STOP=['BP1'])
+a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
+      NMX=2000, DSMAX=0.2, name=f'k_gp:1:lc1', STOP=['BP1'], NPR=10)
+a.run(starting_point='HB3', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=10.0, RL1=20.0,
+      NMX=2000, DSMAX=0.2, name=f'k_gp:1:lc2', STOP=['BP1'], NPR=10)
 
 # continuations of k_gp for k_stn = 4.8
 c2_b6_sols, c2_b6_cont = a.run(starting_point='UZ2', origin=c2_b4_cont, c='qif', ICP=22, NDIM=n_dim,
