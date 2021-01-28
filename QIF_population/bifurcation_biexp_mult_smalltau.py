@@ -116,4 +116,4 @@ fname = '../results/biexp_mult_smalltau.hdf5'
 a.to_file(fname)
 
 #if period_mapping:
-#    period_solutions.tofile(f"biexp_mult_period")
+#    tau_e_p_periods.tofile(f"biexp_mult_period")

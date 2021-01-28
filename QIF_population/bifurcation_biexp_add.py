@@ -142,7 +142,7 @@ if codim1:
         # if period_mapping:
         #
         #     etas = np.round(np.linspace(-6, -3, n_grid_points), decimals=4).tolist()
-        #     period_solutions = np.zeros((len(tau2s), len(etas)))
+        #     tau_e_p_periods = np.zeros((len(tau2s), len(etas)))
         #     for point, point_info in eta_tau2_hb2_lc_solutions.items():
         #         if np.round(point_info['PAR(5)'], decimals=4) in tau2s:
         #             solution_tmp, cont_tmp = a.run(starting_point=point, c='qif', ICP=1, UZR={1: etas}, STOP={},
@@ -152,7 +152,7 @@ if codim1:
         #                 if 'UZ' in point_info_tmp['bifurcation']:
         #                     idx_c = np.argwhere(np.round(point_info_tmp['PAR(1)'], decimals=4) == etas)
         #                     idx_r = np.argwhere(np.round(point_info_tmp['PAR(5)'], decimals=4) == tau2s)
-        #                     period_solutions[idx_r, idx_c] = point_info_tmp['period']
+        #                     tau_e_p_periods[idx_r, idx_c] = point_info_tmp['period']
 
 
 ################
@@ -163,4 +163,4 @@ fname = '../results/biexp_mult.hdf5'
 a.to_file(fname, pd_solutions=pds)
 
 #if period_mapping:
-#    period_solutions.tofile(f"biexp_mult_period")
+#    tau_e_p_periods.tofile(f"biexp_mult_period")

@@ -589,14 +589,14 @@ if limit_cycle_analysis:
 
     # visualization of limit cycle period
     # plt.sca(ax2[1, 1])
-    # im = plt.imshow(period_solutions, aspect='auto', interpolation='nearest', cmap='magma')
+    # im = plt.imshow(tau_e_p_periods, aspect='auto', interpolation='nearest', cmap='magma')
     # divider = make_axes_locatable(ax2[1, 1])
     # cax = divider.append_axes("right", size="8%", pad=0.1)
     # plt.colorbar(im, cax=cax, label='units of tau')
     # ax2[1, 1].set_xlabel('eta')
     # ax2[1, 1].set_ylabel('tau')
-    # ax2[1, 1].set_xticks(np.arange(period_solutions.shape[1])[::6])
-    # ax2[1, 1].set_yticks(np.arange(period_solutions.shape[0])[::4])
+    # ax2[1, 1].set_xticks(np.arange(tau_e_p_periods.shape[1])[::6])
+    # ax2[1, 1].set_yticks(np.arange(tau_e_p_periods.shape[0])[::4])
     # ax2[1, 1].set_xticklabels(alphas[::6])
     # ax2[1, 1].set_yticklabels(taus[::4])
 

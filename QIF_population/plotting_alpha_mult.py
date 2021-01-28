@@ -97,7 +97,7 @@ fig2, axes2 = plt.subplots(figsize=(14.5, 7), dpi=dpi, ncols=3, gridspec_kw={'wi
 alphas = np.round(np.linspace(0., 0.2, 100)[::-1], decimals=3)
 etas = np.round(np.linspace(-6.5, -2.5, 100), decimals=2)
 vmax = 100.0
-# data = a.period_solutions
+# data = a.tau_e_p_periods
 # data[data > vmax] = vmax
 # df = pd.DataFrame(interpolate2d(data), index=alphas, columns=etas)
 #

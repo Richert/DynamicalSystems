@@ -109,12 +109,15 @@ a.run(starting_point='HB2', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_di
 c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
                                        NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
                                        name=f'k_gp/k_pe:hb1', bidirectional=True)
-c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP2', origin=c2_b7_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
+c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP1', origin=c2_b7_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
                                        NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
                                        name=f'k_gp/k_pe:lp1', bidirectional=True)
 c2_b7_2d2_sols, c2_b7_2d2_cont = a.run(starting_point='HB2', origin=c2_b7_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
                                        NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
                                        name=f'k_gp/k_pe:hb2', bidirectional=True)
+c2_b7_2d3_sols, c2_b7_2d3_cont = a.run(starting_point='LP2', origin=c2_b7_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
+                                       NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
+                                       name=f'k_gp/k_pe:lp2', bidirectional=True)
 
 # save results
 a.to_file(fname, **kwargs)

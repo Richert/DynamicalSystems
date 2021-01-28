@@ -18,7 +18,7 @@
 	double precision delta_e, delta_p, delta_a, delta
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
-	double precision PI, k_gp, k_p, k_i, k_stn
+	double precision PI, k_gp, k_p, k_i, tau_stn
 
 	! declare parameters
 	eta_e = args(1)
@@ -41,15 +41,12 @@
 	k_gp = args(22)
 	k_p = args(23)
 	k_i = args(24)
-	k_stn = args(25)
+	tau_stn = args(25)
 	tau_e = args(26)
 	tau_p = args(27)
 	tau_a = args(28)
-	tau_ampa_r = args(29)
-	tau_ampa_d = args(30)
-	tau_gabaa_r = args(31)
-	tau_gabaa_d = args(32)
-
+	tau_ampa_d = args(29)
+	tau_gabaa_d = args(30)
 
 	! declare constants
 	tau_s = 1.0
@@ -57,6 +54,8 @@
 	delta = 10.0
 	k = 100.0
 	eta = 100.0
+	tau_ampa_r = 0.8*tau_ampa_d/3.7
+	tau_gabaa_r = 0.8*tau_gabaa_d/3.7
 
 	delta_e = delta_e*delta
 	delta_p = delta_p*delta
@@ -67,8 +66,8 @@
 	eta_a = eta_a*eta
 
 	k_ee = k_ee*k
-	k_pe = k_pe*k*k_stn
-	k_ae = k_ae*k/k_stn
+	k_pe = k_pe*k
+	k_ae = k_ae*k
 	k_ep = k_ep*k
 	k_pp = k_pp*k*k_gp*k_p/k_i
 	k_ap = k_ap*k*k_gp*k_i*k_p
@@ -127,8 +126,8 @@
 	y_delta(9) = (k_ee*r_e - x_e*(tau_ampa_r+tau_ampa_d) - E_e)
      & / (tau_ampa_r*tau_ampa_d)
 	y_delta(10) = y_e
-	y_delta(11) = (k_ep*r_p - y_e*2*(tau_gabaa_r+tau_gabaa_d) - I_e)
-     & / (2*tau_gabaa_r*tau_gabaa_d)
+	y_delta(11) = (k_ep*r_p - y_e*tau_stn*(tau_gabaa_r+tau_gabaa_d) - I_e)
+     & / (tau_gabaa_r*tau_gabaa_d*tau_stn*tau_stn)
 
 	! at GPe-p
 	y_delta(12) = x_p
@@ -162,12 +161,12 @@
 	double precision delta_e, delta_p, delta_a
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
-	double precision k_gp, k_p, k_i, k_stn
+	double precision k_gp, k_p, k_i, tau_stn
 
 	k_gp = 3.0
 	k_p = 1.5
 	k_i = 1.0
-	k_stn = 1.0
+	tau_stn = 2.0
 
 	delta_e = 3.0
 	delta_p = 9.0
@@ -193,9 +192,7 @@
 	tau_p = 25.0
 	tau_a = 20.0
 
-	tau_ampa_r = 0.8
 	tau_ampa_d = 3.7
-	tau_gabaa_r = 0.5
 	tau_gabaa_d = 5.0
 
 	args(1) = eta_e
@@ -218,14 +215,12 @@
 	args(22) = k_gp
 	args(23) = k_p
 	args(24) = k_i
-	args(25) = k_stn
+	args(25) = tau_stn
 	args(26) = tau_e
 	args(27) = tau_p
 	args(28) = tau_a
-	args(29) = tau_ampa_r
-	args(30) = tau_ampa_d
-	args(31) = tau_gabaa_r
-	args(32) = tau_gabaa_d
+	args(29) = tau_ampa_d
+	args(30) = tau_gabaa_d
 
 	y(1) = 0.02
 	y(3) = 0.06

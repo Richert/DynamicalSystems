@@ -87,53 +87,56 @@ starting_cont = c2_b4_cont
 c2_b5_sols, c2_b5_cont = a.run(starting_point=starting_point, origin=starting_cont, c='qif', ICP=22, NDIM=n_dim,
                                NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.05, name=f'k_gp:1',
                                bidirectional=True, UZR={22: [5.0]})
-a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
-      NMX=2000, DSMAX=0.2, name=f'k_gp:1:lc1', STOP=['BP1'], NPR=10)
-a.run(starting_point='HB3', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=10.0, RL1=20.0,
-      NMX=2000, DSMAX=0.2, name=f'k_gp:1:lc2', STOP=['BP1'], NPR=10)
+# a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
+#       NMX=2000, DSMAX=0.2, name=f'k_gp:1:lc1', STOP=['BP1'], NPR=10)
+# a.run(starting_point='HB3', origin=c2_b5_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=10.0, RL1=20.0,
+#       NMX=2000, DSMAX=0.2, name=f'k_gp:1:lc2', STOP=['BP1'], NPR=10)
 
 # continuations of k_gp for k_pe = 21.0
 c2_b6_sols, c2_b6_cont = a.run(starting_point='UZ2', origin=c2_b4_cont, c='qif', ICP=22, NDIM=n_dim,
                                NPAR=n_params, RL0=0.0, RL1=20.0, NMX=12000, DSMAX=0.05, name=f'k_gp:2')
-a.run(starting_point='HB2', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=12.0, RL1=17.0,
-      NMX=2000, DSMAX=0.2, name=f'k_gp:2:lc1', STOP=['BP1', 'LP3'], NPR=10)
-a.run(starting_point='HB3', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=12.0, RL1=17.0,
-      NMX=2000, DSMAX=0.2, name=f'k_gp:2:lc2', STOP=['BP1', 'LP3'], NPR=10)
+# a.run(starting_point='HB2', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=12.0, RL1=17.0,
+#       NMX=2000, DSMAX=0.2, name=f'k_gp:2:lc1', STOP=['BP1', 'LP3'], NPR=10)
+# a.run(starting_point='HB3', origin=c2_b6_cont, c='qif2b', ICP=[22, 11], NDIM=n_dim, NPAR=n_params, RL0=12.0, RL1=17.0,
+#       NMX=2000, DSMAX=0.2, name=f'k_gp:2:lc2', STOP=['BP1', 'LP3'], NPR=10)
 
 # continuations of k_pe for k_gp = 5.0
 c2_b7_sols, c2_b7_cont = a.run(starting_point='UZ1', origin=c2_b5_cont, c='qif', ICP=5, NDIM=n_dim,
                                NPAR=n_params, RL0=0.0, RL1=20.0, NMX=16000, DSMAX=0.05, name=f'k_pe:1',
-                               DS='-')
-a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
-      NMX=2000, DSMAX=0.2, name=f'k_pe:1:lc1', STOP=['BP1'], NPR=10)
-a.run(starting_point='HB3', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
-      NMX=2000, DSMAX=0.2, name=f'k_pe:1:lc2', STOP=['BP1'], NPR=10)
-# a.run(starting_point='HB5', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
-#       NMX=2000, DSMAX=0.2, name=f'k_pe:1:lc3', STOP=['BP1'], NPR=10)
+                               DS='-', UZR={5: [4.0]})
+# a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
+#       NMX=2000, DSMAX=0.2, name=f'k_pe:1:lc1', STOP=['BP1'], NPR=10)
+# a.run(starting_point='HB3', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
+#       NMX=2000, DSMAX=0.2, name=f'k_pe:1:lc2', STOP=['BP1'], NPR=10)
+
+# continuation of eta_e for k_gp = k_pe = 5.0
+c2_b8_sols, c2_b8_cont = a.run(starting_point='UZ1', origin=c2_b5_cont, c='qif', ICP=1, NDIM=n_dim,
+                               NPAR=n_params, RL0=0.0, RL1=10.0, NMX=16000, DSMAX=0.05, name=f'eta_e:1')
 
 # 2D continuation of k_gp and k_pe
-c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB2', origin=c2_b5_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
-                                       name=f'k_gp/k_pe:hb1', bidirectional=True)
-c2_b5_2d2_sols, c2_b5_2d2_cont = a.run(starting_point='HB3', origin=c2_b5_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
-                                       name=f'k_gp/k_pe:hb2', bidirectional=True)
-c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP2', origin=c2_b7_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
-                                       NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
-                                       name=f'k_gp/k_pe:lp1', bidirectional=True)
+# c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB2', origin=c2_b5_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
+#                                        NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
+#                                        name=f'k_gp/k_pe:hb1', bidirectional=True)
+# c2_b5_2d2_sols, c2_b5_2d2_cont = a.run(starting_point='HB3', origin=c2_b5_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
+#                                        NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
+#                                        name=f'k_gp/k_pe:hb2', bidirectional=True)
+# c2_b7_2d1_sols, c2_b7_2d1_cont = a.run(starting_point='LP2', origin=c2_b7_cont, c='qif2', ICP=[5, 22], NDIM=n_dim,
+#                                        NPAR=n_params, RL0=0.0, RL1=25.0, NMX=20000, DSMAX=0.1,
+#                                        name=f'k_gp/k_pe:lp1', bidirectional=True)
+
+# 2d continuation in eta_p and k_ep
+c2_b8_2d1_sols, c2_b8_2d1_cont = a.run(starting_point='HB1', origin=c2_b8_cont, c='qif2', ICP=[7, 1], NDIM=n_dim,
+                                       NPAR=n_params, RL0=0.0, RL1=40.0, NMX=20000, DSMAX=0.1,
+                                       name=f'eta_e/k_ep:hb1', bidirectional=True)
+c2_b8_2d2_sols, c2_b8_2d2_cont = a.run(starting_point='HB2', origin=c2_b8_cont, c='qif2', ICP=[7, 1], NDIM=n_dim,
+                                       NPAR=n_params, RL0=0.0, RL1=40.0, NMX=20000, DSMAX=0.1,
+                                       name=f'eta_e/k_ep:hb2', bidirectional=True)
 
 # save results
 a.to_file(fname, **kwargs)
 
-# # plotting
-# ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont='k_gp/k_pe:hb1', line_style_unstable='solid', ignore=['UZ'])
-# a.plot_continuation('PAR(22)', 'PAR(5)', cont='k_gp/k_pe:hb2', ax=ax, line_style_unstable='solid',
-#                     line_color_stable='#148F77', line_color_unstable='#148F77', ignore=['UZ'])
-# a.plot_continuation('PAR(22)', 'PAR(5)', cont='k_gp/k_pe:hb3', ax=ax, line_style_unstable='solid', ignore=['UZ'])
-# a.plot_continuation('PAR(22)', 'PAR(5)', cont='k_gp/k_pe:lp1', ax=ax, line_style_unstable='solid',
-#                     line_color_stable='#ee2b2b', line_color_unstable='#ee2b2b', ignore=['UZ'])
-# a.plot_continuation('PAR(22)', 'PAR(5)', cont='k_gp/k_pe:lp2', ax=ax, line_style_unstable='solid',
-#                     line_color_stable='#ee2b2b', line_color_unstable='#ee2b2b', ignore=['UZ'])
-# ax.set_xlim([0.0, 25.0])
-# ax.set_ylim([0.0, 20.0])
-# show()
+# plotting
+ax = a.plot_continuation('PAR(1)', 'PAR(7)', cont='eta_e/k_ep:hb1', line_style_unstable='solid', ignore=['UZ'])
+a.plot_continuation('PAR(1)', 'PAR(7)', cont='eta_e/k_ep:hb2', line_style_unstable='solid', ignore=['UZ'], ax=ax,
+                    line_color_stable='#148F77', line_color_unstable='#148F77')
+show()

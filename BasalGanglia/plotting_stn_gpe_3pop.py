@@ -1,8 +1,6 @@
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
 import pickle
-from matplotlib.patches import Rectangle
-import numpy as np
 from pyrates.utility.pyauto import PyAuto
 import sys
 sys.path.append('../')

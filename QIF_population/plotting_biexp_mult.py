@@ -40,7 +40,7 @@ mpl.rc('text', usetex=True)
 fname = 'results/biexp_mult.hdf5'
 a = PyAuto.from_file(fname)
 ab= PyAuto.from_file('results/biexp_mult_smalltau.hdf5')
-#period_solutions = np.fromfile(f"{fname}_period")
+#tau_e_p_periods = np.fromfile(f"{fname}_period")
 
 
 ############
@@ -536,15 +536,15 @@ plt.show()
 #
 #     # visualization of limit cycle period
 #     plt.sca(ax2[0, 1])
-#     im = plt.imshow(period_solutions, aspect='auto', interpolation='nearest', cmap='magma')
+#     im = plt.imshow(tau_e_p_periods, aspect='auto', interpolation='nearest', cmap='magma')
 #     divider = make_axes_locatable(ax2[0, 1])
 #     cax = divider.append_axes("right", size="8%", pad=0.1)
 #     plt.colorbar(im, cax=cax, label='units of tau')
 #     ax2[0, 1].grid(False)
 #     ax2[0, 1].set_xlabel(r'$\eta$')
 #     ax2[0, 1].set_ylabel(r'$\tau_d$')
-#     ax2[0, 1].set_xticks(np.arange(period_solutions.shape[1])[::20])
-#     ax2[0, 1].set_yticks(np.arange(period_solutions.shape[0])[::20])
+#     ax2[0, 1].set_xticks(np.arange(tau_e_p_periods.shape[1])[::20])
+#     ax2[0, 1].set_yticks(np.arange(tau_e_p_periods.shape[0])[::20])
 #     ax2[0, 1].set_xticklabels(np.round(etas[::20], decimals=1))
 #     ax2[0, 1].set_yticklabels(np.round(tau2s[::20], decimals=1))
 #     ax2[0, 1].set_title('Limit cycle period')

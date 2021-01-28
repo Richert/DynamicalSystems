@@ -96,7 +96,7 @@ c2_b6_sols, c2_b6_cont = a.run(starting_point='UZ2', origin=c2_b4_cont, c='qif',
 
 # continuations of k_pe for k_gp = 5.0
 c2_b7_sols, c2_b7_cont = a.run(starting_point='UZ1', origin=c2_b5_cont, c='qif', ICP=5, NDIM=n_dim,
-                               NPAR=n_params, RL0=0.0, RL1=20.0, NMX=16000, DSMAX=0.05, name=f'k_pe:1',
+                               NPAR=n_params, RL0=0.0, RL1=25.0, NMX=16000, DSMAX=0.05, name=f'k_pe:1',
                                bidirectional=True)
 a.run(starting_point='HB1', origin=c2_b7_cont, c='qif2b', ICP=[5, 11], NDIM=n_dim, NPAR=n_params, RL0=0.0, RL1=10.0,
       NMX=2000, DSMAX=0.2, name=f'k_pe:1:lc1', STOP=['BP1'], NPR=10)

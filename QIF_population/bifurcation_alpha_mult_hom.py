@@ -128,5 +128,5 @@ if codim1:
 fname = '../results/alpha_mult.pkl'
 kwargs = dict()
 if period_mapping:
-    kwargs['period_solutions'] = period_solutions
+    kwargs['tau_e_p_periods'] = period_solutions
 a.to_file(fname, **kwargs)
