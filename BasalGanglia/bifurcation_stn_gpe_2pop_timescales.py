@@ -16,6 +16,7 @@ a = PyAuto("auto_files", auto_dir=auto_dir)
 kwargs = dict()
 model = 'stn_gpe_2pop_timescales'
 fname = f'../results/{model}_conts.pkl'
+n_gridpoints = 40
 
 #########################
 # initial continuations #
@@ -78,8 +79,8 @@ c2_b5_sols, c2_b5_cont = a.run(starting_point=starting_point, origin=starting_co
                                bidirectional=True, UZR={15: [5.0]})
 
 # 2D Hopf curve: tau_e x tau_p
-tau_e = np.round(np.linspace(5.0, 20.0, 10), decimals=2).tolist()
-tau_p = np.round(np.linspace(15.0, 35.0, 10), decimals=2).tolist()
+tau_e = np.round(np.linspace(5.0, 20.0, n_gridpoints), decimals=2).tolist()
+tau_p = np.round(np.linspace(15.0, 35.0, n_gridpoints), decimals=2).tolist()
 c2_b5_2d1_sols, c2_b5_2d1_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[19, 20], NDIM=n_dim,
                                        NPAR=n_params, RL0=5.0, RL1=25.0, NMX=8000, DSMAX=0.1,
                                        name=f'tau_e/tau_p:hb1', bidirectional=True, UZR={19: tau_e})
@@ -89,22 +90,24 @@ i = 0
 for s, s_info in c2_b5_2d1_sols.items():
     if 'UZ' in s_info['bifurcation']:
         i += 1
-        s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[20, 11], UZR={20: tau_p}, STOP={}, get_period=True,
-                         DSMAX=0.1, origin=c2_b5_2d1_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=12.0,
-                         RL1=36.0)
+        s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[20, 11], UZR={20: tau_p}, get_period=True,
+                         DSMAX=0.05, origin=c2_b5_2d1_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=12.0,
+                         RL1=36.0, STOP=['BP1', 'LP2'])
         for s2 in s_tmp.values():
             if 'UZ' in s2['bifurcation']:
                 idx_c = np.argwhere(np.round(s2['PAR(19)'], decimals=2) == tau_e)
                 idx_r = np.argwhere(np.round(s2['PAR(20)'], decimals=2) == tau_p)
                 if s2['period'] > tau_e_p_periods[idx_r, idx_c]:
-                    tau_e_p_periods[idx_r, idx_c] = s2['period']
+                    tau_e_p_periods[idx_r, idx_c] = 1e3/s2['period']
 kwargs['tau_e_p_periods'] = tau_e_p_periods
+kwargs['tau_e'] = tau_e
+kwargs['tau_p'] = tau_p
 
 # 2D Hopf curve: tau_ampa_d x tau_gabaa_d
-tau_ampa = np.round(np.linspace(3.0, 10.0, 10), decimals=2).tolist()
-tau_gabaa = np.round(np.linspace(5.0, 35.0, 10), decimals=2).tolist()
+tau_ampa = np.round(np.linspace(3.0, 10.0, n_gridpoints), decimals=2).tolist()
+tau_gabaa = np.round(np.linspace(5.0, 35.0, n_gridpoints), decimals=2).tolist()
 c2_b5_2d2_sols, c2_b5_2d2_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[21, 22], NDIM=n_dim,
-                                       NPAR=n_params, RL0=3.0, RL1=10.0, NMX=8000, DSMAX=0.1,
+                                       NPAR=n_params, RL0=3.0, RL1=10.0, NMX=8000, DSMAX=0.05,
                                        name=f'tau_ampa_d/tau_gabaa_d:hb1', bidirectional=True, UZR={21: tau_ampa})
 
 tau_ampa_gabaa_periods = np.zeros((len(tau_gabaa), len(tau_ampa)))
@@ -112,20 +115,22 @@ i = 0
 for s, s_info in c2_b5_2d2_sols.items():
     if 'UZ' in s_info['bifurcation']:
         i += 1
-        s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[22, 11], UZR={22: tau_gabaa}, STOP={}, get_period=True,
-                         DSMAX=0.1, origin=c2_b5_2d2_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=5.0,
-                         RL1=35.0)
+        s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[22, 11], UZR={22: tau_gabaa}, get_period=True,
+                         DSMAX=0.05, origin=c2_b5_2d2_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=5.0,
+                         RL1=35.0, STOP=['BP1', 'LP2'])
         for s2 in s_tmp.values():
             if 'UZ' in s2['bifurcation']:
                 idx_c = np.argwhere(np.round(s2['PAR(21)'], decimals=2) == tau_ampa)
                 idx_r = np.argwhere(np.round(s2['PAR(22)'], decimals=2) == tau_gabaa)
                 if s2['period'] > tau_ampa_gabaa_periods[idx_r, idx_c]:
-                    tau_ampa_gabaa_periods[idx_r, idx_c] = s2['period']
+                    tau_ampa_gabaa_periods[idx_r, idx_c] = 1e3/s2['period']
 kwargs['tau_ampa_gabaa_periods'] = tau_ampa_gabaa_periods
+kwargs['tau_ampa'] = tau_ampa
+kwargs['tau_gabaa'] = tau_gabaa
 
 # 2D Hopf curve: tau_gabaa_d x tau_stn
-tau_stn = np.round(np.linspace(1.9, 3.0, 10), decimals=2).tolist()
-tau_gabaa2 = np.round(np.linspace(4.0, 30.0, 10), decimals=2).tolist()
+tau_stn = np.round(np.linspace(1.9, 3.0, n_gridpoints), decimals=2).tolist()
+tau_gabaa2 = np.round(np.linspace(4.0, 30.0, n_gridpoints), decimals=2).tolist()
 c2_b5_2d3_sols, c2_b5_2d3_cont = a.run(starting_point='HB1', origin=c2_b5_cont, c='qif2', ICP=[22, 18], NDIM=n_dim,
                                        NPAR=n_params, RL0=4.0, RL1=30.0, NMX=8000, DSMAX=0.1,
                                        name=f'tau_gabaa_d/tau_stn:hb1', bidirectional=True, UZR={18: tau_stn})
@@ -135,16 +140,18 @@ i = 0
 for s, s_info in c2_b5_2d3_sols.items():
     if 'UZ' in s_info['bifurcation']:
         i += 1
-        s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[22, 11], UZR={22: tau_gabaa2}, STOP={}, get_period=True,
-                         DSMAX=0.1, origin=c2_b5_2d3_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=4.0,
-                         RL1=30.0)
+        s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[22, 11], UZR={22: tau_gabaa2}, get_period=True,
+                         DSMAX=0.05, origin=c2_b5_2d3_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=4.0,
+                         RL1=30.0, STOP=['BP1', 'LP2'])
         for s2 in s_tmp.values():
             if 'UZ' in s2['bifurcation']:
                 idx_c = np.argwhere(np.round(s2['PAR(18)'], decimals=2) == tau_stn)
                 idx_r = np.argwhere(np.round(s2['PAR(22)'], decimals=2) == tau_gabaa2)
                 if s2['period'] > tau_stn_gabaa_periods[idx_r, idx_c]:
-                    tau_stn_gabaa_periods[idx_r, idx_c] = s2['period']
+                    tau_stn_gabaa_periods[idx_r, idx_c] = 1e3/s2['period']
 kwargs['tau_stn_gabaa_periods'] = tau_stn_gabaa_periods
+kwargs['tau_stn'] = tau_stn
+kwargs['tau_gabaa2'] = tau_gabaa2
 
 # save results
 a.to_file(fname, **kwargs)
