@@ -73,24 +73,24 @@ ax = a.plot_continuation('PAR(5)', 'U(3)', cont=f'k_pe:1:lc2', ax=ax, default_si
 ax.set_xlabel('$k_{pe}$', labelpad=labelpad)
 ax.set_ylabel('', labelpad=labelpad)
 ax.set_title('1D bifurcation diagrams')
-ax.set_xlim([0.0, 5.0])
-ax.set_ylim([0.0, 0.15])
-ax.set_yticks([0, 0.06, 0.12])
-ax.set_yticklabels(["0", "60", "120"])
+# ax.set_xlim([0.0, 5.0])
+# ax.set_ylim([0.0, 0.15])
+# ax.set_yticks([0, 0.06, 0.12])
+# ax.set_yticklabels(["0", "60", "120"])
 
 # 1D continuation in k_gp for k_pe = 8.0
 ax = fig.add_subplot(grid[1, 5:])
 ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1', ax=ax, default_size=markersize, ignore=['UZ'])
 ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1:lc1', ax=ax, default_size=markersize, ignore=['UZ'],
                          line_color_stable='#148F77', line_color_unstable='#148F77')
-ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1:lc2', ax=ax, default_size=markersize, ignore=['UZ'],
-                         line_color_stable='#148F77', line_color_unstable='#148F77')
+# ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:1:lc2', ax=ax, default_size=markersize, ignore=['UZ'],
+#                          line_color_stable='#148F77', line_color_unstable='#148F77')
 ax.set_xlabel('$k_{gp}$', labelpad=labelpad)
 ax.set_ylabel('r', labelpad=labelpad)
-ax.set_xlim([1.0, 13.0])
-ax.set_ylim([0.0, 0.2])
-ax.set_yticks([0, 0.1, 0.2])
-ax.set_yticklabels(["0", "100", "200"])
+# ax.set_xlim([1.0, 13.0])
+# ax.set_ylim([0.0, 0.2])
+# ax.set_yticks([0, 0.1, 0.2])
+# ax.set_yticklabels(["0", "100", "200"])
 
 # 1D continuation in k_gp for k_pe = 16.0
 ax = fig.add_subplot(grid[2, 5:])
@@ -103,47 +103,47 @@ ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:2:lc2', ax=ax, default_s
 #                          line_color_stable='#148F77', line_color_unstable='#148F77')
 ax.set_xlabel('$k_{gp}$', labelpad=labelpad)
 ax.set_ylabel('', labelpad=labelpad)
-ax.set_xlim([13.5, 15.5])
-ax.set_ylim([0.0, 0.1])
-ax.set_yticks([0, 0.05, 0.1])
-ax.set_yticklabels(["0", "50", "100"])
+# ax.set_xlim([13.5, 15.5])
+# ax.set_ylim([0.0, 0.1])
+# ax.set_yticks([0, 0.05, 0.1])
+# ax.set_yticklabels(["0", "50", "100"])
 
 # plt time series and psd profiles
 ##################################
 
-rates = data['results']
-map = data['map']
-psds = data['psds']
-ax_indices = [(3, 0), (3, 6), (4, 0), (4, 6)]
-
-for i, key in enumerate(map.index):
-
-    # extract data
-    k_pe = map.loc[key, 'k_pe']
-    k_gp = map.loc[key, 'k_gp']
-    row = ax_indices[i][0]
-    col = ax_indices[i][1]
-
-    # plot timeseries
-    ax1 = fig.add_subplot(grid[row, col:col+4])
-    ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_e', key)])
-    ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_i', key)])
-    #ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_a', key)])
-    ax1.set_title('r')
-    #ax1.set_ylim([18.0, 180.0])
-
-    # plot psd
-    ax2 = fig.add_subplot(grid[row, col+4:col+6])
-    ax2.plot(psds['freq_stn'][i], psds['pow_stn'][i])
-    ax2.plot(psds['freq_gpe'][i], psds['pow_gpe'][i])
-    ax2.set_title('PSD')
-    ax2.set_in_layout(False)
-    ax2.set_xlim([0.0, 120.0])
-    ax2.set_xticks([0, 50, 100])
-    #ax2.set_ylim([-5.0, 275] if i == 2 else [-5.0, 50])
-
-ax1.set_xlabel('time in ms')
-ax2.set_xlabel('f in Hz')
+# rates = data['results']
+# map = data['map']
+# psds = data['psds']
+# ax_indices = [(3, 0), (3, 6), (4, 0), (4, 6)]
+#
+# for i, key in enumerate(map.index):
+#
+#     # extract data
+#     k_pe = map.loc[key, 'k_pe']
+#     k_gp = map.loc[key, 'k_gp']
+#     row = ax_indices[i][0]
+#     col = ax_indices[i][1]
+#
+#     # plot timeseries
+#     ax1 = fig.add_subplot(grid[row, col:col+4])
+#     ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_e', key)])
+#     ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_i', key)])
+#     #ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_a', key)])
+#     ax1.set_title('r')
+#     #ax1.set_ylim([18.0, 180.0])
+#
+#     # plot psd
+#     ax2 = fig.add_subplot(grid[row, col+4:col+6])
+#     ax2.plot(psds['freq_stn'][i], psds['pow_stn'][i])
+#     ax2.plot(psds['freq_gpe'][i], psds['pow_gpe'][i])
+#     ax2.set_title('PSD')
+#     ax2.set_in_layout(False)
+#     ax2.set_xlim([0.0, 120.0])
+#     ax2.set_xticks([0, 50, 100])
+#     #ax2.set_ylim([-5.0, 275] if i == 2 else [-5.0, 50])
+#
+# ax1.set_xlabel('time in ms')
+# ax2.set_xlabel('f in Hz')
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)

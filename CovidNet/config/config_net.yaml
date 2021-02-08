@@ -1,0 +1,41 @@
+%YAML 1.2
+---
+
+pg:
+  base: OperatorTemplate
+  equations:
+    - "d/dt * p = r*(1-p/K)*p^c + J*inp + u"
+  variables:
+    p:
+      default: output(0.0)
+    r:
+      default: 0.1
+    K:
+      default: 0.6
+    J:
+      default: 0.005
+    c:
+      default: 1.0
+    inp:
+      default: input(0.0)
+    u:
+      default: input(0.0)
+
+pop:
+  base: NodeTemplate
+  operators:
+    - pg
+
+net:
+  base: CircuitTemplate
+  nodes:
+    EU: pop
+    US: pop
+    RU: pop
+  edges:
+    - [EU/pg/p, US/pg/inp, null, {weight: 1.0}]
+    - [EU/pg/p, RU/pg/inp, null, {weight: 0.5}]
+    - [US/pg/p, EU/pg/inp, null, {weight: 1.0}]
+    - [US/pg/p, RU/pg/inp, null, {weight: 0.1}]
+    - [RU/pg/p, EU/pg/inp, null, {weight: 0.5}]
+    - [RU/pg/p, US/pg/inp, null, {weight: 0.1}]
