@@ -22,7 +22,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (5.25, 5.0)
+plt.rcParams['figure.figsize'] = (7.0, 5.0)
 plt.rcParams['font.size'] = 8.0
 plt.rcParams['axes.titlesize'] = 8.0
 plt.rcParams['axes.labelsize'] = 8.0
@@ -49,23 +49,20 @@ a = PyAuto.from_file(f"results/{fname}_timescales_conts.pkl", auto_dir=auto_dir)
 # data for subfigure B
 ######################
 
-directories = ["/home/rgast/JuliaProjects/JuRates/BasalGanglia/results/stn_gpe_beta_results"]
-fid = "stn_gpe_beta"
+fids = ["beta", "nobeta"]
 dv = 'p'
 ivs = ["tau_e", "tau_p", "tau_ampa_r", "tau_ampa_d", "tau_gabaa_r", "tau_gabaa_d", "tau_stn"]
 
 # load fitting data into frame
 df = DataFrame(data=[[0.0, 0.0, '', '', 0]], columns=['value', 'fitness', 'parameter', 'model', 'index'])
-for d in directories:
+for fid in fids:
+    d = f"/home/rgast/JuliaProjects/JuRates/BasalGanglia/results/stn_gpe_{fid}_results"
     for fn in os.listdir(d):
-        if fn.startswith(fid) and fn.endswith("params.h5"):
+        if fid in fn and fn.endswith(".h5"):
             f = h5py.File(f"{d}/{fn}", 'r')
-            fn_split = fn.split('_')
-            f2 = h5py.File(f"{d}/{'_'.join(fn_split[:-1] + ['fitness.h5'])}", 'r')
-            index = int(fn_split[-2])
-            fitness = f2["f"][()]
+            index = int(fn.split('_')[-1][:-3])
             for key in ivs:
-                df_tmp = DataFrame(data=[[f[dv][key][()], fitness, key, 'beta', index]],
+                df_tmp = DataFrame(data=[[f[dv][key][()], f["f/f"][()], key, fid, index]],
                                    columns=['value', 'fitness', 'parameter', 'model', 'index'])
                 df = df.append(df_tmp)
 df = df.iloc[1:, :]
@@ -75,12 +72,14 @@ vals = [13.0, 25.0, 0.8, 3.7, 0.5, 5.0, 2.0]
 data = [[v, 0.0, p, 'gamma', i] for i, (v, p) in enumerate(zip(vals, ivs))]
 df2 = DataFrame(data=data, columns=['value', 'fitness', 'parameter', 'model', 'index'])
 df = df.append(df2)
+df.index = list(range(df.shape[0]))
 
 # load pyauto data
 a2 = PyAuto.from_file(f"results/{fname}_beta_conts.pkl", auto_dir=auto_dir)
 
 # load simulation data
-beta_data = pickle.load(open(f"results/{fname}_beta_sims.p", "rb"))
+beta_data = pickle.load(open(f"results/stn_gpe_beta_sims.p", "rb"))
+nobeta_data = pickle.load(open(f"results/stn_gpe_nobeta_sims.p", "rb"))
 
 ############
 # plotting #
@@ -90,7 +89,7 @@ data = a.additional_attributes
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=5, ncols=9, figure=fig)
+grid = gridspec.GridSpec(nrows=7, ncols=9, figure=fig)
 
 # subplot A
 ###########
@@ -156,12 +155,13 @@ ax3.set_xlabel(r'$\frac{\tau_{\mathrm{gabaa}}^e}{\tau_{\mathrm{gabaa}}^p}$')
 ax3.set_ylabel(r'$\tau_{\mathrm{gabaa}}$')
 fig.colorbar(im3, ax=ax3, shrink=cbar_shrink)
 
-# subplot B
-###########
+# subplot B and C
+#################
 
 # barplot
 ax4 = fig.add_subplot(grid[2:4, 0:5])
-ax4 = sns.barplot(data=df.loc[df['fitness'] < 2, :], x='parameter', y='value', hue='model', ax=ax4)
+ax4 = sns.barplot(data=df.loc[(df['model'] != 'nobeta') * (df['fitness'] < 2), :],
+                  x='parameter', y='value', hue='model', ax=ax4)
 ax4.set_xticklabels([r'$\tau_e$', r'$\tau_p$', r'$\tau_{\mathrm{ampa}}^r$', r'$\tau_{\mathrm{ampa}}^d$',
                      r'$\tau_{\mathrm{gabaa}}^r$', r'$\tau_{\mathrm{gabaa}}^d$',
                      r'$\frac{\tau_{\mathrm{gabaa}}^e}{\tau_{\mathrm{gabaa}}^p}$'])
@@ -170,25 +170,28 @@ ax4.set_title('B')
 
 # 2D bifurcation diagram
 ax5 = fig.add_subplot(grid[2:4, 5:])
-ax5 = a2.plot_continuation('PAR(15)', 'PAR(4)', cont='k_gp/k_pe:hb1', line_style_unstable='solid', ignore=['UZ'],
+ax5 = a2.plot_continuation('PAR(20)', 'PAR(4)', cont='k_gp/k_pe:hb1', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax5)
-ax5 = a2.plot_continuation('PAR(15)', 'PAR(4)', cont='k_gp/k_pe:hb2', line_style_unstable='solid', ignore=['UZ'],
+ax5 = a2.plot_continuation('PAR(20)', 'PAR(4)', cont='k_gp/k_pe:hb2', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax5, line_color_stable='#148F77', line_color_unstable='#148F77')
 ax5.set_xlabel(r"$k_{gp}$")
 ax5.set_ylabel(r"$k_{pe}$")
-ax5.set_xlim([0.0, 25.0])
+ax5.set_xlim([0.0, 20.0])
 ax5.set_ylim([0.0, 25.0])
 ax5.set_title('C')
+
+# subplot D
+###########
 
 # psd and firing rates
 rates = beta_data['results']
 psds = beta_data['psds']
 
 ax6 = fig.add_subplot(grid[4, :4])
-ax6.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, 'r_e'])
-ax6.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, 'r_p'])
+ax6.plot(rates.index[30000:35000], rates.loc[3.0:3.49999, 'r_e'])
+ax6.plot(rates.index[30000:35000], rates.loc[3.0:3.49999, 'r_p'])
 ax6.set_ylabel('r')
-ax6.set_title('E')
+ax6.set_title('D')
 ax6.set_ylim([10.0, 100.0])
 
 ax7 = fig.add_subplot(grid[4, 4:6])
@@ -201,16 +204,45 @@ ax7.set_xticks([0, 50, 100])
 
 # 1D bifurcation diagram
 ax8 = fig.add_subplot(grid[4, 6:])
-ax8 = a2.plot_continuation('PAR(15)', 'U(3)', cont='k_gp:1', line_style_unstable='solid', ignore=['UZ'],
+ax8 = a2.plot_continuation('PAR(20)', 'U(3)', cont='k_gp:1', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax8)
-ax8 = a2.plot_continuation('PAR(15)', 'U(3)', cont='k_gp:1:lc1', line_style_unstable='solid', ignore=['UZ'],
+ax8 = a2.plot_continuation('PAR(20)', 'U(3)', cont='k_gp:1:lc1', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax8, line_color_stable='#148F77', line_color_unstable='#148F77')
 ax8.set_xlabel(r"$k_{gp}$")
 ax8.set_ylabel(r"$r$")
-ax8.set_xlim([0.0, 8.0])
-ax8.set_ylim([0.0, 0.12])
-ax8.set_xticks([0, 2, 4, 6, 8])
-ax8.set_yticklabels(['0', '50', '100'])
+ax8.set_xlim([0.0, 3.1])
+ax8.set_ylim([0.0, 0.2])
+ax8.set_xticks([0, 1, 2, 3])
+# ax8.set_yticklabels(['0', '50', '100'])
+
+# subplot E and F
+#################
+
+# exemplary firing rates for no-beta condition
+rates = nobeta_data['results']
+map = nobeta_data['map']
+
+# example 1
+ax9 = fig.add_subplot(grid[5, :4])
+ax9.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_e', map.index[0])])
+ax9.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_p', map.index[0])])
+ax9.set_ylabel('r')
+ax9.set_title('D')
+
+# example 2
+ax10 = fig.add_subplot(grid[6, :4])
+ax10.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_e', map.index[1])])
+ax10.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_p', map.index[1])])
+ax10.set_ylabel('r')
+ax10.set_title('D')
+
+# fitness distributions
+ax11 = fig.add_subplot(grid[5:, 4:])
+df_beta = df.loc[df['model'] == 'beta', ['fitness', 'model', 'index']].drop_duplicates('index')
+df_nobeta = df.loc[df['model'] == 'nobeta', ['fitness', 'model', 'index']].drop_duplicates('index')
+ax11 = sns.histplot(data=df_beta.append(df_nobeta),
+                    x='fitness', hue='model', ax=ax11, log_scale=True, kde=False, bins='stone')
+ax11.set_xlim([0.0, 3000.0])
 
 # final touches
 ###############

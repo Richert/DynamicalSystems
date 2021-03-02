@@ -9,13 +9,13 @@ import pickle
 # parameters
 dt = 1e-3
 dts = 1e-1
-T = 61000.0
+T = 11000.0
 cutoff = 1000.0
 sim_steps = int(np.round(T/dt))
 
 # parameter sweeps
-sweep_params = {'k_gp': [5.0, 8.0, 3.3, 14.6],
-                'k_pe': [2.9, 8.0, 16.0, 21.0]}
+sweep_params = {'k_gp': [5.0, 7.5, 2.8, 11.7],
+                'k_pe': [3.2, 8.0, 14.0, 17.0]}
 
 # model parameters
 k_gp = 3.0

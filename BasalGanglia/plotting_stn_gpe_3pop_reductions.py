@@ -56,52 +56,46 @@ for i, (f, idx, title, idx2) in enumerate(zip(fnames, grid_idx, titles, grid_idx
 
     # plot 2d bifurcation diagram: k_pe x k_gp
     ax = fig.add_subplot(grid[idx[0]:idx[0]+3, idx[1]:idx[1]+6])
-    ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb1', ax=ax, line_color_stable='#148F77',
+    ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb1', ax=ax, line_color_stable='#148F77',
                              line_color_unstable='#148F77', default_size=markersize,
                              line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-    ax = a_base.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb1', ax=ax, line_color_stable='#148F77',
+    ax = a_base.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb1', ax=ax, line_color_stable='#148F77',
                                   line_color_unstable='#148F77', default_size=markersize,
                                   line_style_stable='dotted', ignore=['UZ', 'GH', 'ZH'])
     try:
-        ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:lp1', ax=ax, line_color_stable='#3689c9',
-                                 line_color_unstable='#3689c9', default_size=markersize,
-                                 line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-        ax = a_base.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:lp1', ax=ax, line_color_stable='#3689c9',
+        ax = a_base.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:lp1', ax=ax, line_color_stable='#3689c9',
                                       line_color_unstable='#3689c9', default_size=markersize,
                                       line_style_stable='dotted', ignore=['UZ', 'GH', 'ZH'])
+        ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:lp1', ax=ax, line_color_stable='#3689c9',
+                                 line_color_unstable='#3689c9', default_size=markersize,
+                                 line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
     except KeyError:
         pass
     try:
-        ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:lp2', ax=ax, line_color_stable='#3689c9',
+        ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:lp2', ax=ax, line_color_stable='#3689c9',
                                  line_color_unstable='#3689c9', default_size=markersize,
                                  line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-        ax = a_base.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:lp2', ax=ax, line_color_stable='#3689c9',
-                                      line_color_unstable='#3689c9', default_size=markersize,
-                                      line_style_stable='dotted', ignore=['UZ', 'GH', 'ZH'])
     except KeyError:
         pass
     try:
-        ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb2', ax=ax, line_color_stable='#ee2b2b',
-                                 line_color_unstable='#ee2b2b', default_size=markersize,
-                                 line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-        ax = a_base.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb2', ax=ax, line_color_stable='#ee2b2b',
+        ax = a_base.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb2', ax=ax, line_color_stable='#ee2b2b',
                                       line_color_unstable='#ee2b2b', default_size=markersize,
                                       line_style_stable='dotted', ignore=['UZ', 'GH', 'ZH'])
+        ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb2', ax=ax, line_color_stable='#ee2b2b',
+                                 line_color_unstable='#ee2b2b', default_size=markersize,
+                                 line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
     except KeyError:
         pass
     try:
-        ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb3', ax=ax, line_color_stable='#148F77',
+        ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb3', ax=ax, line_color_stable='#148F77',
                                  line_color_unstable='#148F77', default_size=markersize,
                                  line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-        ax = a_base.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb3', ax=ax, line_color_stable='#148F77',
-                                      line_color_unstable='#148F77', default_size=markersize,
-                                      line_style_stable='dotted', ignore=['UZ', 'GH', 'ZH'])
     except KeyError:
         pass
     ax.set_ylabel(r'$k_{pe}$', labelpad=labelpad)
     ax.set_xlabel(r'$k_{gp}$', labelpad=labelpad)
-    ax.set_xlim([0.0, 20.0])
-    ax.set_ylim([0.0, 25.0])
+    ax.set_xlim([0.0, 15.0])
+    ax.set_ylim([0.0, 20.0])
     ax.set_title(title)
 
     # plot firing rate timeseries
@@ -109,13 +103,14 @@ for i, (f, idx, title, idx2) in enumerate(zip(fnames, grid_idx, titles, grid_idx
     row = idx2[0]
     col = idx2[1]
     ax2 = fig.add_subplot(grid[row, col:col + 4])
-    ax2.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, 'r_e'])
-    ax2.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, 'r_i'])
+    ax2.plot(rates.index[90000:92000], rates.loc[9.0:9.19999, 'r_e'])
+    ax2.plot(rates.index[90000:92000], rates.loc[9.0:9.19999, 'r_i'])
     # ax2.plot(rates.index[10000:15000], rates.loc[1.0:1.49999, 'r_e'])
     # ax2.plot(rates.index[10000:15000], rates.loc[1.0:1.49999, 'r_i'])
     # ax1.plot(rates.index[100000:105000], rates.loc[10.0:10.49999, ('r_a', key)])
     ax2.set_ylabel(titles2[i])
     ax2.set_title('r')
+    ax2.set_ylim([20.0, 95.0])
 
     # plot psd
     psds = data['psds']
@@ -127,9 +122,10 @@ for i, (f, idx, title, idx2) in enumerate(zip(fnames, grid_idx, titles, grid_idx
     ax3.set_xlim([0.0, 120.0])
     ax3.set_xticks([0, 50, 100])
 
-ax2.set_xlabel('time in ms')
+ax2.set_xlabel('time in s')
 ax3.set_xlabel('f in Hz')
-ax3.set_yticklabels(['0.0', '0', '5e-4'])
+ax3.set_xlim([0.0, 320.0])
+ax3.set_xticks([0, 150, 300])
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.01, h_pad=0.03, hspace=0., wspace=0.)

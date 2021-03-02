@@ -11,7 +11,7 @@ from copy import deepcopy
 # parameters
 dt = 1e-3
 dts = 1e-1
-T = 61000.0
+T = 11000.0
 cutoff = 1000.0
 sim_steps = int(np.round(T/dt))
 
@@ -45,9 +45,9 @@ param_grid = {
 
 # parameter sweeps
 models = ['stn_gpe_syns', 'stn_gpe_fre', 'stn_gpe_noax', 'stn_gpe_nosyns']
-param_updates = [{'k_pa': [0.0], 'k_gp': 10.5, 'eta_p': [3.145*eta]},
+param_updates = [{'k_pa': [0.0], 'k_gp': 7.5, 'eta_p': [0.715*eta]},
                  {'k_gp': 8.0},
-                 {'k_gp': 9.8},
+                 {'k_gp': 9.7},
                  {'k_gp': 9.3}]
 stn_ops = ['stn_syns_op', 'stn_fre_syns_op', 'stn_syns_op', 'stn_op']
 gpe_p_ops = ['gpe_proto_syns_op', 'gpe_p_fre_syns_op', 'gpe_proto_syns_op', 'gpe_proto_op']
@@ -132,8 +132,8 @@ for r in results_col:
     gpe = r.loc[:, 'r_i']
 
     # calculate PSDs
-    p_stn, f_stn = welch(stn, fmin=2.0, fmax=160.0, n_fft=4096, n_overlap=256)
-    p_gpe, f_gpe = welch(gpe, fmin=2.0, fmax=160.0, n_fft=4096, n_overlap=256)
+    p_stn, f_stn = welch(stn, fmin=2.0, fmax=320.0, n_fft=4096, n_overlap=256)
+    p_gpe, f_gpe = welch(gpe, fmin=2.0, fmax=320.0, n_fft=4096, n_overlap=256)
 
     # store output quantities
     psds['freq_stn'].append(np.squeeze(f_stn))
