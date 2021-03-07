@@ -22,7 +22,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (7.0, 5.0)
+plt.rcParams['figure.figsize'] = (5.25, 6.5)
 plt.rcParams['font.size'] = 8.0
 plt.rcParams['axes.titlesize'] = 8.0
 plt.rcParams['axes.labelsize'] = 8.0
@@ -31,7 +31,7 @@ plt.rcParams['axes.titlepad'] = 0.0
 labelpad = 1.0
 plt.rcParams['axes.labelpad'] = labelpad
 markersize = 25
-cbar_shrink = 0.7
+cbar_shrink = 0.4
 vmin = 10
 vmax = 100
 cm = plt.get_cmap('RdBu')
@@ -89,13 +89,13 @@ data = a.additional_attributes
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=7, ncols=9, figure=fig)
+grid = gridspec.GridSpec(nrows=8, ncols=9, figure=fig)
 
 # subplot A
 ###########
 
 # 2d: tau_e x tau_p
-ax1 = fig.add_subplot(grid[0:2, 0:3])
+ax1 = fig.add_subplot(grid[0:3, 0:3])
 df1 = pd.DataFrame(np.ma.masked_where(data['tau_e_p_periods'] == 0, data['tau_e_p_periods']),
                    columns=data['tau_e'], index=data['tau_p'])
 xmin1, xmax1 = np.min(data['tau_e']), np.max(data['tau_e'])
@@ -113,10 +113,10 @@ ax1.set_ylim([ymin1, ymax1])
 ax1.set_xlabel(r'$\tau_e$')
 ax1.set_ylabel(r'$\tau_p$')
 ax1.set_title('A', loc='left')
-# fig.colorbar(im1, ax=ax1, shrink=cbar_shrink)
+fig.colorbar(im1, ax=ax1, shrink=cbar_shrink)
 
 # 2d: tau_ampa x tau_gabaa
-ax2 = fig.add_subplot(grid[0:2, 3:6])
+ax2 = fig.add_subplot(grid[0:3, 3:6])
 df2 = pd.DataFrame(np.ma.masked_where(data['tau_ampa_gabaa_periods'] == 0, data['tau_ampa_gabaa_periods']),
                    columns=data['tau_ampa'], index=data['tau_gabaa'])
 xmin2, xmax2 = np.min(data['tau_ampa']), np.max(data['tau_ampa'])
@@ -129,14 +129,14 @@ im2 = ax2.imshow(df2,
                  )
 ax2 = a.plot_continuation('PAR(21)', 'PAR(22)', cont='tau_ampa_d/tau_gabaa_d:hb1', line_style_unstable='solid',
                           ignore=['UZ'], ax=ax2, line_color_stable='#ee2b2b')
-ax2.set_xlim([3.7, xmax2])
+ax2.set_xlim([xmin2, xmax2])
 ax2.set_ylim([ymin2, ymax2])
 ax2.set_xlabel(r'$\tau_{\mathrm{ampa}}$')
 ax2.set_ylabel(r'$\tau_{\mathrm{gabaa}}$')
 # fig.colorbar(im2, ax=ax2, shrink=cbar_shrink)
 
 # 2d: tau_ampa x tau_gabaa
-ax3 = fig.add_subplot(grid[0:2, 6:])
+ax3 = fig.add_subplot(grid[0:3, 6:])
 df3 = pd.DataFrame(np.ma.masked_where(data['tau_stn_gabaa_periods'] == 0, data['tau_stn_gabaa_periods']),
                    columns=data['tau_stn'], index=data['tau_gabaa2'])
 xmin3, xmax3 = np.min(data['tau_stn']), np.max(data['tau_stn'])
@@ -153,13 +153,13 @@ ax3.set_xlim([xmin3, xmax3])
 ax3.set_ylim([ymin3, ymax3])
 ax3.set_xlabel(r'$\frac{\tau_{\mathrm{gabaa}}^e}{\tau_{\mathrm{gabaa}}^p}$')
 ax3.set_ylabel(r'$\tau_{\mathrm{gabaa}}$')
-fig.colorbar(im3, ax=ax3, shrink=cbar_shrink)
+# fig.colorbar(im3, ax=ax3, shrink=cbar_shrink)
 
 # subplot B and C
 #################
 
 # barplot
-ax4 = fig.add_subplot(grid[2:4, 0:5])
+ax4 = fig.add_subplot(grid[3:5, 0:5])
 ax4 = sns.barplot(data=df.loc[(df['model'] != 'nobeta') * (df['fitness'] < 2), :],
                   x='parameter', y='value', hue='model', ax=ax4)
 ax4.set_xticklabels([r'$\tau_e$', r'$\tau_p$', r'$\tau_{\mathrm{ampa}}^r$', r'$\tau_{\mathrm{ampa}}^d$',
@@ -169,7 +169,7 @@ ax4.set_xlabel('')
 ax4.set_title('B')
 
 # 2D bifurcation diagram
-ax5 = fig.add_subplot(grid[2:4, 5:])
+ax5 = fig.add_subplot(grid[3:5, 5:])
 ax5 = a2.plot_continuation('PAR(20)', 'PAR(4)', cont='k_gp/k_pe:hb1', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax5)
 ax5 = a2.plot_continuation('PAR(20)', 'PAR(4)', cont='k_gp/k_pe:hb2', line_style_unstable='solid', ignore=['UZ'],
@@ -187,33 +187,36 @@ ax5.set_title('C')
 rates = beta_data['results']
 psds = beta_data['psds']
 
-ax6 = fig.add_subplot(grid[4, :4])
-ax6.plot(rates.index[30000:35000], rates.loc[3.0:3.49999, 'r_e'])
-ax6.plot(rates.index[30000:35000], rates.loc[3.0:3.49999, 'r_p'])
+ax6 = fig.add_subplot(grid[5, :4])
+ax6.plot(rates.index[20000:25000], rates.loc[3.0:3.49999, 'r_e'])
+ax6.plot(rates.index[20000:25000], rates.loc[3.0:3.49999, 'r_p'])
+ax6.set_xlabel('time in s')
 ax6.set_ylabel('r')
 ax6.set_title('D')
-ax6.set_ylim([10.0, 100.0])
+ax6.set_ylim([10.0, 120.0])
 
-ax7 = fig.add_subplot(grid[4, 4:6])
+ax7 = fig.add_subplot(grid[5, 4:6])
 ax7.plot(psds['freq_stn'][0], psds['pow_stn'][0])
 ax7.plot(psds['freq_gpe'][0], psds['pow_gpe'][0])
+ax7.set_xlabel('f in Hz')
 ax7.set_ylabel('PSD')
 ax7.set_in_layout(False)
 ax7.set_xlim([0.0, 120.0])
 ax7.set_xticks([0, 50, 100])
 
 # 1D bifurcation diagram
-ax8 = fig.add_subplot(grid[4, 6:])
+ax8 = fig.add_subplot(grid[5, 6:])
 ax8 = a2.plot_continuation('PAR(20)', 'U(3)', cont='k_gp:1', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax8)
 ax8 = a2.plot_continuation('PAR(20)', 'U(3)', cont='k_gp:1:lc1', line_style_unstable='solid', ignore=['UZ'],
                            ax=ax8, line_color_stable='#148F77', line_color_unstable='#148F77')
 ax8.set_xlabel(r"$k_{gp}$")
 ax8.set_ylabel(r"$r$")
-ax8.set_xlim([0.0, 3.1])
+ax8.set_xlim([2.0, 3.1])
 ax8.set_ylim([0.0, 0.2])
-ax8.set_xticks([0, 1, 2, 3])
-# ax8.set_yticklabels(['0', '50', '100'])
+ax8.set_xticks([2, 2.5, 3])
+ax8.set_yticks([0.0, 0.1, 0.2])
+ax8.set_yticklabels(['0', '100', '200'])
 
 # subplot E and F
 #################
@@ -223,26 +226,28 @@ rates = nobeta_data['results']
 map = nobeta_data['map']
 
 # example 1
-ax9 = fig.add_subplot(grid[5, :4])
+ax9 = fig.add_subplot(grid[6, :4])
 ax9.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_e', map.index[0])])
 ax9.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_p', map.index[0])])
 ax9.set_ylabel('r')
-ax9.set_title('D')
+ax9.set_title('E')
 
 # example 2
-ax10 = fig.add_subplot(grid[6, :4])
+ax10 = fig.add_subplot(grid[7, :4])
 ax10.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_e', map.index[1])])
 ax10.plot(rates.index[10000:15000], rates.loc[3.0:3.49999, ('r_p', map.index[1])])
 ax10.set_ylabel('r')
-ax10.set_title('D')
 
 # fitness distributions
-ax11 = fig.add_subplot(grid[5:, 4:])
+ax11 = fig.add_subplot(grid[6:, 4:])
 df_beta = df.loc[df['model'] == 'beta', ['fitness', 'model', 'index']].drop_duplicates('index')
 df_nobeta = df.loc[df['model'] == 'nobeta', ['fitness', 'model', 'index']].drop_duplicates('index')
 ax11 = sns.histplot(data=df_beta.append(df_nobeta),
                     x='fitness', hue='model', ax=ax11, log_scale=True, kde=False, bins='stone')
 ax11.set_xlim([0.0, 3000.0])
+ax11.set_title('F')
+ax11.set_xlabel('L')
+plt.legend(['beta-1', 'beta-2'])
 
 # final touches
 ###############

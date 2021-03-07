@@ -37,28 +37,28 @@ delta = 100.0
 
 dv = 'p'
 ivs = ["tau_e", "tau_p", "tau_ampa_r", "tau_ampa_d", "tau_gabaa_r", "tau_gabaa_d", "tau_stn", "eta_e", "eta_p",
-       "delta_e", "delta_p", "k_pe", "k_ep", "k_pp"]
+       "delta_e", "delta_p", "k_pe", "k_ep", "k_pp", "k_ee"]
 param_grid = pd.DataFrame(data=np.zeros((1, len(ivs))), columns=ivs)
 for idx in fidx:
     fname = f"{directory}/{fid}_{idx}.h5"
     f = h5py.File(fname, 'r')
-    data = {key: f[dv][key][()] for key in ivs}
+    data = {key: f[dv][key][()] for key in ivs[:-1]}
     param_grid_tmp = {
-        'k_ee': [0.1 * data['k_pe'] * k],
-        'k_pe': [data['k_pe'] * k],
-        'k_ep': [data['k_ep'] * k],
-        'k_pp': [data['k_ep'] * data['k_pp'] * k],
-        'eta_e': [data['eta_e'] * eta],
-        'eta_p': [data['eta_p'] * eta],
-        'delta_e': [data['delta_e'] * delta],
-        'delta_p': [data['delta_e'] * data['delta_p'] * delta],
         'tau_e': [data['tau_e']],
         'tau_p': [data['tau_p']],
         'tau_ampa_r': [data['tau_ampa_r']],
         'tau_ampa_d': [data['tau_ampa_d']],
         'tau_gabaa_r': [data['tau_gabaa_r']],
         'tau_gabaa_d': [data['tau_gabaa_d']],
-        'tau_stn': [data['tau_stn']]
+        'tau_stn': [data['tau_stn']],
+        'eta_e': [data['eta_e'] * eta],
+        'eta_p': [data['eta_p'] * eta],
+        'delta_e': [data['delta_e'] * delta],
+        'delta_p': [data['delta_e'] * data['delta_p'] * delta],
+        'k_pe': [data['k_pe'] * k],
+        'k_ep': [data['k_ep'] * k],
+        'k_pp': [data['k_ep'] * data['k_pp'] * k],
+        'k_ee': [0.1 * data['k_pe'] * k],
     }
     param_grid = param_grid.append(pd.DataFrame.from_dict(param_grid_tmp))
 param_grid = param_grid.iloc[1:, :]
