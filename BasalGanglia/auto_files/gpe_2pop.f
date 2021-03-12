@@ -15,7 +15,7 @@
 	double precision delta_p, delta_a
 	double precision tau_e, tau_p, tau_a, tau_s
 	double precision tau_ampa_r, tau_ampa_d, tau_gabaa_r, tau_gabaa_d
-	double precision PI, k_gp, k, k_d
+	double precision PI, k_p, k, k_d
 
 	! declare parameters
 	eta_e = args(1)
@@ -32,7 +32,9 @@
 	delta_p = args(16)
 	delta_a = args(17)
 	eta_s = args(18)
-	k_gp = args(19)
+	k_p = args(19)
+	tau_gabaa_r = args(20)
+	tau_gabaa_d = args(21)
 
 	! declare constants
 	tau_e = 13.00
@@ -41,18 +43,16 @@
 	tau_s = 20.00
 	tau_ampa_r = 0.80
 	tau_ampa_d = 3.70
-	tau_gabaa_r = 0.50
-	tau_gabaa_d = 5.00
 	k_d = 3.00
 	PI = 3.141592653589793
 	k = 10.00
 
 	k_pe = k_pe*k
 	k_ae = k_ae*k
-	k_ap = k_ap*k_gp*k
-	k_pa = k_pa*k_gp*k
-	k_pp = k_pp*k_gp*k
-	k_aa = k_aa*k_gp*k
+	k_ap = k_ap*k
+	k_pa = k_pa*k_p*k
+	k_pp = k_pp*k_p*k
+	k_aa = k_aa*k
 	k_ps = k_ps*k
 	k_as = k_as*k
 
@@ -136,11 +136,12 @@
 	double precision k_pa, k_aa
 	double precision k_ps, k_as
 	double precision delta_p, delta_a
-	double precision k_gp
+	double precision tau_gabaa_r, tau_gabaa_d
+	double precision k_p
 
-	k_gp = 1.0
+	k_p = 1.0
 
-	delta_p = 10.0
+	delta_p = 9.0
 	delta_a = 3.0
 
 	eta_e = 0.02
@@ -155,7 +156,10 @@
 	k_pa = 0.0
 	k_aa = 0.0
 	k_ps = 10.0
-	k_as = 2.0
+	k_as = 1.0
+
+	tau_gabaa_r = 0.50
+	tau_gabaa_d = 5.00
 
 	args(1) = eta_e
 	args(2) = eta_p
@@ -171,7 +175,9 @@
 	args(16) = delta_p
 	args(17) = delta_a
 	args(18) = eta_s
-	args(19) = k_gp
+	args(19) = k_p
+	args(20) = tau_gabaa_r
+	args(21) = tau_gabaa_d
 
 	y(2) = 0.06
 	y(4) = 0.01

@@ -8,7 +8,7 @@ sys.path.append('../')
 # preparations
 ##############
 
-fname = 'stn_gpe_3pop'
+fname = 'gpe_2pop'
 
 # load simulation data
 data = pickle.load(open(f"results/{fname}_sims.p", "rb"))
@@ -23,7 +23,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (5.25, 4.0)
+plt.rcParams['figure.figsize'] = (4.5, 4.0)
 plt.rcParams['font.size'] = 8.0
 plt.rcParams['axes.titlesize'] = 8.0
 plt.rcParams['axes.labelsize'] = 8.0
@@ -39,22 +39,14 @@ markersize = 25
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=5, ncols=12, figure=fig)
+grid = gridspec.GridSpec(nrows=3, ncols=2, figure=fig)
 
-# 2d: k_pe x k_gp
-ax = fig.add_subplot(grid[:3, :5])
-ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:lp1', ax=ax, line_color_stable='#3689c9',
-                         line_color_unstable='#3689c9', default_size=markersize,
-                         line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb1', ax=ax, line_color_stable='#148F77',
-                         line_color_unstable='#148F77', default_size=markersize,
-                         line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-ax = a.plot_continuation('PAR(19)', 'PAR(5)', cont=f'k_gp/k_pe:hb2', ax=ax, line_color_stable='#ee2b2b',
-                         line_color_unstable='#ee2b2b', default_size=markersize,
-                         line_style_unstable='solid', ignore=['UZ', 'GH', 'ZH'])
-# ax = a.plot_continuation('PAR(22)', 'PAR(5)', cont=f'k_gp/k_pe:hb3', ax=ax, line_color_stable='#ee2b2b',
-#                          line_color_unstable='#ee2b2b', default_size=markersize,
-#                          line_style_unstable='solid', ignore=['UZ'])
+# 2d: k_pp x eta_p
+ax = fig.add_subplot(grid[0, :5])
+ax = a.plot_continuation('PAR(2)', 'PAR(6)', cont='k_pp/eta_p:hb1', ax=ax1, line_style_unstable='solid',
+                          line_color_stable='#148F77', line_color_unstable='#148F77')
+ax.set_xlabel(r'$\eta_p$')
+ax.set_ylabel(r'$k_{pp}$')
 ax.set_ylabel(r'$k_{pe}$', labelpad=labelpad)
 ax.set_xlabel(r'$k_{gp}$', labelpad=labelpad)
 ax.set_title('2D bifurcation diagram')

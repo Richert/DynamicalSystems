@@ -27,12 +27,12 @@ if any(c1):
 
     # step 1: continuation of k_pp
     s0_sols, s0_cont = a.run(e='gpe_2pop_forced', c='qif_lc', ICP=[6, 11], NPAR=n_params, name='k_pp:1',
-                             NDIM=n_dim, RL0=0.0, RL1=5.1, NMX=6000, DSMAX=0.1, STOP=['UZ1'], UZR={6: 4.5})
+                             NDIM=n_dim, RL0=0.0, RL1=5.1, NMX=6000, DSMAX=0.1, STOP=['UZ1'], UZR={6: 5.0})
 
     # step 2: continuation of eta_p
     s1_sols, s1_cont = a.run(starting_point='UZ1', c='qif_lc', ICP=[2, 11], NPAR=n_params, name='eta_p:1',
                              NDIM=n_dim, RL0=0.1, RL1=50.0, origin=s0_cont, NMX=6000, DSMAX=0.1,
-                             UZR={2: [44.0]}, STOP={'UZ1'}, variables=store_vars, params=store_params)
+                             UZR={2: [40.0]}, STOP={'UZ1'}, variables=store_vars, params=store_params)
 
     starting_point = 'UZ1'
     starting_cont = s1_cont
