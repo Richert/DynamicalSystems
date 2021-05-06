@@ -1,5 +1,7 @@
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import numpy as np
+import sys
+sys.path.append('../')
 
 #########################################
 # configs, descriptions and definitions #
@@ -26,7 +28,7 @@ with parameters:
 
 # configuration
 codim1 = True
-codim2 = True
+codim2 = False
 period_mapping = False
 n_grid_points = 100
 n_dim = 4
@@ -37,7 +39,10 @@ eta_cont_idx = 3
 # parameter continuations in auto #
 ###################################
 
-a = PyAuto("auto_files")
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+fname = 'auto_files'
+a = PyAuto(fname, auto_dir=auto_dir)
 
 # initial continuation in the adaptation strength alpha
 alpha_0 = [0.25, 0.5, 1.0, 2.0]
@@ -55,7 +60,7 @@ solutions_eta.append(a.run(starting_point='EP1', ICP=1, DSMAX=0.005, RL0=-12.0, 
 i = 1
 for point, point_info in alpha_solutions.items():
     if 'UZ' in point_info['bifurcation']:
-        solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.005, RL0=-12.0, NMX=4000,
+        solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.005, RL0=-12.0, NMX=6000,
                                    origin=alpha_cont, bidirectional=True, name=f"eta_{i}", NDIM=n_dim))
         i += 1
 

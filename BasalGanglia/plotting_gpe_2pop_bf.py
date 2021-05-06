@@ -35,7 +35,7 @@ plt.rcParams['axes.titlepad'] = 1.0
 labelpad = 1.0
 plt.rcParams['axes.labelpad'] = labelpad
 markersize = 15
-cmap = sns.diverging_palette(145, 300, s=60, as_cmap=False, n=4)
+cmap = sns.color_palette("plasma", as_cmap=False, n_colors=4)
 
 ############
 # plotting #
@@ -49,7 +49,7 @@ grid = gridspec.GridSpec(nrows=5, ncols=5, figure=fig)
 ############################
 
 # 2d: k_pp x eta_p
-ax1 = fig.add_subplot(grid[1, :2])
+ax1 = fig.add_subplot(grid[1, 3:])
 ax1 = a.plot_continuation('PAR(2)', 'PAR(6)', cont='k_pp/eta_p:hb1', ax=ax1, line_style_unstable='solid',
                           default_size=markersize)
 ax1.set_xlabel(r'$\eta_p$', labelpad=labelpad)
@@ -57,10 +57,10 @@ ax1.set_ylabel(r'$k_{pp}$', labelpad=labelpad)
 ax1.set_xlim([0.0, 60.0])
 ax1.set_ylim([0.0, 8.0])
 ax1.set_yticks([0, 3, 6])
-ax1.set_title('C')
+ax1.set_title('D')
 
 # 2d: k_pa x eta_p
-ax2 = fig.add_subplot(grid[3, :2])
+ax2 = fig.add_subplot(grid[3, 3:])
 ax2 = a.plot_continuation('PAR(2)', 'PAR(8)', cont='k_pa/eta_p:lp1', ax=ax2, line_style_unstable='solid',
                           line_color_stable='#3689c9', line_color_unstable='#3689c9', default_size=markersize)
 ax2 = a.plot_continuation('PAR(2)', 'PAR(8)', cont='k_pa/eta_p:hb1', ax=ax2, line_style_unstable='solid',
@@ -70,13 +70,13 @@ ax2.set_ylabel(r'$k_{pa}$', labelpad=labelpad)
 ax2.set_xlim([0.0, 40.0])
 ax2.set_ylim([0.0, 8.0])
 ax2.set_yticks([0, 3, 6])
-ax2.set_title('F')
+ax2.set_title('G')
 
 # B: 1D bifurcation diagrams
 ############################
 
 # 1D: eta_p for default connectivity
-ax0 = fig.add_subplot(grid[0, 2:])
+ax0 = fig.add_subplot(grid[0, :3])
 ax0 = a.plot_continuation('PAR(2)', 'U(2)', cont='eta_p:0', ax=ax0, line_color_stable=to_hex(cmap[0]),
                           line_color_unstable=to_hex(cmap[0]), default_size=markersize)
 ax0 = a.plot_continuation('PAR(2)', 'U(4)', cont='eta_p:0', ax=ax0, line_color_stable=to_hex(cmap[-1]),
@@ -87,10 +87,10 @@ ax0.set_xlim([-50.0, 50.0])
 ax0.set_ylim([0.0, 0.12])
 ax0.set_yticks([0, 0.05, 0.1])
 ax0.set_yticklabels(["0", "50", "100"])
-ax0.set_title('B Default connectivity')
+ax0.set_title('A Default connectivity')
 
 # 1D: eta_p for k_pp = 5.0
-ax3 = fig.add_subplot(grid[1, 2:])
+ax3 = fig.add_subplot(grid[1, :3])
 ax3 = a.plot_continuation('PAR(2)', 'U(2)', cont='eta_p:2', ax=ax3, line_color_stable=to_hex(cmap[0]),
                           line_color_unstable=to_hex(cmap[0]), default_size=markersize)
 ax3 = a.plot_continuation('PAR(2)', 'U(4)', cont='eta_p:2', ax=ax3, line_color_stable=to_hex(cmap[-1]),
@@ -105,10 +105,10 @@ ax3.set_xlim([0.0, 45.0])
 ax3.set_ylim([0.0, 0.13])
 ax3.set_yticks([0, 0.05, 0.1])
 ax3.set_yticklabels(["0", "50", "100"])
-ax3.set_title('D Increased GPe-p self-inhibition')
+ax3.set_title('C Increased GPe-p self-inhibition')
 
-# 1D: eta_p for k_pa = 5.0
-ax4 = fig.add_subplot(grid[3, 2:])
+# 1D: eta_p for k_pa = 4.0
+ax4 = fig.add_subplot(grid[3, :3])
 ax4 = a.plot_continuation('PAR(2)', 'U(2)', cont='eta_p:3', ax=ax4, line_color_stable=to_hex(cmap[0]),
                           line_color_unstable=to_hex(cmap[0]), default_size=markersize)
 ax4 = a.plot_continuation('PAR(2)', 'U(4)', cont='eta_p:3', ax=ax4, line_color_stable=to_hex(cmap[-1]),
@@ -123,7 +123,7 @@ ax4.set_xlim([10.0, 30.0])
 ax4.set_ylim([0.0, 0.085])
 ax4.set_yticks([0, 0.03, 0.06])
 ax4.set_yticklabels(["0", "30", "60"])
-ax4.set_title('G Increased inhibition of GPe-p by GPe-a')
+ax4.set_title('F Increased inhibition of GPe-p by GPe-a')
 
 # C: time series
 ################
@@ -157,10 +157,10 @@ ax6.set_title('H')
 ###############
 
 # first axis
-ax7 = fig.add_subplot(grid[0, :2])
-ax7.set_title('A GPe-p , GPe-a')
-ax7.set_xlabel(r'$\eta_p$')
-ax7.set_ylabel(r'$k_{pp}$, $k_{pa}$')
+ax7 = fig.add_subplot(grid[0, 3:])
+ax7.set_title(r'$\mathrm{ms}^2$')
+ax7.set_xlabel(r'ms')
+ax7.set_ylabel(r'$J_{pp}$, $J_{pa}$')
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)

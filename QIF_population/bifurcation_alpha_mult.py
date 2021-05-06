@@ -1,5 +1,7 @@
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import numpy as np
+import sys
+sys.path.append('../')
 
 #########################################
 # configs, descriptions and definitions #
@@ -27,7 +29,7 @@ with parameters:
 # configuration
 codim1 = True
 codim2 = True
-period_mapping = False
+period_mapping = True
 n_grid_points = 100
 n_dim = 4
 n_params = 6
@@ -37,7 +39,10 @@ eta_cont_idx = 3
 # parameter continuations in auto #
 ###################################
 
-a = PyAuto("auto_files")
+path = sys.argv[-1]
+auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
+fname = 'auto_files'
+a = PyAuto(fname, auto_dir=auto_dir)
 
 # initial continuation in the adaptation strength alpha
 alpha_0 = [0.0125, 0.025, 0.05, 0.1, 0.2]
@@ -88,28 +93,29 @@ if codim1:
         eta_alpha_lp2_solutions, eta_alpha_lp2_cont = a.run(starting_point='LP1', c='qif3', ICP=[1, 11, 3],
                                                             NMX=8000, DSMAX=0.01, origin=eta_hb2_cont,
                                                             bidirectional=True, name='eta_alpha_lp2', NDIM=n_dim,
-                                                            UZR={3: alphas}, STOP={})
+                                                            UZR={3: alphas}, STOP=['BP1', 'LP1'])
         eta_alpha_lp3_solutions, eta_alpha_lp3_cont = a.run(starting_point='LP2', c='qif3', ICP=[1, 11, 3],
                                                             NMX=8000, DSMAX=0.01, origin=eta_hb2_cont,
                                                             bidirectional=True, name='eta_alpha_lp3', NDIM=n_dim,
-                                                            UZR={3: alphas}, STOP={})
+                                                            UZR={3: alphas}, STOP=['BP1', 'LP1'])
 
         if period_mapping:
 
             # extract limit cycle periods in eta-alpha plane
             etas = np.round(np.linspace(-6.5, -2.5, 100), decimals=4).tolist()
             period_solutions = np.zeros((len(alphas), len(etas)))
-            for s, s_info in eta_alpha_lp3_solutions.items():
-                if np.round(s_info['PAR(3)'], decimals=5) in alphas:
-                    s_tmp, _ = a.run(starting_point=s, c='qif', ICP=[1, 11], UZR={1: etas}, STOP={}, EPSL=1e-6,
-                                     EPSU=1e-6, EPSS=1e-4, ILP=0, ISP=0, IPS=2, get_period=True, DSMAX=0.0002,
-                                     origin=eta_alpha_lp3_cont, NMX=40000, DS='-', THL={11: 0.0})
+            i = 1
+            for s1 in eta_alpha_lp3_solutions.values():
+                if 'UZ' in s1['bifurcation']:
+                    s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif', ICP=[1, 11], UZR={1: etas}, STOP=['LP1', 'BP1'],
+                                     EPSL=1e-7, EPSU=1e-7, EPSS=1e-5, ISP=0, IPS=2, get_period=True, NPR=100,
+                                     DSMAX=0.002, origin=eta_alpha_lp3_cont, NMX=40000, DS='-', THL={11: 0.0})
+                    i += 1
                     for s2 in s_tmp.values():
-                        if np.round(s2['PAR(1)'], decimals=4) in etas:
+                        if 'UZ' in s2['bifurcation']:
                             idx_c = np.argwhere(np.round(s2['PAR(1)'], decimals=4) == etas)
                             idx_r = np.argwhere(np.round(s2['PAR(3)'], decimals=5) == alphas)
-                            if s2['period'] > period_solutions[idx_r, idx_c]:
-                                period_solutions[idx_r, idx_c] = s2['period']
+                            period_solutions[idx_r, idx_c] = s2['period']
 
 ################
 # save results #

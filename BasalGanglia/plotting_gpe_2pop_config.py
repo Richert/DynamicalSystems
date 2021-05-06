@@ -98,7 +98,7 @@ plt.rcParams['axes.titlepad'] = 0.0
 labelpad = 1.0
 plt.rcParams['axes.labelpad'] = labelpad
 markersize = 25
-cmap = sns.diverging_palette(145, 300, s=60, as_cmap=False, n=2)
+cmap = sns.color_palette("plasma", as_cmap=False, n_colors=4)
 
 # create figure layout
 fig = plt.figure(1)
@@ -106,17 +106,17 @@ grid = gs.GridSpec(nrows=3, ncols=2, figure=fig)
 
 # firing rate distributions
 ax1 = fig.add_subplot(grid[0, :])
-sns.histplot(data=df, x='r', hue='population', ax=ax1, log_scale=False, kde=False, bins=int(N/10), palette=cmap,
-             stat='probability')
+sns.histplot(data=df, x='r', hue='population', ax=ax1, log_scale=False, kde=False, bins=int(N/10),
+             palette=[cmap[0], cmap[-1]], stat='probability')
 ax1.set_xlim([0, 150])
 ax1.set_title('A')
 
 # QIF activation functions
 ax2 = fig.add_subplot(grid[1, 0])
 ax2.plot(eta_p_distr-eta_p, rates_p, c=cmap[0])
-ax2.plot(eta_a_distr-eta_a, rates_a, c=cmap[1])
-ax2.set_xlabel(r'$\eta$')
-ax2.set_ylabel(r'$r$')
+ax2.plot(eta_a_distr-eta_a, rates_a, c=cmap[-1])
+ax2.set_xlabel(r'$\eta_i$')
+ax2.set_ylabel(r'$r_i$')
 ax2.set_title('B: QIF neuron I-O curves')
 ax2.set_xlim([-50.0, 100.0])
 ax2.set_ylim([0.0, 200.0])
@@ -126,7 +126,7 @@ plt.legend(['GPe-p', 'GPe-a'])
 # population activation functions
 ax3 = fig.add_subplot(grid[1, 1])
 ax3 = a.plot_continuation('PAR(2)', 'U(2)', cont='eta_p:1', ax=ax3, line_color_stable=to_hex(cmap[0]))
-ax3 = a.plot_continuation('PAR(3)', 'U(4)', cont='eta_a:1', ax=ax3, line_color_stable=to_hex(cmap[1]))
+ax3 = a.plot_continuation('PAR(3)', 'U(4)', cont='eta_a:1', ax=ax3, line_color_stable=to_hex(cmap[-1]))
 ax3.set_xlabel(r'$\eta$')
 ax3.set_ylabel(r'$r$')
 ax3.set_title('Population I-O curves')
@@ -138,7 +138,7 @@ plt.legend(['GPe-p', 'GPe-a'])
 
 # average firing rates across conditions
 ax4 = fig.add_subplot(grid[2, :])
-sns.barplot(data=rates, x='condition', y='r', hue='population', ax=ax4, palette=cmap, ci=None)
+sns.barplot(data=rates, x='condition', y='r', hue='population', ax=ax4, palette=[cmap[0], cmap[-1]], ci=None)
 ax4.set_title('C')
 ax4.set_yticks([0, 30, 60, 90])
 
