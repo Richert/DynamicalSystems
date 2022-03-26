@@ -31,13 +31,13 @@ cmap = sns.color_palette("plasma", as_cmap=False, n_colors=4)
 # load auto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-fname = '../QIF_population/results/alpha_add.pkl'
+fname = '../QIF_population/results/alpha_mult.pkl'
 a = PyAuto.from_file(fname, auto_dir=auto_dir)
 a.update_bifurcation_style(bf_type='HB', color='k')
 
 # load matlab data
 matlab_path = "/home/rgast/MatlabProjects/QIFSimulations/matlab_scripts/neco"
-data = scio.loadmat(f"{matlab_path}/neco_fig5_data.mat")
+data = scio.loadmat(f"{matlab_path}/neco_fig2e_data.mat")
 
 # plotting
 ##########
@@ -55,15 +55,15 @@ ax = a.plot_continuation('PAR(1)', 'U(1)', cont=f'eta_hb2', ax=ax, ignore=['BP']
                          default_size=markersize, custom_bf_styles={'LP': {'marker': 'p'}})
 for eta in etas:
     plt.axvline(x=eta, color=(0, 0, 0, 1), linestyle='--')
-ax.set_xlim([-6.0, 3.0])
-ax.set_ylim([0., 4.0])
+ax.set_xlim([-6.5, -3.8])
+ax.set_ylim([0., 2.5])
 ax.set_xlabel(r'$\bar \eta$')
 ax.set_ylabel(r'$r$')
 ax.set_title('Steady-state and periodic solutions')
 
 # plot the numerical integration results
 inputs = [(800, 800), (2400, 800)]
-title = r'$I(t) = 0.3$, $I(t) = -1.9$'
+title = r'$I(t) = 0.2$, $I(t) = -0.5$'
 N = data['raster'].shape[1]
 cutoff = int(N * 0.05)
 n_neurons = 50
@@ -80,7 +80,7 @@ for inp in inputs:
     ax.add_patch(r)
 ax.set_ylabel(r'$r$')
 ax.set_title(title)
-ax.set_yticks([0, 1, 2, 3])
+#ax.set_yticks([0, 1, 2, 3])
 ax.set_xticklabels(["", "", ""])
 plt.legend(['QIF network', 'mean-field model'])
 
@@ -101,5 +101,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving
 fig.canvas.draw()
-plt.savefig(f'neco_sfa_1d_bf.svg')
+plt.savefig(f'neco_sd_1d_tmp.svg')
 plt.show()

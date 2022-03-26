@@ -52,17 +52,17 @@ stim_strengths = [[0.5, -0.5], [0.5, -0.5], [-0.1], [1.0]]
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=8, ncols=3, figure=fig)
+grid = gridspec.GridSpec(nrows=8, ncols=15, figure=fig)
 
 # start plotting
 for i in range(4):
 
     # plot 1D continuation in eta
-    ax1 = fig.add_subplot(grid[2*i:2*(i+1), 0])
+    ax1 = fig.add_subplot(grid[2*i:2*(i+1), 0:3])
     ax1 = a.plot_continuation('PAR(1)', 'U(1)', cont=etas[i], ax=ax1, default_size=markersize)
     if i > 1:
         ax1 = a.plot_continuation('PAR(1)', 'U(1)', cont=f"{etas[i]}:lc", ax=ax1, default_size=markersize,
-                                  ignore=['BP'], line_color_stable='#7f7f7f', line_color_unstable='#7f7f7f')
+                                  ignore=['BP'], line_color_stable='seagreen', line_color_unstable='#7f7f7f')
     plt.axvline(x=eta_pos[i], color='b', linestyle='--')
     ax1.set_ylabel(r'$r$')
     ax1.set_xlabel('')
@@ -70,7 +70,7 @@ for i in range(4):
     ax1.set_ylim(ylims[i])
 
     # plot firing rates
-    ax2 = fig.add_subplot(grid[2*i, 1:])
+    ax2 = fig.add_subplot(grid[2*i, 3:])
     ax2.plot(data[i]['times'].squeeze(), data[i]['r_rec_av'].squeeze(), color='k')
     ax2.plot(data[i]['times'].squeeze(), data[i]['r_mes_rec_av'].squeeze(), color='tab:purple')
     ax2.plot(data[i]['times'].squeeze(), data[i]['r_poisson_rec_av'].squeeze(), color='tab:orange')
@@ -87,7 +87,7 @@ for i in range(4):
     ax2.set_xlim([0, 280])
 
     # plot spikes
-    ax3 = fig.add_subplot(grid[2*i+1, 1:])
+    ax3 = fig.add_subplot(grid[2*i+1, 3:])
     ax3.eventplot([data[i]['raster'][0, j][:, 0] if len(data[i]['raster'][0, j]) > 0 else np.asarray([])
                    for j in idx], colors='k')
     ax3.set_xlim([500000, 3300000])
@@ -109,7 +109,7 @@ ax1.set_xticks([-1.0, 0.0, 1.0, 2.0])
 ax3.set_xlabel('time')
 
 # padding
-fig.set_constrained_layout_pads(w_pad=0.01, h_pad=0.03, hspace=0., wspace=0.)
+fig.set_constrained_layout_pads(w_pad=0.01, h_pad=0.01, hspace=0., wspace=0.)
 
 fig.canvas.draw()
 fig.savefig('meanfield_bf.pdf')

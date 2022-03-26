@@ -52,11 +52,12 @@ grid = gridspec.GridSpec(nrows=5, ncols=5, figure=fig)
 ax1 = fig.add_subplot(grid[1, 3:])
 ax1 = a.plot_continuation('PAR(2)', 'PAR(6)', cont='k_pp/eta_p:hb1', ax=ax1, line_style_unstable='solid',
                           default_size=markersize)
-ax1.set_xlabel(r'$\eta_p$', labelpad=labelpad)
-ax1.set_ylabel(r'$k_{pp}$', labelpad=labelpad)
+ax1.set_xlabel(r'$\bar \eta_p$', labelpad=labelpad)
+ax1.set_ylabel(r'$J_{pp}$', labelpad=labelpad)
 ax1.set_xlim([0.0, 60.0])
 ax1.set_ylim([0.0, 8.0])
 ax1.set_yticks([0, 3, 6])
+ax1.set_yticklabels(["0", "30", "60"])
 ax1.set_title('D')
 
 # 2d: k_pa x eta_p
@@ -66,10 +67,11 @@ ax2 = a.plot_continuation('PAR(2)', 'PAR(8)', cont='k_pa/eta_p:lp1', ax=ax2, lin
 ax2 = a.plot_continuation('PAR(2)', 'PAR(8)', cont='k_pa/eta_p:hb1', ax=ax2, line_style_unstable='solid',
                           default_size=markersize)
 ax2.set_xlabel(r'$\eta_p$', labelpad=labelpad)
-ax2.set_ylabel(r'$k_{pa}$', labelpad=labelpad)
+ax2.set_ylabel(r'$J_{pa}$', labelpad=labelpad)
 ax2.set_xlim([0.0, 40.0])
 ax2.set_ylim([0.0, 8.0])
 ax2.set_yticks([0, 3, 6])
+ax2.set_yticklabels(["0", "30", "60"])
 ax2.set_title('G')
 
 # B: 1D bifurcation diagrams
@@ -159,7 +161,7 @@ ax6.set_title('H')
 # first axis
 ax7 = fig.add_subplot(grid[0, 3:])
 ax7.set_title(r'$\mathrm{ms}^2$')
-ax7.set_xlabel(r'ms')
+ax7.set_xlabel('ms')
 ax7.set_ylabel(r'$J_{pp}$, $J_{pa}$')
 
 # padding

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from pyauto import PyAuto
+from pyrates.utility.pyauto import PyAuto
 import numpy as np
 import pandas as pd
 
@@ -40,7 +40,7 @@ mpl.rcParams['legend.fontsize'] = fontsize1
 ################
 
 fname = 'results/alpha_add.pkl'
-a = PyAuto.from_file(fname)
+a = PyAuto.from_file(fname, auto_dir='~/PycharmProjects/auto-07p')
 
 ############
 # plotting #

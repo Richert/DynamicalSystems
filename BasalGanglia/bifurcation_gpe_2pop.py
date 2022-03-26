@@ -1,5 +1,4 @@
 import sys
-
 import matplotlib.pyplot as plt
 from pyrates.utility.pyauto import PyAuto
 
