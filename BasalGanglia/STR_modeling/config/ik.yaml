@@ -1,0 +1,49 @@
+%YAML 1.2
+---
+
+
+# izhikevich operator with biophysiologically relevant parameters
+ik2_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - q - g*s)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + q*C*log(v_p/v_z)*r/k + I_ext - u) / C"
+    - "u' = a*(b*(v-v_r) - u) + d*r"
+    - "s' = -s/tau_s + r_in"
+  variables:
+    r: output(0.0)
+    v: variable(0.0)
+    u: variable(0.0)
+    s: variable(0.0)
+    Delta: 1.0
+    C: 15.2
+    k: 1.0
+    v_r: -80.0
+    v_t: -30.0
+    v_p: 200.0
+    v_z: 1000.0
+    q: 6.0
+    g: 5.0
+    E_r: -60.0
+    b: -20.0
+    a: 0.03
+    d: 9.0
+    tau_s: 5.0
+    I_ext: input(0.0)
+    r_in: input(0.0)
+
+
+# population of biophysiologically informed izhikevich neurons with mono-exponential synapses
+ik2_pop:
+  base: NodeTemplate
+  operators:
+    - ik2_op
+
+
+# biophysiologically informed izhikevich population with mono-exponential synapses
+ik2:
+  base: CircuitTemplate
+  nodes:
+    p: ik2_pop
+  edges:
+    - [p/ik2_op/r, p/ik2_op/r_in, null, {weight: 1.0}]

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import to_hex
 import pickle
-from pyrates.utility.pyauto import PyAuto
+from pyauto import PyAuto
 import sys
 sys.path.append('../')
 
