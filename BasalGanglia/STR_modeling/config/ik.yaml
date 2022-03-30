@@ -3,7 +3,7 @@
 
 
 # izhikevich operator with biophysiologically relevant parameters
-ik2_op:
+ik_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - q - g*s)) / C"
@@ -34,16 +34,16 @@ ik2_op:
 
 
 # population of biophysiologically informed izhikevich neurons with mono-exponential synapses
-ik2_pop:
+ik_pop:
   base: NodeTemplate
   operators:
-    - ik2_op
+    - ik_op
 
 
 # biophysiologically informed izhikevich population with mono-exponential synapses
-ik2:
+ik:
   base: CircuitTemplate
   nodes:
-    p: ik2_pop
+    p: ik_pop
   edges:
-    - [p/ik2_op/r, p/ik2_op/r_in, null, {weight: 1.0}]
+    - [p/ik_op/r, p/ik_op/r_in, null, {weight: 1.0}]
