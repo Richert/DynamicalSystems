@@ -59,14 +59,14 @@ ax.set_ylabel(r'$g$')
 
 # 2D bifurcation diagram II
 ax = fig.add_subplot(grid[1, 1])
-ax = a.plot_continuation('PAR(16)', 'PAR(7)', cont=f'C/I:hb1', ax=ax, line_color_stable='#76448A',
+ax = a.plot_continuation('PAR(16)', 'PAR(6)', cont=f'D/I:hb1', ax=ax, line_color_stable='#76448A',
                          line_color_unstable='#76448A')
-ax = a.plot_continuation('PAR(16)', 'PAR(7)', cont=f'C/I:lp1', ax=ax, line_color_stable='#5D6D7E',
+ax = a.plot_continuation('PAR(16)', 'PAR(6)', cont=f'D/I:lp1', ax=ax, line_color_stable='#5D6D7E',
                          line_color_unstable='#5D6D7E')
-ax = a.plot_continuation('PAR(16)', 'PAR(7)', cont=f'C/I:lp2', ax=ax, line_color_stable='#5D6D7E',
+ax = a.plot_continuation('PAR(16)', 'PAR(6)', cont=f'D/I:lp2', ax=ax, line_color_stable='#5D6D7E',
                          line_color_unstable='#5D6D7E')
 ax.set_xlabel(r'$I$')
-ax.set_ylabel(r'$C$')
+ax.set_ylabel(r'$\Delta$')
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
