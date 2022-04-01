@@ -6,20 +6,33 @@ from pyrecu import RNN
 from pyrecu.neural_models import ik_ata
 import matplotlib.pyplot as plt
 import pickle
+from scipy.stats import cauchy
 plt.rcParams['backend'] = 'TkAgg'
+
+
+def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
+    samples = np.zeros((n,))
+    lorentz = cauchy()
+    for i in range(n):
+        s = lorentz.rvs(loc=eta, scale=delta)
+        while s <= lb or s >= ub:
+            s = lorentz.rvs(loc=eta, scale=delta)
+        samples[i] = s
+    return samples
+
 
 # define parameters
 ###################
 
 # model parameters
-N = 10000
+N = 50000
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 400.0  # unit: mV
 v_reset = -600.0  # unit: mV
-v_delta = 0.8  # unit: mV
+Delta = 1.6  # unit: mV
 d = 100.0
 a = 0.03
 b = -2.0
@@ -30,7 +43,7 @@ q = 0.0
 E_r = 0.0
 
 # define lorentzian of etas
-spike_thresholds = v_t+v_delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
+spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define inputs
 T = 2100.0
