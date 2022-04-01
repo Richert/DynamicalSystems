@@ -9,7 +9,7 @@ import os
 import h5py
 import pickle
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 ################
 # preparations #

@@ -5,12 +5,12 @@ from matplotlib.patches import Rectangle
 import numpy as np
 from pyrates.utility.pyauto import PyAuto
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 # preparations
 ##############
 
-fname = 'stn_gpe_3pop_noax'
+fname = 'stn_gpe_3pop_nosyns'
 
 # load matlab variables
 # data = pd.DataFrame.from_csv(f'results/{fname}.csv')
@@ -52,9 +52,6 @@ ax = a.plot_continuation('PAR(22)', 'PAR(25)', cont=f'k_gp/k_stn:hb1', ax=ax, li
 ax = a.plot_continuation('PAR(22)', 'PAR(25)', cont=f'k_gp/k_stn:hb2', ax=ax, line_color_stable='#ee2b2b',
                          line_color_unstable='#ee2b2b', default_size=markersize,
                          line_style_unstable='solid', ignore=['UZ'])
-ax = a.plot_continuation('PAR(22)', 'PAR(25)', cont=f'k_gp/k_stn:hb3', ax=ax, line_color_stable='#ee2b2b',
-                         line_color_unstable='#ee2b2b', default_size=markersize,
-                         line_style_unstable='solid', ignore=['UZ'])
 ax.set_ylabel(r'$k_{stn}$')
 ax.set_xlabel(r'$k_{gp}$')
 ax.set_xlim([0.0, 30.0])
@@ -64,8 +61,6 @@ ax.set_ylim([0.0, 7.0])
 ax = fig.add_subplot(grid[0, 3:])
 ax = a.plot_continuation('PAR(25)', 'U(3)', cont=f'k_stn:1', ax=ax, default_size=markersize, ignore=['UZ'])
 ax = a.plot_continuation('PAR(25)', 'U(3)', cont=f'k_stn:1:lc1', ax=ax, default_size=markersize, ignore=['UZ'],
-                         line_color_stable='#148F77', line_color_unstable='#148F77')
-ax = a.plot_continuation('PAR(25)', 'U(3)', cont=f'k_stn:1:lc2', ax=ax, default_size=markersize, ignore=['UZ'],
                          line_color_stable='#148F77', line_color_unstable='#148F77')
 ax.set_xlabel('$k_{stn}$')
 
@@ -80,6 +75,8 @@ ax.set_xlabel('$k_{gp}$')
 # 1D continuation in k_stn for k_gp = 5.0
 ax = fig.add_subplot(grid[2, 3:])
 ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:2', ax=ax, default_size=markersize, ignore=['UZ'])
+ax = a.plot_continuation('PAR(22)', 'U(3)', cont=f'k_gp:2:lc1', ax=ax, default_size=markersize, ignore=['UZ'],
+                         line_color_stable='#148F77', line_color_unstable='#148F77')
 ax.set_xlabel('$k_{gp}$')
 
 # padding

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pyrates.utility.pyauto import PyAuto
 import sys
 import pickle
-sys.path.append('../')
+sys.path.append('../../')
 
 # preparations
 ##############

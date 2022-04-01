@@ -5,7 +5,7 @@ from matplotlib.colors import to_hex
 import pickle
 from pyauto import PyAuto
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 # preparations
 ##############

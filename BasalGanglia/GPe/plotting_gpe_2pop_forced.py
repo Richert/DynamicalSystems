@@ -6,7 +6,7 @@ import pickle
 import scipy.io as scio
 from pyrates.utility.pyauto import PyAuto
 import sys
-sys.path.append('../')
+sys.path.append('../../')
 
 # preparations
 ##############
