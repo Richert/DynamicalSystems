@@ -19,15 +19,15 @@ v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 400.0  # unit: mV
 v_reset = -600.0  # unit: mV
-v_delta = 1.6  # unit: mV
+v_delta = 0.8  # unit: mV
 d = 100.0
 a = 0.03
 b = -2.0
 tau_s = 6.0
 J = 1.0
 g = 20.0
-g_e = 0.0
-e_r = 0.0
+q = 0.0
+E_r = 0.0
 
 # define lorentzian of etas
 spike_thresholds = v_t+v_delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
@@ -35,8 +35,8 @@ spike_thresholds = v_t+v_delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1)
 # define inputs
 T = 2100.0
 cutoff = 100.0
-dt = 1e-4
-dts = 1e-2
+dt = 1e-3
+dts = 0.5
 inp = np.zeros((int(T/dt),)) + 60.0
 inp[int(600/dt):int(1600/dt)] -= 15.0
 
@@ -47,19 +47,23 @@ inp[int(600/dt):int(1600/dt)] -= 15.0
 u_init = np.zeros((3*N,))
 u_init[:N] -= 60.0
 model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
-            tau_s=tau_s, J=J, g=g, e_r=e_r, g_e=g_e, u_init=u_init)
+            tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
 
 # define outputs
-outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}}
+outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}, 'v': {'idx': np.arange(0, N), 'avg': True}}
 
 # perform simulation
-res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, decorator=nb.njit,
-                verbose=True, fastmath=True)
+res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
 
 # plot results
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(np.mean(res["s"], axis=1))
-ax.set_xlabel('time')
-ax.set_ylabel(r'$s(t)$')
+fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
+ax[0].plot(np.mean(res["s"], axis=1))
+ax[0].set_ylabel(r'$s(t)$')
+ax[1].plot(np.mean(res["v"], axis=1))
+ax[1].set_ylabel(r'$v(t)$')
+ax[1].set_xlabel('time')
 plt.tight_layout()
 plt.show()
+
+# save results
+pickle.dump({'results': res}, open("results/ik_rnn_exc_het.p", "wb"))
