@@ -12,11 +12,10 @@ plt.rcParams['backend'] = 'TkAgg'
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     samples = np.zeros((n,))
-    lorentz = cauchy()
     for i in range(n):
-        s = lorentz.rvs(loc=eta, scale=delta)
+        s = cauchy.rvs(loc=eta, scale=delta)
         while s <= lb or s >= ub:
-            s = lorentz.rvs(loc=eta, scale=delta)
+            s = cauchy.rvs(loc=eta, scale=delta)
         samples[i] = s
     return samples
 
@@ -25,15 +24,15 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # model parameters
-N = 50000
+N = 10000
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 400.0  # unit: mV
-v_reset = -600.0  # unit: mV
+v_spike = 2000.0  # unit: mV
+v_reset = -3000.0  # unit: mV
 Delta = 1.6  # unit: mV
-d = 100.0
+d = 10.0
 a = 0.03
 b = -2.0
 tau_s = 6.0
@@ -46,12 +45,12 @@ E_r = 0.0
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define inputs
-T = 2100.0
-cutoff = 100.0
+T = 2500.0
+cutoff = 500.0
 dt = 1e-3
-dts = 0.5
-inp = np.zeros((int(T/dt),)) + 60.0
-inp[int(600/dt):int(1600/dt)] -= 15.0
+dts = 1e-1
+inp = np.zeros((int(T/dt),)) + 20.0
+inp[int(1000/dt):int(2000/dt)] += 40.0
 
 # run the model
 ###############

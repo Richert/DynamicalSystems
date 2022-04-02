@@ -20,7 +20,7 @@ n_params = 20
 a = PyAuto("config", auto_dir=auto_dir)
 
 # initial continuation in time (to converge to fixed point)
-t_sols, t_cont = a.run(e='izhikevich_fre', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000,
+t_sols, t_cont = a.run(e='izhikevich_inh', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000,
                        EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 500.0}, STOP={'UZ1'})
 
 ########################
@@ -63,6 +63,6 @@ a.run(starting_point='LP2', c='qif2', ICP=[4, 16], name='g/I:lp2', origin=f'I:{t
       NPR=50, RL1=50.0, RL0=0.0, bidirectional=True)
 
 # save results
-fname = '../results/izhikevich_fre.pkl'
+fname = '../results/izhikevich_inh.pkl'
 kwargs = {'g': vals, 'target': target}
 a.to_file(fname, **kwargs)

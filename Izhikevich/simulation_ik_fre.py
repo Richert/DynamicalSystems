@@ -15,8 +15,8 @@ v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 400.0  # unit: mV
 v_reset = 600.0  # unit: mV
-v_delta = 1.6  # unit: mV
-d = 100.0
+v_delta = 0.2  # unit: mV
+d = 10.0
 a = 0.03
 b = -2.0
 tau_s = 6.0
@@ -26,12 +26,12 @@ q = 0.0
 E_r = 0.0
 
 # define inputs
-T = 210.0
-cutoff = 0.0
+T = 2500.0
+cutoff = 500.0
 dt = 1e-3
-dts = 1.0
-inp = np.zeros((int(T/dt),)) + 60.0
-inp[int(600/dt):int(1600/dt)] -= 15.0
+dts = 1e-1
+inp = np.zeros((int(T/dt),)) + 20.0
+inp[int(1000/dt):int(2000/dt)] += 40.0
 
 # run the model
 ###############
@@ -46,18 +46,18 @@ ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/ik_op/s', 'r': 'p/ik_op/r'}, inputs={'p/ik_op/I_ext': inp},
+             outputs={'s': 'p/ik_op/s', 'u': 'p/ik_op/u'}, inputs={'p/ik_op/I_ext': inp},
              decorator=nb.njit, fastmath=True)
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 4))
 ax[0].plot(res["s"])
 ax[0].set_ylabel(r'$s(t)$')
-ax[1].plot(res["r"])
-ax[1].set_ylabel(r'$r(t)$')
+ax[1].plot(res["u"])
+ax[1].set_ylabel(r'$u(t)$')
 ax[1].set_xlabel("time (ms)")
 plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_fre_exc_het.p", "wb"))
+pickle.dump({'results': res}, open("results/ik_fre_exc_hom.p", "wb"))

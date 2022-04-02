@@ -1,4 +1,4 @@
-module izhikevich_fre
+module izhikevich_exc
 
 double precision :: PI = 4.0*atan(1.0)
 
@@ -57,7 +57,7 @@ end module
 
 subroutine func(ndim,y,icp,args,ijac,dy,dfdu,dfdp)
 
-use izhikevich_fre
+use izhikevich_exc
 implicit none
 integer, intent(in) :: ndim, icp(*), ijac
 double precision, intent(in) :: y(ndim), args(*)
@@ -91,7 +91,7 @@ args(15) = 0.0  ! E_r
 args(16) = 0.0  ! I_ext
 args(17) = -2.0  ! b
 args(18) = 0.03  ! a
-args(19) = 100.0  ! d
+args(19) = 10.0  ! d
 args(20) = 6.0  ! tau_s
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v

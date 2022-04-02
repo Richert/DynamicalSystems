@@ -20,7 +20,7 @@ n_params = 20
 a = PyAuto("config", auto_dir=auto_dir)
 
 # initial continuation in time (to converge to fixed point)
-t_sols, t_cont = a.run(e='izhikevich_fre', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000,
+t_sols, t_cont = a.run(e='izhikevich_exc', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000,
                        EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 500.0}, STOP={'UZ1'})
 
 ########################
@@ -48,20 +48,20 @@ for i, v in enumerate(vals):
 
 # continuation of limit cycle
 targets = [1, 4]
-for t in targets:
-    a.run(starting_point='HB1', c='qif2b', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{t+1}:lc',
-          origin=f'I:{t+1}', NMX=10000, DSMAX=0.2, NPR=50, RL1=100.0, RL0=0.0)
+# for t in targets:
+#     a.run(starting_point='HB1', c='qif2b', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{t+1}:lc',
+#           origin=f'I:{t+1}', NMX=10000, DSMAX=0.2, NPR=50, RL1=100.0, RL0=0.0, STOP=['BP1', 'LP3'])
 
 # 2D continuation follow-up I
 target = 3
-a.run(starting_point='HB1', c='qif2', ICP=[6, 16], name='D/I:hb1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
-      NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
+# a.run(starting_point='HB1', c='qif2', ICP=[6, 16], name='D/I:hb1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
+#       NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP1', c='qif2', ICP=[6, 16], name='D/I:lp1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
-      NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
+      NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[6, 16], name='D/I:lp2', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
-      NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
+      NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 
 # save results
-fname = '../results/izhikevich_fre.pkl'
+fname = '../results/izhikevich_exc.pkl'
 kwargs = {'D': vals, 'targets_1d': targets, 'target_2d': target}
 a.to_file(fname, **kwargs)
