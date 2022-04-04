@@ -45,23 +45,16 @@ c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=6, NPAR=n_params, ND
 for i, v in enumerate(vals):
     a.run(starting_point=f'UZ{i+1}', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{i+1}', origin=c2_cont,
           NMX=8000, DSMAX=0.1, NPR=10, RL1=100.0, RL0=-100.0, bidirectional=True)
-
-# continuation of limit cycle
-targets = [1, 4]
-# for t in targets:
-#     a.run(starting_point='HB1', c='qif2b', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{t+1}:lc',
-#           origin=f'I:{t+1}', NMX=10000, DSMAX=0.2, NPR=50, RL1=100.0, RL0=0.0, STOP=['BP1', 'LP3'])
+target_1 = 1
 
 # 2D continuation follow-up I
-target = 3
-# a.run(starting_point='HB1', c='qif2', ICP=[6, 16], name='D/I:hb1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
-#       NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP1', c='qif2', ICP=[6, 16], name='D/I:lp1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
+target_2 = 3
+a.run(starting_point='LP1', c='qif2', ICP=[6, 16], name='D/I:lp1', origin=f'I:{target_2+1}', NMX=8000, DSMAX=0.05,
       NPR=5, RL1=10.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[6, 16], name='D/I:lp2', origin=f'I:{target+1}', NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP2', c='qif2', ICP=[6, 16], name='D/I:lp2', origin=f'I:{target_2+1}', NMX=8000, DSMAX=0.05,
       NPR=5, RL1=10.0, RL0=0.0, bidirectional=True)
 
 # save results
 fname = '../results/izhikevich_exc.pkl'
-kwargs = {'D': vals, 'targets_1d': targets, 'target_2d': target}
+kwargs = {'D': vals, 'target_1d': target_1, 'target_2d': target_2}
 a.to_file(fname, **kwargs)

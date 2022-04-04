@@ -47,17 +47,16 @@ for i, v in enumerate(vals):
           NMX=8000, DSMAX=0.1, NPR=10, RL1=300.0)
 
 # continuation of limit cycle
-targets = [0, 3]
-for t in targets:
-    a.run(starting_point='HB1', c='qif2b', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{t+1}:lc',
-          origin=f'I:{t+1}', NMX=10000, DSMAX=0.2, NPR=10, RL1=300.0, RL0=0.0, STOP=['BP1', 'LP3'])
+target_1 = 0
+a.run(starting_point='HB1', c='qif2b', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{target_1+1}:lc',
+      origin=f'I:{target_1+1}', NMX=10000, DSMAX=0.2, NPR=10, RL1=300.0, RL0=0.0, STOP=['BP1', 'LP3'])
 
 # 2D continuation follow-up I
-target = 3
-a.run(starting_point='HB1', c='qif2', ICP=[6, 16], name='D/I:hb1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.1,
+target_2 = 2
+a.run(starting_point='HB1', c='qif2', ICP=[6, 16], name='D/I:hb1', origin=f'I:{target_2+1}', NMX=8000, DSMAX=0.1,
       NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
 
 # save results
 fname = '../results/izhikevich_inh.pkl'
-kwargs = {'D': vals, 'targets_1d': targets, 'target_2d': target}
+kwargs = {'D': vals, 'target_1d': target_1, 'target_2d': target_2}
 a.to_file(fname, **kwargs)
