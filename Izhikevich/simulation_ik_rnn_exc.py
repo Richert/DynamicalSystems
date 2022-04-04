@@ -31,7 +31,7 @@ v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 2000.0  # unit: mV
 v_reset = -3000.0  # unit: mV
-Delta = 1.6  # unit: mV
+Delta = 0.4  # unit: mV
 d = 10.0
 a = 0.03
 b = -2.0
@@ -49,8 +49,8 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 20.0
-inp[int(1000/dt):int(2000/dt)] += 40.0
+inp = np.zeros((int(T/dt),)) + 45.0
+inp[int(1000/dt):int(2000/dt)] += 15.0
 
 # run the model
 ###############

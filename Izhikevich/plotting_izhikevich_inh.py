@@ -40,7 +40,7 @@ cmap = plt.get_cmap('copper', lut=n)
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=6, ncols=2, figure=fig)
+grid = gridspec.GridSpec(nrows=3, ncols=2, figure=fig)
 
 # plot continuation in input current for different deltas
 ax = fig.add_subplot(grid[0:2, 0])
@@ -49,42 +49,40 @@ for i in range(1, n+1):
     c = to_hex(cmap(i, alpha=1.0))
     line = a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{i}', ax=ax, line_color_stable=c, line_color_unstable=c)
     lines.append(line)
+plt.legend(handles=lines, labels=[fr'$\Delta_v = {D}$' for D in deltas])
 ax.set_xlim([0.0, 250.0])
 ax.set_ylim([-0.005, 0.03])
 ax.set_xlabel(r'$I$ (pA)')
 ax.set_ylabel(r'$r$ (Hz)')
 ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
 ax.set_title('Fixed Points')
-plt.legend(handles=lines, labels=[fr'$\Delta_v = {D}$' for D in deltas])
 
 # 2D bifurcation diagram in I and D
-ax = fig.add_subplot(grid[0:2, 1])
+ax = fig.add_subplot(grid[0, 1])
 a.plot_continuation('PAR(16)', 'PAR(6)', cont=f'D/I:hb1', ax=ax, line_color_stable='#76448A',
                     line_color_unstable='#76448A')
 ax.set_xlabel(r'$I$ (pA)')
 ax.set_ylabel(r'$\Delta_v$ (nS/mV)')
 
-# plot I continuation for two different Deltas including the limit cycle
-xlims = [(100.0, 150.0), (180.0, 250.0)]
-targets = a.additional_attributes['targets_1d']
-for i, t in enumerate(targets):
-    ax = fig.add_subplot(grid[2:4, i])
-    a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{t+1}', ax=ax, line_color_stable='#76448A',
-                        line_color_unstable='#5D6D7E', custom_bf_styles={'LP': {'marker': 'v'}})
-    a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{t+1}:lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
-                        custom_bf_styles={'LP': {'marker': 'p'}})
-    ax.set_xlim(xlims[i])
-    ax.set_ylim([-0.005, 0.2])
-    ax.set_xlabel(r'$I$ (pA)')
-    ax.set_ylabel(r'$r$ (Hz)')
-    ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
-    ax.set_title(rf'$\Delta_v = {deltas[t]}$')
+# plot I continuation for a specific value of delta
+target = a.additional_attributes['target_1d']
+ax = fig.add_subplot(grid[1, 1])
+a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{target+1}', ax=ax, line_color_stable='#76448A',
+                    line_color_unstable='#5D6D7E', custom_bf_styles={'LP': {'marker': 'v'}})
+a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{target+1}:lc', ax=ax, ignore=['BP'], line_color_stable='#148F77',
+                    custom_bf_styles={'LP': {'marker': 'p'}})
+ax.set_xlim([105.0, 145.0])
+ax.set_ylim([-0.005, 0.2])
+ax.set_xlabel(r'$I$ (pA)')
+ax.set_ylabel(r'$r$ (Hz)')
+ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
+ax.set_title(rf'$\Delta_v = {deltas[target]}$')
 
 # plot synaptic dynamics
 # sim_results = [(fre_het, rnn_het), (fre_hom, rnn_hom)] if deltas[0] > deltas[-1] else \
 #     [(fre_hom, rnn_hom), (fre_het, rnn_het)]
 # for i, (t, res) in enumerate(zip(targets, sim_results)):
-#     ax = fig.add_subplot(grid[4, i])
+#     ax = fig.add_subplot(grid[4:, i])
 #     ax.plot(res[0]['s'])
 #     ax.plot(res[0].index, res[1]['s'])
 #     ax.set_xlabel('time (ms)')
