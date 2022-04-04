@@ -50,7 +50,7 @@ for i in range(1, n+1):
     line = a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{i}', ax=ax, line_color_stable=c, line_color_unstable=c)
     lines.append(line)
 ax.set_xlim([-30.0, 70.0])
-ax.set_ylim([-0.001, 0.045])
+ax.set_ylim([0.0, 0.043])
 ax.set_xlabel(r'$I$ (pA)')
 ax.set_ylabel(r'$r$ (Hz)')
 ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
@@ -63,18 +63,19 @@ a.plot_continuation('PAR(16)', 'PAR(6)', cont=f'D/I:lp1', ax=ax, line_color_stab
                     line_color_unstable='#5D6D7E')
 a.plot_continuation('PAR(16)', 'PAR(6)', cont=f'D/I:lp2', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E')
+ax.set_ylim([0.0, 7.5])
 ax.set_xlabel(r'$I$ (pA)')
 ax.set_ylabel(r'$\Delta_v$ (nS/mV)')
 
 # plot I continuation for two different Deltas including the limit cycle
 target = a.additional_attributes['target_1d']
 ax = fig.add_subplot(grid[1, 1])
-a.plot_continuation('PAR(16)', 'U(1)', cont=f'I:{target+1}', ax=ax, line_color_stable='#76448A',
+a.plot_continuation('PAR(16)', 'U(4)', cont=f'I:{target+1}', ax=ax, line_color_stable='#76448A',
                     line_color_unstable='#5D6D7E', custom_bf_styles={'LP': {'marker': 'v'}})
 # ax.set_xlim([-30.0, 70.0])
 # ax.set_ylim([-0.005, 0.05])
 ax.set_xlabel(r'$I$ (pA)')
-ax.set_ylabel(r'$r$ (Hz)')
+ax.set_ylabel(r'$s$ (Hz)')
 ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
 ax.set_title(rf'$\Delta_v = {deltas[target]}$')
 

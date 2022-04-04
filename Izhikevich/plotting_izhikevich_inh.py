@@ -15,10 +15,10 @@ deltas = a.additional_attributes['D']
 n = len(deltas)
 
 # load simulation data
-# fre_het = pickle.load(open(f"results/ik_fre_exc_het.p", "rb"))['results']
-# fre_hom = pickle.load(open(f"results/ik_fre_exc_hom.p", "rb"))['results']
-# rnn_het = pickle.load(open(f"results/ik_rnn_exc_het.p", "rb"))['results']
-# rnn_hom = pickle.load(open(f"results/ik_rnn_exc_hom.p", "rb"))['results']
+fre_het = pickle.load(open(f"results/ik_fre_inh_het.p", "rb"))['results']
+fre_hom = pickle.load(open(f"results/ik_fre_inh_hom.p", "rb"))['results']
+rnn_het = pickle.load(open(f"results/ik_rnn_inh_het.p", "rb"))['results']
+rnn_hom = pickle.load(open(f"results/ik_rnn_inh_hom.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -79,16 +79,18 @@ ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)
 ax.set_title(rf'$\Delta_v = {deltas[target]}$')
 
 # plot synaptic dynamics
-# sim_results = [(fre_het, rnn_het), (fre_hom, rnn_hom)] if deltas[0] > deltas[-1] else \
-#     [(fre_hom, rnn_hom), (fre_het, rnn_het)]
-# for i, (t, res) in enumerate(zip(targets, sim_results)):
-#     ax = fig.add_subplot(grid[4:, i])
-#     ax.plot(res[0]['s'])
-#     ax.plot(res[0].index, res[1]['s'])
-#     ax.set_xlabel('time (ms)')
-#     ax.set_ylabel(r'$s(t)$')
-#     plt.legend(['FRE', 'RNN'])
-#     ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
+sim_results = [(fre_het, rnn_het), (fre_hom, rnn_hom)] if deltas[0] > deltas[-1] else \
+    [(fre_hom, rnn_hom), (fre_het, rnn_het)]
+deltas_sim = [deltas[target], deltas[3]]
+for i, res in enumerate(sim_results):
+    ax = fig.add_subplot(grid[2, i])
+    ax.plot(res[0]['s'])
+    ax.plot(res[0].index, res[1]['s'])
+    ax.set_xlabel('time (ms)')
+    ax.set_ylabel(r'$s(t)$')
+    ax.set_title(rf'$\Delta_v = {deltas_sim[i]}$')
+    plt.legend(['FRE', 'RNN'])
+    ax.set_yticks(ticks=ax.get_yticks(), labels=[f"{np.round(tick * 1e3, decimals=1)}" for tick in ax.get_yticks()])
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
