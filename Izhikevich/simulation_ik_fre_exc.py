@@ -15,13 +15,13 @@ v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 200.0  # unit: mV
 v_reset = 300.0  # unit: mV
-Delta = 0.05  # unit: mV
-d = 10.0
+Delta = 1.6  # unit: mV
+d = 20.0
 a = 0.03
 b = -2.0
 tau_s = 6.0
 J = 1.0
-g = 20.0
+g = 15.0
 q = 0.0
 E_r = 0.0
 
@@ -60,4 +60,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_fre_exc_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/ik_fre_exc_het.p", "wb"))

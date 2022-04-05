@@ -29,8 +29,8 @@ C = 100.0   # unit: pF
 k = 1.0  # unit: None
 v_r = -56.0  # unit: mV
 v_t = -42.0  # unit: mV
-v_spike = 40.0  # unit: mV
-v_reset = -60.0  # unit: mV
+v_spike = 400.0  # unit: mV
+v_reset = -600.0  # unit: mV
 Delta = 0.05  # unit: mV
 d = 20.0
 a = 0.03
@@ -45,12 +45,12 @@ E_r = -60.0
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define inputs
-T = 2500.0
+T = 3500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 110.0
-inp[int(1000/dt):int(2000/dt)] += 30.0
+inp[int(1000/dt):int(3000/dt)] += 30.0
 
 # run the model
 ###############
@@ -78,4 +78,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_rnn_inh_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/ik_rnn_inh_hom2.p", "wb"))

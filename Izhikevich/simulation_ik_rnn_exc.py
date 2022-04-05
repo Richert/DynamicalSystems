@@ -29,8 +29,8 @@ C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 40.0  # unit: mV
-v_reset = -60.0  # unit: mV
+v_spike = 2000.0  # unit: mV
+v_reset = -3000.0  # unit: mV
 Delta = 0.4  # unit: mV
 d = 10.0
 a = 0.03
@@ -78,4 +78,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_rnn_exc_het.p", "wb"))
+pickle.dump({'results': res}, open("results/ik_rnn_exc_het2.p", "wb"))
