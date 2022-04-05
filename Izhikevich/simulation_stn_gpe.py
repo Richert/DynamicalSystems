@@ -37,8 +37,8 @@ stn_gpe.update_var(node_vars={'stn/stn_op/Delta': Delta_stn, 'gpe/gpe_op/Delta':
                               ('gpe/gpe_op/r', 'gpe/gpe_op/r_i', {'weight': k_gpe_gpe})])
 
 # generate run function
-# stn_gpe.get_run_func(func_name='stn_gpe_run', file_name='stn_gpe', step_size=dt, backend='fortran',
-#                      auto=True, vectorize=False, in_place=False)
+stn_gpe.get_run_func(func_name='stn_gpe_run', file_name='config/stn_gpe', step_size=dt, backend='fortran',
+                     auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = stn_gpe.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',

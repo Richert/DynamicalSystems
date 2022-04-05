@@ -12,57 +12,57 @@ subroutine stn_gpe_run(t,y,dy,v_t,v_r,k,g,q,Delta,C,v_z,v_p,E_r,I_ext,&
 
 implicit none
 
-integer, intent(in) :: t
-real, intent(in) :: y(9)
-real :: r_0
-real :: v
-real :: u
-real :: s
-real :: r
-real :: v_0
-real :: u_0
-real :: s_ampa
-real :: s_gabaa
-real :: r_in
-real :: r_e
-real :: r_i
-real, intent(inout) :: dy(9)
-real, intent(in) :: v_t
-real, intent(in) :: v_r
-real, intent(in) :: k
-real, intent(in) :: g
-real, intent(in) :: q
-real, intent(in) :: Delta
-real, intent(in) :: C
-real, intent(in) :: v_z
-real, intent(in) :: v_p
-real, intent(in) :: E_r
-real, intent(in) :: I_ext
-real, intent(in) :: b
-real, intent(in) :: a
-real, intent(in) :: d
-real, intent(in) :: tau_s
-real, intent(in) :: v_t_0
-real, intent(in) :: v_r_0
-real, intent(in) :: k_0
-real, intent(in) :: g_gabaa
-real, intent(in) :: g_ampa
-real, intent(in) :: q_0
-real, intent(in) :: Delta_0
-real, intent(in) :: C_0
-real, intent(in) :: E_gabaa
-real, intent(in) :: E_ampa
-real, intent(in) :: v_z_0
-real, intent(in) :: v_p_0
-real, intent(in) :: I_ext_0
-real, intent(in) :: b_0
-real, intent(in) :: a_0
-real, intent(in) :: d_0
-real, intent(in) :: tau_ampa
-real, intent(in) :: tau_gabaa
-real, intent(in) :: weight
-real, intent(in) :: weight_0
-real, intent(in) :: weight_1
+double precision, intent(in) :: t
+double precision, intent(in) :: y(9)
+double precision :: r_0
+double precision :: v
+double precision :: u
+double precision :: s
+double precision :: r
+double precision :: v_0
+double precision :: u_0
+double precision :: s_ampa
+double precision :: s_gabaa
+double precision :: r_in
+double precision :: r_e
+double precision :: r_i
+double precision, intent(inout) :: dy(9)
+double precision, intent(in) :: v_t
+double precision, intent(in) :: v_r
+double precision, intent(in) :: k
+double precision, intent(in) :: g
+double precision, intent(in) :: q
+double precision, intent(in) :: Delta
+double precision, intent(in) :: C
+double precision, intent(in) :: v_z
+double precision, intent(in) :: v_p
+double precision, intent(in) :: E_r
+double precision, intent(in) :: I_ext
+double precision, intent(in) :: b
+double precision, intent(in) :: a
+double precision, intent(in) :: d
+double precision, intent(in) :: tau_s
+double precision, intent(in) :: v_t_0
+double precision, intent(in) :: v_r_0
+double precision, intent(in) :: k_0
+double precision, intent(in) :: g_gabaa
+double precision, intent(in) :: g_ampa
+double precision, intent(in) :: q_0
+double precision, intent(in) :: Delta_0
+double precision, intent(in) :: C_0
+double precision, intent(in) :: E_gabaa
+double precision, intent(in) :: E_ampa
+double precision, intent(in) :: v_z_0
+double precision, intent(in) :: v_p_0
+double precision, intent(in) :: I_ext_0
+double precision, intent(in) :: b_0
+double precision, intent(in) :: a_0
+double precision, intent(in) :: d_0
+double precision, intent(in) :: tau_ampa
+double precision, intent(in) :: tau_gabaa
+double precision, intent(in) :: weight
+double precision, intent(in) :: weight_0
+double precision, intent(in) :: weight_1
 
 r_0 = y(1)
 v = y(2)
@@ -109,9 +109,9 @@ subroutine func(ndim,y,icp,args,ijac,dy,dfdu,dfdp)
 use stn_gpe
 implicit none
 integer, intent(in) :: ndim, icp(*), ijac
-real, intent(in) :: y(ndim), args(*)
-real, intent(out) :: dy(ndim)
-real, intent(inout) :: dfdu(ndim,ndim), dfdp(ndim,*)
+double precision, intent(in) :: y(ndim), args(*)
+double precision, intent(out) :: dy(ndim)
+double precision, intent(inout) :: dfdu(ndim,ndim), dfdp(ndim,*)
 
 call stn_gpe_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
      & args(5), args(6), args(7), args(8), args(9), args(15), args(16),&
@@ -128,8 +128,8 @@ subroutine stpnt(ndim, y, args, t)
 
 implicit None
 integer, intent(in) :: ndim
-real, intent(inout) :: y(ndim), args(*)
-real, intent(in) :: t
+double precision, intent(inout) :: y(ndim), args(*)
+double precision, intent(in) :: t
 
 args(1) = -40.0  ! v_t
 args(2) = -55.0  ! v_r
