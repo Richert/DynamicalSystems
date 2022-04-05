@@ -78,23 +78,23 @@ integer, intent(in) :: ndim
 double precision, intent(inout) :: y(ndim), args(*)
 double precision, intent(in) :: t
 
-args(1) = -42.0  ! v_t
-args(2) = -56.0  ! v_r
-args(3) = 1.0  ! k
+args(1) = -44.0  ! v_t
+args(2) = -53.0  ! v_r
+args(3) = 0.94  ! k
 args(4) = 1.0  ! g
 args(5) = 0.0  ! q
 args(6) = 1.0  ! Delta
-args(7) = 100.0  ! C
+args(7) = 68.0  ! C
 args(8) = 60.0  ! v_z
-args(9) = 40.0  ! v_p
+args(9) = 30.0  ! v_p
 args(15) = -60.0  ! E_r
 args(16) = 0.0  ! I_ext
-args(17) = 8.0  ! b
-args(18) = 0.03  ! a
-args(19) = 20.0  ! d
+args(17) = 3.9  ! b
+args(18) = 0.005  ! a
+args(19) = 0.35  ! d
 args(20) = 6.0  ! tau_s
 y(1) = 0.0  ! r
-y(2) = -60.0  ! v
+y(2) = -53.0  ! v
 y(3) = 0.0  ! u
 y(4) = 0.0  ! s
 
