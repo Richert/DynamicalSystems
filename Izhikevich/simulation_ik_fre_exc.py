@@ -15,7 +15,7 @@ v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 200.0  # unit: mV
 v_reset = 300.0  # unit: mV
-Delta = 0.05  # unit: mV
+Delta = 0.4  # unit: mV
 d = 10.0
 a = 0.03
 b = -2.0
@@ -60,4 +60,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_fre_exc_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/ik_fre_exc_het.p", "wb"))
