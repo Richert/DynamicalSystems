@@ -12,7 +12,7 @@ import numba as nb
 Delta_stn = 1.0
 Delta_gpe = 2.0
 k_stn_gpe = 15.0
-k_gpe_stn = 15.0
+k_gpe_stn = 30.0
 k_gpe_gpe = 15.0
 
 # define inputs
@@ -22,7 +22,7 @@ dt = 1e-3
 dts = 1e-1
 I_stn = np.zeros((int(T/dt),)) + 70.0
 I_gpe = np.zeros((int(T/dt),)) + 60.0
-I_stn[int(1000/dt):int(2000/dt)] -= 60.0
+I_stn[int(1000/dt):int(2000/dt)] += 20.0
 
 # run the model
 ###############
@@ -37,8 +37,8 @@ stn_gpe.update_var(node_vars={'stn/stn_op/Delta': Delta_stn, 'gpe/gpe_op/Delta':
                               ('gpe/gpe_op/r', 'gpe/gpe_op/r_i', {'weight': k_gpe_gpe})])
 
 # generate run function
-stn_gpe.get_run_func(func_name='stn_gpe_run', file_name='config/stn_gpe', step_size=dt, backend='fortran',
-                     auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
+# stn_gpe.get_run_func(func_name='stn_gpe_run', file_name='config/stn_gpe', step_size=dt, backend='fortran',
+#                      auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = stn_gpe.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
