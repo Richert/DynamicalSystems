@@ -1,4 +1,4 @@
-module izhikevich_exc
+module izhikevich_inh
 
 double precision :: PI = 4.0*atan(1.0)
 
@@ -41,8 +41,10 @@ s = y(4)
 
 r_in = r
 
-dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2/(pi*C))/C
-dy(2) = (-(pi*C*r)**2/k + C*q*r*log(v_p/v_z)/k + I_ext + g*s*(E_r &
+dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)&
+     & /(pi*C))/C
+dy(2) = (-pi*C*r*(pi*C*r/k &
+     & + Delta) + C*q*r*log(v_p/v_z)/k + I_ext + g*s*(E_r &
      & - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
 dy(4) = r_in - s/tau_s
@@ -55,7 +57,7 @@ end module
 
 subroutine func(ndim,y,icp,args,ijac,dy,dfdu,dfdp)
 
-use izhikevich_exc
+use izhikevich_inh
 implicit none
 integer, intent(in) :: ndim, icp(*), ijac
 double precision, intent(in) :: y(ndim), args(*)
@@ -76,23 +78,23 @@ integer, intent(in) :: ndim
 double precision, intent(inout) :: y(ndim), args(*)
 double precision, intent(in) :: t
 
-args(1) = -44.0  ! v_t
-args(2) = -53.0  ! v_r
-args(3) = 0.94  ! k
+args(1) = -45.0  ! v_t
+args(2) = -75.0  ! v_r
+args(3) = 1.2  ! k
 args(4) = 1.0  ! g
 args(5) = 0.0  ! q
-args(6) = 0.2  ! Delta
-args(7) = 68.0  ! C
-args(8) = 60.0  ! v_z
-args(9) = 30.0  ! v_p
+args(6) = 1.0  ! Delta
+args(7) = 150.0  ! C
+args(8) = 56.0  ! v_z
+args(9) = 50.0  ! v_p
 args(15) = -60.0  ! E_r
 args(16) = 0.0  ! I_ext
-args(17) = 3.9  ! b
-args(18) = 0.005  ! a
-args(19) = 0.35  ! d
-args(20) = 6.0  ! tau_s
+args(17) = 5.0  ! b
+args(18) = 0.01  ! a
+args(19) = 60.0  ! d
+args(20) = 5.0  ! tau_s
 y(1) = 0.0  ! r
-y(2) = -53.0  ! v
+y(2) = -75.0  ! v
 y(3) = 0.0  ! u
 y(4) = 0.0  ! s
 

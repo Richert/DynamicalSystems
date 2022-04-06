@@ -9,17 +9,17 @@ import numba as nb
 ###################
 
 # model parameters
-C = 68.0   # unit: pF
-k = 0.94  # unit: None
-v_r = -53.0  # unit: mV
-v_t = -44.0  # unit: mV
-v_spike = 30.0  # unit: mV
-v_reset = 60.0  # unit: mV
-Delta = 1.6  # unit: mV
-d = 0.35
-a = 0.005
-b = 3.9
-tau_s = 6.0
+C = 150.0   # unit: pF
+k = 1.2  # unit: None
+v_r = -75.0  # unit: mV
+v_t = -45.0  # unit: mV
+v_spike = 50.0  # unit: mV
+v_reset = 56.0  # unit: mV
+Delta = 0.12  # unit: mV
+d = 60.0
+a = 0.01
+b = 5.0
+tau_s = 5.0
 J = 1.0
 g = 15.0
 q = 0.0
@@ -30,8 +30,8 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 40.0
-inp[int(1000/dt):int(2000/dt)] += 20.0
+inp = np.zeros((int(T/dt),)) + 300.0
+inp[int(1000/dt):int(2000/dt)] += 200.0
 
 # run the model
 ###############
@@ -60,4 +60,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_fre_inh_het.p", "wb"))
+pickle.dump({'results': res}, open("results/ib_fre_het.p", "wb"))

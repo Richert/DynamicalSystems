@@ -123,7 +123,6 @@ stn_op:
 # gpe-specific parameters
 gpe_op:
   base: ik_ei_op
-  equations:
   variables:
     Delta: 0.1
     C: 70.0
@@ -142,6 +141,48 @@ gpe_op:
     d: 0.4
     tau_ampa: 2.0
     tau_gabaa: 5.0
+
+rs_op:
+  base: ik_ei_op
+  variables:
+    Delta: 1.0
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    v_p: 40.0
+    v_z: 60.0
+    q: 0.0
+    g_ampa: 1.5
+    g_gabaa: 0.8
+    E_ampa: 0.0
+    E_gabaa: -65.0
+    b: -2.0
+    a: 0.03
+    d: 20.0
+    tau_ampa: 6.0
+    tau_gabaa: 8.0
+
+ib_op:
+  base: ik_ei_op
+  variables:
+    Delta: 1.0
+    C: 150.0
+    k: 1.2
+    v_r: -75.0
+    v_t: -45.0
+    v_p: 50.0
+    v_z: 56.0
+    q: 0.0
+    g_ampa: 1.5
+    g_gabaa: 0.8
+    E_ampa: 0.0
+    E_gabaa: -65.0
+    b: 5.0
+    a: 0.01
+    d: 60.0
+    tau_ampa: 6.0
+    tau_gabaa: 8.0
 
 # node templates
 ################
@@ -169,6 +210,18 @@ gpe:
   base: NodeTemplate
   operators:
     - gpe_op
+
+# regular spiking neuron population
+rs:
+  base: NodeTemplate
+  operators:
+    - rs_op
+
+# intrinsically bursting neuron population
+ib:
+  base: NodeTemplate
+  operators:
+    - ib_op
 
 # circuit templates
 ###################
@@ -199,3 +252,15 @@ stn_gpe:
     - [stn/stn_op/r, gpe/gpe_op/r_e, null, {weight: 15.0}]
     - [gpe/gpe_op/r, stn/stn_op/r_in, null, {weight: 15.0}]
     - [gpe/gpe_op/r, gpe/gpe_op/r_i, null, {weight: 15.0}]
+
+# stn-gpe circuit
+eic:
+  base: CircuitTemplate
+  nodes:
+    rs: rs
+    ib: ib
+  edges:
+    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 10.0}]
+    - [rs/rs_op/r, ib/ib_op/r_e, null, {weight: 10.0}]
+    - [ib/ib_op/r, rs/rs_op/r_i, null, {weight: 45.0}]
+    - [ib/ib_op/r, ib/ib_op/r_i, null, {weight: 15.0}]

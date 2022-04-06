@@ -8,7 +8,7 @@ contains
 subroutine stn_gpe_run(t,y,dy,v_t,v_r,k,g,q,Delta,C,v_z,v_p,E_r,I_ext,&
      & b,a,d,tau_s,v_t_0,v_r_0,k_0,g_gabaa,g_ampa,q_0,Delta_0,C_0,&
      & E_gabaa,E_ampa,v_z_0,v_p_0,I_ext_0,b_0,a_0,d_0,tau_ampa,&
-     & tau_gabaa,weight,weight_0,weight_1)
+     & tau_gabaa,weight,weight_0,weight_1,w)
 
 implicit none
 
@@ -63,6 +63,7 @@ double precision, intent(in) :: tau_gabaa
 double precision, intent(in) :: weight
 double precision, intent(in) :: weight_0
 double precision, intent(in) :: weight_1
+double precision, intent(in) :: w
 
 r_0 = y(1)
 v = y(2)
@@ -74,9 +75,9 @@ u_0 = y(7)
 s_ampa = y(8)
 s_gabaa = y(9)
 
-r_in = r*weight
-r_e = r_0*weight_0
-r_i = r*weight_1
+r_in = r*weight*w
+r_e = r_0*weight_0*w
+r_i = r*weight_1*w
 
 dy(1) = (r_0*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)&
      & /(pi*C))/C
@@ -119,7 +120,7 @@ call stn_gpe_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
      & args(23), args(24), args(25), args(26), args(27), args(28), &
      & args(29), args(30), args(31), args(32), args(33), args(34), &
      & args(35), args(36), args(37), args(38), args(39), args(40), &
-     & args(41))
+     & args(41), args(42))
 
 end subroutine func
 
@@ -167,12 +168,13 @@ args(38) = 5.0  ! tau_gabaa
 args(39) = 15.0  ! weight
 args(40) = 15.0  ! weight_0
 args(41) = 15.0  ! weight_1
+args(42) = 1.0   ! w
 y(1) = 0.0  ! r_0
-y(2) = -60.0  ! v
+y(2) = -53.0  ! v
 y(3) = 0.0  ! u
 y(4) = 0.0  ! s
 y(5) = 0.0  ! r
-y(6) = -60.0  ! v_0
+y(6) = -53.0  ! v_0
 y(7) = 0.0  ! u_0
 y(8) = 0.0  ! s_ampa
 y(9) = 0.0  ! s_gabaa

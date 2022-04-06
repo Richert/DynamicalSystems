@@ -30,23 +30,24 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 45.0
-inp[int(1000/dt):int(2000/dt)] += 15.0
+inp = np.zeros((int(T/dt),)) + 40.0
+inp[int(1000/dt):int(2000/dt)] += 20.0
 
 # run the model
 ###############
 
 # initialize model
-ik = CircuitTemplate.from_yaml("config/ik/ik")
+ik = CircuitTemplate.from_yaml("config/ik/ik2")
 
 # update parameters
-ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/ik_op/v_t': v_t, 'p/ik_op/v_p': v_spike,
-                         'p/ik_op/v_z': v_reset, 'p/ik_op/Delta': Delta, 'p/ik_op/d': d, 'p/ik_op/a': a,
-                         'p/ik_op/b': b, 'p/ik_op/tau_s': tau_s, 'p/ik_op/g': g, 'p/ik_op/q': q, 'p/ik_op/E_r': E_r})
+ik.update_var(node_vars={'p/ik2_op/C': C, 'p/ik2_op/k': k, 'p/ik2_op/v_r': v_r, 'p/ik2_op/v_t': v_t,
+                         'p/ik2_op/v_p': v_spike, 'p/ik2_op/v_z': v_reset, 'p/ik2_op/Delta': Delta,
+                         'p/ik2_op/d': d, 'p/ik2_op/a': a, 'p/ik2_op/b': b, 'p/ik2_op/tau_s': tau_s, 'p/ik2_op/g': g,
+                         'p/ik2_op/q': q, 'p/ik2_op/E_r': E_r})
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/ik_op/s', 'u': 'p/ik_op/u'}, inputs={'p/ik_op/I_ext': inp},
+             outputs={'s': 'p/ik2_op/s', 'u': 'p/ik2_op/u'}, inputs={'p/ik2_op/I_ext': inp},
              decorator=nb.njit, fastmath=True)
 
 # plot results
@@ -60,4 +61,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_fre_exc_het.p", "wb"))
+pickle.dump({'results': res}, open("results/rs_fre2_het.p", "wb"))

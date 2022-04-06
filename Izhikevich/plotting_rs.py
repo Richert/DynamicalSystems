@@ -5,16 +5,21 @@ from pyauto import PyAuto
 import sys
 import numpy as np
 sys.path.append('../')
+import pickle
 
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-exc1 = PyAuto.from_file(f"results/izhikevich_exc.pkl", auto_dir=auto_dir)
-exc2 = PyAuto.from_file(f"results/izhikevich2_exc.pkl", auto_dir=auto_dir)
-inh1 = PyAuto.from_file(f"results/izhikevich_inh.pkl", auto_dir=auto_dir)
-inh2 = PyAuto.from_file(f"results/izhikevich2_inh.pkl", auto_dir=auto_dir)
+exc1 = PyAuto.from_file(f"results/rs.pkl", auto_dir=auto_dir)
+exc2 = PyAuto.from_file(f"results/rs2.pkl", auto_dir=auto_dir)
 deltas = exc1.additional_attributes['D']
 n = len(deltas)
+
+# load simulation data
+fre_hom = pickle.load(open(f"results/rs_fre_hom.p", "rb"))['results']
+fre_het = pickle.load(open(f"results/rs_fre_het.p", "rb"))['results']
+fre2_hom = pickle.load(open(f"results/rs_fre2_hom.p", "rb"))['results']
+fre2_het = pickle.load(open(f"results/rs_fre2_het.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -36,31 +41,45 @@ cmap = plt.get_cmap('copper', lut=n)
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=4, ncols=4, figure=fig)
+grid = gridspec.GridSpec(nrows=4, ncols=2, figure=fig)
 
 # plot the 1D bifurcation diagrams
-titles = [r'Excitatory, $\Delta_v$', r'Excitatory, $\Delta_{\eta}$', r'Inhibitory, $\Delta_v$',
-          r'Inhibitory, $\Delta_{\eta}$']
-autos = [exc1, exc2, inh1, inh2]
+titles = [r'(A) $\Delta_v$', r'(B) $\Delta_{\eta}$']
+autos = [exc1, exc2]
 for i, (a, title) in enumerate(zip(autos, titles)):
 
-    ax = fig.add_subplot(grid[i, 0])
-    c = to_hex(cmap(i, alpha=1.0))
+    ax = fig.add_subplot(grid[:2, i])
     lines = []
     for j in range(1, n + 1):
         c = to_hex(cmap(j, alpha=1.0))
         line = a.plot_continuation('PAR(16)', 'U(4)', cont=f'I:{j}', ax=ax, line_color_stable=c, line_color_unstable=c)
         lines.append(line)
+    ax.set_xlim([0.0, 70.0])
     ax.set_xlabel(r'$I$')
+    ax.set_ylabel(r'$s$' if i == 0 else '')
+    ax.set_title(title)
+    if i == 1:
+        plt.legend(handles=lines, labels=[fr'$\Delta = {D}$' for D in deltas], loc=7)
+
+# plot the timeseries
+titles = [r'(C) $\Delta = 0.2$', r'(D) $\Delta = 1.6$', ]
+data = [[fre_hom, fre2_hom], [fre_het, fre2_het]]
+for i, (title, (res1, res2)) in enumerate(zip(titles, data)):
+
+    ax = fig.add_subplot(grid[i+2, :])
+    ax.plot(res1['s'])
+    ax.plot(res2['s'])
     ax.set_ylabel(r'$s$')
     ax.set_title(title)
-    if i == len(autos)-1:
-        plt.legend(handles=lines, labels=[fr'$\Delta = {D}$' for D in deltas])
+    if i == 0:
+        plt.legend([r'$\Delta_v$', r'$\Delta_{\eta}$'])
+    if i == 1:
+        ax.set_xlabel(r'time (ms)')
 
 # padding
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.set_constrained_layout_pads(w_pad=0.05, h_pad=0.01, hspace=0.05, wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/izhikevich_fig1.pdf')
+plt.savefig(f'results/rs.pdf')
 plt.show()

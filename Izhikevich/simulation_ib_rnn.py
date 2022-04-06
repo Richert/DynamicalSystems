@@ -25,19 +25,19 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 
 # model parameters
 N = 10000
-C = 100.0   # unit: pF
-k = 1.0  # unit: None
-v_r = -56.0  # unit: mV
-v_t = -42.0  # unit: mV
-v_spike = 400.0  # unit: mV
-v_reset = -600.0  # unit: mV
-Delta = 0.05  # unit: mV
-d = 20.0
-a = 0.03
-b = 8.0
-tau_s = 6.0
+C = 150.0   # unit: pF
+k = 1.2  # unit: None
+v_r = -75.0  # unit: mV
+v_t = -45.0  # unit: mV
+v_spike = 50.0  # unit: mV
+v_reset = -56.0  # unit: mV
+Delta = 0.12  # unit: mV
+d = 60.0
+a = 0.01
+b = 5.0
+tau_s = 5.0
 J = 1.0
-g = 20.0
+g = 15.0
 q = 0.0
 E_r = -60.0
 
@@ -45,19 +45,19 @@ E_r = -60.0
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define inputs
-T = 3500.0
+T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 110.0
-inp[int(1000/dt):int(3000/dt)] += 30.0
+inp = np.zeros((int(T/dt),)) + 300.0
+inp[int(1000/dt):int(2000/dt)] += 200.0
 
 # run the model
 ###############
 
 # initialize model
 u_init = np.zeros((3*N,))
-u_init[:N] -= 60.0
+u_init[:N] += v_r
 model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
             tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
 
@@ -78,4 +78,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_rnn_inh_hom2.p", "wb"))
+pickle.dump({'results': res}, open("results/ib_rnn_het.p", "wb"))

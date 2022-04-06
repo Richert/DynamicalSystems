@@ -13,9 +13,9 @@ C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 200.0  # unit: mV
-v_reset = 300.0  # unit: mV
-Delta = 1.6  # unit: mV
+v_spike = 40.0  # unit: mV
+v_reset = 60.0  # unit: mV
+Delta = 0.2  # unit: mV
 d = 20.0
 a = 0.03
 b = -2.0
@@ -37,17 +37,16 @@ inp[int(1000/dt):int(2000/dt)] += 20.0
 ###############
 
 # initialize model
-ik = CircuitTemplate.from_yaml("config/ik/ik2")
+ik = CircuitTemplate.from_yaml("config/ik/ik")
 
 # update parameters
-ik.update_var(node_vars={'p/ik2_op/C': C, 'p/ik2_op/k': k, 'p/ik2_op/v_r': v_r, 'p/ik2_op/v_t': v_t,
-                         'p/ik2_op/v_p': v_spike, 'p/ik2_op/v_z': v_reset, 'p/ik2_op/Delta': Delta,
-                         'p/ik2_op/d': d, 'p/ik2_op/a': a, 'p/ik2_op/b': b, 'p/ik2_op/tau_s': tau_s, 'p/ik2_op/g': g,
-                         'p/ik2_op/q': q, 'p/ik2_op/E_r': E_r})
+ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/ik_op/v_t': v_t, 'p/ik_op/v_p': v_spike,
+                         'p/ik_op/v_z': v_reset, 'p/ik_op/Delta': Delta, 'p/ik_op/d': d, 'p/ik_op/a': a,
+                         'p/ik_op/b': b, 'p/ik_op/tau_s': tau_s, 'p/ik_op/g': g, 'p/ik_op/q': q, 'p/ik_op/E_r': E_r})
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/ik2_op/s', 'u': 'p/ik2_op/u'}, inputs={'p/ik2_op/I_ext': inp},
+             outputs={'s': 'p/ik_op/s', 'u': 'p/ik_op/u'}, inputs={'p/ik_op/I_ext': inp},
              decorator=nb.njit, fastmath=True)
 
 # plot results
@@ -61,4 +60,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik2_fre_exc_het.p", "wb"))
+pickle.dump({'results': res}, open("results/rs_fre_het.p", "wb"))
