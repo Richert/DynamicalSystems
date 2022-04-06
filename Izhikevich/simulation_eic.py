@@ -18,8 +18,8 @@ cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
 I_r = np.zeros((int(T/dt),)) + 50.0
-I_i = np.zeros((int(T/dt),)) + 100.0
-I_i[int(1000/dt):int(2000/dt)] += 150.0
+I_i = np.zeros((int(T/dt),)) + 200.0
+I_i[int(1000/dt):int(2000/dt)] += 100.0
 
 # run the model
 ###############
