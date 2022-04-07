@@ -31,8 +31,8 @@ eic = CircuitTemplate.from_yaml("config/ik/eic")
 eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'ib/ib_op/Delta': Delta_ib})
 
 # generate run function
-eic.get_run_func(func_name='eic_run', file_name='config/eic', step_size=dt, backend='fortran',
-                 auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
+# eic.get_run_func(func_name='eic_run', file_name='config/eic', step_size=dt, backend='fortran',
+#                  auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='scipy',
@@ -50,4 +50,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_fre_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_ib_fre_hom.p", "wb"))
