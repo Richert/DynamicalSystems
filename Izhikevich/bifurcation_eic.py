@@ -37,41 +37,32 @@ c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=18, NPAR=n_params, N
                          RL1=100.0, RL0=0.0)
 
 # continuation in Delta_ib
-vals = [1.0, 2.0]
+vals = [0.5, 2.5]
 c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=30, NPAR=n_params, NDIM=n_dim, name='D_ib:1',
-                         origin=c1_cont, NMX=8000, DSMAX=0.1, UZR={30: vals}, STOP=[f'UZ2'], NPR=100, RL1=3.0)
+                         origin=c1_cont, NMX=8000, DSMAX=0.1, UZR={30: vals}, STOP=[f'UZ2'], NPR=100, RL1=3.0, RL0=0.0,
+                         bidirectional=True)
 
 # main continuations
 ####################
 
-# continuation in background input to GPe for Delta_ib = 1.0
+# continuation in background input to GPe for Delta_ib = 0.5
 c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_ib:1',
-                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=500.0)
+                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=50, RL1=500.0)
 
-# continuation of limit cycle for Delta_ib = 1.0
+# continuation of limit cycle for Delta_ib = 0.5
 c4_sols, c4_cont = a.run(starting_point='HB1', c='qif2b', ICP=[36, 11], NPAR=n_params, NDIM=n_dim, name='I_ib:1:lc',
-                         origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=50, RL1=500.0)
+                         origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=500.0)
 
-# continuation in background input to GPe for Delta_ib = 1.0
+# continuation in background input to GPe for Delta_ib = 2.5
 c5_sols, c5_cont = a.run(starting_point='UZ2', c='qif', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_ib:2',
-                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=500.0)
+                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=50, RL1=500.0)
 
-# continuation of limit cycle for Delta_ib = 1.0
+# continuation of limit cycle for Delta_ib = 2.5
 c6_sols, c6_cont = a.run(starting_point='HB1', c='qif2b', ICP=[36, 11], NPAR=n_params, NDIM=n_dim, name='I_ib:2:lc',
-                         origin=c5_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=50, RL1=500.0)
+                         origin=c5_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=500.0)
 
 # 2D continuations
 ##################
-
-# continuation in both Deltas
-# a.run(starting_point='HB1', c='qif2', ICP=[30, 7], NPAR=n_params, NDIM=n_dim, name='D_ib/D_rs:hb1', origin=c3_cont,
-#       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=0.01, bidirectional=True)
-# a.run(starting_point='LP1', c='qif2', ICP=[30, 7], NPAR=n_params, NDIM=n_dim, name='D_ib/D_rs:lp1', origin=c3_cont,
-#       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=0.01, bidirectional=True)
-# a.run(starting_point='LP2', c='qif2', ICP=[30, 7], NPAR=n_params, NDIM=n_dim, name='D_ib/D_rs:lp2', origin=c3_cont,
-#       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=0.01, bidirectional=True)
-# a.run(starting_point='LP1', c='qif_lc', ICP=[30, 7], NPAR=n_params, NDIM=n_dim, name='D_ib/D_rs:lc1', origin=c4_cont,
-#       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=0.01, bidirectional=True)
 
 # continuation in Delta_ib and I_ib
 a.run(starting_point='HB1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_ib/I_ib:hb1', origin=c3_cont,
@@ -81,7 +72,7 @@ a.run(starting_point='LP1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, n
 a.run(starting_point='LP2', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_ib/I_ib:lp2', origin=c3_cont,
       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP1', c='qif_lc', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_ib/I_ib:lc1', origin=c4_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['BP2'], NPR=10, RL1=10.0, RL0=0.0)
 
 # save results
 ##############
