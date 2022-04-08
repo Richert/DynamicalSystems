@@ -149,7 +149,7 @@ ib_op:
     E_gabaa: -65.0
     b: 5.0
     a: 0.01
-    d: 60.0
+    d: 30.0
     tau_ampa: 6.0
     tau_gabaa: 8.0
 

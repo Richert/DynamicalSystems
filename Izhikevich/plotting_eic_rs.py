@@ -9,11 +9,12 @@ sys.path.append('../')
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/eic2.pkl", auto_dir=auto_dir)
+a = PyAuto.from_file(f"results/eic_rs.pkl", auto_dir=auto_dir)
+deltas = a.additional_attributes['deltas']
 
 # load simulation data
-# fre_hom = pickle.load(open(f"results/eic_fre_hom.p", "rb"))['results']
-# fre_het = pickle.load(open(f"results/eic_fre_het.p", "rb"))['results']
+# fre_hom = pickle.load(open(f"results/eic_rs_fre_hom.p", "rb"))['results']
+# fre_het = pickle.load(open(f"results/eic_rs_fre_het.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -41,40 +42,47 @@ grid = gridspec.GridSpec(nrows=3, ncols=2, figure=fig)
 
 # continuation of Hopf in Delta_ib and I_ib
 ax = fig.add_subplot(grid[0:2, 0])
-a.plot_continuation('PAR(7)', 'PAR(18)', cont=f'D_rs/I_rs:hb1', ax=ax, line_color_stable='#148F77',
+a.plot_continuation('PAR(18)', 'PAR(7)', cont=f'D_rs/I_rs:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
-a.plot_continuation('PAR(7)', 'PAR(18)', cont=f'D_rs/I_rs:lp1', ax=ax, line_color_stable='#5D6D7E',
+# a.plot_continuation('PAR(18)', 'PAR(7)', cont=f'D_rs/I_rs:hb3', ax=ax, line_color_stable='#148F77',
+#                     line_color_unstable='#148F77', line_style_unstable='solid')
+a.plot_continuation('PAR(18)', 'PAR(7)', cont=f'D_rs/I_rs:lp1', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(7)', 'PAR(18)', cont=f'D_rs/I_rs:lp2', ax=ax, line_color_stable='#5D6D7E',
+a.plot_continuation('PAR(18)', 'PAR(7)', cont=f'D_rs/I_rs:lp2', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
-ax.set_xlabel(r'$\Delta_{rs}$')
-ax.set_ylabel(r'$I_{rs}$')
+ax.set_ylabel(r'$\Delta_{rs}$')
+ax.set_xlabel(r'$I_{rs}$')
 ax.set_title('(A) 2D bifurcation diagram')
-# ax.set_xlim([0.0, 3.0])
-# ax.set_ylim([100.0, 400.0])
+ax.set_ylim([0.0, 5.0])
+ax.set_xlim([20.0, 120.0])
 
 # 1D continuations
 ##################
 
-# 1D continuation in I_ib for Delta_ib = 1.0
+# 1D continuation in I_rs for high heterogeneity
 ax = fig.add_subplot(grid[0, 1])
-a.plot_continuation('PAR(18)', 'U(1)', cont='I_rs:1', ax=ax, line_color_stable='#76448A', line_color_unstable='#5D6D7E')
-ax.set_ylabel(r'$v_{rs}$')
-ax.set_title(r'(B) 1D bifurcation diagram for $\Delta = 1.0$')
-# ax.set_xlim([150.0, 350.0])
-
-# 1D continuation in I_ib for Delta_ib = 2.0
-ax = fig.add_subplot(grid[1, 1])
 a.plot_continuation('PAR(18)', 'U(1)', cont='I_rs:2', ax=ax, line_color_stable='#76448A', line_color_unstable='#5D6D7E')
 ax.set_xlabel(r'$I_{rs}$')
-ax.set_ylabel(r'$v_{rs}$')
-ax.set_title(r'(C) 1D bifurcation diagram for $\Delta = 2.0$')
-# ax.set_xlim([150.0, 350.0])
+ax.set_ylabel(r'$r_{rs}$')
+ax.set_title(rf'(C) 1D bifurcation diagram for $\Delta = {deltas[1]}$')
+ax.set_xlim([20.0, 80.0])
+ax.set_ylim([-0.001, 0.03])
+
+# 1D continuation in I_rs for low heterogeneity
+ax = fig.add_subplot(grid[1, 1])
+a.plot_continuation('PAR(18)', 'U(1)', cont='I_rs:1', ax=ax, line_color_stable='#76448A', line_color_unstable='#5D6D7E')
+a.plot_continuation('PAR(18)', 'U(1)', cont='I_rs:1:lc1', ax=ax, line_color_stable='#148F77')
+# a.plot_continuation('PAR(18)', 'U(1)', cont='I_rs:1:lc2', ax=ax, line_color_stable='#148F77')
+# a.plot_continuation('PAR(18)', 'U(1)', cont='I_rs:1:lc3', ax=ax, line_color_stable='#148F77')
+ax.set_ylabel(r'$r_{rs}$')
+ax.set_title(rf'(B) 1D bifurcation diagram for $\Delta = {deltas[0]}$')
+ax.set_xlim([20.0, 80.0])
+ax.set_ylim([-0.001, 0.03])
 
 # time series
 #############
 
-titles = [r'(D) $\Delta = 1.0$', r'(E) $\Delta = 2.0$', ]
+titles = [rf'(D) $\Delta = {deltas[0]}$', rf'(E) $\Delta = {deltas[1]}$', ]
 # data = [[fre_hom], [fre_het]]
 # for i, (title, (fre,)) in enumerate(zip(titles, data)):
 #
@@ -95,5 +103,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/eic2.pdf')
+plt.savefig(f'results/eic_rs.pdf')
 plt.show()
