@@ -33,7 +33,7 @@ v_t = -45.0  # unit: mV
 v_spike = 56.0  # unit: mV
 v_reset = -56.0  # unit: mV
 Delta = 1.0  # unit: mV
-d = 60.0
+d = 30.0
 a = 0.01
 b = 5.0
 
@@ -65,7 +65,7 @@ model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_s
 outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}}
 
 # loop over different input strengths
-Is = [0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0]
+Is = [0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0]
 results = []
 for mu in Is:
 
@@ -78,6 +78,9 @@ for mu in Is:
     # run simulation
     res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
     results.append(res['s'][-1])
+
+# save results
+pickle.dump({'results': results, 'inputs': Is}, open("results/ib_rnn_io.p", "wb"))
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 6))
