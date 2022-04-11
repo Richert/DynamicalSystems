@@ -23,30 +23,31 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 # define parameters
 ###################
 
-# IB neuron parameters
 N = 10000
-Ci = 150.0   # unit: pF
-ki = 1.2  # unit: None
-vi_r = -75.0  # unit: mV
-vi_t = -45.0  # unit: mV
-vi_spike = 50.0  # unit: mV
-vi_reset = -56.0  # unit: mV
-Delta_i = 2.5  # unit: mV
-di = 30.0
-ai = 0.01
-bi = 5.0
 
 # RS neuron parameters
 Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-ve_spike = 2000.0  # unit: mV
-ve_reset = -3000.0  # unit: mV
-Delta_e = 1.0  # unit: mV
-de = 10.0
+ve_spike = 60.0  # unit: mV
+ve_reset = -60.0  # unit: mV
+Delta_e = 2.0  # unit: mV
+de = 20.0
 ae = 0.03
 be = -2.0
+
+# IB neuron parameters
+Ci = 150.0   # unit: pF
+ki = 1.2  # unit: None
+vi_r = -75.0  # unit: mV
+vi_t = -45.0  # unit: mV
+vi_spike = 56.0  # unit: mV
+vi_reset = -56.0  # unit: mV
+Delta_i = 1.0  # unit: mV
+di = 30.0
+ai = 0.01
+bi = 5.0
 
 # synaptic parameters
 g_ampa = 1.5
@@ -70,9 +71,9 @@ cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
 I_ext = np.zeros((int(T/dt), 2))
-I_ext[:, 0] = 36.0
-I_ext[:, 1] = 220.0
-I_ext[int(2000/dt):int(3000/dt), 0] += 14.0
+I_ext[:, 0] = 30.0
+I_ext[:, 1] = 200.0
+I_ext[int(2000/dt):int(3000/dt), 0] += 20.0
 
 # run the model
 ###############
@@ -87,16 +88,16 @@ model = RNN(N, 6*N, ik_ei_ata, Ce=Ce, Ci=Ci, ke=ke, ki=ki, ve_r=ve_r, vi_r=vi_r,
             tau_ampa=tau_ampa, tau_gaba=tau_gaba, k_ee=k_ee, k_ei=k_ei, k_ie=k_ie, k_ii=k_ii, u_init=u_init)
 
 # define outputs
-outputs = {'re': {'idx': np.asarray([4*N+2]), 'avg': False}, 'ri': {'idx': np.asarray([4*N+3]), 'avg': False}}
+outputs = {'se': {'idx': np.asarray([4*N]), 'avg': False}, 'si': {'idx': np.asarray([4*N+1]), 'avg': False}}
 
 # perform simulation
 res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=I_ext, cutoff=cutoff, parallel=True, fastmath=True)
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 6))
-ax.plot(res["re"])
-ax.plot(res["ri"])
-ax.set_ylabel(r'$r(t)$')
+ax.plot(res["se"])
+ax.plot(res["si"])
+ax.set_ylabel(r'$s(t)$')
 ax.set_xlabel('time')
 plt.legend(['RS', 'IB'])
 plt.tight_layout()
