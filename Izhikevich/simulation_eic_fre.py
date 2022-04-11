@@ -9,17 +9,17 @@ import numba as nb
 ###################
 
 # model parameters
-Delta_rs = 0.5
+Delta_rs = 2.0
 Delta_ib = 1.0
 
 # define inputs
-T = 10000.0
+T = 4000.0
 cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-I_r = np.zeros((int(T/dt),)) + 35.0
+I_r = np.zeros((int(T/dt),)) + 36.0
 I_i = np.zeros((int(T/dt),)) + 220.0
-I_r[int(2000/dt):int(9000/dt)] += 20.0
+I_r[int(2000/dt):int(3000/dt)] += 24.0
 
 # run the model
 ###############
@@ -50,4 +50,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_rs_fre_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_rs_fre_het.p", "wb"))
