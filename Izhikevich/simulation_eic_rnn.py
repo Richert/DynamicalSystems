@@ -32,7 +32,7 @@ ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
 ve_spike = 60.0  # unit: mV
 ve_reset = -60.0  # unit: mV
-Delta_e = 2.0  # unit: mV
+Delta_e = 1.0  # unit: mV
 de = 20.0
 ae = 0.03
 be = -2.0
@@ -44,7 +44,7 @@ vi_r = -75.0  # unit: mV
 vi_t = -45.0  # unit: mV
 vi_spike = 56.0  # unit: mV
 vi_reset = -56.0  # unit: mV
-Delta_i = 1.0  # unit: mV
+Delta_i = 0.5  # unit: mV
 di = 30.0
 ai = 0.01
 bi = 5.0
@@ -71,9 +71,9 @@ cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
 I_ext = np.zeros((int(T/dt), 2))
-I_ext[:, 0] = 30.0
-I_ext[:, 1] = 200.0
-I_ext[int(2000/dt):int(3000/dt), 0] += 20.0
+I_ext[:, 0] = 42.0
+I_ext[:, 1] = 155.0
+I_ext[int(2000/dt):int(3000/dt), 1] += 138.0
 
 # run the model
 ###############
@@ -104,4 +104,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_rs_rnn_het.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_ib_rnn_het.p", "wb"))
