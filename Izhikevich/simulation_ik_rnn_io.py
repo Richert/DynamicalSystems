@@ -26,20 +26,20 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 N = 10000
 
 # neuron parameters
-C = 150.0   # unit: pF
-k = 1.2  # unit: None
-v_r = -75.0  # unit: mV
-v_t = -45.0  # unit: mV
-v_spike = 56.0  # unit: mV
-v_reset = -56.0  # unit: mV
+C = 100.0   # unit: pF
+k = 0.7  # unit: None
+v_r = -60.0  # unit: mV
+v_t = -40.0  # unit: mV
+v_spike = 60.0  # unit: mV
+v_reset = 60.0  # unit: mV
 Delta = 1.0  # unit: mV
-d = 30.0
-a = 0.01
-b = 5.0
+d = 20.0
+a = 0.03
+b = -2.0
 
 # synaptic parameters
 g = 1.5
-E = -65.0
+E = 0.0
 tau = 6.0
 J = 0.0
 
@@ -57,16 +57,16 @@ steps = int(T/dt)
 ###############
 
 # initialize model
-u_init = np.zeros((3*N,))
+u_init = np.zeros((2*N+2,))
 u_init[:N] += v_r
 model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
             tau_s=tau, J=J, g=g, E_r=E, q=0.0, u_init=u_init)
 
 # define outputs
-outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}}
+outputs = {'s': {'idx': np.asarray([2*N]), 'avg': False}}
 
 # loop over different input strengths
-Is = [0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0, 550.0, 600.0, 650.0, 700.0]
+Is = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0]
 results = []
 for mu in Is:
 
@@ -82,7 +82,7 @@ for mu in Is:
 
 
 # save results
-pickle.dump({'results': results, 'inputs': Is}, open("results/ib_rnn_io.p", "wb"))
+pickle.dump({'results': results, 'inputs': Is}, open("results/rs_rnn_io.p", "wb"))
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 6))
