@@ -47,10 +47,11 @@ J = 0.0
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define inputs
-T = 1000.0
-cutoff = 0.0
+T = 2000.0
+cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
+steps = int(T/dt)
 
 # run the model
 ###############
@@ -65,7 +66,7 @@ model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_s
 outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}}
 
 # loop over different input strengths
-Is = [0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0]
+Is = [0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0, 550.0, 600.0, 650.0, 700.0]
 results = []
 for mu in Is:
 
@@ -73,11 +74,12 @@ for mu in Is:
     print('')
 
     # define inputs
-    inp = np.zeros((int(T / dt),)) + mu
+    inp = np.zeros((steps,)) + mu
 
     # run simulation
     res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
-    results.append(res['s'][-1])
+    results.append(np.mean(res['s']))
+
 
 # save results
 pickle.dump({'results': results, 'inputs': Is}, open("results/ib_rnn_io.p", "wb"))
