@@ -122,8 +122,8 @@ rs_op:
     v_p: 60.0
     v_z: 60.0
     q: 0.0
-    g_ampa: 1.5
-    g_gabaa: 0.8
+    g_ampa: 1.0
+    g_gabaa: 1.0
     E_ampa: 0.0
     E_gabaa: -65.0
     b: -2.0
@@ -150,6 +150,48 @@ ib_op:
     b: 5.0
     a: 0.01
     d: 30.0
+    tau_ampa: 6.0
+    tau_gabaa: 8.0
+
+fs_op:
+  base: ik_ei_op
+  variables:
+    Delta: 1.0
+    C: 20.0
+    k: 1.0
+    v_r: -55.0
+    v_t: -40.0
+    v_p: 25.0
+    v_z: 45.0
+    q: 0.0
+    g_ampa: 1.0
+    g_gabaa: 1.0
+    E_ampa: 0.0
+    E_gabaa: -65.0
+    b: 0.025
+    a: 0.2
+    d: 0.0
+    tau_ampa: 6.0
+    tau_gabaa: 8.0
+
+lts_op:
+  base: ik_ei_op
+  variables:
+    Delta: 1.0
+    C: 100.0
+    k: 1.0
+    v_r: -56.0
+    v_t: -42.0
+    v_p: 40.0
+    v_z: 53.0
+    q: 0.0
+    g_ampa: 1.0
+    g_gabaa: 1.0
+    E_ampa: 0.0
+    E_gabaa: -65.0
+    b: 8.0
+    a: 0.03
+    d: 20.0
     tau_ampa: 6.0
     tau_gabaa: 8.0
 
@@ -186,6 +228,18 @@ ib:
   operators:
     - ib_op
 
+# fast-spiking neuron population
+fs:
+  base: NodeTemplate
+  operators:
+    - fs_op
+
+# low-threshold-spiking neuron population
+lts:
+  base: NodeTemplate
+  operators:
+    - lts_op
+
 # circuit templates
 ###################
 
@@ -208,14 +262,31 @@ stn_gpe:
     - [gpe/gpe_op/r, stn/stn_op/r_in, null, {weight: 15.0}]
     - [gpe/gpe_op/r, gpe/gpe_op/r_i, null, {weight: 15.0}]
 
-# stn-gpe circuit
+# rs-fs circuit
 eic:
   base: CircuitTemplate
   nodes:
     rs: rs
-    ib: ib
+    fs: fs
+  edges:
+    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 18.0}]
+    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 10.0}]
+    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 18.0}]
+    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 10.0}]
+
+# rs-fs circuit
+eiic:
+  base: CircuitTemplate
+  nodes:
+    rs: rs
+    fs: fs
+    lts: lts
   edges:
     - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 10.0}]
-    - [rs/rs_op/r, ib/ib_op/r_e, null, {weight: 10.0}]
-    - [ib/ib_op/r, rs/rs_op/r_i, null, {weight: 45.0}]
-    - [ib/ib_op/r, ib/ib_op/r_i, null, {weight: 15.0}]
+    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 8.0}]
+    - [rs/rs_op/r, lts/lts_op/r_e, null, {weight: 4.0}]
+    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 8.0}]
+    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
+    - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 4.0}]
+    - [lts/lts_op/r, rs/rs_op/r_i, null, {weight: 8.0}]
+    - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 4.0}]

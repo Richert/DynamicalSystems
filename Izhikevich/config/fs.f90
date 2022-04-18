@@ -1,11 +1,11 @@
-module izhikevich_exc
+module fs
 
 double precision :: PI = 4.0*atan(1.0)
 
 contains
 
 
-subroutine ik_run(t,y,dy,v_t,v_r,k,g,q,Delta,C,v_z,v_p,E_r,I_ext,b,a,d,&
+subroutine fs_run(t,y,dy,v_t,v_r,k,g,q,Delta,C,v_z,v_p,E_r,I_ext,b,a,d,&
      & tau_s)
 
 implicit none
@@ -57,14 +57,14 @@ end module
 
 subroutine func(ndim,y,icp,args,ijac,dy,dfdu,dfdp)
 
-use izhikevich_exc
+use fs
 implicit none
 integer, intent(in) :: ndim, icp(*), ijac
 double precision, intent(in) :: y(ndim), args(*)
 double precision, intent(out) :: dy(ndim)
 double precision, intent(inout) :: dfdu(ndim,ndim), dfdp(ndim,*)
 
-call ik_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
+call fs_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
      & args(5), args(6), args(7), args(8), args(9), args(15), args(16),&
      &  args(17), args(18), args(19), args(20))
 
@@ -79,19 +79,19 @@ double precision, intent(inout) :: y(ndim), args(*)
 double precision, intent(in) :: t
 
 args(1) = -40.0  ! v_t
-args(2) = -60.0  ! v_r
-args(3) = 0.7  ! k
-args(4) = 1.0  ! g
+args(2) = -55.0  ! v_r
+args(3) = 1.0  ! k
+args(4) = 15.0  ! g
 args(5) = 0.0  ! q
-args(6) = 1.0  ! Delta
-args(7) = 100.0  ! C
-args(8) = 60.0  ! v_z
-args(9) = 40.0  ! v_p
-args(15) = 0.0  ! E_r
+args(6) = 0.3  ! Delta
+args(7) = 20.0  ! C
+args(8) = 900.0  ! v_z
+args(9) = 500.0  ! v_p
+args(15) = -65.0  ! E_r
 args(16) = 0.0  ! I_ext
-args(17) = -2.0  ! b
-args(18) = 0.03  ! a
-args(19) = 10.0  ! d
+args(17) = 0.025  ! b
+args(18) = 0.2  ! a
+args(19) = 0.0  ! d
 args(20) = 6.0  ! tau_s
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v

@@ -1,5 +1,6 @@
 from pyauto import PyAuto
 import sys
+import matplotlib.pyplot as plt
 
 """
 Bifurcation analysis of the Izhikevich mean-field model.
@@ -37,9 +38,9 @@ c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=4, NPAR=n_params, ND
 
 # continuation in the input strength
 a.run(starting_point=f'UZ1', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:1', origin=c1_cont,
-      NMX=8000, DSMAX=0.1, NPR=50, RL1=700.0)
+      NMX=8000, DSMAX=0.1, NPR=50, RL1=900.0)
 
 # save results
-fname = '../results/ib_io.pkl'
+fname = '../results/ib_fre_io.pkl'
 kwargs = {}
 a.to_file(fname, **kwargs)

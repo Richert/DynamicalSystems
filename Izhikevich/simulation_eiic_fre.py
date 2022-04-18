@@ -9,35 +9,37 @@ import numba as nb
 ###################
 
 # model parameters
-Delta_rs = 0.3
-Delta_fs = 1.0
+Delta_rs = 0.2
+Delta_fs = 0.2
+Delta_lts = 0.2
 
 # define inputs
 T = 4000.0
 cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-I_r = np.zeros((int(T/dt),)) + 40.0
-I_i = np.zeros((int(T/dt),)) + 20.0
-I_r[int(2000/dt):int(3000/dt)] += 40.0
+I_r = np.zeros((int(T/dt),)) + 50.0
+I_f = np.zeros((int(T/dt),)) + 0.0
+I_l = np.zeros((int(T/dt),)) + 40.0
+I_l[int(2000/dt):int(3000/dt)] += 60.0
 
 # run the model
 ###############
 
 # initialize model
-eic = CircuitTemplate.from_yaml("config/ik/eic")
+eic = CircuitTemplate.from_yaml("config/ik/eiic")
 
 # update parameters
-eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs})
+eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs, 'lts/lts_op/Delta': Delta_lts})
 
 # generate run function
-# eic.get_run_func(func_name='eic_run', file_name='config/eic', step_size=dt, backend='fortran',
+# eic.get_run_func(func_name='eic_run', file_name='config/eiic', step_size=dt, backend='fortran',
 #                  auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-              outputs={'rs': 'rs/rs_op/r', 'fs': 'fs/fs_op/r'},
-              inputs={'rs/rs_op/I_ext': I_r, 'fs/fs_op/I_ext': I_i},
+              outputs={'rs': 'rs/rs_op/r', 'fs': 'fs/fs_op/r', 'lts': 'lts/lts_op/r'},
+              inputs={'rs/rs_op/I_ext': I_r, 'fs/fs_op/I_ext': I_f, 'lts/lts_op/I_ext': I_l},
               decorator=nb.njit, fastmath=True, vectorize=False)
 
 # plot results
@@ -50,4 +52,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_rs_fre_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/eiic_rs_fre_hom.p", "wb"))
