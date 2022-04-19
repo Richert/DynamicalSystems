@@ -20,7 +20,7 @@ n_params = 66
 a = PyAuto("config", auto_dir=auto_dir)
 
 # initial continuation in time (to converge to fixed point)
-t_sols, t_cont = a.run(e='eiic', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04,
+t_sols, t_cont = a.run(e='eiic2', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04,
                        DSMAX=0.1, NMX=50000, UZR={14: 2000.0}, STOP={'UZ1'}, NPR=1000, NDIM=n_dim, NPAR=n_params)
 
 ########################
@@ -32,7 +32,7 @@ t_sols, t_cont = a.run(e='eiic', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1
 
 # continuation in background input to RS population
 c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=18, NPAR=n_params, NDIM=n_dim, name='I_rs:1',
-                         origin=t_cont, NMX=8000, DSMAX=0.1, UZR={18: [50.0]}, STOP=[f'UZ1'], NPR=100,
+                         origin=t_cont, NMX=8000, DSMAX=0.1, UZR={18: [60.0]}, STOP=[], NPR=100,
                          RL1=100.0)
 
 # continuation in Delta_lts
@@ -43,90 +43,33 @@ c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=48, NPAR=n_params, N
 
 # continuation in LTS input for low Delta_lts
 c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=54, NPAR=n_params, NDIM=n_dim, name='I_lts:1',
-                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={54: [105.0]}, STOP=[], NPR=20, RL1=200.0)
+                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
+a.run(starting_point='HB1', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc1',
+      origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP4', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
+a.run(starting_point='HB2', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc2',
+      origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP4', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
 
 # continuation in LTS input for high Delta_lts
 c4_sols, c4_cont = a.run(starting_point='UZ2', c='qif', ICP=54, NPAR=n_params, NDIM=n_dim, name='I_lts:2',
-                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={54: [90.0]}, STOP=[], NPR=20, RL1=200.0)
+                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
+a.run(starting_point='HB1', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:2:lc1',
+      origin=c4_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP4', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
 
 # 2D continuation in Delta_lts and I_lts
 a.run(starting_point='LP1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:lp1', origin=c3_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:lp2', origin=c3_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-
-# b) analysis in RS parameters
-##############################
-
-# continuation in background input to RS population
-c5_sols, c5_cont = a.run(starting_point='UZ1', c='qif', ICP=18, NPAR=n_params, NDIM=n_dim, name='I_rs:2',
-                         origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0, bidirectional=True)
-# a.run(starting_point='HB1', c='qif2b', ICP=18, NPAR=n_params, NDIM=n_dim, name='I_rs:2:lc1',
-#       origin=c5_cont, NMX=8000, DSMAX=0.05, UZR={}, STOP=[], NPR=20, RL1=200.0)
-
-# 2D continuation in Delta_rs and I_rs
-a.run(starting_point='LP1', c='qif2', ICP=[7, 18], NPAR=n_params, NDIM=n_dim, name='D_rs/I_rs:lp1', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[7, 18], NPAR=n_params, NDIM=n_dim, name='D_rs/I_rs:hb1', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-
-# 2D continuation in Delta_lts and I_rs
-a.run(starting_point='LP1', c='qif2', ICP=[48, 18], NPAR=n_params, NDIM=n_dim, name='D_lts/I_rs:lp1', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[48, 18], NPAR=n_params, NDIM=n_dim, name='D_lts/I_rs:lp2', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[48, 18], NPAR=n_params, NDIM=n_dim, name='D_lts/I_rs:hb1', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-
-# 2D continuation in Delta_fs and I_rs
-a.run(starting_point='LP1', c='qif2', ICP=[30, 18], NPAR=n_params, NDIM=n_dim, name='D_fs/I_rs:lp1', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[30, 18], NPAR=n_params, NDIM=n_dim, name='D_fs/I_rs:lp2', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[30, 18], NPAR=n_params, NDIM=n_dim, name='D_fs/I_rs:hb1', origin=c5_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-
-# c) analysis in RS parameters
-##############################
-
-# continuation of FS heterogeneity
-c6_sols, c6_cont = a.run(starting_point='UZ1', c='qif', ICP=30, NPAR=n_params, NDIM=n_dim, name='D_fs:1',
-                         origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={30: [0.5]}, STOP=['UZ1'], NPR=100, RL0=0.0, DS='-')
-
-# continuation in background input to FS population
-c7_sols, c7_cont = a.run(starting_point='UZ1', c='qif', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_fs:1',
-                         origin=c6_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
-# a.run(starting_point='HB1', c='qif2b', ICP=18, NPAR=n_params, NDIM=n_dim, name='I_rs:2:lc1',
-#       origin=c5_cont, NMX=8000, DSMAX=0.05, UZR={}, STOP=[], NPR=20, RL1=200.0)
-
-# 2D continuation in Delta_rs and I_fs
-a.run(starting_point='LP1', c='qif2', ICP=[7, 36], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:lp1', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[7, 36], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:hb1', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True, EPSL=1e-05, EPSU=1e-05,
-      EPSS=1e-03)
-
-# 2D continuation in Delta_lts and I_fs
-a.run(starting_point='LP1', c='qif2', ICP=[48, 36], NPAR=n_params, NDIM=n_dim, name='D_lts/I_fs:lp1', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[48, 36], NPAR=n_params, NDIM=n_dim, name='D_lts/I_fs:lp2', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[48, 36], NPAR=n_params, NDIM=n_dim, name='D_lts/I_fs:hb1', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True, EPSL=1e-05, EPSU=1e-05,
-      EPSS=1e-03)
-
-# 2D continuation in Delta_fs and I_fs
-a.run(starting_point='LP1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lp1', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lp2', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:hb1', origin=c7_cont,
-      NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=5.0, RL0=0.0, bidirectional=True, EPSL=1e-05, EPSU=1e-05,
-      EPSS=1e-03)
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='HB1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:hb1', origin=c3_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='HB2', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:hb2', origin=c3_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='HB3', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:hb3', origin=c3_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 
 # save results
 ##############
 
-fname = '../results/eiic_lts.pkl'
+fname = '../results/eiic.pkl'
 kwargs = {'deltas': vals}
 a.to_file(fname, **kwargs)

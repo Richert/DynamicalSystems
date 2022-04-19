@@ -119,7 +119,7 @@ rs_op:
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    v_p: 60.0
+    v_p: 40.0
     v_z: 60.0
     q: 0.0
     g_ampa: 1.0
@@ -282,11 +282,11 @@ eiic:
     fs: fs
     lts: lts
   edges:
-    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 10.0}]
+    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 16.0}]
     - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 8.0}]
-    - [rs/rs_op/r, lts/lts_op/r_e, null, {weight: 4.0}]
-    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 8.0}]
-    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
-    - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 4.0}]
-    - [lts/lts_op/r, rs/rs_op/r_i, null, {weight: 8.0}]
-    - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
+    - [rs/rs_op/r, lts/lts_op/r_e, null, {weight: 2.0}]
+    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
+    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 8.0}]
+    - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 2.0}]
+    - [lts/lts_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
+    - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 8.0}]
