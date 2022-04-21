@@ -32,18 +32,18 @@ t_sols, t_cont = a.run(e='eiic2', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=
 
 # continuation in background input to RS population
 c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=18, NPAR=n_params, NDIM=n_dim, name='I_rs:1',
-                         origin=t_cont, NMX=8000, DSMAX=0.1, UZR={18: [60.0]}, STOP=[], NPR=100,
+                         origin=t_cont, NMX=8000, DSMAX=0.1, UZR={18: [50.0]}, STOP=[], NPR=100,
                          RL1=100.0)
 
 # continuation in Delta_lts
-vals = [0.2, 1.6]
+vals = [0.3, 1.5]
 c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=48, NPAR=n_params, NDIM=n_dim, name='D_lts:1',
                          origin=c1_cont, NMX=8000, DSMAX=0.1, UZR={48: vals}, STOP=[], NPR=100, RL1=3.0,
                          RL0=0.0, bidirectional=True)
 
 # continuation in LTS input for low Delta_lts
 c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=54, NPAR=n_params, NDIM=n_dim, name='I_lts:1',
-                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
+                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=300.0)
 a.run(starting_point='HB1', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc1',
       origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP4', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
 a.run(starting_point='HB2', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc2',
@@ -51,9 +51,7 @@ a.run(starting_point='HB2', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, 
 
 # continuation in LTS input for high Delta_lts
 c4_sols, c4_cont = a.run(starting_point='UZ2', c='qif', ICP=54, NPAR=n_params, NDIM=n_dim, name='I_lts:2',
-                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
-a.run(starting_point='HB1', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:2:lc1',
-      origin=c4_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP4', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
+                         origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=300.0)
 
 # 2D continuation in Delta_lts and I_lts
 a.run(starting_point='LP1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:lp1', origin=c3_cont,
@@ -64,7 +62,17 @@ a.run(starting_point='HB1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, n
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB2', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:hb2', origin=c3_cont,
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB3', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:hb3', origin=c3_cont,
+# a.run(starting_point='HB3', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:hb3', origin=c3_cont,
+#       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+
+# 2D continuation in Delta_fs and I_lts
+a.run(starting_point='LP1', c='qif2', ICP=[30, 54], NPAR=n_params, NDIM=n_dim, name='D_fs/I_lts:lp1', origin=c3_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='LP2', c='qif2', ICP=[30, 54], NPAR=n_params, NDIM=n_dim, name='D_fs/I_lts:lp2', origin=c3_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='HB1', c='qif2', ICP=[30, 54], NPAR=n_params, NDIM=n_dim, name='D_fs/I_lts:hb1', origin=c3_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='HB2', c='qif2', ICP=[30, 54], NPAR=n_params, NDIM=n_dim, name='D_fs/I_lts:hb2', origin=c3_cont,
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 
 # save results

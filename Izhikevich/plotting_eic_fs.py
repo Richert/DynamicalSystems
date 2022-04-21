@@ -52,8 +52,8 @@ a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_ib/I_ib:lp2', ax=ax, line_col
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
 # a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_ib/I_ib:lc1', ax=ax, line_color_stable='#148F77',
 #                     line_color_unstable='#148F77', line_style_unstable='solid', ignore=['LP', 'BP'])
-ax.set_ylabel(r'$\Delta_{ib}$')
-ax.set_xlabel(r'$I_{ib}$')
+ax.set_ylabel(r'$\Delta_{fs}$')
+ax.set_xlabel(r'$I_{fs}$')
 ax.set_title('(A) 2D bifurcation diagram')
 # ax.set_ylim([0.0, 4.0])
 # ax.set_xlim([100.0, 400.0])
@@ -65,8 +65,7 @@ ax.set_title('(A) 2D bifurcation diagram')
 ax = fig.add_subplot(grid[0, 1])
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_ib:2', ax=ax, line_color_stable='#76448A', line_color_unstable='#5D6D7E')
 # a.plot_continuation('PAR(36)', 'U(1)', cont='I_ib:2:lc', ax=ax, line_color_stable='#148F77')
-ax.set_xlabel(r'$I_{ib}$')
-ax.set_ylabel(r'$r_{ib}$')
+ax.set_ylabel(r'$r_{fs}$')
 ax.set_title(rf'(B) 1D bifurcation diagram for $\Delta = {deltas[1]}$')
 # ax.set_xlim([150.0, 350.0])
 
@@ -75,28 +74,29 @@ ax = fig.add_subplot(grid[1, 1])
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_ib:1', ax=ax, line_color_stable='#76448A', line_color_unstable='#5D6D7E')
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_ib:1:lc1', ax=ax, line_color_stable='#148F77')
 # a.plot_continuation('PAR(36)', 'U(1)', cont='I_ib:1:lc2', ax=ax, line_color_stable='#148F77')
-ax.set_ylabel(r'$r_{ib}$')
+ax.set_ylabel(r'$r_{fs}$')
+ax.set_xlabel(r'$I_{fs}$')
 ax.set_title(rf'(C) 1D bifurcation diagram for $\Delta = {deltas[0]}$')
 # ax.set_xlim([150.0, 350.0])
 
 # time series
 #############
 
-ax = fig.add_subplot(grid[2, 0])
-a.plot_continuation('PAR(36)', 'PAR(44)', cont=f'w_fs/I_ib:lp1', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(36)', 'PAR(44)', cont=f'w_fs/I_ib:lp2', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-ax.set_ylabel(r'$w_{fs}$')
-ax.set_xlabel(r'$I_{ib}$')
-
-ax = fig.add_subplot(grid[2, 1])
-a.plot_continuation('PAR(36)', 'PAR(43)', cont=f'w_rs/I_ib:lp1', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(36)', 'PAR(43)', cont=f'w_rs/I_ib:lp2', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-ax.set_ylabel(r'$w_{rs}$')
-ax.set_xlabel(r'$I_{ib}$')
+# ax = fig.add_subplot(grid[2, 0])
+# a.plot_continuation('PAR(36)', 'PAR(44)', cont=f'w_fs/I_ib:lp1', ax=ax, line_color_stable='#5D6D7E',
+#                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
+# a.plot_continuation('PAR(36)', 'PAR(44)', cont=f'w_fs/I_ib:lp2', ax=ax, line_color_stable='#5D6D7E',
+#                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
+# ax.set_ylabel(r'$w_{fs}$')
+# ax.set_xlabel(r'$I_{ib}$')
+#
+# ax = fig.add_subplot(grid[2, 1])
+# a.plot_continuation('PAR(36)', 'PAR(43)', cont=f'w_rs/I_ib:lp1', ax=ax, line_color_stable='#5D6D7E',
+#                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
+# a.plot_continuation('PAR(36)', 'PAR(43)', cont=f'w_rs/I_ib:lp2', ax=ax, line_color_stable='#5D6D7E',
+#                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
+# ax.set_ylabel(r'$w_{rs}$')
+# ax.set_xlabel(r'$I_{ib}$')
 
 # titles = [rf'(D) $\Delta = {deltas[0]}$', rf'(E) $\Delta = {deltas[1]}$', ]
 # data = [[fre_hom], [fre_het]]

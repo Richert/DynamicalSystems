@@ -4,22 +4,25 @@ import matplotlib.pyplot as plt
 import pickle
 plt.rcParams['backend'] = 'TkAgg'
 import numba as nb
+from scipy.ndimage import gaussian_filter1d
 
 # define parameters
 ###################
 
 # model parameters
-Delta_rs = 0.3
-Delta_fs = 1.0
+Delta_rs = 1.0
+Delta_fs = 1.5
 
 # define inputs
 T = 4000.0
 cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-I_r = np.zeros((int(T/dt),)) + 40.0
-I_i = np.zeros((int(T/dt),)) + 20.0
-I_r[int(2000/dt):int(3000/dt)] += 40.0
+I_r = np.zeros((int(T/dt),)) + 50.0
+I_i = np.zeros((int(T/dt),)) + 36.0
+I_i[int(2000/dt):int(3000/dt)] += 14.0
+I_i[int(2500/dt):int(3000/dt)] += 25.0
+I_i = gaussian_filter1d(I_i, sigma=3000)
 
 # run the model
 ###############
@@ -28,7 +31,8 @@ I_r[int(2000/dt):int(3000/dt)] += 40.0
 eic = CircuitTemplate.from_yaml("config/ik/eic")
 
 # update parameters
-eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs})
+eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs, 'rs/rs_op/r': 0.02,
+                          'rs/rs_op/v': -45.0})
 
 # generate run function
 # eic.get_run_func(func_name='eic_run', file_name='config/eic', step_size=dt, backend='fortran',
@@ -50,4 +54,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_rs_fre_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_fre_het.p", "wb"))

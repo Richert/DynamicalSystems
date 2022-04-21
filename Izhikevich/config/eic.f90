@@ -8,7 +8,8 @@ contains
 subroutine eic_run(t,y,dy,v_t,v_r,k,g_gabaa,g_ampa,q,Delta,C,E_gabaa,&
      & E_ampa,v_z,v_p,I_ext,b,a,d,tau_ampa,tau_gabaa,v_t_0,v_r_0,k_0,&
      & g_gabaa_0,g_ampa_0,q_0,Delta_0,C_0,E_gabaa_0,E_ampa_0,v_z_0,&
-     & v_p_0,I_ext_0,b_0,a_0,d_0,tau_ampa_0,tau_gabaa_0,w,w_rs,w_fs)
+     & v_p_0,I_ext_0,b_0,a_0,d_0,tau_ampa_0,tau_gabaa_0,w_rr,w_rf,&
+     & w_fr, w_ff)
 
 implicit none
 
@@ -65,9 +66,10 @@ double precision, intent(in) :: a_0
 double precision, intent(in) :: d_0
 double precision, intent(in) :: tau_ampa_0
 double precision, intent(in) :: tau_gabaa_0
-double precision, intent(in) :: w
-double precision, intent(in) :: w_rs
-double precision, intent(in) :: w_fs
+double precision, intent(in) :: w_rr
+double precision, intent(in) :: w_rf
+double precision, intent(in) :: w_fr
+double precision, intent(in) :: w_ff
 
 r = y(1)
 v = y(2)
@@ -80,10 +82,10 @@ u_0 = y(8)
 s_ampa_0 = y(9)
 s_gabaa_0 = y(10)
 
-r_e = r*w*w_rs
-r_i = r_0*w*w_rs
-r_e_0 = r*w*w_fs
-r_i_0 = r_0*w*w_fs
+r_e = r*w_rr
+r_i = r_0*w_rf
+r_e_0 = r*w_fr
+r_i_0 = r_0*w_ff
 
 dy(1) = (r*(-g_ampa*s_ampa - g_gabaa*s_gabaa &
      & + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)/(pi*C))/C
@@ -128,7 +130,7 @@ call eic_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
      & args(23), args(24), args(25), args(26), args(27), args(28), &
      & args(29), args(30), args(31), args(32), args(33), args(34), &
      & args(35), args(36), args(37), args(38), args(39), args(40), &
-     & args(41), args(42), args(43), args(44))
+     & args(41), args(42), args(43), args(44), args(45))
 
 end subroutine func
 
@@ -176,9 +178,10 @@ args(38) = 0.2  ! a_0
 args(39) = 0.0  ! d_0
 args(40) = 6.0  ! tau_ampa_0
 args(41) = 8.0  ! tau_gabaa_0
-args(42) = 10.0 ! w
-args(43) = 1.6 ! w_rs
-args(44) = 0.8 ! w_fs
+args(42) = 16.0 ! w_rr
+args(43) = 16.0 ! w_rf
+args(44) = 4.0 ! w_fr
+args(45) = 4.0 ! w_ff
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v
 y(3) = 0.0  ! u

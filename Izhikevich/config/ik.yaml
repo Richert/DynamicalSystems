@@ -269,10 +269,10 @@ eic:
     rs: rs
     fs: fs
   edges:
-    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 18.0}]
-    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 10.0}]
-    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 18.0}]
-    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 10.0}]
+    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 16.0}]
+    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 4.0}]
+    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
+    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
 
 # rs-fs circuit
 eiic:
@@ -283,10 +283,10 @@ eiic:
     lts: lts
   edges:
     - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 16.0}]
-    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 8.0}]
-    - [rs/rs_op/r, lts/lts_op/r_e, null, {weight: 2.0}]
+    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 4.0}]
+    - [rs/rs_op/r, lts/lts_op/r_e, null, {weight: 4.0}]
     - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
-    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 8.0}]
-    - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 2.0}]
+    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
+    - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 4.0}]
     - [lts/lts_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
-    - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 8.0}]
+    - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
