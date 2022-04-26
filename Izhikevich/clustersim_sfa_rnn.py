@@ -61,7 +61,7 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
 ###################
 
 # job-specific parameters
-idx = sys.argv[-1]
+idx = int(sys.argv[-1])
 ds = np.linspace(1.0, 120.0, num=10)
 
 # model parameters
