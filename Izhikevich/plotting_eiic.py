@@ -78,7 +78,7 @@ plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_d
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{lts}$')
 ax.set_title('(B)')
-ax.set_ylim([0.0, 5.0])
+ax.set_ylim([0.0, 3.0])
 ax.set_xlim([50.0, 150.0])
 
 # 1D continuations
