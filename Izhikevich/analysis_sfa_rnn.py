@@ -8,7 +8,7 @@ import numpy as np
 ################################
 
 # # load data
-# data = pickle.load(open(f"results/sfa/sfa_rnn_60.p", "rb"))
+# data = pickle.load(open(f"results/sfa/sfa_rnn_15.p", "rb"))
 # print(f"d = {data['d']}")
 #
 # # peak detection
@@ -18,7 +18,7 @@ import numpy as np
 # fig, ax = plt.subplots(nrows=2)
 # ax[0].plot(data['results']['u'])
 # for i in range(len(peaks)):
-#     p = properties['left_ips'][i]
+#     p = properties['right_ips'][i]
 #     ax[0].axvline(x=p, color='orange', linestyle='--')
 # ax[1].plot(data['I'])
 # plt.show()
@@ -45,12 +45,10 @@ for f in fnames:
         I_r = Is[int(properties['right_ips'][0])]
         if len(peaks) < 3:
             I_l = Is[int(properties['right_ips'][-1])]
-            I_r = Is[int(properties['left_ips'][0])]
             lp1s.append([I_l, d])
             lp2s.append([I_r, d])
         else:
             I_l = Is[int(properties['right_ips'][-2])]
-            I_r = Is[int(properties['right_ips'][0])]
             hb1s.append([I_l, d])
             hb2s.append([I_r, d])
 
