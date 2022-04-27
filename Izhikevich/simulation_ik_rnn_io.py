@@ -26,16 +26,16 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 N = 10000
 
 # neuron parameters
-C = 150.0   # unit: pF
-k = 1.2  # unit: None
-v_r = -75.0  # unit: mV
-v_t = -45.0  # unit: mV
+C = 100.0   # unit: pF
+k = 0.7  # unit: None
+v_r = -60.0  # unit: mV
+v_t = -40.0  # unit: mV
 v_spike = 50.0  # unit: mV
-v_reset = -56.0  # unit: mV
-Delta = 1.0  # unit: mV
-d = 30.0
-a = 0.01
-b = 5.0
+v_reset = -70.0  # unit: mV
+Delta = 0.5  # unit: mV
+d = 10.0
+a = 0.03
+b = -2.0
 
 # synaptic parameters
 g = 1.5
@@ -44,7 +44,7 @@ tau = 6.0
 J = 0.0
 
 # define lorentzian of etas
-spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=min(v_r, v_reset), ub=0.0)
+spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=min(v_r, v_reset), ub=v_spike)
 
 # define inputs
 T = 2000.0
@@ -66,7 +66,7 @@ model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_s
 outputs = {'s': {'idx': np.asarray([2*N]), 'avg': False}}
 
 # loop over different input strengths
-Is = np.arange(0, 500.0, 25.0)
+Is = np.arange(0, 200.0, 10.0)
 results = []
 for mu in Is:
 
@@ -82,7 +82,7 @@ for mu in Is:
 
 
 # save results
-pickle.dump({'results': results, 'inputs': Is}, open("results/ib_rnn_io.p", "wb"))
+pickle.dump({'results': results, 'inputs': Is}, open("results/rs_rnn_io.p", "wb"))
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 6))
