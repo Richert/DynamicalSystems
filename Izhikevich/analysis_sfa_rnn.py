@@ -44,11 +44,13 @@ for f in fnames:
     if len(peaks) > 1:
         I_r = Is[int(properties['right_ips'][0])]
         if len(peaks) < 3:
-            I_l = Is[int(peaks[-1])]
+            I_l = Is[int(properties['right_ips'][-1])]
+            I_r = Is[int(properties['left_ips'][0])]
             lp1s.append([I_l, d])
             lp2s.append([I_r, d])
         else:
             I_l = Is[int(properties['right_ips'][-2])]
+            I_r = Is[int(properties['right_ips'][0])]
             hb1s.append([I_l, d])
             hb2s.append([I_r, d])
 
@@ -58,4 +60,3 @@ lp2s = np.asarray(lp2s)
 hb1s = np.asarray(hb1s)
 hb2s = np.asarray(hb2s)
 pickle.dump({'lp1': lp1s, 'lp2': lp2s, 'hb1': hb1s, 'hb2': hb2s}, open("results/sfa_results.p", "wb"))
-
