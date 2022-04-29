@@ -21,7 +21,7 @@ def get_fr(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, 
 
 def correct_input(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, v_r: float, v_t: float):
     fr = get_fr(inp, k, C, v_reset, v_spike, v_r, v_t)
-    return (fr/2*np.pi)**2
+    return (fr*k/(2*np.pi*C))**2
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):

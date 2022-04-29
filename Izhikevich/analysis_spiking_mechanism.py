@@ -38,11 +38,11 @@ def correct_input_rec(inp: np.ndarray, v_thr: float, epsilon: float = 1.0):
 
 def correct_input_mf(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, v_r: float, v_t: float):
     fr = get_fr(inp, k, C, v_reset, v_spike, v_r, v_t)
-    return (fr/2*np.pi)**2
+    return (fr*k/(2*np.pi*C))**2
 
 
 # parameters
-inp = np.linspace(1.0, 200.0, num=1000)
+inp = np.linspace(1.0, 1000.0, num=1000)
 v_reset = [-60.0, -80.0, -100.0, -120.0, -140.0, -160.0, -180.0, -200.0]
 v_spike = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
 C = 100.0
