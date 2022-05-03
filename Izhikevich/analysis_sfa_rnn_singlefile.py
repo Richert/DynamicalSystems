@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import pickle
 
 # load data
-data = pickle.load(open(f"results/sfa/sfa_rnn_60.p", "rb"))
+data = pickle.load(open(f"results/sfa/sfa_rnn_90.p", "rb"))
 print(f"d = {data['d']}")
 
 # peak detection
-peaks, properties = find_peaks(-1.0*data['results']['u'].squeeze(), width=4000, prominence=2.0)
+peaks, properties = find_peaks(-1.0*data['results']['u'].squeeze(), width=500, prominence=1.0)
 offset = 10000
 
 # plotting
