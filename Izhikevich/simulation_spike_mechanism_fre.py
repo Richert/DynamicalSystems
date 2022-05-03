@@ -20,18 +20,17 @@ d = 0.0
 a = 0.03
 b = 0.0
 tau_s = 6.0
-g = 0.0
+g = 15.0
 q = 0.0
 E_r = 0.0
 
 # define inputs
-T = 5500.0
+T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 40.0
-inp[int(1000/dt):int(5000/dt)] += np.linspace(0.0, 30.0, num=int(4000/dt))
-# inp[int(3000/dt):int(5000/dt)] += np.linspace(30.0, 0.0, num=int(2000/dt))
+inp = np.zeros((int(T/dt),)) + 100.0
+inp[int(1000/dt):int(2000/dt)] += 100.0
 
 # run the model
 ###############
@@ -46,13 +45,13 @@ ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
-             outputs={'r': 'p/ik_op/r'}, inputs={'p/ik_op/I_ext': inp},
+             outputs={'v': 'p/ik_op/v'}, inputs={'p/ik_op/I_ext': inp},
              decorator=nb.njit, fastmath=True)
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(res["r"])
-ax.set_ylabel(r'$r(t)$')
+ax.plot(res["v"])
+ax.set_ylabel(r'$v(t)$')
 ax.set_xlabel("time (ms)")
 plt.tight_layout()
 plt.show()

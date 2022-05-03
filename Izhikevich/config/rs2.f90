@@ -17,6 +17,10 @@ double precision :: v
 double precision :: u
 double precision :: s
 double precision :: r_in
+double precision :: alpha
+double precision :: beta
+double precision :: mu
+double precision :: I_star
 double precision, intent(inout) :: dy(4)
 double precision, intent(in) :: v_t
 double precision, intent(in) :: v_r
@@ -40,9 +44,18 @@ u = y(3)
 s = y(4)
 
 r_in = r
+alpha = v_r + v_t + g*s/k
+mu = 4*(v_r*v_t + (I_ext + g*s*E_r)/k) - alpha**2
+if (mu > 0) then
+    beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
+    I_star = pi**2 * mu/beta**2 + k*alpha**2/4 - k*v_r*v_t - g*s*E_r
+else
+    I_star = I_ext
+end if
 
-dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*10.0*k**2/(pi*C))/C
-dy(2) = (-(pi*C*r)**2/k + C*q*r*log(v_p/v_z)/k + I_ext + g*s*(E_r &
+dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)&
+     & /(pi*C))/C
+dy(2) = (-pi*C*r*(pi*C*r/k + Delta) + I_star + g*s*(E_r &
      & - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
 dy(4) = r_in - s/tau_s
@@ -81,15 +94,15 @@ args(2) = -60.0  ! v_r
 args(3) = 0.7  ! k
 args(4) = 1.0  ! g
 args(5) = 0.0  ! q
-args(6) = 1.0  ! Delta
+args(6) = 0.5 ! Delta
 args(7) = 100.0  ! C
-args(8) = 60.0  ! v_z
-args(9) = 40.0  ! v_p
+args(8) = -80.0  ! v_z
+args(9) = 50.0  ! v_p
 args(15) = 0.0  ! E_r
 args(16) = 0.0  ! I_ext
-args(17) = -2.0  ! b
+args(17) = 0.0  ! b
 args(18) = 0.03  ! a
-args(19) = 20.0  ! d
+args(19) = 0.0  ! d
 args(20) = 6.0  ! tau_s
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v

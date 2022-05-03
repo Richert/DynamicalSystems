@@ -16,12 +16,13 @@ def get_fr(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, 
     idx = mu > 0
     mu_sqrt = np.sqrt(mu[idx])
     fr[idx] = k*mu_sqrt/(2*C*(np.arctan((2*v_spike-alpha)/mu_sqrt) - np.arctan((2*v_reset-alpha)/mu_sqrt)))
-    return fr*1e3
+    return fr
 
 
 def correct_input(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, v_r: float, v_t: float):
     fr = get_fr(inp, k, C, v_reset, v_spike, v_r, v_t)
-    return (fr*k/(2*np.pi*C))**2
+    inp[fr > 0] = (fr[fr > 0]*C*2*np.pi/k)**2
+    return inp
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -48,10 +49,9 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
     rates = np.mean(spikes / dt)
 
     # calculate vector field of the system
-    inp = k*v_r*v_t + inp + g*s*(E_r - v)
-    inp_corrected = np.interp(inp_x, inp_y, inp)
-    inp[inp_corrected > 0] = inp_corrected[inp_corrected > 0]
-    dv = (k*(v**2 - (v_r+v_t)*v) + inp)/C
+    I = (k*v_r*v_t + inp + g*s*(E_r - v))/C
+    I_corrected = np.interp(I, inp_x, inp_y)
+    dv = (k*(v**2 - (v_r+v_t)*v))/C + I_corrected
     ds = J*rates - s/tau_s
 
     # update state variables
@@ -68,6 +68,7 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
 
     return y
 
+
 # define parameters
 ###################
 
@@ -78,7 +79,7 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 50.0  # unit: mV
-v_reset = -80.0  # unit: mV
+v_reset = -100.0  # unit: mV
 Delta = 1.0  # unit: mV
 tau_s = 6.0
 J = 1.0
@@ -89,16 +90,15 @@ E_r = 0.0
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define inputs
-T = 5500.0
+T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 60.0
-inp[int(1000/dt):int(5000/dt)] += np.linspace(0.0, 60.0, num=int(4000/dt))
-# inp[int(3000/dt):int(5000/dt)] += np.linspace(30.0, 0.0, num=int(2000/dt))
+inp = np.zeros((int(T/dt),)) + 100.0
+inp[int(1000/dt):int(2000/dt)] += 100.0
 
 # define input ranges and corrections
-inp_y = np.linspace(0.001, 200.0, N)
+inp_y = np.linspace(0.001, 200.0, 1000)
 inp_x = correct_input(inp_y, k=k, C=C, v_spike=v_spike, v_reset=v_reset, v_r=v_r, v_t=v_t)
 
 # run the model
@@ -111,15 +111,15 @@ model = RNN(N, N+2, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_s
             tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_init, inp_x=inp_x, inp_y=inp_y)
 
 # define outputs
-outputs = {'r': {'idx': np.asarray([N+1]), 'avg': False}}
+outputs = {'s': {'idx': np.asarray([N]), 'avg': False}}
 
 # perform simulation
 res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 6))
-ax.plot(np.mean(res["r"], axis=1))
-ax.set_ylabel(r'$r(t)$')
+ax.plot(np.mean(res["s"], axis=1))
+ax.set_ylabel(r'$s(t)$')
 ax.set_xlabel('time')
 plt.tight_layout()
 plt.show()

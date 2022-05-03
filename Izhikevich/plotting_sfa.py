@@ -1,9 +1,7 @@
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
-from matplotlib.colors import to_hex
 from pyauto import PyAuto
 import sys
-import numpy as np
 sys.path.append('../')
 import pickle
 
@@ -19,6 +17,7 @@ fre_low = pickle.load(open(f"results/sfa_fre_low.p", "rb"))['results']
 fre_high = pickle.load(open(f"results/sfa_fre_high.p", "rb"))['results']
 rnn_low = pickle.load(open(f"results/sfa_rnn_low.p", "rb"))['results']
 rnn_high = pickle.load(open(f"results/sfa_rnn_high.p", "rb"))['results']
+rnn_bfs = pickle.load(open("results/sfa_results.p", "rb"))
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -44,13 +43,19 @@ grid = gridspec.GridSpec(nrows=4, ncols=6, figure=fig)
 
 # plot the 2D bifurcation diagram
 ax = fig.add_subplot(grid[:2, :2])
-a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E')
-a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E')
+ax.scatter(rnn_bfs['lp1'][:, 0], rnn_bfs['lp1'][:, 1], c='#5D6D7E', marker='.', s=3, alpha=0.5)
+ax.scatter(rnn_bfs['lp2'][:, 0], rnn_bfs['lp2'][:, 1], c='#5D6D7E', marker='.', s=3, alpha=0.5)
+ax.scatter(rnn_bfs['hb1'][:, 0], rnn_bfs['hb1'][:, 1], c='#148F77', marker='.', s=3, alpha=0.5)
+ax.scatter(rnn_bfs['hb2'][:, 0], rnn_bfs['hb2'][:, 1], c='#148F77', marker='.', s=3, alpha=0.5)
+a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
 a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77')
 a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77')
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$d$')
-ax.set_ylim([10.0, 110.0])
+ax.set_ylim([10.0, 120.0])
 ax.set_xlim([10.0, 80.0])
 
 # plot the 1D bifurcation diagrams

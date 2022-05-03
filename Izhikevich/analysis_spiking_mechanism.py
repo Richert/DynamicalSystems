@@ -9,7 +9,7 @@ def get_fr(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, 
     idx = mu > 0
     mu_sqrt = np.sqrt(mu[idx])
     fr[idx] = k*mu_sqrt/(2*C*(np.arctan((2*v_spike-alpha)/mu_sqrt) - np.arctan((2*v_reset-alpha)/mu_sqrt)))
-    return fr*1e3
+    return fr
 
 
 def correct_input_taylor(inp: np.ndarray, v_thr: float):
@@ -38,11 +38,11 @@ def correct_input_rec(inp: np.ndarray, v_thr: float, epsilon: float = 1.0):
 
 def correct_input_mf(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, v_r: float, v_t: float):
     fr = get_fr(inp, k, C, v_reset, v_spike, v_r, v_t)
-    return (fr*k/(2*np.pi*C))**2
+    return (fr*2*np.pi*C/k)**2
 
 
 # parameters
-inp = np.linspace(1.0, 1000.0, num=1000)
+inp = np.linspace(1.0, 200.0, num=1000)
 v_reset = [-60.0, -80.0, -100.0, -120.0, -140.0, -160.0, -180.0, -200.0]
 v_spike = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
 C = 100.0
@@ -66,7 +66,7 @@ for v_res, v_sp in zip(v_reset, v_spike):
 # plotting
 fig, ax = plt.subplots(ncols=3)
 for fr, diff, inp_mf in zip(frs, diffs, inp_mfs):
-    ax[0].plot(inp, fr)
+    ax[0].plot(inp, fr*1e3)
     ax[1].plot(inp, diff)
     ax[2].plot(inp, inp_mf)
 plt.legend([f'v_0 = {v}' for v in v_reset])
