@@ -45,15 +45,15 @@ s = y(4)
 
 r_in = r
 alpha = v_r + v_t + g*s/k
-mu = 4*(v_r*v_t + (I_ext - u + g*s*E_r)/k) - alpha**2
+mu = 4*(v_r*v_t + (I_ext - u + g*s*E_r)/k) - alpha*alpha
 if (mu > 0) then
     beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
-    I_star = pi**2 * mu/beta**2 + k*alpha**2/4 + u - k*v_r*v_t - g*s*E_r
+    I_star = pi*pi*k*mu/(4*beta*beta) + k*alpha*alpha/4 + u - k*v_r*v_t - g*s*E_r
 else
     I_star = I_ext
 end if
 
-dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)&
+dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k*k*(v - v_r)&
      & /(pi*C))/C
 dy(2) = (-pi*C*r*(pi*C*r/k + Delta) + I_star + g*s*(E_r &
      & - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C

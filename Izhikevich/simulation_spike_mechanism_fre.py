@@ -9,15 +9,17 @@ from numba import njit
 
 @njit(fastmath=True)
 def correct_input(inp: float, k: float, v_r: float, v_t: float, v_spike: float, v_reset: float, g: float, s: float,
-                  E: float):
+                  E: float, u: float):
     alpha = v_r + v_t + g*s/k
-    mu = 4*(v_r*v_t + (inp + g*s*E)/k) - alpha**2
+    mu = 4*(v_r*v_t + (inp - u + g*s*E)/k) - alpha**2
     if mu > 0:
         mu_sqrt = sqrt(mu)
-        inp = pi**2*k*mu/(4*(arctan((2*v_spike-alpha)/mu_sqrt) - arctan((2*v_reset-alpha)/mu_sqrt))**2)
-        inp += k*alpha**2/4
-        inp -= k*v_r*v_t + g*s*E
-    return inp
+        inp_c = pi**2*k*mu/(4*(arctan((2*v_spike-alpha)/mu_sqrt) - arctan((2*v_reset-alpha)/mu_sqrt))**2)
+        inp_c += k*alpha**2/4 + u
+        inp_c -= k*v_r*v_t + g*s*E
+    else:
+        inp_c = inp
+    return inp_c
 
 
 def ik_run(y, N, inp, v_t, v_r, k, J, g, Delta, C, v_z, v_p, E_r, b, a, d, tau_s, dt):
@@ -27,7 +29,7 @@ def ik_run(y, N, inp, v_t, v_r, k, J, g, Delta, C, v_z, v_p, E_r, b, a, d, tau_s
     u = y[2]
     s = y[3]
     r_in = J*r
-    I_ext = correct_input(inp, k, v_r, v_t, v_p, v_z, g, s, E_r)
+    I_ext = correct_input(inp, k, v_r, v_t, v_p, v_z, g, s, E_r, u)
 
     dr = (r * (-g * s + k * (2.0 * v - v_r - v_t)) + Delta * k ** 2 * (v - v_r) / (pi * C)) / C
     dv = (-pi * C * r * (pi * C * r / k + Delta) + I_ext + g * s * (
@@ -39,6 +41,7 @@ def ik_run(y, N, inp, v_t, v_r, k, J, g, Delta, C, v_z, v_p, E_r, b, a, d, tau_s
     y[1] += dt * dv
     y[2] += dt * du
     y[3] += dt * ds
+
     return y
 
 
@@ -51,23 +54,24 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 50.0  # unit: mV
-v_reset = -80.0  # unit: mV
+v_reset = -70.0  # unit: mV
 Delta = 0.5  # unit: mV
-d = 0.0
+d = 10.0
 a = 0.03
-b = 0.0
+b = -2.0
 tau_s = 6.0
 g = 15.0
 J = 1.0
 E_r = 0.0
 
 # define inputs
-T = 2500.0
+T = 4500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 40.0
-inp[int(1000/dt):int(2000/dt)] += 20.0
+inp = np.zeros((int(T/dt),)) + 30.0
+inp[int(1500/dt):int(2500/dt)] = 50.0
+inp[int(2500/dt):int(3500/dt)] = 13.0
 
 # run the model
 ###############

@@ -44,14 +44,14 @@ c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, ND
 # continuation in resting membrane potential
 for i, v in enumerate(vals):
     a.run(starting_point=f'UZ{i+1}', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{i+1}', origin=c2_cont,
-          NMX=8000, DSMAX=0.1, NPR=10, RL1=100.0, RL0=-300.0, bidirectional=True)
+          NMX=8000, DSMAX=0.1, NPR=10, RL1=100.0, RL0=-100.0, bidirectional=True)
 
 # 2D continuation follow-up in g
 target = 1
 a.run(starting_point='LP1', c='qif2', ICP=[8, 16], name='v_0/I:lp1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.1,
-      NPR=10, RL1=-60.0, RL0=-500.0, bidirectional=True)
+      NPR=10, RL1=-60.0, RL0=-300.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[8, 16], name='v_0/I:lp2', origin=f'I:{target+1}', NMX=8000, DSMAX=0.1,
-      NPR=10, RL1=-60.0, RL0=-500.0, bidirectional=True)
+      NPR=10, RL1=-60.0, RL0=-300.0, bidirectional=True)
 
 # save results
 fname = '../results/rs_corrected.pkl'

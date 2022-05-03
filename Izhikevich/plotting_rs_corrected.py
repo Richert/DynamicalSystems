@@ -46,6 +46,8 @@ a.plot_continuation('PAR(16)', 'PAR(8)', cont=f'v_0/I:lp2', ax=ax, line_color_st
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$v_0$')
 ax.set_title('(A) 2D bifurcation diagram')
+ax.set_xlim([-10.0, 60.0])
+ax.set_ylim([-160.0, -60.0])
 
 # plot the 1D bifurcation diagrams
 ax = fig.add_subplot(grid[0, 1])
@@ -58,6 +60,7 @@ for j in range(1, n + 1):
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$s$')
 ax.set_title('Spike-reset correction')
+ax.set_xlim([-10.0, 60.0])
 plt.legend(handles=lines, labels=[fr'$v_0 = {v}$' for v in v_reset], loc=2)
 
 # padding
