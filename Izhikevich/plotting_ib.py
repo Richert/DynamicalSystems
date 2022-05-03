@@ -80,7 +80,11 @@ for i, (title, (fre, rnn)) in enumerate(zip(titles, data)):
     ax = fig.add_subplot(grid[i+2, :])
     ax.plot(fre['s'])
     ax.plot(fre.index, rnn['s'])
+    xmin = np.min(fre.values)
+    xmax = np.max(fre.values)
+    plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=800, x2=1200.0, color='grey', alpha=0.1)
     ax.set_ylabel(r'$s$')
+    ax.set_ylim([xmin - 0.1 * xmax, xmax + 0.1 * xmax])
     ax.set_title(title)
     if i == 0:
         plt.legend(['FRE', 'RNN'])

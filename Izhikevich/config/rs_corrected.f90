@@ -45,10 +45,10 @@ s = y(4)
 
 r_in = r
 alpha = v_r + v_t + g*s/k
-mu = 4*(v_r*v_t + (I_ext + g*s*E_r)/k) - alpha**2
+mu = 4*(v_r*v_t + (I_ext - u + g*s*E_r)/k) - alpha**2
 if (mu > 0) then
     beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
-    I_star = pi**2 * mu/beta**2 + k*alpha**2/4 - k*v_r*v_t - g*s*E_r
+    I_star = pi**2 * mu/beta**2 + k*alpha**2/4 + u - k*v_r*v_t - g*s*E_r
 else
     I_star = I_ext
 end if
@@ -100,9 +100,9 @@ args(8) = -80.0  ! v_z
 args(9) = 50.0  ! v_p
 args(15) = 0.0  ! E_r
 args(16) = 0.0  ! I_ext
-args(17) = 0.0  ! b
+args(17) = -2.0  ! b
 args(18) = 0.03  ! a
-args(19) = 0.0  ! d
+args(19) = 10.0  ! d
 args(20) = 6.0  ! tau_s
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v

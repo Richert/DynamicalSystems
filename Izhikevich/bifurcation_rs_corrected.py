@@ -20,7 +20,7 @@ n_params = 20
 a = PyAuto("config", auto_dir=auto_dir)
 
 # initial continuation in time to converge to fixed point
-t_sols, t_cont = a.run(e='rs2', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params,
+t_sols, t_cont = a.run(e='rs_corrected', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params,
                        NDIM=n_dim, EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 500.0}, STOP={'UZ1'})
 
 ########################
@@ -46,7 +46,14 @@ for i, v in enumerate(vals):
     a.run(starting_point=f'UZ{i+1}', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{i+1}', origin=c2_cont,
           NMX=8000, DSMAX=0.1, NPR=10, RL1=100.0, RL0=-300.0, bidirectional=True)
 
+# 2D continuation follow-up in g
+target = 1
+a.run(starting_point='LP1', c='qif2', ICP=[8, 16], name='v_0/I:lp1', origin=f'I:{target+1}', NMX=8000, DSMAX=0.1,
+      NPR=10, RL1=-60.0, RL0=-500.0, bidirectional=True)
+a.run(starting_point='LP2', c='qif2', ICP=[8, 16], name='v_0/I:lp2', origin=f'I:{target+1}', NMX=8000, DSMAX=0.1,
+      NPR=10, RL1=-60.0, RL0=-500.0, bidirectional=True)
+
 # save results
-fname = '../results/rs2.pkl'
+fname = '../results/rs_corrected.pkl'
 kwargs = {'v_reset': vals}
 a.to_file(fname, **kwargs)

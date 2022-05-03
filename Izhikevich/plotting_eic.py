@@ -86,13 +86,15 @@ ax.set_xlim([0.0, 100.0])
 # 1D continuations
 ##################
 
+delta_str = r"\Delta_{fs}"
+
 # continuation in FS input for high Delta_fs
 ax = fig.add_subplot(grid[0, 4:6])
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:2', ax=ax, line_color_stable='#76448A',
                     line_color_unstable='#5D6D7E')
 ax.set_ylabel(r'$r_{rs}$')
 ax.set_xlabel('')
-ax.set_title(fr'(C) $\Delta = {deltas[1]}$')
+ax.set_title(fr'(C) ${delta_str} = {deltas[1]}$')
 ax.set_xlim([0.0, 100.0])
 
 # continuation in FS input for low Delta_fs
@@ -103,18 +105,23 @@ a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc1', ax=ax, line_color_stab
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc2', ax=ax, line_color_stable='#148F77')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_ylabel(r'$r_{rs}$')
-ax.set_title(fr'(D) $\Delta = {deltas[0]}$')
+ax.set_title(fr'(D) ${delta_str} = {deltas[0]}$')
 ax.set_xlim([0.0, 100.0])
 
 # time series
 #############
 
 data = [fre_hom, fre_het]
-titles = [fr'(E) $\Delta = {deltas[0]}$', fr'(F) $\Delta = {deltas[1]}$']
+titles = [fr'(E) ${delta_str} = {deltas[0]}$', fr'(F) ${delta_str} = {deltas[1]}$']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
+    xmin = np.min(fre.values)
+    xmax = np.max(fre.values)
+    plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2000, x2=2500.0, color='grey', alpha=0.15)
+    plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2500, x2=3000.0, color='grey', alpha=0.3)
     ax.set_xlabel('time (ms)')
+    ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
     if i == len(data)-1:
         plt.legend(fre.columns.values)

@@ -10,7 +10,7 @@ import pickle
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/rs2.pkl", auto_dir=auto_dir)
+a = PyAuto.from_file(f"results/rs_corrected.pkl", auto_dir=auto_dir)
 v_reset = a.additional_attributes['v_reset']
 n = len(v_reset)
 
@@ -34,10 +34,21 @@ cmap = plt.get_cmap('copper', lut=n)
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=1, ncols=1, figure=fig)
+grid = gridspec.GridSpec(nrows=1, ncols=2, figure=fig)
+
+
+# plot the 2D bifurcation diagram
+ax = fig.add_subplot(grid[0, 0])
+a.plot_continuation('PAR(16)', 'PAR(8)', cont=f'v_0/I:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(16)', 'PAR(8)', cont=f'v_0/I:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+ax.set_xlabel(r'$I$')
+ax.set_ylabel(r'$v_0$')
+ax.set_title('(A) 2D bifurcation diagram')
 
 # plot the 1D bifurcation diagrams
-ax = fig.add_subplot(grid[0, 0])
+ax = fig.add_subplot(grid[0, 1])
 lines = []
 for j in range(1, n + 1):
     c = to_hex(cmap(j, alpha=1.0))
@@ -54,5 +65,5 @@ fig.set_constrained_layout_pads(w_pad=0.05, h_pad=0.01, hspace=0.05, wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/rs2.pdf')
+plt.savefig(f'results/rs_corrected.pdf')
 plt.show()
