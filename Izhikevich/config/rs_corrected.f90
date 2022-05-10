@@ -46,15 +46,15 @@ s = y(4)
 r_in = r
 alpha = v_r + v_t + g*s/k
 mu = 4*(v_r*v_t + (I_ext - u + g*s*E_r)/k) - alpha*alpha
+beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
 if (mu > 0) then
-    beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
     I_star = pi*pi*k*mu/(4*beta*beta) + k*alpha*alpha/4 + u - k*v_r*v_t - g*s*E_r
 else
     I_star = I_ext
 end if
 
-dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k*k*(v - v_r)&
-     & /(pi*C))/C
+dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k*k*(v &
+     & - v_r)/(pi*C))/C
 dy(2) = (-pi*C*r*(pi*C*r/k + Delta) + I_star + g*s*(E_r &
      & - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
@@ -96,13 +96,13 @@ args(4) = 1.0  ! g
 args(5) = 0.0  ! q
 args(6) = 0.5 ! Delta
 args(7) = 100.0  ! C
-args(8) = -80.0  ! v_z
+args(8) = -90.0  ! v_z
 args(9) = 50.0  ! v_p
 args(15) = 0.0  ! E_r
 args(16) = 0.0  ! I_ext
-args(17) = -2.0  ! b
-args(18) = 0.03  ! a
-args(19) = 10.0  ! d
+args(17) = 0.0  ! b
+args(18) = 0.003  ! a
+args(19) = 0.0  ! d
 args(20) = 6.0  ! tau_s
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v

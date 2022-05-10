@@ -54,4 +54,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_fre_het.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_fre_hom.p", "wb"))

@@ -8,8 +8,8 @@ contains
 subroutine eic_run(t,y,dy,v_t,v_r,k,g_gabaa,g_ampa,q,Delta,C,E_gabaa,&
      & E_ampa,v_z,v_p,I_ext,b,a,d,tau_ampa,tau_gabaa,v_t_0,v_r_0,k_0,&
      & g_gabaa_0,g_ampa_0,q_0,Delta_0,C_0,E_gabaa_0,E_ampa_0,v_z_0,&
-     & v_p_0,I_ext_0,b_0,a_0,d_0,tau_ampa_0,tau_gabaa_0,weight,&
-     & weight_0,weight_1,weight_2)
+     & v_p_0,I_ext_0,b_0,a_0,d_0,tau_ampa_0,tau_gabaa_0,w_rr,w_rf,&
+     & w_fr, w_ff)
 
 implicit none
 
@@ -29,6 +29,10 @@ double precision :: r_e
 double precision :: r_i
 double precision :: r_e_0
 double precision :: r_i_0
+double precision :: alpha, alpha_0
+double precision :: beta, beta_0
+double precision :: mu, mu_0
+double precision :: I_star, I_star_0
 double precision, intent(inout) :: dy(10)
 double precision, intent(in) :: v_t
 double precision, intent(in) :: v_r
@@ -66,10 +70,10 @@ double precision, intent(in) :: a_0
 double precision, intent(in) :: d_0
 double precision, intent(in) :: tau_ampa_0
 double precision, intent(in) :: tau_gabaa_0
-double precision, intent(in) :: weight
-double precision, intent(in) :: weight_0
-double precision, intent(in) :: weight_1
-double precision, intent(in) :: weight_2
+double precision, intent(in) :: w_rr
+double precision, intent(in) :: w_rf
+double precision, intent(in) :: w_fr
+double precision, intent(in) :: w_ff
 
 r = y(1)
 v = y(2)
@@ -82,27 +86,47 @@ u_0 = y(8)
 s_ampa_0 = y(9)
 s_gabaa_0 = y(10)
 
-r_e = r*weight
-r_i = r_0*weight_0
-r_e_0 = r*weight_1
-r_i_0 = r_0*weight_2
+r_e = r*w_rr
+r_i = r_0*w_rf
+r_e_0 = r*w_fr
+r_i_0 = r_0*w_ff
+
+alpha = v_r + v_t + (g_ampa*s_ampa + g_gabaa*s_gabaa)/k
+mu = 4*(v_r*v_t + (I_ext + g_ampa*s_ampa*E_ampa &
+     & + g_gabaa*s_gabaa*E_gabaa)/k) - alpha*alpha
+if (mu > 0) then
+    beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
+    I_star = pi*pi*k*mu/(4*beta*beta) + k*alpha*alpha/4 - k*v_r*v_t &
+     & - g_ampa*s_ampa*E_ampa - g_gabaa*s_gabaa*E_gabaa
+else
+    I_star = I_ext
+end if
+
+alpha_0 = v_r_0 + v_t_0 + (g_ampa_0*s_ampa_0 + g_gabaa_0*s_gabaa_0)/k_0
+mu_0 = 4*(v_r_0*v_t_0 + (I_ext_0 + g_ampa_0*s_ampa_0*E_ampa_0 &
+     & + g_gabaa_0*s_gabaa_0*E_gabaa_0)/k_0) - alpha_0**2
+if (mu_0 > 0) then
+    beta_0 = atan((2*v_p_0-alpha_0)/sqrt(mu_0)) - atan((2*v_z_0-alpha_0)/sqrt(mu_0))
+    I_star_0 = pi*pi*k_0*mu_0/(4*beta_0*beta_0) + k_0*alpha_0*alpha_0/4 &
+     & - k_0*v_r_0*v_t_0 - g_ampa_0*s_ampa_0*E_ampa_0 &
+     & - g_gabaa_0*s_gabaa_0*E_gabaa_0
+else
+    I_star_0 = I_ext_0
+end if
 
 dy(1) = (r*(-g_ampa*s_ampa - g_gabaa*s_gabaa &
-     & + k*(2.0*v - v_r - v_t) - q) + 10.0*Delta*k**2/(pi*C))/C
+     & + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)/(pi*C))/C
 dy(2) = (-pi**2*C**2*r**2/k &
-     & + C*q*r*log(v_p/v_z)/k + I_ext + g_ampa*s_ampa*(E_ampa &
-     & - v) + g_gabaa&
+     & + I_star + g_ampa*s_ampa*(E_ampa - v) + g_gabaa&
      & *s_gabaa*(E_gabaa - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
 dy(4) = r_e - s_ampa/tau_ampa
 dy(5) = r_i - s_gabaa/tau_gabaa
 dy(6) = (r_0*(-g_ampa_0*s_ampa_0 - g_gabaa_0*s_gabaa_0 &
-     & + k_0*(2.0*v_0 - v_r_0 - v_t_0) - q_0) + 10.0*Delta_0*k_0**2&
-     & /(pi*C_0))/C_0
+     & + k_0*(2.0*v_0 - v_r_0 - v_t_0) - q_0) + Delta_0*k_0&
+     & **2*(v_0 - v_r_0)/(pi*C_0))/C_0
 dy(7) = (-pi**2*C_0**2*r_0**2/k_0 &
-     & + C_0*q_0*r_0*log(v_p_0&
-     & /v_z_0)/k_0 + I_ext_0 + g_ampa_0*s_ampa_0*(E_ampa_0 &
-     & - v_0) + g_gabaa_0&
+     & + I_star_0 + g_ampa_0*s_ampa_0*(E_ampa_0 - v_0) + g_gabaa_0&
      & *s_gabaa_0*(E_gabaa_0 - v_0) &
      & + k_0*v_0*(v_0 - v_r_0 - v_t_0) + k_0*v_r_0*v_t_0 - u_0)/C_0
 dy(8) = a_0*(b_0*(v_0 - v_r_0) - u_0) + d_0*r_0
@@ -152,36 +176,36 @@ args(7) = 1.0  ! Delta
 args(8) = 100.0  ! C
 args(9) = -65.0  ! E_gabaa
 args(15) = 0.0  ! E_ampa
-args(16) = 60.0  ! v_z
+args(16) = -60.0  ! v_z
 args(17) = 40.0  ! v_p
 args(18) = 0.0  ! I_ext
 args(19) = -2.0  ! b
 args(20) = 0.03  ! a
-args(21) = 20.0  ! d
+args(21) = 10.0  ! d
 args(22) = 6.0  ! tau_ampa
 args(23) = 8.0  ! tau_gabaa
-args(24) = -45.0  ! v_t_0
-args(25) = -75.0  ! v_r_0
-args(26) = 1.2  ! k_0
+args(24) = -40.0  ! v_t_0
+args(25) = -55.0  ! v_r_0
+args(26) = 1.0  ! k_0
 args(27) = 1.0  ! g_gabaa_0
 args(28) = 1.0  ! g_ampa_0
 args(29) = 0.0  ! q_0
 args(30) = 1.0  ! Delta_0
-args(31) = 150.0  ! C_0
+args(31) = 20.0  ! C_0
 args(32) = -65.0  ! E_gabaa_0
 args(33) = 0.0  ! E_ampa_0
-args(34) = 56.0  ! v_z_0
-args(35) = 50.0  ! v_p_0
+args(34) = -60.0  ! v_z_0
+args(35) = 40.0  ! v_p_0
 args(36) = 0.0  ! I_ext_0
-args(37) = 5.0  ! b_0
-args(38) = 0.01  ! a_0
-args(39) = 60.0  ! d_0
+args(37) = 0.25  ! b_0
+args(38) = 0.02  ! a_0
+args(39) = 0.0  ! d_0
 args(40) = 6.0  ! tau_ampa_0
 args(41) = 8.0  ! tau_gabaa_0
-args(42) = 12.0  ! weight
-args(43) = 24.0  ! weight_0
-args(44) = 12.0  ! weight_1
-args(45) = 4.0  ! weight_2
+args(42) = 16.0 ! w_rr
+args(43) = 16.0 ! w_rf
+args(44) = 4.0 ! w_fr
+args(45) = 4.0 ! w_ff
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v
 y(3) = 0.0  ! u

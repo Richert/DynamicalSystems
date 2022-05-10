@@ -30,11 +30,11 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 50.0  # unit: mV
-v_reset = -70.0  # unit: mV
+v_reset = -60.0  # unit: mV
 Delta = 0.5  # unit: mV
-d = 10.0
-a = 0.03
-b = -2.0
+d = 0.0
+a = 0.003
+b = 0.0
 tau_s = 6.0
 g = 15.0
 J = 1.0
@@ -48,9 +48,9 @@ T = 4500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 30.0
-inp[int(1500/dt):int(2500/dt)] = 50.0
-inp[int(2500/dt):int(3500/dt)] = 13.0
+inp = np.zeros((int(T/dt),)) + 50.0
+inp[int(1500/dt):int(2500/dt)] = 70.0
+inp[int(2500/dt):int(3500/dt)] = 27.5
 
 # run the model
 ###############
