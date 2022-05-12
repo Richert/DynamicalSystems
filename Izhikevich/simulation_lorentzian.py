@@ -91,7 +91,7 @@ inp = np.zeros((int(T/dt),)) + 60.0
 # calculate FRE vs SNN differences for various deltas #
 #######################################################
 
-n = 10
+n = 100
 deltas = np.linspace(0.1, 10.0, num=n)
 signals = {'fre': [], 'snn': []}
 for Delta in deltas:
