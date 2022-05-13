@@ -21,20 +21,20 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 
 def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, k: float, E_r: float, C: float,
            J: float, g: float, tau_s: float, b: float, a: float, d: float, v_spike: float, v_reset: float,
-           dt: float = 1e-4) -> np.ndarray:
+           q: float, dt: float = 1e-4) -> np.ndarray:
     """Calculates right-hand side update of a network of all-to-all coupled Izhikevich neurons of the biophysical form
      with heterogeneous background excitabilities."""
 
     # extract state variables from u
-    v, u, s = y[:N], y[N:2*N], y[2*N]
+    v, u, s = y[:N], y[N], y[N+1]
 
     # calculate network input
     spikes = v >= v_spike
     rates = np.mean(spikes / dt)
 
     # calculate vector field of the system
-    dv = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) - u)/C
-    du = a*(b*(v-v_r) - u)
+    dv = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) + q*(np.mean(v)-v) - u)/C
+    du = a*(b*(np.mean(v)-v_r) - u) + d*rates
     ds = J*rates - s/tau_s
 
     # update state variables
@@ -44,15 +44,15 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
 
     # reset membrane potential and apply spike frequency adaptation
     v_new[spikes] = v_reset
-    u_new[spikes] += d
 
     # store updated state variables
     y[:N] = v_new
-    y[N:2*N] = u_new
-    y[2*N] = s_new
-    y[2*N+1] = rates
+    y[N] = u_new
+    y[N+1] = s_new
+    y[N+2] = rates
 
     return y
+
 
 # define parameters
 ###################
@@ -73,6 +73,7 @@ tau_s = 6.0
 J = 1.0
 g = 15.0
 E_r = 0.0
+q = 0.0
 
 # define lorentzian of etas
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=v_r-v_t)
@@ -90,26 +91,24 @@ inp[int(3000/dt):int(5000/dt)] += np.linspace(30.0, 0.0, num=int(2000/dt))
 ###############
 
 # initialize model
-u_init = np.zeros((2*N+2,))
+u_init = np.zeros((N+3,))
 u_init[:N] -= 60.0
-model = RNN(N, 2*N+2, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
-            tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_init)
+model = RNN(N, N+3, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
+            tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
 
 # define outputs
-outputs = {'s': {'idx': np.asarray([2*N]), 'avg': False}, 'u': {'idx': np.arange(N, 2*N), 'avg': True}}
+outputs = {'s': {'idx': np.asarray([N+1]), 'avg': False}, 'u': {'idx': np.asarray([N]), 'avg': False}}
 
 # perform simulation
 res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
 
 # plot results
-fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-ax[0].plot(np.mean(res["s"], axis=1))
-ax[0].set_ylabel(r'$s(t)$')
-ax[1].plot(np.mean(res["u"], axis=1))
-ax[1].set_ylabel(r'$u(t)$')
-ax[1].set_xlabel('time')
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(np.mean(res["s"], axis=1))
+ax.set_ylabel(r'$s(t)$')
+ax.set_xlabel('time')
 plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/sfa_rnn_low.p", "wb"))
+pickle.dump({'results': res}, open("results/sfa_rnn2_low.p", "wb"))
