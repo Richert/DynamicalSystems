@@ -91,8 +91,8 @@ inp = np.zeros((int(T/dt),)) + 60.0
 # calculate FRE vs SNN differences for various deltas #
 #######################################################
 
-n = 100
-deltas = np.linspace(0.1, 10.0, num=n)
+n = 1
+deltas = np.asarray([2.0])
 signals = {'fre': [], 'snn': []}
 for Delta in deltas:
 
@@ -116,7 +116,8 @@ for Delta in deltas:
     ################
 
     # define lorentzian of spike thresholds
-    spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=v_r-v_t)
+    v_t_tmp = -29.0
+    spike_thresholds = lorentzian(N, eta=v_t_tmp, delta=Delta, lb=v_r, ub=v_r-v_t_tmp)
 
     # initialize model
     model = RNN(N, N+3, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a,
@@ -129,14 +130,17 @@ for Delta in deltas:
     signals['fre'].append(fre)
     signals['snn'].append(snn)
 
-    # # plot results
-    # fig, ax = plt.subplots(figsize=(12, 4))
-    # ax.plot(fre.index, snn["v"])
-    # ax.plot(fre["v"])
-    # ax.set_ylabel(r'$v(t)$')
-    # ax.set_xlabel("time (ms)")
-    # plt.legend(['SNN', 'MF'])
-    # plt.show()
+    print(fr"$\Delta = {Delta}$")
+    print(f"Diff: {np.mean(fre['v']-snn['v'].squeeze())}")
+
+    # plot results
+    fig, ax = plt.subplots(figsize=(12, 4))
+    ax.plot(fre.index, snn["v"])
+    ax.plot(fre["v"])
+    ax.set_ylabel(r'$v(t)$')
+    ax.set_xlabel("time (ms)")
+    plt.legend(['SNN', 'MF'])
+    plt.show()
 
 # save results
-pickle.dump({'results': signals}, open("results/rs_lorentzian.p", "wb"))
+pickle.dump({'results': signals}, open("results/rs_lorentzian2.p", "wb"))

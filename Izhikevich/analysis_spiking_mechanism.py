@@ -11,12 +11,14 @@ import pickle
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 a = PyAuto.from_file(f"results/rs_corrected.pkl", auto_dir=auto_dir)
+a2 = PyAuto.from_file(f"results/rs_uncorrected.pkl", auto_dir=auto_dir)
 
 # load simulation data
 fre_low = pickle.load(open(f"results/spike_mech_fre.p", "rb"))['results']
-fre_high = pickle.load(open(f"results/spike_mech_fre_inf.p", "rb"))['results']
+fre_high = pickle.load(open(f"results/spike_mech_fre2.p", "rb"))['results']
+fre_inf = pickle.load(open(f"results/spike_mech_fre_inf.p", "rb"))['results']
 rnn_low = pickle.load(open(f"results/spike_mech_rnn.p", "rb"))['results']
-rnn_high = pickle.load(open(f"results/spike_mech_rnn_inf.p", "rb"))['results']
+rnn_high = pickle.load(open(f"results/spike_mech_rnn2.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -141,20 +143,23 @@ for j in range(1, n + 1):
     c = to_hex(cmap(j, alpha=1.0))
     line = a.plot_continuation('PAR(16)', 'U(4)', cont=f'I:{j}', ax=ax, line_color_stable=c, line_color_unstable=c)
     lines.append(line)
+line = a2.plot_continuation('PAR(16)', 'U(4)', cont=f'I:1', ax=ax)
+lines.append(line)
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$s$')
 ax.set_title(r'(D) 1D bifurcation diagrams for different $v_0$')
 ax.set_xlim([0.0, 80.0])
-plt.legend(handles=lines, labels=[fr'${v}$' for v in v_reset], loc=2, title=r'$\mathrm{v_0}$')
+plt.legend(handles=lines, labels=[fr'${v}$' for v in v_reset] + [r'$\infty$'], loc=2, title=r'$\mathrm{v_0}$')
 
 # plot the time signals
-data = [[fre_low, rnn_low], [fre_high, rnn_high]]
+data = [[fre_low, rnn_low, fre_inf], [fre_high, rnn_high, fre_inf]]
 titles = [rf'(E) $v_0 = {v_reset[-1]}$', rf'(F) $v_0 = {v_reset[0]}$']
 time = np.linspace(500.0, 4500.0, num=fre_low['s'].shape[0])
-for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
+for i, ((fre, rnn, inf), title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[i+2, 3:])
     ax.plot(time, rnn['s'])
     ax.plot(time, fre['s'])
+    ax.plot(time, inf['s'], c='black', linestyle='--')
     xmin = np.min(rnn['s'])
     xmax = np.max(rnn['s'])
     plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=1500, x2=2500.0, color='grey', alpha=0.15)
@@ -162,7 +167,7 @@ for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
     ax.set_ylim([xmin - 0.1 * xmax, xmax + 0.1 * xmax])
     if i == len(titles) - 1:
         ax.set_xlabel('time (ms)')
-        plt.legend(['RNN', 'MF'])
+        plt.legend(['RNN', r'MF$^*$', 'MF'])
     ax.set_ylabel('s')
     ax.set_title(title)
 

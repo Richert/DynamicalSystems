@@ -54,7 +54,7 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 50.0  # unit: mV
-v_reset = -60.0  # unit: mV
+v_reset = -120.0  # unit: mV
 Delta = 0.5  # unit: mV
 d = 0.0
 a = 0.003
@@ -97,4 +97,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/spike_mech_fre.p", "wb"))
+pickle.dump({'results': res}, open("results/spike_mech_fre2.p", "wb"))
