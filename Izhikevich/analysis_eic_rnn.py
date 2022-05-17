@@ -4,9 +4,24 @@ import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 
+
+def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
+    diff = np.diff(hbs)
+    idx_l = hbs[idx]
+    idx_r = idx_l
+    while idx < len(diff):
+        idx_r = hbs[idx]
+        idx += 1
+        if diff[idx-1] > cutoff:
+            break
+    return idx_l, idx_r, idx
+
+
 dir = 'results/eic'
 cutoff = 10000
-n_cycles = 2
+n_cycles = 3
+hopf_diff = 5000
+hopf_end = 100000
 _, _, fnames = next(walk(dir), (None, None, []))
 lp1s, lp2s, hb1s, hb2s = [], [], [], []
 for f in fnames:
@@ -26,17 +41,16 @@ for f in fnames:
         lp2s.append([I_r, delta])
 
     # find hopf bifurcation points
-    # TODO: implement SO regime detection that works based on differences between subsequent peak indices, using a
-    #  threshold and can detect multiple oscillatory regimes based on that
     hbs, _ = find_peaks(-1.0 * res['ue'].squeeze(), width=50, prominence=0.4)
-    if len(hbs) > len(lps)+n_cycles:
-        if len(lps) > 0 and lps[0] < 100000:
-            hbs = hbs[hbs > lps[0]]
-        hbs = hbs[hbs < 100000]
-        I_r = Is[hbs[0]]
-        I_l = Is[hbs[-n_cycles]]
-        hb1s.append([I_l, delta])
-        hb2s.append([I_r, delta])
+    if len(hbs) > len(lps):
+        idx = 0
+        while idx < len(hbs) and hbs[idx] < hopf_end:
+            idx_l, idx_r, idx = get_hopf_area(hbs, idx, cutoff=hopf_diff)
+            if idx_r - idx_l > hopf_diff:
+                I_r = Is[idx_l]
+                I_l = Is[idx_r]
+                hb1s.append([I_l, delta])
+                hb2s.append([I_r, delta])
 
 # save results
 lp1s = np.asarray(lp1s)
