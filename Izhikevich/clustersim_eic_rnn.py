@@ -165,10 +165,11 @@ outputs = {'ue': {'idx': np.asarray([2*N]), 'avg': False}, 'ui': {'idx': np.asar
 # perform simulation
 res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
 
-plt.plot(res['ue'])
-plt.plot(res['ui'])
-plt.legend(['RS', 'FS'])
-plt.show()
 # save results
 pickle.dump({'results': res, 'delta_i': Delta_i, 'I': inp[::int(dts/dt), 1]},
             open(f"/home/rgf3807/Slurm/results/eic_rnn_{idx}.p", "wb"))
+
+# plt.plot(res['ue'])
+# plt.plot(res['ui'])
+# plt.legend(['RS', 'FS'])
+# plt.show()
