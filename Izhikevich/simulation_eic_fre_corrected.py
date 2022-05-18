@@ -78,9 +78,9 @@ ve_t = -40.0  # unit: mV
 ve_spike = 40.0  # unit: mV
 ve_reset = -60.0  # unit: mV
 Delta_e = 1.0  # unit: mV
-de = 0.0
+de = 10.0
 ae = 0.03
-be = 0.0
+be = -2.0
 
 # IB neuron parameters
 Ci = 20.0   # unit: pF
@@ -92,7 +92,7 @@ vi_reset = -60.0  # unit: mV
 Delta_i = 1.5  # unit: mV
 di = 0.0
 ai = 0.2
-bi = 0.0
+bi = 0.25
 
 # synaptic parameters
 g_ampa = 1.0
@@ -113,9 +113,9 @@ dt = 1e-3
 dts = 1e-1
 I_ext = np.zeros((int(T/dt), 2))
 I_ext[:, 0] += 50.0
-I_ext[:, 1] += 20.0
-I_ext[int(2000/dt):int(3000/dt), 1] -= 20.0
-# I_ext[int(3500/dt):int(4000/dt), 1] += 25.0
+I_ext[:, 1] += 36.0
+I_ext[int(2000/dt):int(3000/dt), 1] += 14.0
+I_ext[int(2500/dt):int(3000/dt), 1] += 25.0
 
 # run the model
 ###############

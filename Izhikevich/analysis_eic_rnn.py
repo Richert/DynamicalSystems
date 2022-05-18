@@ -1,5 +1,6 @@
 from os import walk
 from scipy.signal import find_peaks
+from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np
@@ -20,8 +21,9 @@ def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
 dir = 'results/eic'
 cutoff = 10000
 n_cycles = 3
-hopf_diff = 5000
-hopf_end = 100000
+hopf_diff = 3000
+hopf_len = 5000
+hopf_start = 100000
 _, _, fnames = next(walk(dir), (None, None, []))
 lp1s, lp2s, hb1s, hb2s = [], [], [], []
 for f in fnames:
@@ -32,21 +34,25 @@ for f in fnames:
     res = data['results']
     delta = data['delta_i']
 
+    # filter data
+    filtered = gaussian_filter1d(data['results']['ui'].squeeze(), sigma=50)
+
     # find fold bifurcation points
-    lps, _ = find_peaks(-1.0 * res['ue'].squeeze(), width=1000, prominence=1.0)
+    lps, props = find_peaks(-1.0*filtered, width=1000, prominence=0.2)
     if len(lps) > 1:
-        I_r = Is[lps[0]]
+        I_r = Is[lps[0] - int(0.5*props['widths'][0])]
         I_l = Is[lps[-1]]
         lp1s.append([I_l, delta])
         lp2s.append([I_r, delta])
 
     # find hopf bifurcation points
-    hbs, _ = find_peaks(-1.0 * res['ue'].squeeze(), width=50, prominence=0.4)
-    if len(hbs) > len(lps):
+    hbs, _ = find_peaks(filtered, width=100, prominence=0.03)
+    hbs = hbs[hbs >= hopf_start]
+    if len(hbs) > n_cycles:
         idx = 0
-        while idx < len(hbs) and hbs[idx] < hopf_end:
+        while idx < len(hbs)-1:
             idx_l, idx_r, idx = get_hopf_area(hbs, idx, cutoff=hopf_diff)
-            if idx_r - idx_l > hopf_diff:
+            if idx_r - idx_l > hopf_len:
                 I_r = Is[idx_l]
                 I_l = Is[idx_r]
                 hb1s.append([I_l, delta])

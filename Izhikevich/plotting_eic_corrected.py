@@ -14,8 +14,8 @@ a0 = PyAuto.from_file(f"results/eic.pkl", auto_dir=auto_dir)
 deltas = a.additional_attributes['deltas']
 
 # load simulation data
-# fre_hom = pickle.load(open(f"results/eic_fre_hom.p", "rb"))['results']
-# fre_het = pickle.load(open(f"results/eic_fre_het.p", "rb"))['results']
+rnn_bfs = pickle.load(open("results/eic_results.p", "rb"))
+rnn2_bfs = pickle.load(open("results/eic_results2.p", "rb"))
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -23,7 +23,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 4)
+plt.rcParams['figure.figsize'] = (6, 5)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -37,13 +37,43 @@ markersize = 6
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=3, ncols=1, figure=fig)
+grid = gridspec.GridSpec(nrows=2, ncols=1, figure=fig)
 
 # 2D continuations
 ##################
 
-# continuation in Delta_fs and I_fs
+n_points = 1
+
+# continuation in uncorrected model
 ax = fig.add_subplot(grid[0, 0])
+ax.scatter(rnn_bfs['lp1'][::n_points, 0], rnn_bfs['lp1'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
+ax.scatter(rnn_bfs['lp2'][::n_points, 0], rnn_bfs['lp2'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
+ax.scatter(rnn_bfs['hb1'][::n_points, 0], rnn_bfs['hb1'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
+ax.scatter(rnn_bfs['hb2'][::n_points, 0], rnn_bfs['hb2'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
+line1 = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+line2 = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+l1 = line1.get_paths()[0].vertices
+l2_tmp = line2.get_paths()[0].vertices
+l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
+plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
+line = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
+                            line_color_unstable='#148F77', line_style_unstable='solid')
+line_data = line.get_paths()[0].vertices
+plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
+ax.set_ylabel(r'$\Delta_{fs}$')
+ax.set_xlabel(r'$I_{fs}$')
+ax.set_title(r'(A) $v_{p} = 1000$, $v_0 = -1000$')
+ax.set_ylim([0.0, 1.6])
+ax.set_xlim([10.0, 80.0])
+
+# continuation in corrected model
+ax = fig.add_subplot(grid[1, 0])
+ax.scatter(rnn2_bfs['lp1'][::n_points, 0], rnn2_bfs['lp1'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
+ax.scatter(rnn2_bfs['lp2'][::n_points, 0], rnn2_bfs['lp2'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
+ax.scatter(rnn2_bfs['hb1'][::n_points, 0], rnn2_bfs['hb1'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
+ax.scatter(rnn2_bfs['hb2'][::n_points, 0], rnn2_bfs['hb2'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
 line1 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
 line2 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
@@ -58,34 +88,9 @@ line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
-ax.set_title('(B)')
+ax.set_title(r'(b) $v_{p} = 40$, $v_0 = -60$')
 ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
-
-# 1D continuations
-##################
-
-delta_str = r"\Delta_{fs}"
-
-# continuation in FS input for high Delta_fs
-ax = fig.add_subplot(grid[0, 4:6])
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:2', ax=ax, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax.set_ylabel(r'$r_{rs}$')
-ax.set_xlabel('')
-ax.set_title(fr'(C) ${delta_str} = {deltas[1]}$')
-ax.set_xlim([0.0, 100.0])
-
-# continuation in FS input for low Delta_fs
-ax = fig.add_subplot(grid[1, 4:6])
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1', ax=ax, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc1', ax=ax, line_color_stable='#148F77')
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc2', ax=ax, line_color_stable='#148F77')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_ylabel(r'$r_{rs}$')
-ax.set_title(fr'(D) ${delta_str} = {deltas[0]}$')
-ax.set_xlim([0.0, 100.0])
+ax.set_xlim([10.0, 80.0])
 
 # time series
 #############
