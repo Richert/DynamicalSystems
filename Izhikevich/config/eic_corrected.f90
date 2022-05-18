@@ -92,22 +92,22 @@ r_e_0 = r*w_fr
 r_i_0 = r_0*w_ff
 
 alpha = v_r + v_t + (g_ampa*s_ampa + g_gabaa*s_gabaa)/k
-mu = 4*(v_r*v_t + (I_ext - u + g_ampa*s_ampa*E_ampa &
+mu = 4*(v_r*v_t + (I_ext + g_ampa*s_ampa*E_ampa &
      & + g_gabaa*s_gabaa*E_gabaa)/k) - alpha*alpha
 if (mu > 0) then
     beta = atan((2*v_p-alpha)/sqrt(mu)) - atan((2*v_z-alpha)/sqrt(mu))
-    I_star = pi*pi*k*mu/(4*beta*beta) + k*alpha*alpha/4 + u - k*v_r*v_t &
+    I_star = pi*pi*k*mu/(4*beta*beta) + k*alpha*alpha/4 - k*v_r*v_t &
      & - g_ampa*s_ampa*E_ampa - g_gabaa*s_gabaa*E_gabaa
 else
     I_star = I_ext
 end if
 
 alpha_0 = v_r_0 + v_t_0 + (g_ampa_0*s_ampa_0 + g_gabaa_0*s_gabaa_0)/k_0
-mu_0 = 4*(v_r_0*v_t_0 + (I_ext_0 - u_0 + g_ampa_0*s_ampa_0*E_ampa_0 &
+mu_0 = 4*(v_r_0*v_t_0 + (I_ext_0 + g_ampa_0*s_ampa_0*E_ampa_0 &
      & + g_gabaa_0*s_gabaa_0*E_gabaa_0)/k_0) - alpha_0**2
 if (mu_0 > 0) then
     beta_0 = atan((2*v_p_0-alpha_0)/sqrt(mu_0)) - atan((2*v_z_0-alpha_0)/sqrt(mu_0))
-    I_star_0 = pi*pi*k_0*mu_0/(4*beta_0*beta_0) + k_0*alpha_0*alpha_0/4 + u_0 &
+    I_star_0 = pi*pi*k_0*mu_0/(4*beta_0*beta_0) + k_0*alpha_0*alpha_0/4 &
      & - k_0*v_r_0*v_t_0 - g_ampa_0*s_ampa_0*E_ampa_0 &
      & - g_gabaa_0*s_gabaa_0*E_gabaa_0
 else
