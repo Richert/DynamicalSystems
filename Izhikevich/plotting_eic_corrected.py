@@ -85,7 +85,9 @@ plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
                            line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
-plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
+plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
+line_data = line.get_paths()[2].vertices
+plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_title(r'(b) $v_{p} = 40$, $v_0 = -60$')

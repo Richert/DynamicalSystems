@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
 plt.rcParams['backend'] = 'TkAgg'
-import sys
-sys.path.append('../')
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -88,12 +86,10 @@ def ik_ei_ata(y: np.ndarray, N: int, inp: np.ndarray, ve_r: float, vi_r: float, 
 # define parameters
 ###################
 
-# job-specific parameters
-idx = int(sys.argv[-1])
-deltas = np.linspace(0.01, 1.6, num=100)
-
-# number of neurons per population
 N = 10000
+
+# define model parameters
+#########################
 
 # RS neuron parameters
 Ce = 100.0   # unit: pF
@@ -107,14 +103,14 @@ de = 20.0
 ae = 0.03
 be = -2.0
 
-# FS neuron parameters
+# IB neuron parameters
 Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
 vi_spike = 40.0  # unit: mV
 vi_reset = -60.0  # unit: mV
-Delta_i = deltas[idx]
+Delta_i = 0.3  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -136,16 +132,15 @@ spike_thresholds_e = lorentzian(N, eta=ve_t, delta=Delta_e, lb=ve_r, ub=ve_r-ve_
 spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=vi_r-vi_t)
 
 # define inputs
-ts = 10.0
-T = 2100.0*ts
-cutoff = 100.0*ts
+T = 4000.0
+cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt), 2))
-inp[:, 0] = 50.0
-inp[:, 1] = 10.0
-inp[int(100*ts/dt):int(1100*ts/dt), 1] += np.linspace(0.0, 70.0, num=int(1000*ts/dt))
-inp[int(1100*ts/dt):int(2100*ts/dt), 1] += np.linspace(70.0, 0.0, num=int(1000*ts/dt))
+I_ext = np.zeros((int(T/dt), 2))
+I_ext[:, 0] += 50.0
+I_ext[:, 1] += 36.0
+I_ext[int(2000/dt):int(3000/dt), 1] += 14.0
+I_ext[int(2500/dt):int(3000/dt), 1] += 25.0
 
 # run the model
 ###############
@@ -160,16 +155,20 @@ model = RNN(N, 2*N+6, ik_ei_ata, Ce=Ce, Ci=Ci, ke=ke, ki=ki, ve_r=ve_r, vi_r=vi_
             tau_ampa=tau_ampa, tau_gaba=tau_gaba, k_ee=k_ee, k_ei=k_ei, k_ie=k_ie, k_ii=k_ii, u_init=u_init)
 
 # define outputs
-outputs = {'ue': {'idx': np.asarray([2*N]), 'avg': False}, 'ui': {'idx': np.asarray([2*N+1]), 'avg': False}}
+outputs = {'se': {'idx': np.asarray([2*N+2]), 'avg': False}, 'si': {'idx': np.asarray([2*N+3]), 'avg': False}}
 
 # perform simulation
-res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
+res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=I_ext, cutoff=cutoff, parallel=True, fastmath=True)
+
+# plot results
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(res["se"]/k_ee)
+ax.plot(res["si"]/k_ei)
+ax.set_ylabel(r'$s(t)$')
+ax.set_xlabel('time')
+plt.legend(['RS', 'FS'])
+plt.tight_layout()
+plt.show()
 
 # save results
-pickle.dump({'results': res, 'delta_i': Delta_i, 'I': inp[::int(dts/dt), 1]},
-            open(f"/home/rgf3807/Slurm/results/eic_rnn2_{idx}.p", "wb"))
-
-# plt.plot(res['ue'])
-# plt.plot(res['ui'])
-# plt.legend(['RS', 'FS'])
-# plt.show()
+pickle.dump({'results': res}, open("results/eic_rnn_het.p", "wb"))

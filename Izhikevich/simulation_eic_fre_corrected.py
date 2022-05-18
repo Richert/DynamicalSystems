@@ -78,7 +78,7 @@ ve_t = -40.0  # unit: mV
 ve_spike = 40.0  # unit: mV
 ve_reset = -60.0  # unit: mV
 Delta_e = 1.0  # unit: mV
-de = 10.0
+de = 20.0
 ae = 0.03
 be = -2.0
 
@@ -89,10 +89,10 @@ vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
 vi_spike = 40.0  # unit: mV
 vi_reset = -60.0  # unit: mV
-Delta_i = 1.5  # unit: mV
+Delta_i = 0.3  # unit: mV
 di = 0.0
 ai = 0.2
-bi = 0.25
+bi = 0.025
 
 # synaptic parameters
 g_ampa = 1.0
@@ -149,4 +149,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_fre_corrected_het.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_fre_corrected_hom.p", "wb"))
