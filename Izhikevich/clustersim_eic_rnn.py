@@ -167,7 +167,7 @@ res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, pa
 
 # save results
 pickle.dump({'results': res, 'delta_i': Delta_i, 'I': inp[::int(dts/dt), 1]},
-            open(f"/home/rgf3807/Slurm/results/eic_rnn2_{idx}.p", "wb"))
+            open(f"/home/rgf3807/Slurm/results/eic_rnn_{idx}.p", "wb"))
 
 # plt.plot(res['ue'])
 # plt.plot(res['ui'])
