@@ -45,16 +45,16 @@ def eic_run(y, N, I_ext_input, v_t, v_r, k, g_gabaa, g_ampa, Delta, C, E_gabaa, 
                             s_gabaa_0, E_gabaa_0, u_0)
 
     dy = [
-        (r * (-g_ampa * s_ampa - g_gabaa * s_gabaa + k * (2.0 * v - v_r - v_t)) + Delta * k ** 2 * (v - v_r * (2)) / (
+        (r * (-g_ampa * s_ampa - g_gabaa * s_gabaa + k * (2.0 * v - v_r - v_t)) + Delta * k ** 2 * (v - v_r) / (
                     pi * C)) / C,
-        (-pi ** 2 * C ** 2 * r ** 2 / k + I_ext + g_ampa * s_ampa * (
+        (-pi * C * r * (Delta + pi * C * r / k) + I_ext + g_ampa * s_ampa * (
                     E_ampa - v) + g_gabaa * s_gabaa * (E_gabaa - v) + k * v * (v - v_r - v_t) + k * v_r * v_t - u) / C,
         a * (b * (v - v_r) - u) + d * r,
         r_e - s_ampa / tau_ampa,
         r_i - s_gabaa / tau_gabaa,
         (r_0 * (-g_ampa_0 * s_ampa_0 - g_gabaa_0 * s_gabaa_0 + k_0 * (
                     2.0 * v_0 - v_r_0 - v_t_0)) + Delta_0 * k_0 ** 2 * (v_0 - v_r_0) / (pi * C_0)) / C_0,
-        (-pi ** 2 * C_0 ** 2 * r_0 ** 2 / k_0 + I_ext_0 + g_ampa_0 * s_ampa_0 * (E_ampa_0 - v_0) + g_gabaa_0 * s_gabaa_0 * (
+        (-pi * C_0 * r_0 * (Delta_0 + pi * C_0 * r_0 / k_0) + I_ext_0 + g_ampa_0 * s_ampa_0 * (E_ampa_0 - v_0) + g_gabaa_0 * s_gabaa_0 * (
                              E_gabaa_0 - v_0) + k_0 * v_0 * (v_0 - v_r_0 - v_t_0) + k_0 * v_r_0 * v_t_0 - u_0) / C_0,
         a_0 * (b_0 * (v_0 - v_r_0) - u_0) + d_0 * r_0,
         r_e_0 - s_ampa_0 / tau_ampa_0,
@@ -75,8 +75,8 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-ve_spike = 40.0  # unit: mV
-ve_reset = -60.0  # unit: mV
+ve_spike = 50.0  # unit: mV
+ve_reset = -100.0  # unit: mV
 Delta_e = 1.0  # unit: mV
 de = 20.0
 ae = 0.03
@@ -87,9 +87,9 @@ Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-vi_spike = 40.0  # unit: mV
-vi_reset = -60.0  # unit: mV
-Delta_i = 0.3  # unit: mV
+vi_spike = 50.0  # unit: mV
+vi_reset = -100.0  # unit: mV
+Delta_i = 0.2  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -113,9 +113,9 @@ dt = 1e-3
 dts = 1e-1
 I_ext = np.zeros((int(T/dt), 2))
 I_ext[:, 0] += 50.0
-I_ext[:, 1] += 36.0
-I_ext[int(2000/dt):int(3000/dt), 1] += 14.0
-I_ext[int(2500/dt):int(3000/dt), 1] += 25.0
+I_ext[:, 1] += 20.0
+I_ext[int(2000/dt):int(3000/dt), 1] += 20.0
+I_ext[int(2500/dt):int(3000/dt), 1] += 12.0
 
 # run the model
 ###############

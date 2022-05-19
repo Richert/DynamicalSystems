@@ -38,7 +38,7 @@ for f in fnames:
     filtered = gaussian_filter1d(data['results']['ui'].squeeze(), sigma=50)
 
     # find fold bifurcation points
-    lps, props = find_peaks(-1.0*filtered, width=1000, prominence=0.2)
+    lps, props = find_peaks(-1.0*filtered, width=1000, prominence=0.02)
     if len(lps) > 1:
         I_r = Is[lps[0] - int(0.5*props['widths'][0])]
         I_l = Is[lps[-1]]
@@ -46,7 +46,7 @@ for f in fnames:
         lp2s.append([I_r, delta])
 
     # find hopf bifurcation points
-    hbs, _ = find_peaks(filtered, width=100, prominence=0.03)
+    hbs, _ = find_peaks(filtered, width=100, prominence=0.006)
     hbs = hbs[hbs >= hopf_start]
     if len(hbs) > n_cycles:
         idx = 0

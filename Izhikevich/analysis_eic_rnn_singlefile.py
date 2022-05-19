@@ -5,15 +5,15 @@ import pickle
 import numpy as np
 
 # load data
-data = pickle.load(open(f"results/eic/eic_rnn_32.p", "rb"))
+data = pickle.load(open(f"results/eic2/eic_rnn2_10.p", "rb"))
 print(fr"$\Delta = {data['delta_i']}$")
 
 # filter data
 filtered = gaussian_filter1d(data['results']['ui'].squeeze(), sigma=50)
 
 # peak detection
-hb_peaks, _ = find_peaks(filtered, width=100, prominence=0.02)
-lp_peaks, properties = find_peaks(-1.0*filtered, width=1000, prominence=0.05)
+hb_peaks, _ = find_peaks(filtered, width=100, prominence=0.006)
+lp_peaks, properties = find_peaks(-1.0*filtered, width=1000, prominence=0.02)
 offset = 10000
 
 # plotting

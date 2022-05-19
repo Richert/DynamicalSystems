@@ -25,8 +25,8 @@ def ik_ei_ata(y: np.ndarray, N: int, inp: np.ndarray, ve_r: float, vi_r: float, 
               g_gaba: float, E_ampa: float, E_gaba: float, tau_ampa: float, tau_gaba: float, k_ee: float, k_ei: float,
               k_ie: float, k_ii: float, dt: float = 1e-4) -> np.ndarray:
     """Calculates right-hand side update of a network of all-to-all coupled Izhikevich neurons of the biophysical form
-     with heterogeneous background excitabilities, split into an excitatory and an inhibitory population.
-     """
+    with heterogeneous background excitabilities, split into an excitatory and an inhibitory population.
+    """
 
     # preparatory calculations
     ##########################
@@ -53,7 +53,7 @@ def ik_ei_ata(y: np.ndarray, N: int, inp: np.ndarray, ve_r: float, vi_r: float, 
         (ke*(ve**2 - (ve_r+ve_t)*ve + ve_r*ve_t) + inp_e + g_ampa*se_ampa*(E_ampa-ve) + g_gaba*se_gaba*(E_gaba-ve) - ue) / Ce,
 
         # inhibitory population
-        (ki * (vi**2 - (vi_r+vi_t)*vi + vi_r*vi_t) + inp_i + g_ampa*si_ampa*(E_ampa-vi) + g_gaba*si_gaba*(E_gaba-vi) - ui) / Ci,
+        (ki*(vi**2 - (vi_r+vi_t)*vi + vi_r*vi_t) + inp_i + g_ampa*si_ampa*(E_ampa-vi) + g_gaba*si_gaba*(E_gaba-vi) - ui) / Ci,
     ]
     dy2 = [
         # recovery variables
@@ -96,8 +96,8 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-ve_spike = 40.0  # unit: mV
-ve_reset = -60.0  # unit: mV
+ve_spike = 50.0  # unit: mV
+ve_reset = -100.0  # unit: mV
 Delta_e = 1.0  # unit: mV
 de = 20.0
 ae = 0.03
@@ -108,9 +108,9 @@ Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-vi_spike = 40.0  # unit: mV
-vi_reset = -60.0  # unit: mV
-Delta_i = 0.3  # unit: mV
+vi_spike = 50.0  # unit: mV
+vi_reset = -100.0  # unit: mV
+Delta_i = 0.2  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -138,9 +138,9 @@ dt = 1e-3
 dts = 1e-1
 I_ext = np.zeros((int(T/dt), 2))
 I_ext[:, 0] += 50.0
-I_ext[:, 1] += 36.0
-I_ext[int(2000/dt):int(3000/dt), 1] += 14.0
-I_ext[int(2500/dt):int(3000/dt), 1] += 25.0
+I_ext[:, 1] += 20.0
+I_ext[int(2000/dt):int(3000/dt), 1] += 20.0
+I_ext[int(2500/dt):int(3000/dt), 1] += 12.0
 
 # run the model
 ###############

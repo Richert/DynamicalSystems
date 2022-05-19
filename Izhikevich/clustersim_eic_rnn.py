@@ -100,8 +100,8 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-ve_spike = 1000.0  # unit: mV
-ve_reset = -1000.0  # unit: mV
+ve_spike = 50.0  # unit: mV
+ve_reset = -100.0  # unit: mV
 Delta_e = 1.0  # unit: mV
 de = 20.0
 ae = 0.03
@@ -112,8 +112,8 @@ Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-vi_spike = 1000.0  # unit: mV
-vi_reset = -1000.0  # unit: mV
+vi_spike = 50.0  # unit: mV
+vi_reset = -100.0  # unit: mV
 Delta_i = deltas[idx]
 di = 0.0
 ai = 0.2
@@ -167,7 +167,7 @@ res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, pa
 
 # save results
 pickle.dump({'results': res, 'delta_i': Delta_i, 'I': inp[::int(dts/dt), 1]},
-            open(f"/home/rgf3807/Slurm/results/eic_rnn_{idx}.p", "wb"))
+            open(f"/home/rgf3807/Slurm/results/eic_rnn2_{idx}.p", "wb"))
 
 # plt.plot(res['ue'])
 # plt.plot(res['ui'])
