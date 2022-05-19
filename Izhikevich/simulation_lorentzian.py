@@ -92,7 +92,7 @@ inp = np.zeros((int(T/dt),)) + 60.0
 #######################################################
 
 n = 1
-deltas = np.asarray([2.0])
+deltas = np.asarray([0.05])
 signals = {'fre': [], 'snn': []}
 for Delta in deltas:
 
@@ -116,8 +116,7 @@ for Delta in deltas:
     ################
 
     # define lorentzian of spike thresholds
-    v_t_tmp = -29.0
-    spike_thresholds = lorentzian(N, eta=v_t_tmp, delta=Delta, lb=v_r, ub=v_r-v_t_tmp)
+    spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=v_r-v_t)
 
     # initialize model
     model = RNN(N, N+3, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a,

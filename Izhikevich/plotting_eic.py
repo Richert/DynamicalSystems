@@ -61,7 +61,7 @@ ax.set_ylabel(r'$\Delta_{rs}$')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_title('(A)')
 ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
+ax.set_xlim([20.0, 80.0])
 
 # continuation in Delta_fs and I_fs
 ax = fig.add_subplot(grid[:2, 2:4])
@@ -77,11 +77,12 @@ line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, l
                            line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
+a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, line_style_unstable='solid', ignore=['LP'])
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_title('(B)')
-ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
+ax.set_ylim([0.0, 1.0])
+ax.set_xlim([20.0, 80.0])
 
 # 1D continuations
 ##################
@@ -90,29 +91,29 @@ delta_str = r"\Delta_{fs}"
 
 # continuation in FS input for high Delta_fs
 ax = fig.add_subplot(grid[0, 4:6])
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:2', ax=ax, line_color_stable='#76448A',
+a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:3', ax=ax, line_color_stable='#76448A',
                     line_color_unstable='#5D6D7E')
 ax.set_ylabel(r'$r_{rs}$')
 ax.set_xlabel('')
-ax.set_title(fr'(C) ${delta_str} = {deltas[1]}$')
-ax.set_xlim([0.0, 100.0])
+ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$')
+ax.set_xlim([20.0, 80.0])
 
 # continuation in FS input for low Delta_fs
 ax = fig.add_subplot(grid[1, 4:6])
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1', ax=ax, line_color_stable='#76448A',
                     line_color_unstable='#5D6D7E')
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc1', ax=ax, line_color_stable='#148F77')
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc2', ax=ax, line_color_stable='#148F77')
+a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc1', ax=ax, line_color_stable='#148F77', ignore=['BP', 'LP'])
+a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc2', ax=ax, line_color_stable='#148F77', ignore=['BP', 'LP'])
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_ylabel(r'$r_{rs}$')
-ax.set_title(fr'(D) ${delta_str} = {deltas[0]}$')
-ax.set_xlim([0.0, 100.0])
+ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$')
+ax.set_xlim([20.0, 80.0])
 
 # time series
 #############
 
 data = [fre_hom, fre_het]
-titles = [fr'(E) ${delta_str} = {deltas[0]}$', fr'(F) ${delta_str} = {deltas[1]}$']
+titles = [fr'(E) ${delta_str} = {deltas[1]}$', fr'(F) ${delta_str} = {deltas[2]}$']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)

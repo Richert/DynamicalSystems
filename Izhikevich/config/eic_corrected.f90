@@ -104,7 +104,7 @@ end if
 
 alpha_0 = v_r_0 + v_t_0 + (g_ampa_0*s_ampa_0 + g_gabaa_0*s_gabaa_0)/k_0
 mu_0 = 4*(v_r_0*v_t_0 + (I_ext_0 - u_0 + g_ampa_0*s_ampa_0*E_ampa_0 &
-     & + g_gabaa_0*s_gabaa_0*E_gabaa_0)/k_0) - alpha_0**2
+     & + g_gabaa_0*s_gabaa_0*E_gabaa_0)/k_0) - alpha_0*alpha_0
 if (mu_0 > 0) then
     beta_0 = atan((2*v_p_0-alpha_0)/sqrt(mu_0)) - atan((2*v_z_0-alpha_0)/sqrt(mu_0))
     I_star_0 = pi*pi*k_0*mu_0/(4*beta_0*beta_0) + k_0*alpha_0*alpha_0/4 + u_0 &
@@ -116,7 +116,7 @@ end if
 
 dy(1) = (r*(-g_ampa*s_ampa - g_gabaa*s_gabaa &
      & + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)/(pi*C))/C
-dy(2) = (-pi**2*C**2*r**2/k &
+dy(2) = (-pi*C*r*(Delta+pi*C*r/k) &
      & + I_star + g_ampa*s_ampa*(E_ampa - v) + g_gabaa&
      & *s_gabaa*(E_gabaa - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
@@ -125,7 +125,7 @@ dy(5) = r_i - s_gabaa/tau_gabaa
 dy(6) = (r_0*(-g_ampa_0*s_ampa_0 - g_gabaa_0*s_gabaa_0 &
      & + k_0*(2.0*v_0 - v_r_0 - v_t_0) - q_0) + Delta_0*k_0&
      & **2*(v_0 - v_r_0)/(pi*C_0))/C_0
-dy(7) = (-pi**2*C_0**2*r_0**2/k_0 &
+dy(7) = (-pi*C_0*r_0*(Delta_0+pi*C_0*r_0/k_0) &
      & + I_star_0 + g_ampa_0*s_ampa_0*(E_ampa_0 - v_0) + g_gabaa_0&
      & *s_gabaa_0*(E_gabaa_0 - v_0) &
      & + k_0*v_0*(v_0 - v_r_0 - v_t_0) + k_0*v_r_0*v_t_0 - u_0)/C_0
@@ -176,8 +176,8 @@ args(7) = 1.0  ! Delta
 args(8) = 100.0  ! C
 args(9) = -65.0  ! E_gabaa
 args(15) = 0.0  ! E_ampa
-args(16) = -60.0  ! v_z
-args(17) = 40.0  ! v_p
+args(16) = -100.0  ! v_z
+args(17) = 50.0  ! v_p
 args(18) = 0.0  ! I_ext
 args(19) = -2.0  ! b
 args(20) = 0.03  ! a
@@ -194,8 +194,8 @@ args(30) = 1.0  ! Delta_0
 args(31) = 20.0  ! C_0
 args(32) = -65.0  ! E_gabaa_0
 args(33) = 0.0  ! E_ampa_0
-args(34) = -60.0  ! v_z_0
-args(35) = 40.0  ! v_p_0
+args(34) = -100.0  ! v_z_0
+args(35) = 50.0  ! v_p_0
 args(36) = 0.0  ! I_ext_0
 args(37) = 0.025  ! b_0
 args(38) = 0.2  ! a_0

@@ -75,7 +75,7 @@ ik_ei_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - q - g_ampa*s_ampa - g_gabaa*s_gabaa)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + q*C*log(v_p/v_z)*r/k + I_ext - u) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + q*C*log(v_p/v_z)*r/k + I_ext - u) / C"
     - "u' = a*(b*(v-v_r) - u) + d*r"
     - "s_ampa' = -s_ampa/tau_ampa + r_e"
     - "s_gabaa' = -s_gabaa/tau_gabaa + r_i"
