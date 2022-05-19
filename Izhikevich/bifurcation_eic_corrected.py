@@ -36,7 +36,7 @@ c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=18, NPAR=n_params, N
                          RL1=100.0)
 
 # continuation in Delta_fs
-vals = [0.3, 1.5]
+vals = [0.4, 1.5]
 c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=30, NPAR=n_params, NDIM=n_dim, name='D_fs:1',
                          origin=c1_cont, NMX=8000, DSMAX=0.1, UZR={30: vals}, STOP=[], NPR=100, RL1=3.0,
                          RL0=0.0, bidirectional=True)
@@ -46,10 +46,10 @@ c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=36, NPAR=n_params, N
                          origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
 
 # continuation of limit cycles for low Delta_rs
-a.run(starting_point='HB1', c='qif2b', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_fs:1:lc1',
-      origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
-a.run(starting_point='HB2', c='qif2b', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_fs:1:lc2',
-      origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0)
+c4_sols, c4_cont = a.run(starting_point='HB1', c='qif2b', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_fs:1:lc1',
+                         origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
+c5_sols, c5_cont = a.run(starting_point='HB2', c='qif2b', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_fs:1:lc2',
+                         origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0)
 
 # 2D continuation in Delta_fs and I_rs
 a.run(starting_point='LP1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lp1', origin=c3_cont,
@@ -58,6 +58,12 @@ a.run(starting_point='LP2', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, n
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP1'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:hb1', origin=c3_cont,
       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=10, RL1=10.0, RL0=-0.2, bidirectional=True, EPSL=1e-05, EPSU=1e-05,
+      EPSS=1e-03)
+a.run(starting_point='LP1', c='qif_lc', ICP=[30, 36, 11], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lc1', origin=c4_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['BP1'], NPR=10, RL1=10.0, RL0=-0.2, bidirectional=True, EPSL=1e-05, EPSU=1e-05,
+      EPSS=1e-03)
+a.run(starting_point='LP1', c='qif_lc', ICP=[30, 36, 11], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lc2', origin=c5_cont,
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['BP1'], NPR=10, RL1=10.0, RL0=-0.2, bidirectional=True, EPSL=1e-05, EPSU=1e-05,
       EPSS=1e-03)
 
 # save results
