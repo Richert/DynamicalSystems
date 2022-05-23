@@ -16,6 +16,10 @@ deltas = a.additional_attributes['deltas']
 # load simulation data
 rnn_bfs = pickle.load(open("results/eic_results.p", "rb"))
 rnn2_bfs = pickle.load(open("results/eic_results2.p", "rb"))
+fre_correct = pickle.load(open("results/eic_fre_corrected.p", "rb"))['results']
+fre_uncorrect = pickle.load(open("results/eic_fre_uncorrected.p", "rb"))['results']
+rnn_correct = pickle.load(open("results/eic_rnn_correct.p", "rb"))['results']
+rnn_uncorrect = pickle.load(open("results/eic_rnn_uncorrect.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -23,7 +27,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (6, 5)
+plt.rcParams['figure.figsize'] = (12, 6)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -37,7 +41,7 @@ markersize = 6
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=2, ncols=1, figure=fig)
+grid = gridspec.GridSpec(nrows=4, ncols=2, figure=fig)
 
 # 2D continuations
 ##################
@@ -45,7 +49,7 @@ grid = gridspec.GridSpec(nrows=2, ncols=1, figure=fig)
 n_points = 1
 
 # continuation in uncorrected model
-ax = fig.add_subplot(grid[0, 0])
+ax = fig.add_subplot(grid[:2, 0])
 ax.scatter(rnn_bfs['lp1'][::n_points, 0], rnn_bfs['lp1'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
 ax.scatter(rnn_bfs['lp2'][::n_points, 0], rnn_bfs['lp2'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
 ax.scatter(rnn_bfs['hb1'][::n_points, 0], rnn_bfs['hb1'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
@@ -64,12 +68,12 @@ line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(A) $v_{p} = 1000$, $v_0 = -1000$')
+ax.set_title(r'(A) Bifurcation diagram for $v_{p} = 1000$, $v_0 = -1000$')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
 # continuation in corrected model
-ax = fig.add_subplot(grid[1, 0])
+ax = fig.add_subplot(grid[:2, 1])
 ax.scatter(rnn2_bfs['lp1'][::n_points, 0], rnn2_bfs['lp1'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
 ax.scatter(rnn2_bfs['lp2'][::n_points, 0], rnn2_bfs['lp2'][::n_points, 1], c='#5D6D7E', marker='x', s=10, alpha=0.5)
 ax.scatter(rnn2_bfs['hb1'][::n_points, 0], rnn2_bfs['hb1'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
@@ -88,29 +92,33 @@ line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(b) $v_{p} = 40$, $v_0 = -60$')
+ax.set_title(r'(B) $v_{p} = 50$, $v_0 = -100$')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
 # time series
 #############
 
-# data = [fre_hom, fre_het]
-# titles = [fr'(E) ${delta_str} = {deltas[0]}$', fr'(F) ${delta_str} = {deltas[1]}$']
-# for i, (fre, title) in enumerate(zip(data, titles)):
-#     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
-#     ax.plot(fre)
-#     xmin = np.min(fre.values)
-#     xmax = np.max(fre.values)
-#     plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2000, x2=2500.0, color='grey', alpha=0.15)
-#     plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2500, x2=3000.0, color='grey', alpha=0.3)
-#     ax.set_xlabel('time (ms)')
-#     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
-#     ax.set_title(title)
-#     if i == len(data)-1:
-#         plt.legend(fre.columns.values)
-#     elif i == 0:
-#         ax.set_ylabel(r'$r$')
+data = [(fre_uncorrect, rnn_uncorrect), (fre_correct, rnn_correct)]
+time = np.linspace(1000, 4000, num=30000)
+titles = [r'(C) EIC dynamics for $v_{p} = 1000$, $v_0 = -1000$', r'(D) EIC dynamics for $v_{p} = 50$, $v_0 = -100$']
+for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
+    ax = fig.add_subplot(grid[2+i, :])
+    l1 = ax.plot(time, rnn["se"], color="blue")
+    l2 = ax.plot(time, rnn["si"], color="orange")
+    l3 = ax.plot(time, fre["se"], color="blue", linestyle='dashed')
+    l4 = ax.plot(time, fre["si"], color="orange", linestyle='dashed')
+    xmin = np.min(rnn["si"])
+    xmax = np.max(rnn["si"])
+    plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=1500, x2=2500.0, color='grey', alpha=0.15)
+    plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2500, x2=3500.0, color='grey', alpha=0.3)
+    ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
+    ax.set_title(title)
+    if i == len(data)-1:
+        plt.legend([l1[0], l2[0], l3[0], l4[0]], [r"$s_e$ (SNN)", r"$s_i$ (SNN)", r"$s_e$ (MF)", r"$s_i$ (MF)"])
+        ax.set_xlabel('time (ms)')
+    elif i == 0:
+        ax.set_ylabel(r'$r$')
 
 # finishing touches
 ###################

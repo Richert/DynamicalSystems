@@ -12,7 +12,7 @@ def correct_input(inp: float, k: float, v_r: float, v_t: float, v_spike: float, 
                   s_ampa: float, E_ampa: float, g_gaba: float, s_gaba: float, E_gaba: float, u: float):
     alpha = v_r + v_t + (g_ampa*s_ampa + g_gaba*s_gaba)/k
     mu = 4*(v_r*v_t + (inp - u + g_ampa*s_ampa*E_ampa + g_gaba*s_gaba*E_gaba)/k) - alpha**2
-    if mu > 0:
+    if mu > np.inf:
         mu_sqrt = sqrt(mu)
         inp_c = pi**2*k*mu/(4*(arctan((2*v_spike-alpha)/mu_sqrt) - arctan((2*v_reset-alpha)/mu_sqrt))**2)
         inp_c += k*alpha**2/4 + u
@@ -89,7 +89,7 @@ vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
 vi_spike = 50.0  # unit: mV
 vi_reset = -100.0  # unit: mV
-Delta_i = 0.2  # unit: mV
+Delta_i = 0.3  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -114,8 +114,8 @@ dts = 1e-1
 I_ext = np.zeros((int(T/dt), 2))
 I_ext[:, 0] += 50.0
 I_ext[:, 1] += 20.0
-I_ext[int(2000/dt):int(3000/dt), 1] += 20.0
-I_ext[int(2500/dt):int(3000/dt), 1] += 12.0
+I_ext[int(1500/dt):int(3500/dt), 1] += 10.0
+I_ext[int(2500/dt):int(3500/dt), 1] += 10.0
 
 # run the model
 ###############
@@ -149,4 +149,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_fre_corrected_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_fre_uncorrected.p", "wb"))
