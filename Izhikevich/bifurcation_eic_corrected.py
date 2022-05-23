@@ -57,7 +57,7 @@ c7_sols, c7_cont = a.run(starting_point='HB1', c='qif2b', ICP=36, NPAR=n_params,
 c8_sols, c8_cont = a.run(starting_point='HB1', c='qif2b', ICP=36, NPAR=n_params, NDIM=n_dim, name='I_fs:3:lc1',
                          origin=c5_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0)
 
-# 2D continuation in Delta_fs and I_rs
+# 2D continuation in Delta_fs and I_fs
 a.run(starting_point='LP1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lp1', origin=c4_cont,
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP1'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, name='D_fs/I_fs:lp2', origin=c4_cont,
@@ -75,6 +75,6 @@ a.run(starting_point='LP2', c='qif_lc', ICP=[30, 36, 11], NPAR=n_params, NDIM=n_
 # save results
 ##############
 
-fname = '../results/eic_corrected.pkl'
+fname = '../results/eic_corrected2.pkl'
 kwargs = {'deltas': vals}
 a.to_file(fname, **kwargs)

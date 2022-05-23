@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter1d
 
 # model parameters
 Delta_rs = 1.0
-Delta_fs = 1.5
+Delta_fs = 0.2
 
 # define inputs
 T = 4000.0

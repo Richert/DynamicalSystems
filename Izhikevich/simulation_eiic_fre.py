@@ -11,20 +11,20 @@ from scipy.ndimage import gaussian_filter1d
 
 # model parameters
 Delta_rs = 0.5
-Delta_fs = 0.3
-Delta_lts = 1.5
+Delta_fs = 0.2
+Delta_lts = 0.3
 
 # define inputs
 T = 4000.0
 cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-I_r = np.zeros((int(T/dt),)) + 50.0
-I_f = np.zeros((int(T/dt),)) + 20.0
+I_r = np.zeros((int(T/dt),)) + 60.0
+I_f = np.zeros((int(T/dt),)) + 40.0
 I_l = np.zeros((int(T/dt),)) + 80.0
-I_l[int(2000/dt):int(3000/dt)] += 20.0
-I_l[int(2500/dt):int(3000/dt)] += 40.0
-I_l = gaussian_filter1d(I_l, sigma=3000)
+I_l[int(2000/dt):int(3000/dt)] += 29.0
+# I_l[int(2500/dt):int(3000/dt)] += 40.0
+#I_l = gaussian_filter1d(I_l, sigma=3000)
 
 # run the model
 ###############

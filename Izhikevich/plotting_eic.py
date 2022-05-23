@@ -78,6 +78,8 @@ line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, l
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
 a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, line_style_unstable='solid', ignore=['LP'])
+ax.axhline(y=deltas[1], color='black', linestyle='--')
+ax.axhline(y=deltas[2], color='black', linestyle='--')
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_title('(B)')
@@ -93,6 +95,9 @@ delta_str = r"\Delta_{fs}"
 ax = fig.add_subplot(grid[0, 4:6])
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:3', ax=ax, line_color_stable='#76448A',
                     line_color_unstable='#5D6D7E')
+ax.axvline(x=36.0, color='black', linestyle='--')
+ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
+ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_ylabel(r'$r_{rs}$')
 ax.set_xlabel('')
 ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$')
@@ -104,6 +109,9 @@ a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1', ax=ax, line_color_stable='
                     line_color_unstable='#5D6D7E')
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc1', ax=ax, line_color_stable='#148F77', ignore=['BP', 'LP'])
 a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc2', ax=ax, line_color_stable='#148F77', ignore=['BP', 'LP'])
+ax.axvline(x=36.0, color='black', linestyle='--')
+ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
+ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_ylabel(r'$r_{rs}$')
 ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$')
