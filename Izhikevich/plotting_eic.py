@@ -77,7 +77,10 @@ line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, l
                            line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
-a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, line_style_unstable='solid', ignore=['LP'])
+line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, line_style_unstable='solid',
+                           ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
+line_data = line.get_paths()[0].vertices
+plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=deltas[1], color='black', linestyle='--')
 ax.axhline(y=deltas[2], color='black', linestyle='--')
 ax.set_ylabel(r'$\Delta_{fs}$')
