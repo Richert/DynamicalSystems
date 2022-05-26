@@ -165,12 +165,12 @@ for Delta in deltas:
     print(fr"$\Delta = {Delta}$")
     print(f"Diff: {np.mean(fre['s'].squeeze()-snn['s'].squeeze())}")
 
-    # plot results
-    fig, ax = plt.subplots(figsize=(12, 4))
-    ax.plot(snn["s"])
-    ax.plot(fre["s"])
-    plt.legend(['SNN', 'MF'])
-    plt.show()
+    # # plot results
+    # fig, ax = plt.subplots(figsize=(12, 4))
+    # ax.plot(snn["s"])
+    # ax.plot(fre["s"])
+    # plt.legend(['SNN', 'MF'])
+    # plt.show()
 
 # save results
 pickle.dump({'results': signals}, open("results/rs_lorentzian.p", "wb"))
