@@ -1,7 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import pickle
-plt.rcParams['backend'] = 'TkAgg'
+# plt.rcParams['backend'] = 'TkAgg'
 import numba as nb
 nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
