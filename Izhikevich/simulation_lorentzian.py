@@ -1,4 +1,3 @@
-from pyrates import CircuitTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -20,9 +19,47 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
+@nb.njit(fastmath=True)
+def correct_input(inp: float, k: float, v_r: float, v_t: float, v_spike: float, v_reset: float, g: float, s: float,
+                  E: float, u: float, Delta: float):
+    alpha = v_r + v_t + g*s/k
+    mu = 4*(v_r*v_t + (inp - u*np.pi**(2/3) + g*s*E)/k) - alpha**2
+    if mu > 0:
+        mu_sqrt = np.sqrt(mu)
+        inp_c = np.pi**2*k*mu/(4*(np.arctan((2*v_spike-alpha)/mu_sqrt) - np.arctan((2*v_reset-alpha)/mu_sqrt))**2)
+        inp_c += k*alpha**2/4 + u*np.pi**(2/3)
+        inp_c -= k*v_r*v_t + g*s*E
+    else:
+        inp_c = inp
+    return inp_c
+
+
+def ik_run(y, N, inp, v_t, v_r, k, J, g, Delta, C, v_z, v_p, E_r, b, a, d, tau_s, dt):
+
+    r = y[0]
+    v = y[1]
+    u = y[2]
+    s = y[3]
+    r_in = J*r
+    I_ext = correct_input(inp, k, v_r, v_t, v_p, v_z, g, s, E_r, u, Delta)
+
+    dr = (r * (-g * s + k * (2.0 * v - v_r - v_t)) + Delta * k ** 2 * (v - v_r) / (np.pi * C)) / C
+    dv = (-np.pi * C * r * (np.pi * C * r / k + Delta) + I_ext + g * s * (
+                E_r - v) + k * v * (v - v_r - v_t) + k * v_r * v_t - u) / C
+    du = a * (b * (v - v_r) - u) + d * r
+    ds = r_in - s / tau_s
+
+    y[0] += dt * dr
+    y[1] += dt * dv
+    y[2] += dt * du
+    y[3] += dt * ds
+
+    return y
+
+
 def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, k: float, E_r: float, C: float,
            J: float, g: float, tau_s: float, b: float, a: float, d: float, v_spike: float, v_reset: float,
-           q: float, dt: float = 1e-4) -> np.ndarray:
+           dt: float = 1e-4) -> np.ndarray:
     """Calculates right-hand side update of a network of all-to-all coupled Izhikevich neurons of the biophysical form
      with heterogeneous background excitabilities."""
 
@@ -34,7 +71,7 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
     rates = np.mean(spikes / dt)
 
     # calculate vector field of the system
-    dv = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) + q*(np.mean(v)-v) - u)/C
+    dv = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) - u)/C
     du = a*(b*(np.mean(v)-v_r) - u) + d*rates
     ds = J*rates - s/tau_s
 
@@ -63,26 +100,28 @@ C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 1000.0  # unit: mV
-v_reset = -1000.0  # unit: mV
+v_spike = 2000.0  # unit: mV
+v_reset = -2000.0  # unit: mV
 d = 20.0
 a = 0.03
 b = -2.0
 tau_s = 6.0
 J = 1.0
 g = 15.0
-q = 0.0
 E_r = 0.0
 
 # SNN-specific variables
 N = 10000
 u_init = np.zeros((N+3,))
 u_init[:N] -= 60.0
-outputs = {'v': {'idx': np.arange(0, N), 'avg': True}}
+u_mf = np.zeros((4,))
+u_mf[1] = -60.0
+outputs = {'s': {'idx': np.asarray([N+1]), 'avg': False}}
+outputs_mf = {'s': {'idx': np.asarray([3]), 'avg': False}}
 
 # define inputs
-T = 5500.0
-cutoff = 500.0
+T = 5000.0
+cutoff = 2000.0
 dt = 1e-3
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 60.0
@@ -91,8 +130,8 @@ inp = np.zeros((int(T/dt),)) + 60.0
 # calculate FRE vs SNN differences for various deltas #
 #######################################################
 
-n = 1
-deltas = np.asarray([0.05])
+n = 100
+deltas = np.linspace(0.01, 10.0, num=n)
 signals = {'fre': [], 'snn': []}
 for Delta in deltas:
 
@@ -100,17 +139,11 @@ for Delta in deltas:
     ################
 
     # initialize model
-    ik = CircuitTemplate.from_yaml("config/ik/ik")
+    model = RNN(4, 4, ik_run, C=C, k=k, Delta=Delta, v_r=v_r, v_t=v_t, v_p=v_spike, v_z=v_reset, d=d, a=a,
+                b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_mf)
 
-    # update parameters
-    ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/ik_op/v_t': v_t, 'p/ik_op/v_p': v_spike,
-                             'p/ik_op/v_z': -v_reset, 'p/ik_op/Delta': Delta, 'p/ik_op/d': d, 'p/ik_op/a': a,
-                             'p/ik_op/b': b, 'p/ik_op/tau_s': tau_s, 'p/ik_op/g': g, 'p/ik_op/q': q, 'p/ik_op/E_r': E_r})
-
-    # run simulation
-    fre = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'v': 'p/ik_op/v'}, inputs={'p/ik_op/I_ext': inp},
-                 decorator=nb.njit, fastmath=True, clear=True)
+    # perform simulation
+    fre = model.run(T=T, dt=dt, dts=dts, outputs=outputs_mf, inp=inp, cutoff=cutoff, fastmath=True)
 
     # snn simulation
     ################
@@ -120,7 +153,7 @@ for Delta in deltas:
 
     # initialize model
     model = RNN(N, N+3, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a,
-                b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
+                b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_init)
 
     # perform simulation
     snn = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
@@ -130,16 +163,14 @@ for Delta in deltas:
     signals['snn'].append(snn)
 
     print(fr"$\Delta = {Delta}$")
-    print(f"Diff: {np.mean(fre['v']-snn['v'].squeeze())}")
+    print(f"Diff: {np.mean(fre['s'].squeeze()-snn['s'].squeeze())}")
 
     # plot results
     fig, ax = plt.subplots(figsize=(12, 4))
-    ax.plot(fre.index, snn["v"])
-    ax.plot(fre["v"])
-    ax.set_ylabel(r'$v(t)$')
-    ax.set_xlabel("time (ms)")
+    ax.plot(snn["s"])
+    ax.plot(fre["s"])
     plt.legend(['SNN', 'MF'])
     plt.show()
 
 # save results
-pickle.dump({'results': signals}, open("results/rs_lorentzian2.p", "wb"))
+pickle.dump({'results': signals}, open("results/rs_lorentzian.p", "wb"))

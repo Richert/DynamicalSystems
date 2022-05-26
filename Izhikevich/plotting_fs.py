@@ -77,7 +77,7 @@ ax.set_title(r'(B) 1D bifurcation diagram for $\Delta_v = 0.5$')
 # time series plotting
 ######################
 
-title = r'(C) System dynamics for $\Delta = 0.5$'
+title = r'(C) Fast-spiking population dynamics for $\Delta = 0.5$'
 ax = fig.add_subplot(grid[3:, :])
 ax.plot(fre['s'])
 ax.plot(fre.index, rnn['s'])
@@ -87,7 +87,7 @@ plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=800, x2=1200.0, col
 ax.set_ylim([xmin - 0.1 * xmax, xmax + 0.1 * xmax])
 ax.set_ylabel(r'$s$')
 ax.set_title(title)
-plt.legend(['MF', 'SNN'])
+plt.legend(['mean-field', 'spiking network'])
 ax.set_xlabel(r'time (ms)')
 
 # finishing touches

@@ -59,7 +59,7 @@ line_data = line.get_paths()[1].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 1]), y2=line_data[:, 1], color='#5D6D7E', alpha=0.5)
 ax.set_ylabel(r'$\Delta_{rs}$')
 ax.set_xlabel(r'$I_{fs}$')
-ax.set_title('(A)')
+ax.set_title(r'(A) $\Delta_{fs} = 1.0$')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([20.0, 80.0])
 
@@ -85,7 +85,7 @@ ax.axhline(y=deltas[1], color='black', linestyle='--')
 ax.axhline(y=deltas[2], color='black', linestyle='--')
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_xlabel(r'$I_{fs}$')
-ax.set_title('(B)')
+ax.set_title('(B) $\Delta_{rs} = 1.0$')
 ax.set_ylim([0.0, 1.0])
 ax.set_xlim([20.0, 80.0])
 
@@ -103,7 +103,7 @@ ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_ylabel(r'$r_{rs}$')
 ax.set_xlabel('')
-ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$')
+ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$' + r', $\Delta_{rs} = 1.0$')
 ax.set_xlim([20.0, 80.0])
 
 # continuation in FS input for low Delta_fs
@@ -117,14 +117,15 @@ ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_ylabel(r'$r_{rs}$')
-ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$')
+ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$' + r', $\Delta_{rs} = 1.0$')
 ax.set_xlim([20.0, 80.0])
 
 # time series
 #############
 
 data = [fre_hom, fre_het]
-titles = [fr'(E) ${delta_str} = {deltas[1]}$', fr'(F) ${delta_str} = {deltas[2]}$']
+titles = [fr'(E) ${delta_str} = {deltas[1]}$' + r', $\Delta_{rs} = 1.0$',
+          fr'(F) ${delta_str} = {deltas[2]}$' + r', $\Delta_{rs} = 1.0$']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
