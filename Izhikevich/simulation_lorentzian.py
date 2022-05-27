@@ -120,8 +120,8 @@ outputs = {'r': {'idx': np.asarray([N+2]), 'avg': False}}
 outputs_mf = {'r': {'idx': np.asarray([0]), 'avg': False}}
 
 # define inputs
-T = 5000.0
-cutoff = 2000.0
+T = 6000.0
+cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 60.0

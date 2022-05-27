@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import to_hex
 from matplotlib import gridspec
 from scipy.stats import cauchy
+from scipy.signal import welch
 import pickle
 
 # load simulation data
@@ -54,7 +55,7 @@ def get_potential_avg(n: int, v_t: float, delta: float, lb: float, ub: float, v_
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=2, ncols=1, figure=fig)
+grid = gridspec.GridSpec(nrows=3, ncols=1, figure=fig)
 
 # plot truncated lorentzian distributions
 n = 10000
@@ -81,9 +82,9 @@ plt.legend(lines, [fr'$\Delta_v = {d}$' for d in deltas])
 
 # plot mean and variance of difference between MF and SNN
 n = 100
-deltas = np.linspace(0.1, 10.0, num=n)
+deltas2 = np.linspace(0.1, 10.0, num=n)
 diff_mean, snn_var = [], []
-for i, d in enumerate(deltas):
+for i, d in enumerate(deltas2):
     fre = data['fre'][i]
     snn = data['snn'][i]
     diff = fre['s'][:, 0] - snn['s'][:, 0]
@@ -95,13 +96,23 @@ for i, d in enumerate(deltas):
     diff_mean.append(np.mean(diff))
     snn_var.append(np.var(snn['s'][:, 0]))
 ax = fig.add_subplot(grid[1, 0])
-ax.plot(deltas, diff_mean, color='blue')
+ax.plot(deltas2, diff_mean, color='blue')
 ax2 = ax.twinx()
-ax2.plot(deltas, snn_var, color='orange')
+ax2.plot(deltas2, snn_var, color='orange')
 ax.set_xlabel(r'$\Delta_v$')
 ax.set_xlim([0, 5.0])
 # ax.set_ylabel(r'$\text{mean}(v_{mf}(t) - v_{snn}(t))$')
 # ax2.set_ylabel(r'$\text{var}(v_{mf}(t) - v_{snn}(t))$')
+
+# plot different power spectra for a bunch of deltas
+ax = fig.add_subplot(grid[2, 0])
+for delta in deltas:
+    idx = np.argmin(np.abs(deltas2-delta))
+    snn = data['snn'][idx]
+    freqs, pow = welch(snn['s'][:, 0], fs=1e4, nperseg=1024)
+    ax.semilogy(freqs, pow)
+ax.set_xlabel(r'frequency ($Hz$)')
+ax.set_ylabel(r'PSD ($r^2/Hz$)')
 
 # finishing touches
 ###################
