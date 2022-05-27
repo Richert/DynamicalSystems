@@ -1,7 +1,7 @@
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pickle
-# plt.rcParams['backend'] = 'TkAgg'
+plt.rcParams['backend'] = 'TkAgg'
 import numba as nb
 nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
@@ -98,10 +98,11 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
 # model parameters
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
-v_r = -60.0  # unit: mV
+v_r = -80.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 2000.0  # unit: mV
-v_reset = -2000.0  # unit: mV
+v_spike = 1000.0  # unit: mV
+v_reset = -1000.0  # unit: mV
+Delta = 2.0
 d = 20.0
 a = 0.03
 b = -2.0
@@ -124,32 +125,32 @@ T = 6000.0
 cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 60.0
+inp = np.zeros((int(T/dt),)) + 220.0
 
 #######################################################
 # calculate FRE vs SNN differences for various deltas #
 #######################################################
 
-n = 200
-deltas = np.linspace(0.01, 5.0, num=n)
+# fre simulation
+################
+
+# initialize model
+model = RNN(4, 4, ik_run, C=C, k=k, Delta=Delta, v_r=v_r, v_t=v_t, v_p=v_spike, v_z=v_reset, d=d, a=a,
+            b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_mf)
+
+# perform simulation
+fre = model.run(T=T, dt=dt, dts=dts, outputs=outputs_mf, inp=inp, cutoff=cutoff, fastmath=True)
+
+# snn simulations
+#################
+
+n = 100
+lbs = np.linspace(v_r, v_r+30.0, num=n)
 signals = {'fre': [], 'snn': []}
-for Delta in deltas:
-
-    # fre simulation
-    ################
-
-    # initialize model
-    model = RNN(4, 4, ik_run, C=C, k=k, Delta=Delta, v_r=v_r, v_t=v_t, v_p=v_spike, v_z=v_reset, d=d, a=a,
-                b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_mf)
-
-    # perform simulation
-    fre = model.run(T=T, dt=dt, dts=dts, outputs=outputs_mf, inp=inp, cutoff=cutoff, fastmath=True)
-
-    # snn simulation
-    ################
+for lb in lbs:
 
     # define lorentzian of spike thresholds
-    spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=v_r-v_t)
+    spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=lb, ub=2*v_t-lb)
 
     # initialize model
     model = RNN(N, N+3, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a,
@@ -165,12 +166,12 @@ for Delta in deltas:
     print(fr"$\Delta = {Delta}$")
     print(f"Diff: {np.mean(fre['r'].squeeze()-snn['r'].squeeze())}")
 
-    # # plot results
-    # fig, ax = plt.subplots(figsize=(12, 4))
-    # ax.plot(snn["s"])
-    # ax.plot(fre["s"])
-    # plt.legend(['SNN', 'MF'])
-    # plt.show()
+    # plot results
+    fig, ax = plt.subplots(figsize=(12, 4))
+    ax.plot(snn["r"]*1e3)
+    ax.plot(fre["r"]*1e3)
+    plt.legend(['SNN', 'MF'])
+    plt.show()
 
 # save results
 pickle.dump({'results': signals}, open("results/rs_lorentzian.p", "wb"))

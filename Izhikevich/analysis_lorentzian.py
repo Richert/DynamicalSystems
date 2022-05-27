@@ -96,9 +96,9 @@ for i, d in enumerate(deltas2):
     diff_mean.append(np.mean(diff))
     snn_var.append(np.var(snn['s'][:, 0]))
 ax = fig.add_subplot(grid[1, 0])
-ax.plot(deltas2, diff_mean, color='blue')
+ax.plot(deltas2, diff_mean, color='k')
 ax2 = ax.twinx()
-ax2.plot(deltas2, snn_var, color='orange')
+ax2.plot(deltas2, snn_var, color='red')
 ax.set_xlabel(r'$\Delta_v$')
 ax.set_xlim([0, 5.0])
 # ax.set_ylabel(r'$\text{mean}(v_{mf}(t) - v_{snn}(t))$')
@@ -106,13 +106,17 @@ ax.set_xlim([0, 5.0])
 
 # plot different power spectra for a bunch of deltas
 ax = fig.add_subplot(grid[2, 0])
-for delta in deltas:
+for i, delta in enumerate(deltas):
     idx = np.argmin(np.abs(deltas2-delta))
     snn = data['snn'][idx]
-    freqs, pow = welch(snn['s'][:, 0], fs=1e4, nperseg=1024)
-    ax.semilogy(freqs, pow)
+    freqs, pow = welch(snn['s'][:, 0], fs=1e4, nperseg=4096)
+    c = to_hex(cmap(i, alpha=1.0))
+    ax.semilogy(freqs, pow, c=c)
 ax.set_xlabel(r'frequency ($Hz$)')
 ax.set_ylabel(r'PSD ($r^2/Hz$)')
+ax.set_xlim([0.0, 500.0])
+ax.set_ylim([1e-10, 2e-7])
+plt.legend([fr'$\Delta_v = {d}$' for d in deltas], loc=4)
 
 # finishing touches
 ###################
