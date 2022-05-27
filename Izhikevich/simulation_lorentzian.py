@@ -116,8 +116,8 @@ u_init = np.zeros((N+3,))
 u_init[:N] -= 60.0
 u_mf = np.zeros((4,))
 u_mf[1] = -60.0
-outputs = {'s': {'idx': np.asarray([N+1]), 'avg': False}}
-outputs_mf = {'s': {'idx': np.asarray([3]), 'avg': False}}
+outputs = {'r': {'idx': np.asarray([N+2]), 'avg': False}}
+outputs_mf = {'r': {'idx': np.asarray([0]), 'avg': False}}
 
 # define inputs
 T = 5000.0
@@ -130,8 +130,8 @@ inp = np.zeros((int(T/dt),)) + 60.0
 # calculate FRE vs SNN differences for various deltas #
 #######################################################
 
-n = 100
-deltas = np.linspace(0.01, 10.0, num=n)
+n = 200
+deltas = np.linspace(0.01, 5.0, num=n)
 signals = {'fre': [], 'snn': []}
 for Delta in deltas:
 
@@ -163,7 +163,7 @@ for Delta in deltas:
     signals['snn'].append(snn)
 
     print(fr"$\Delta = {Delta}$")
-    print(f"Diff: {np.mean(fre['s'].squeeze()-snn['s'].squeeze())}")
+    print(f"Diff: {np.mean(fre['r'].squeeze()-snn['r'].squeeze())}")
 
     # # plot results
     # fig, ax = plt.subplots(figsize=(12, 4))

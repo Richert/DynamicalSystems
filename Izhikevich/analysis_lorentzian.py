@@ -14,7 +14,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams['figure.figsize'] = (6, 4)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
@@ -54,15 +54,15 @@ def get_potential_avg(n: int, v_t: float, delta: float, lb: float, ub: float, v_
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=2, ncols=2, figure=fig)
+grid = gridspec.GridSpec(nrows=2, ncols=1, figure=fig)
 
 # plot truncated lorentzian distributions
 n = 10000
 v_t = -40.0
 lb = -60.0
 ub = -20.0
-deltas = np.asarray([2.0, 4.0, 8.0])
-potentials = np.linspace(-100, 0, n)
+deltas = np.asarray([1.0, 2.0, 3.0, 4.0])
+potentials = np.linspace(-80, 0, n)
 cmap = plt.get_cmap('copper', lut=len(deltas))
 ax = fig.add_subplot(grid[0, 0])
 lines = []
@@ -74,6 +74,7 @@ for i, delta in enumerate(deltas):
     ax.plot(potentials, pdf, linestyle='--', color=c)
     line = ax.plot(potentials[idx], pdf_truncated, color=c)
     lines.append(line[0])
+ax.set_xlim([-80.0, 0.0])
 ax.set_xlabel(r'$v_{\theta}$')
 ax.set_ylabel(r'$p(v_{\theta})$')
 plt.legend(lines, [fr'$\Delta_v = {d}$' for d in deltas])
@@ -85,35 +86,22 @@ diff_mean, snn_var = [], []
 for i, d in enumerate(deltas):
     fre = data['fre'][i]
     snn = data['snn'][i]
-    diff = fre['v'].values - snn['v'][:, 0]
+    diff = fre['s'][:, 0] - snn['s'][:, 0]
     # if i % 10 == 0:
     #     fig, ax = plt.subplots(figsize=(8, 3))
     #     ax.plot(fre.index, snn['v'])
     #     ax.plot(fre['v'])
     #     plt.show()
     diff_mean.append(np.mean(diff))
-    snn_var.append(np.var(snn['v'][:, 0]))
-ax = fig.add_subplot(grid[0, 1])
+    snn_var.append(np.var(snn['s'][:, 0]))
+ax = fig.add_subplot(grid[1, 0])
 ax.plot(deltas, diff_mean, color='blue')
 ax2 = ax.twinx()
 ax2.plot(deltas, snn_var, color='orange')
 ax.set_xlabel(r'$\Delta_v$')
+ax.set_xlim([0, 5.0])
 # ax.set_ylabel(r'$\text{mean}(v_{mf}(t) - v_{snn}(t))$')
 # ax2.set_ylabel(r'$\text{var}(v_{mf}(t) - v_{snn}(t))$')
-
-# plot derivate of single cell firing rate w.r.t. v_t over pdf domain
-n = 10000
-I = -100.0
-delta = 2.0
-k = 0.7
-mus = np.linspace(-25.0, -35.0, num=20)
-target_v = get_potential_avg(n, v_t, delta, -np.infty, np.infty, lb, I, k)
-v = [get_potential_avg(n, mu, delta, mu-20.0, mu+20.0, lb, -I, k) for mu in mus]
-ax = fig.add_subplot(grid[1, 0])
-ax.plot(mus, v)
-ax.axhline(y=target_v, linestyle='--')
-ax.set_xlabel(r'$\bar v_{theta}$')
-ax.set_ylabel(r'$\langle v \rangle$')
 
 # finishing touches
 ###################

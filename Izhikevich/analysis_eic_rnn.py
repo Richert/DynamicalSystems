@@ -18,7 +18,7 @@ def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
     return idx_l, idx_r, idx
 
 
-dir = 'results/eic2'
+dir = 'results/eic3'
 cutoff = 10000
 n_cycles = 3
 hopf_diff = 3000
@@ -63,7 +63,7 @@ lp1s = np.asarray(lp1s)
 lp2s = np.asarray(lp2s)
 hb1s = np.asarray(hb1s)
 hb2s = np.asarray(hb2s)
-pickle.dump({'lp1': lp1s, 'lp2': lp2s, 'hb1': hb1s, 'hb2': hb2s}, open("results/eic_results2.p", "wb"))
+pickle.dump({'lp1': lp1s, 'lp2': lp2s, 'hb1': hb1s, 'hb2': hb2s}, open("results/eic_results3.p", "wb"))
 
 # plot results
 fig, ax = plt.subplots()
