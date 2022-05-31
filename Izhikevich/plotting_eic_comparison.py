@@ -127,7 +127,8 @@ ax.set_xlim([10.0, 80.0])
 
 data = [(fre_uncorrect, rnn_uncorrect), (fre_correct, rnn_correct)]
 time = np.linspace(1000, 4000, num=30000)
-titles = [r'(D) RS-FS dynamics for $v_{p} = 1000$, $v_0 = -1000$', r'(E) RS-FS dynamics for $v_{p} = 50$, $v_0 = -100$']
+titles = [r'(D) Two-population model dynamics for $v_{p} = 1000$, $v_0 = -1000$',
+          r'(E) Two-population model dynamics for $v_{p} = 50$, $v_0 = -100$']
 for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2+i, :])
     l1 = ax.plot(time, rnn["se"], color="blue")
@@ -141,10 +142,11 @@ for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
     if i == len(data)-1:
-        plt.legend([l1[0], l2[0], l3[0], l4[0]], [r"$s_e$ (SNN)", r"$s_i$ (SNN)", r"$s_e$ (MF)", r"$s_i$ (MF)"])
         ax.set_xlabel('time (ms)')
     elif i == 0:
-        ax.set_ylabel(r'$r$')
+        plt.legend([l1[0], l2[0], l3[0], l4[0]], [r"$s_{rs}$ (spiking network)", r"$s_{fs}$ (spiking network)",
+                                                  r"$s_{rs}$ (mean-field)", r"$s_{fs}$ (mean-field)"], loc=2)
+    ax.set_ylabel(r'$r$')
 
 # finishing touches
 ###################

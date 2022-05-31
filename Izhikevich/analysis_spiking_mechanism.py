@@ -167,7 +167,7 @@ for i, ((fre, rnn, inf), title) in enumerate(zip(data, titles)):
     ax.set_ylim([xmin - 0.1 * xmax, xmax + 0.1 * xmax])
     if i == len(titles) - 1:
         ax.set_xlabel('time (ms)')
-        plt.legend(['RNN', r'MF$^*$', 'MF'])
+        plt.legend(['spiking network', r'mean-field (corrected)', 'mean-field (uncorrected)'])
     ax.set_ylabel('s')
     ax.set_title(title)
 
