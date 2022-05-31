@@ -8,7 +8,11 @@ nb.set_num_threads(4)
 from scipy.stats import cauchy
 from pyrecu import RNN
 import os
-os.nice(-10)
+
+
+def set_nice(n):
+    pid = os.getpid()
+    os.system(f"sudo renice -n {n} -p {pid}")
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -93,6 +97,8 @@ def ik_ata(y: np.ndarray, N: int, inp: np.ndarray, v_r: float, v_t: np.ndarray, 
 
     return y
 
+
+set_nice(-10)
 
 # define parameters
 ###################
