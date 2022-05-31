@@ -7,7 +7,7 @@ from scipy.signal import welch
 import pickle
 
 # load simulation data
-data = pickle.load(open(f"results/rs_lorentzian.p", "rb"))['results']
+data = pickle.load(open(f"results/rs_lorentzian2.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -15,7 +15,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (6, 4)
+plt.rcParams['figure.figsize'] = (6, 5)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
@@ -55,7 +55,7 @@ def get_potential_avg(n: int, v_t: float, delta: float, lb: float, ub: float, v_
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=3, ncols=1, figure=fig)
+grid = gridspec.GridSpec(nrows=3, ncols=2, figure=fig)
 
 # plot truncated lorentzian distributions
 n = 10000
@@ -65,7 +65,7 @@ ub = -20.0
 deltas = np.asarray([1.0, 2.0, 3.0, 4.0])
 potentials = np.linspace(-80, 0, n)
 cmap = plt.get_cmap('copper', lut=len(deltas))
-ax = fig.add_subplot(grid[0, 0])
+ax = fig.add_subplot(grid[0, :])
 lines = []
 for i, delta in enumerate(deltas):
     pdf = cauchy.pdf(potentials, loc=v_t, scale=delta)
@@ -87,14 +87,14 @@ diff_mean, snn_var = [], []
 for i, d in enumerate(deltas2):
     fre = data['fre'][i]
     snn = data['snn'][i]
-    diff = fre['s'][:, 0] - snn['s'][:, 0]
+    diff = fre['r'][:, 0] - snn['r'][:, 0]
     # if i % 10 == 0:
     #     fig, ax = plt.subplots(figsize=(8, 3))
     #     ax.plot(fre.index, snn['v'])
     #     ax.plot(fre['v'])
     #     plt.show()
     diff_mean.append(np.mean(diff))
-    snn_var.append(np.var(snn['s'][:, 0]))
+    snn_var.append(np.var(snn['r'][:, 0]))
 ax = fig.add_subplot(grid[1, 0])
 ax.plot(deltas2, diff_mean, color='k')
 ax2 = ax.twinx()
@@ -109,7 +109,7 @@ ax = fig.add_subplot(grid[2, 0])
 for i, delta in enumerate(deltas):
     idx = np.argmin(np.abs(deltas2-delta))
     snn = data['snn'][idx]
-    freqs, pow = welch(snn['s'][:, 0], fs=1e4, nperseg=4096)
+    freqs, pow = welch(snn['r'][:, 0], fs=1e4, nperseg=4096)
     c = to_hex(cmap(i, alpha=1.0))
     ax.semilogy(freqs, pow, c=c)
 ax.set_xlabel(r'frequency ($Hz$)')

@@ -7,6 +7,8 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
 from scipy.stats import cauchy
 from pyrecu import RNN
+import os
+os.nice(-10)
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -131,26 +133,26 @@ inp = np.zeros((int(T/dt),)) + 220.0
 # calculate FRE vs SNN differences for various deltas #
 #######################################################
 
-# fre simulation
-################
-
-# initialize model
-model = RNN(4, 4, ik_run, C=C, k=k, Delta=Delta, v_r=v_r, v_t=v_t, v_p=v_spike, v_z=v_reset, d=d, a=a,
-            b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_mf)
-
-# perform simulation
-fre = model.run(T=T, dt=dt, dts=dts, outputs=outputs_mf, inp=inp, cutoff=cutoff, fastmath=True)
-
-# snn simulations
-#################
-
 n = 100
-lbs = np.linspace(v_r, v_r+30.0, num=n)
+deltas = np.linspace(0.01, 5.0, num=n)
 signals = {'fre': [], 'snn': []}
-for lb in lbs:
+for Delta in deltas:
+
+    # fre simulation
+    ################
+
+    # initialize model
+    model = RNN(4, 4, ik_run, C=C, k=k, Delta=Delta, v_r=v_r, v_t=v_t, v_p=v_spike, v_z=v_reset, d=d, a=a,
+                b=b, tau_s=tau_s, J=J, g=g, E_r=E_r, u_init=u_mf)
+
+    # perform simulation
+    fre = model.run(T=T, dt=dt, dts=dts, outputs=outputs_mf, inp=inp, cutoff=cutoff, fastmath=True)
+
+    # snn simulations
+    #################
 
     # define lorentzian of spike thresholds
-    spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=lb, ub=2*v_t-lb)
+    spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 
     # initialize model
     model = RNN(N, N+3, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a,
@@ -163,7 +165,7 @@ for lb in lbs:
     signals['fre'].append(fre)
     signals['snn'].append(snn)
 
-    print(fr"$\Delta = {Delta}$")
+    print(f"Delta = {Delta}")
     print(f"Diff: {np.mean(fre['r'].squeeze()-snn['r'].squeeze())}")
 
     # # plot results
@@ -174,4 +176,4 @@ for lb in lbs:
     # plt.show()
 
 # save results
-pickle.dump({'results': signals}, open("results/rs_lorentzian.p", "wb"))
+pickle.dump({'results': signals, 'deltas': deltas}, open("results/rs_lorentzian_deltas.p", "wb"))
