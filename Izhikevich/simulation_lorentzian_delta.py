@@ -133,7 +133,7 @@ T = 6000.0
 cutoff = 1000.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 220.0
+inp = np.zeros((int(T/dt),)) + 250.0
 
 #######################################################
 # calculate FRE vs SNN differences for various deltas #
@@ -174,7 +174,7 @@ for Delta in deltas:
     print(f"Delta = {Delta}")
     print(f"Diff: {np.mean(fre['r'].squeeze()-snn['r'].squeeze())}")
 
-    # # plot results
+    # plot results
     # fig, ax = plt.subplots(figsize=(12, 4))
     # ax.plot(snn["r"]*1e3)
     # ax.plot(fre["r"]*1e3)
