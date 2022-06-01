@@ -5,16 +5,11 @@
 ####################
 
 # izhikevich operator with biophysiologically relevant parameters
-ik_corrected_op:
+ik_op:
   base: OperatorTemplate
   equations:
-    - "I_s1 = g_ampa*s_ampa + g_gaba*s_gaba"
-    - "I_s2 = g_ampa*s_ampa*E_ampa + g_gaba*s_gaba*E_gaba"
-    - "alpha = v_r + v_t + I_s1/k"
-    - "mu = 4*(v_r*v_t + (I_ext + I_s2)/k) - alpha**2"
-    - "I_corr = pi**2*k*mu/(4*(arctan((2*v_p-alpha)/sqrt(mu))-arctan((2*v_z-alpha)/sqrt(mu)))**2) + k*alpha**2/4 - k*v_r*v_t - I_s2"
-    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - q - I_s1)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gaba*s_gaba*(E_gaba-v) + I_corr - u) / C"
+    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - q - g_ampa*s_ampa - g_gaba*s_gaba)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gaba*s_gaba*(E_gaba-v) + I_ext - u) / C"
     - "u' = a*(b*(v-v_r) - u) + d*r"
     - "s_ampa' = -s_ampa/tau_ampa + r_e"
     - "s_gaba' = -s_gaba/tau_gaba + r_i"
@@ -24,12 +19,7 @@ ik_corrected_op:
     u: variable(0.0)
     s_ampa: variable(0.0)
     s_gaba: variable(0.0)
-    alpha: variable(0.0)
-    mu: variable(1.0)
-    I_corr: variable(0.0)
-    I_s1: variable(0.0)
-    I_s2: variable(0.0)
-    Delta: 0.1
+    Delta: 0.5
     C: 100.0
     k: 1.0
     v_r: -60.0
@@ -51,7 +41,7 @@ ik_corrected_op:
     r_i: input(0.0)
 
 spn_op:
-  base: ik_corrected_op
+  base: ik_op
   variables:
     C: 15.0
     v_r: -80.0
@@ -107,7 +97,7 @@ spn_d2_op:
     c3: 1.0
 
 fsi_op:
-  base: ik_corrected_op
+  base: ik_op
   equations:
     replace:
       v_r: v_r_d1
