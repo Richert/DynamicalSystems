@@ -154,7 +154,7 @@ fre = model.run(T=T, dt=dt, dts=dts, outputs=outputs_mf, inp=inp, cutoff=cutoff,
 #################
 
 n = 100
-lbs = np.linspace(v_r, v_r+30.0, num=n)
+lbs = np.linspace(v_r, v_r+35.0, num=n)
 signals = {'fre': [], 'snn': []}
 for lb in lbs:
 

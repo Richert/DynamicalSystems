@@ -18,7 +18,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (6, 5)
+plt.rcParams['figure.figsize'] = (6, 6)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
@@ -91,19 +91,29 @@ diff_delta, var_delta = get_diff_and_var(data_delta)
 diff_lb, var_lb = get_diff_and_var(data_lbs)
 ax = fig.add_subplot(grid[1, 0])
 ax.plot(deltas, diff_delta, color='blue')
-ax.set_ylabel(r'diff in $r$ ($Hz$)')
+ax.set_ylabel(r'mean of $D_r$ ($Hz$)', color='blue')
+fig.canvas.draw()
+ax.set_yticklabels(ax.get_yticklabels(), color='blue')
 ax2 = ax.twinx()
 ax2.plot(deltas, var_delta, color='orange')
+fig.canvas.draw()
+ax2.set_yticklabels(ax2.get_yticklabels(), color='orange')
 ax.set_xlabel(r'$\Delta_v$')
-ax.set_xlim([np.min(deltas), np.max(deltas)])
+ax.set_xlim([0.0, np.max(deltas)])
+ax.set_xticks([0, 2, 4])
+ax.set_yticks([-4, -2, 0])
 plt.title('(B)')
 ax = fig.add_subplot(grid[1, 1])
-ax.plot(lbs, diff_lb, color='blue')
+ax.plot(v_t-lbs, diff_lb, color='blue')
+fig.canvas.draw()
+ax.set_yticklabels(ax.get_yticklabels(), color='blue')
 ax2 = ax.twinx()
-ax2.plot(lbs, var_lb, color='orange')
-ax2.set_ylabel(r'var of $r$ ($Hz$)')
-ax.set_xlabel(r'$v_0$')
-ax.set_xlim([np.min(lbs), np.max(lbs)])
+ax2.plot(v_t-lbs, var_lb, color='orange')
+ax2.set_ylabel(r'var of $D_r$ ($Hz$)', color='orange')
+fig.canvas.draw()
+ax2.set_yticklabels(ax2.get_yticklabels(), color='orange')
+ax.set_xlabel(r'$\phi$')
+ax.set_xlim([np.max(v_t-lbs), np.min(v_t-lbs)])
 plt.title('(C)')
 
 # plot different power spectra for a bunch of examples
@@ -120,7 +130,7 @@ ax2 = plot_psd(data_lbs, lbs, lb_samples, ax2, nperseg=nperseg)
 ax2.set_xlim([0.0, 300.0])
 ax2.set_ylim([1e-4, 5e-2])
 ax2.set_ylabel('')
-plt.legend([fr'$v_0 = {v}$' for v in lb_samples], loc=4)
+plt.legend([fr'$\phi = {v_t-v}$' for v in lb_samples], loc=4)
 plt.title('(E)')
 ax.set_ylim(ax2.get_ylim())
 
@@ -128,7 +138,7 @@ ax.set_ylim(ax2.get_ylim())
 ###################
 
 # padding
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.03, hspace=0., wspace=0.03)
 
 # saving/plotting
 fig.canvas.draw()
