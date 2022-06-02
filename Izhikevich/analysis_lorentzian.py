@@ -31,18 +31,18 @@ markersize = 6
 def get_diff_and_var(data: dict):
     diffs, variances = [], []
     for fre, snn in zip(data['fre'], data['snn']):
-        diff = fre['r'][:, 0] - snn['r'][:, 0]
+        diff = 1e3*(fre['r'][:, 0] - snn['r'][:, 0])
         diffs.append(np.mean(diff))
-        variances.append(np.var(snn['r'][:, 0]))
+        variances.append(np.var(diff))
     return diffs, variances
 
 
-def plot_psd(data: dict, vals: np.ndarray, targets: np.ndarray, ax: plt.Axes):
+def plot_psd(data: dict, vals: np.ndarray, targets: np.ndarray, ax: plt.Axes, fs: float = 1e4, nperseg: int = 2048):
     cmap = plt.get_cmap('copper', lut=len(targets))
     for i, val in enumerate(targets):
         idx = np.argmin(np.abs(vals - val))
         snn = data['snn'][idx]
-        freqs, pow = welch(snn['r'][:, 0], fs=1e4, nperseg=4096)
+        freqs, pow = welch(1e3*snn['r'][:, 0], fs=fs, nperseg=nperseg)
         c = to_hex(cmap(i, alpha=1.0))
         ax.semilogy(freqs, pow, c=c)
     ax.set_xlabel(r'frequency ($Hz$)')
@@ -63,7 +63,7 @@ v_t = -40.0
 lb = -60.0
 ub = -20.0
 delta_samples = np.asarray([1.0, 2.0, 3.0, 4.0])
-lb_samples = [(-70.0, 10.0), (-60.0, -20.0)]
+lb_samples = [(-70.0, -10.0), (-60.0, -20.0)]
 potentials = np.linspace(-80, 0, n)
 cmap = plt.get_cmap('copper', lut=len(delta_samples))
 ax = fig.add_subplot(grid[0, :])
@@ -84,40 +84,45 @@ colors = ['grey', 'black']
 for (x1, x2), c in zip(lb_samples, colors):
     ax.axvline(x=x1, color=c, linestyle='dotted')
     ax.axvline(x=x2, color=c, linestyle='dotted')
+plt.title('(A) Truncated Lorentzian PDFs')
 
 # plot mean and variance of difference between MF and SNN
 diff_delta, var_delta = get_diff_and_var(data_delta)
 diff_lb, var_lb = get_diff_and_var(data_lbs)
 ax = fig.add_subplot(grid[1, 0])
 ax.plot(deltas, diff_delta, color='blue')
-ax.set_ylabel(r'$mean(r(t) - \langle r_i(t) \rangle_i)$')
+ax.set_ylabel(r'diff in $r$ ($Hz$)')
 ax2 = ax.twinx()
 ax2.plot(deltas, var_delta, color='orange')
-ax2.set_ylabel(r'$var(\langle r_i(t) \rangle_i)$')
 ax.set_xlabel(r'$\Delta_v$')
 ax.set_xlim([np.min(deltas), np.max(deltas)])
+plt.title('(B)')
 ax = fig.add_subplot(grid[1, 1])
 ax.plot(lbs, diff_lb, color='blue')
-ax.set_ylabel(r'$mean(r(t) - \langle r_i(t) \rangle_i)$')
 ax2 = ax.twinx()
 ax2.plot(lbs, var_lb, color='orange')
-ax2.set_ylabel(r'$var(\langle r_i(t) \rangle_i)$')
+ax2.set_ylabel(r'var of $r$ ($Hz$)')
 ax.set_xlabel(r'$v_0$')
 ax.set_xlim([np.min(lbs), np.max(lbs)])
+plt.title('(C)')
 
 # plot different power spectra for a bunch of examples
 delta_samples = np.asarray([0.5, 1.0, 2.0, 4.0])
 lb_samples = np.asarray([-80.0, -70.0, -60.0, -50.0])
+nperseg = 4096
 ax = fig.add_subplot(grid[2, 0])
-ax = plot_psd(data_delta, deltas, delta_samples, ax)
-ax.set_xlim([0.0, 200.0])
-ax.set_ylim([1e-11, 1e-7])
+ax = plot_psd(data_delta, deltas, delta_samples, ax, nperseg=nperseg)
+ax.set_xlim([0.0, 300.0])
 plt.legend([fr'$\Delta_v = {d}$' for d in delta_samples], loc=4)
-ax = fig.add_subplot(grid[2, 1])
-ax = plot_psd(data_lbs, lbs, lb_samples, ax)
-ax.set_xlim([0.0, 200.0])
-ax.set_ylim([1e-10, 1e-7])
+plt.title('(D)')
+ax2 = fig.add_subplot(grid[2, 1])
+ax2 = plot_psd(data_lbs, lbs, lb_samples, ax2, nperseg=nperseg)
+ax2.set_xlim([0.0, 300.0])
+ax2.set_ylim([1e-4, 5e-2])
+ax2.set_ylabel('')
 plt.legend([fr'$v_0 = {v}$' for v in lb_samples], loc=4)
+plt.title('(E)')
+ax.set_ylim(ax2.get_ylim())
 
 # finishing touches
 ###################
