@@ -44,6 +44,7 @@ spn_op:
   base: ik_op
   variables:
     C: 15.0
+    Delta: 2.0
     v_r: -80.0
     v_t: -30.0
     v_p: 15.0
@@ -67,7 +68,7 @@ spn_d1_op:
       - "g_gaba_d1 = g_gaba*(1-c4*phi)"
   variables:
     phi: input(0.0)
-    v_r_d1: variable(0.0)
+    v_r_d1: variable(-80.0)
     d_d1: variable(0.0)
     g_ampa_d1: variable(0.0)
     g_gaba_d1: variable(0.0)
@@ -89,7 +90,7 @@ spn_d2_op:
       - "g_gaba_d2 = g_gaba*(1+c3*phi)"
   variables:
     phi: input(0.0)
-    k_d2: variable(0.0)
+    k_d2: variable(1.0)
     g_ampa_d2: variable(0.0)
     g_gaba_d2: variable(0.0)
     c1: 0.03
@@ -106,6 +107,7 @@ fsi_op:
   variables:
     v_r_d1: variable(0.0)
     C: 80.0
+    Delta: 1.0
     v_r: -70.0
     v_t: -50.0
     v_p: 10.0
@@ -113,6 +115,7 @@ fsi_op:
     a: 0.2
     b: 0.025
     d: 0.0
+    q: 0.5
     c1: 0.1
     phi: input(0.0)
 

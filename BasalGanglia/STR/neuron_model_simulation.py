@@ -4,29 +4,30 @@ from pyrates import CircuitTemplate, clear
 from numba import njit
 
 # choose neuron type
-neuron_type = 'fsi'
+neuron_type = 'spn_d2'
 
 # redefine model parameters
-node_vars = {f'p/{neuron_type}_op/phi': 0.0}
+node_vars = {f'p/{neuron_type}_op/phi': 1.0}
+edge_vars = [(f'p/{neuron_type}_op/r', f'p/{neuron_type}_op/r_i', {'weight': 10.0})]
 
 # load model template
 template = CircuitTemplate.from_yaml(f'config/model_def/{neuron_type}')
 
 # update template parameters
-template.update_var(node_vars=node_vars)
+template.update_var(node_vars=node_vars, edge_vars=edge_vars)
 
 # set pyrates-specific parameters
-T = 100.0
-start = 30.0
-stop = 60.0
+T = 1000.0
+start = 300.0
+stop = 600.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 0.0
-inp[int(start/dt):int(stop/dt)] += 100.0
+inp = np.zeros((int(T/dt),)) + 0.01
+inp[int(start/dt):int(stop/dt)] += 0.02
 backend = 'default'
-solver = 'heun'
+solver = 'scipy'
 out_var = 'r'
-kwargs = {'vectorize': False, 'float_precision': 'float64', 'decorator': njit, 'fastmath': True}
+kwargs = {'vectorize': False, 'float_precision': 'float64', 'decorator': njit, 'fastmath': False}
 
 # perform simulation
 results = template.run(simulation_time=T, step_size=dt, backend=backend, solver=solver, sampling_step_size=dts,
