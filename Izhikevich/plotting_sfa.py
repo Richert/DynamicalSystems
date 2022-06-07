@@ -5,6 +5,8 @@ import sys
 sys.path.append('../')
 import pickle
 import numpy as np
+from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks
 
 # load pyauto data
 path = sys.argv[-1]
@@ -67,7 +69,7 @@ l3, l4_tmp = line3.get_paths()[0], line4.get_paths()[0]
 l4 = np.interp(l3.vertices[:, 1], l4_tmp.vertices[:, 1], l4_tmp.vertices[:, 0])
 plt.fill_betweenx(y=l3.vertices[:, 1], x2=l3.vertices[:, 0], x1=l4, color='#148F77', alpha=0.5)
 ax.set_xlabel(r'$I$')
-ax.set_ylabel(r'$d$')
+ax.set_ylabel(r'$\kappa$')
 ax.set_title('(A) 2D bifurcation diagram')
 ax.set_ylim([10.0, 120.0])
 ax.set_xlim([20.0, 75.0])
@@ -83,14 +85,19 @@ for j in range(0, n):
     except KeyError:
         pass
     ax.set_ylabel(r'$s$')
-    ax.set_title(rf'({titles[j]}) $d = {ds[j]}$')
+    ax.set_title(rf'({titles[j]}) $\kappa= {ds[j]}$')
     ax.set_xlabel(R'$I$' if j == n-1 else '')
     ax.set_xlim([20.0, 75.0])
 
 # plot the time signals
 data = [[fre_low, rnn_low, rnn2_low], [fre_high, rnn_high, rnn2_high]]
-titles = [rf'(D) $d = {ds[0]}$', rf'(E) $d = {ds[1]}$']
+titles = [rf'(D) $\kappa = {ds[0]}$', rf'(E) $\kappa = {ds[1]}$']
 for i, ((fre, rnn, rnn2), title) in enumerate(zip(data, titles)):
+
+    # fold bifurcation
+    ##################
+
+    # plot synaptic activation
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre['results'].index, rnn['s'])
     ax.plot(fre['results'].index, rnn2['s'])
@@ -99,15 +106,41 @@ for i, ((fre, rnn, rnn2), title) in enumerate(zip(data, titles)):
         plt.legend([r'spiking network ($u_i$)', r'spiking network ($u$)', 'mean-field'], loc=2)
     ax.set_ylabel(r'$s$')
     ax.set_title(title)
+    ax.set_xlim([np.min(fre['results'].index), np.max(fre['results'].index)])
+
+    # filter data
+    filtered = gaussian_filter1d(rnn['u'].squeeze(), sigma=10)
+
+    # find fold bifurcation points
+    peaks, props = find_peaks(-1.0 * filtered if i == 0 else filtered, width=1000 if i == 0 else 400, prominence=2)
+    if i == 1:
+        peaks = peaks[:-1]
+    I_r = fre['inp'][peaks[0]]
+    I_l = fre['inp'][peaks[-1]]
+
+    # plot recovery variable
     ax = fig.add_subplot(grid[3, i * 3:(i + 1) * 3])
     ax.plot(fre['results'].index, rnn['u'])
     ax.plot(fre['results'].index, rnn2['u'])
     ax.plot(fre['results']['u'])
     ax.set_ylabel(r'$u$')
+    ymin, ymax = ax.get_ylim()
+    for p in peaks:
+        ax.vlines(x=fre['results'].index[p], ymin=ymin, ymax=ymax, linestyle='dashed',
+                  color='k' if p != peaks[-1] else 'red')
+    ax.set_xlim([np.min(fre['results'].index), np.max(fre['results'].index)])
+
+    # plot input
     ax = fig.add_subplot(grid[4, i * 3:(i + 1) * 3])
     ax.plot(fre['results'].index, fre['inp'], c='grey')
     ax.set_ylabel(r'$I$')
     ax.set_xlabel('time (ms)')
+    ax.vlines(x=fre['results'].index[peaks[0]], ymin=0, ymax=I_r, linestyle='dashed', color='k')
+    ax.vlines(x=fre['results'].index[peaks[-1]], ymin=0, ymax=I_l, linestyle='dashed', color='red')
+    ax.hlines(y=I_l, xmin=0, xmax=fre['results'].index[peaks[-1]], linestyle='dashed', color='red')
+    ax.hlines(y=I_r, xmin=0, xmax=fre['results'].index[peaks[0]], linestyle='dashed', color='k')
+    ax.set_xlim([np.min(fre['results'].index), np.max(fre['results'].index)])
+    ax.set_ylim([np.min(fre['inp'])-5.0, np.max(fre['inp'])+5.0])
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.05, h_pad=0.01, hspace=0.05, wspace=0.)

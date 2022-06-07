@@ -4,10 +4,10 @@ from pyrates import CircuitTemplate, clear
 from numba import njit
 
 # choose neuron type
-neuron_type = 'spn_d2'
+neuron_type = 'fsi'
 
 # redefine model parameters
-node_vars = {f'p/{neuron_type}_op/phi': 1.0}
+node_vars = {f'p/{neuron_type}_op/phi': 0.0}
 edge_vars = [(f'p/{neuron_type}_op/r', f'p/{neuron_type}_op/r_i', {'weight': 10.0})]
 
 # load model template
@@ -22,8 +22,8 @@ start = 300.0
 stop = 600.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 0.01
-inp[int(start/dt):int(stop/dt)] += 0.02
+inp = np.zeros((int(T/dt),)) + 100.0
+inp[int(start/dt):int(stop/dt)] += 50.0
 backend = 'default'
 solver = 'scipy'
 out_var = 'r'
@@ -31,7 +31,7 @@ kwargs = {'vectorize': False, 'float_precision': 'float64', 'decorator': njit, '
 
 # perform simulation
 results = template.run(simulation_time=T, step_size=dt, backend=backend, solver=solver, sampling_step_size=dts,
-                       inputs={f'p/{neuron_type}_op/r_e': inp}, outputs={out_var: f'p/{neuron_type}_op/{out_var}'})
+                       inputs={f'p/{neuron_type}_op/I_ext': inp}, outputs={out_var: f'p/{neuron_type}_op/{out_var}'})
 clear(template)
 
 # plot simulated signal
