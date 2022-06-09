@@ -4,11 +4,11 @@ from pyrates import CircuitTemplate, clear
 from numba import njit
 
 # choose neuron type
-neuron_type = 'fsi'
+neuron_type = 'spn_d1'
 
 # redefine model parameters
 node_vars = {f'p/{neuron_type}_op/phi': 0.0}
-edge_vars = [(f'p/{neuron_type}_op/r', f'p/{neuron_type}_op/r_i', {'weight': 10.0})]
+edge_vars = [(f'p/{neuron_type}_op/r', f'p/{neuron_type}_op/r_i', {'weight': 5.0})]
 
 # load model template
 template = CircuitTemplate.from_yaml(f'config/model_def/{neuron_type}')
@@ -22,8 +22,8 @@ start = 300.0
 stop = 600.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 100.0
-inp[int(start/dt):int(stop/dt)] += 50.0
+inp = np.zeros((int(T/dt),)) + 200.0
+inp[int(start/dt):int(stop/dt)] += 00.0
 backend = 'default'
 solver = 'scipy'
 out_var = 'r'

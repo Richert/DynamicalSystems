@@ -22,15 +22,15 @@ def generate_connectivity(N: int, p: float, spatial_distribution: rv_discrete) -
 
 
 N = 1000
-p = 0.2
+p = 0.1
 
 xs = np.arange(0, N)
-ys = 1/(xs+1)
+ys = 1/(xs**2+1)
 ys /= np.sum(ys)
 spatial_distribution = rv_discrete(b=N, name='spatial_kernel', values=(xs, ys))
 
 C = generate_connectivity(N, p, spatial_distribution)
 plt.imshow(C)
 
-np.save('config/fsi_conn.npy', C)
+np.save('config/msn_conn.npy', C)
 plt.show()
