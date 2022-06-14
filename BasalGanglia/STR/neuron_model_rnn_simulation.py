@@ -47,13 +47,13 @@ W = np.load('config/msn_conn.npy')
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 
 # define inputs
-T = 1000.0
-cutoff = 900.0
-start = 300.0
-stop = 600.0
+T = 100.0
+cutoff = 90.0
+start = 30.0
+stop = 60.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 200.0
+inp = np.zeros((int(T/dt),)) + 300.0
 # inp[int(start/dt):int(stop/dt)] += 50.0
 
 # run the model
@@ -66,20 +66,20 @@ model = RNN(N, 3*N, ik, W=W, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_
             tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
 
 # define outputs
-outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': False}, 'v': {'idx': np.arange(0, N), 'avg': True}}
+outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}, 'v': {'idx': np.arange(0, N), 'avg': True}}
 
 # perform simulation
-res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
+res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, fastmath=True, method='euler')
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-ax[0].plot(np.mean(res["s"], axis=1))
+ax[0].plot(res["s"])
 ax[0].set_ylabel(r'$s(t)$')
-ax[1].plot(np.mean(res["v"], axis=1))
+ax[1].plot(res["v"])
 ax[1].set_ylabel(r'$v(t)$')
 ax[1].set_xlabel('time')
 plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/spn_rnn.p", "wb"))
+# pickle.dump({'results': res}, open("results/spn_rnn.p", "wb"))
