@@ -122,6 +122,11 @@ fsi_op:
 # node templates
 ################
 
+spn_pop:
+  base: NodeTemplate
+  operators:
+    - spn_op
+
 spn_d1_pop:
   base: NodeTemplate
   operators:
@@ -142,6 +147,13 @@ fsi_pop:
 
 # circuit templates
 ###################
+
+spn:
+  base: CircuitTemplate
+  nodes:
+    p: spn_pop
+  edges:
+    - [p/spn_op/r, p/spn_op/r_i, null, {weight: 1.0}]
 
 spn_d1:
   base: CircuitTemplate

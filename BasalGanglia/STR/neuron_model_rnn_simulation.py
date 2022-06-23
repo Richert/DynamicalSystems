@@ -3,7 +3,7 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(2)
 import numpy as np
 from pyrecu import RNN
-from pyrecu.neural_models import ik
+from pyrecu.neural_models import ik_ata, stop_at_spike_ata, spike_reset_ata
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
@@ -23,15 +23,15 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 # define parameters
 ###################
 
-N = 1000
+N = 10000
 
 # model parameters
 C = 15.0
 k = 1.0
 v_r = -80.0
 v_t = -30.0
-v_spike = 1000.0
-v_reset = -1000.0
+v_spike = 15.0
+v_reset = -90.0
 Delta = 2.0
 d = 90.0
 a = 0.01
@@ -43,12 +43,12 @@ q = 0.0
 E_r = -60.0
 W = np.load('config/msn_conn.npy')
 
-# define lorentzian of etas
+# define lorentzian of spike thresholds
 spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 
 # define inputs
 T = 100.0
-cutoff = 90.0
+cutoff = 0.0
 start = 30.0
 stop = 60.0
 dt = 1e-3
@@ -56,20 +56,24 @@ dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 300.0
 # inp[int(start/dt):int(stop/dt)] += 50.0
 
+# collect parameters
+func_args = (v_r, spike_thresholds, k, E_r, C, g, tau_s, b, a, q)
+callback_args = (v_spike, v_reset, J, d)
+
 # run the model
 ###############
 
 # initialize model
-u_init = np.zeros((3*N,))
-u_init[:N] += v_r
-model = RNN(N, 3*N, ik, W=W, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
-            tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
+u_init = np.zeros((2*N+1,))
+u_init[:N] += -60.0
+model = RNN(N, 2*N+1, ik_ata, func_args, spike_reset_ata, callback_args, u_init=u_init)
 
 # define outputs
-outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}, 'v': {'idx': np.arange(0, N), 'avg': True}}
+outputs = {'s': {'idx': np.asarray([2*N]), 'avg': False}, 'v': {'idx': np.arange(0, N), 'avg': True}}
 
 # perform simulation
-res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, fastmath=True, method='euler')
+res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, solver='euler', decorator=nb.njit,
+                fastmath=True, parallel=True)
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

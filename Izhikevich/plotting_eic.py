@@ -57,8 +57,8 @@ line = a.plot_continuation('PAR(36)', 'PAR(7)', cont=f'D_rs/I_fs:lp1', ax=ax, li
                            line_color_unstable='#5D6D7E', line_style_unstable='solid')
 line_data = line.get_paths()[1].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 1]), y2=line_data[:, 1], color='#5D6D7E', alpha=0.5)
-ax.set_ylabel(r'$\Delta_{rs}$')
-ax.set_xlabel(r'$I_{fs}$')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title(r'(A) $\Delta_{fs} = 1.0$')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([20.0, 80.0])
@@ -83,8 +83,8 @@ line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=deltas[1], color='black', linestyle='--')
 ax.axhline(y=deltas[2], color='black', linestyle='--')
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title('(B) $\Delta_{rs} = 1.0$')
 ax.set_ylim([0.0, 1.0])
 ax.set_xlim([20.0, 80.0])
@@ -101,10 +101,12 @@ a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:3', ax=ax, line_color_stable='
 ax.axvline(x=36.0, color='black', linestyle='--')
 ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
-ax.set_ylabel(r'$r_{rs}$')
+ax.set_ylabel(r'$r_{rs}$ (Hz)')
 ax.set_xlabel('')
 ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$' + r', $\Delta_{rs} = 1.0$')
 ax.set_xlim([20.0, 80.0])
+ax.set_yticks([0.0, 0.01, 0.02])
+ax.set_yticklabels(['0', '10', '20'])
 
 # continuation in FS input for low Delta_fs
 ax = fig.add_subplot(grid[1, 4:6])
@@ -115,10 +117,12 @@ a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:1:lc2', ax=ax, line_color_stab
 ax.axvline(x=36.0, color='black', linestyle='--')
 ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_ylabel(r'$r_{rs}$')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_ylabel(r'$r_{rs}$ (Hz)')
 ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$' + r', $\Delta_{rs} = 1.0$')
 ax.set_xlim([20.0, 80.0])
+ax.set_yticks([0.0, 0.01, 0.02])
+ax.set_yticklabels(['0', '10', '20'])
 
 # time series
 #############
@@ -138,8 +142,12 @@ for i, (fre, title) in enumerate(zip(data, titles)):
     ax.set_title(title)
     if i == len(data)-1:
         plt.legend(fre.columns.values)
+        ax.set_yticks([0.0, 0.025, 0.05])
+        ax.set_yticklabels(['0', '25', '50'])
     elif i == 0:
-        ax.set_ylabel(r'$r$')
+        ax.set_ylabel(r'$r$ (Hz)')
+        ax.set_yticks([0.0, 0.1, 0.2])
+        ax.set_yticklabels(['0', '100', '200'])
 
 # finishing touches
 ###################
