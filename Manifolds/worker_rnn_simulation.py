@@ -5,8 +5,8 @@ import numpy as np
 from pyrecu.neural_models import ik_spike_reset
 from pyrecu import RNN, random_connectivity
 from typing import Union, Callable
-import matplotlib.pyplot as plt
 import pickle
+import sys
 
 
 # function definitions
@@ -57,6 +57,12 @@ v_reset = -1000.0
 N = 1000
 eta_dist = Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
+# connectivity matrix
+ps = np.arange(1.0, 0.01, step=-0.05)
+cond = int(sys.argv[1])
+p = ps[cond]
+W = random_connectivity(N, p)
+
 # simulation parameters
 T = 1300.0
 cutoff = 300.0
@@ -72,39 +78,25 @@ outputs = {'v': {'idx': np.arange(0, N), 'avg': True}, 'u': {'idx': np.arange(N,
            's': {'idx': np.arange(2*N, 3*N), 'avg': False}}
 
 # collect parameters
-func_args = (v_r, v_t, k, E_r, C, g, tau_s, b, a, d)
+func_args = (v_r, v_t, k, E_r, C, g, tau_s, b, a, d, W)
 callback_args = (v_spike, v_reset)
 
 # perform simulations for different background inputs
 #####################################################
 
 etas = np.arange(30, 80, step=2)
-ps = np.arange(1.0, 0.01, step=-0.05)
-results = {'results': [], 'etas': [], 'ps': []}
-for p in ps:
+results = {'results': [], 'etas': [], 'p': p}
+for eta in etas:
 
-    # generate connectivit matrix
-    W = random_connectivity(N, p)
+    # initialize model
+    model = RNN(N, 3*N, ik, (eta + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
 
-    for eta in etas:
+    # run simulation
+    res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='midpoint', decorator=nb.njit)
 
-        # initialize model
-        model = RNN(N, 3*N, ik, (eta + eta_dist,) + func_args + (W,), ik_spike_reset, callback_args, u_init=u_init)
-
-        # run simulation
-        res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='midpoint', decorator=nb.njit)
-
-        results['results'].append(res)
-        results['etas'].append(eta)
-        results['ps'].append(p)
-
-        # plot results
-        # fig, ax = plt.subplots(figsize=(12, 4))
-        # ax.plot(np.mean(res["v"], axis=1))
-        # ax.set_xlabel('time')
-        # ax.set_ylabel(r'$v(t)$')
-        # plt.tight_layout()
-        # plt.show()
+    # store results
+    results['results'].append(res)
+    results['etas'].append(eta)
 
 # save results
-pickle.dump(results, open("results/ik_rnn.p", "wb"))
+pickle.dump(results, open(f"results/rnn_simulations/rnn_{cond}.p", "wb"))
