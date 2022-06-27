@@ -84,7 +84,7 @@ callback_args = (v_spike, v_reset)
 # perform simulations for different background inputs
 #####################################################
 
-etas = np.arange(30, 80, step=50)
+etas = np.arange(30, 80, step=2)
 results = {'results': [], 'etas': etas, 'p': p, 'W': W}
 for eta in etas:
 
