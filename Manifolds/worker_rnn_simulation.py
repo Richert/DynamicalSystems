@@ -98,5 +98,9 @@ for eta in etas:
     results['results'].append(res)
     results['etas'].append(eta)
 
+# calculate SEM of etas
+means = [np.mean(W[i, :]) for i in range(N)]
+results['SEM'] = np.std(means)
+
 # save results
 pickle.dump(results, open(f"results/rnn_simulations/rnn_{cond}.p", "wb"))
