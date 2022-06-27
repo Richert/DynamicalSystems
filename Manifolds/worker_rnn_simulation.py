@@ -98,4 +98,4 @@ for eta in etas:
     results['results'].append(res)
 
 # save results
-pickle.dump(results, open(f"results/rnn_simulations/rnn_{cond}.p", "wb"))
+pickle.dump(results, open(f"results/rnn_{cond}.p", "wb"))
