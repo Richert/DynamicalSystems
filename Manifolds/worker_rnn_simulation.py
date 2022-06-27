@@ -59,7 +59,7 @@ eta_dist = Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
 ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
-cond = int(sys.argv[1])
+cond = 1#int(sys.argv[1])
 p = ps[cond]
 W = random_connectivity(N, p)
 
@@ -84,8 +84,8 @@ callback_args = (v_spike, v_reset)
 # perform simulations for different background inputs
 #####################################################
 
-etas = np.arange(30, 80, step=2)
-results = {'results': [], 'etas': [], 'p': p}
+etas = np.arange(30, 80, step=50)
+results = {'results': [], 'etas': etas, 'p': p, 'W': W}
 for eta in etas:
 
     # initialize model
@@ -96,11 +96,6 @@ for eta in etas:
 
     # store results
     results['results'].append(res)
-    results['etas'].append(eta)
-
-# calculate SEM of etas
-means = [np.mean(W[i, :]) for i in range(N)]
-results['SEM'] = np.std(means)
 
 # save results
 pickle.dump(results, open(f"results/rnn_simulations/rnn_{cond}.p", "wb"))
