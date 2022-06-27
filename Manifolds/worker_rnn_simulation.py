@@ -58,14 +58,14 @@ N = 1000
 eta_dist = Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
-ps = np.arange(1.0, 0.01, step=-0.05)
+ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
 cond = int(sys.argv[1])
 p = ps[cond]
 W = random_connectivity(N, p)
 
 # simulation parameters
-T = 1300.0
-cutoff = 300.0
+T = 2500.0
+cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
 
