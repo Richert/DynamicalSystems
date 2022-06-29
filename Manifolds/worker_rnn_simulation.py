@@ -59,7 +59,7 @@ eta_dist = Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
 ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
-cond = 1#int(sys.argv[1])
+cond = int(sys.argv[1])
 p = ps[cond]
 W = random_connectivity(N, p)
 
@@ -84,7 +84,7 @@ callback_args = (v_spike, v_reset)
 # perform simulations for different background inputs
 #####################################################
 
-etas = np.arange(30, 80, step=2)
+etas = np.arange(30, 80, step=20)
 results = {'results': [], 'etas': etas, 'p': p, 'W': W}
 for eta in etas:
 
