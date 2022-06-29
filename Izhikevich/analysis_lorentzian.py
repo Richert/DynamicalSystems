@@ -118,7 +118,7 @@ plt.title('(C)')
 
 # plot different power spectra for a bunch of examples
 delta_samples = np.asarray([0.5, 1.0, 2.0, 4.0])
-lb_samples = np.asarray([-80.0, -70.0, -60.0, -50.0])
+lb_samples = np.asarray([-80.0, -70.0, -50.0, -45.0])
 nperseg = 4096
 ax = fig.add_subplot(grid[2, 0])
 ax = plot_psd(data_delta, deltas, delta_samples, ax, nperseg=nperseg)
@@ -128,7 +128,7 @@ plt.title('(D)')
 ax2 = fig.add_subplot(grid[2, 1])
 ax2 = plot_psd(data_lbs, lbs, lb_samples, ax2, nperseg=nperseg)
 ax2.set_xlim([0.0, 300.0])
-ax2.set_ylim([1e-4, 5e-2])
+ax2.set_ylim([1e-5, 5e-2])
 ax2.set_ylabel('')
 plt.legend([fr'$\phi = {v_t-v}$' for v in lb_samples], loc=4)
 plt.title('(E)')
