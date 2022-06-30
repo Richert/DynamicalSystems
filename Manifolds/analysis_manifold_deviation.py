@@ -31,8 +31,8 @@ for n in conditions:
         dists[res['p']] = {}
         for v in in_vars:
             dists[res['p']][res['in_var'][v]] = {'dist': res['etas'][v],
-                                                 's1': res['W'][nodes[0], :],
-                                                 's2': res['W'][nodes[1], :]}
+                                                 's1': np.argwhere(res['W'][nodes[0], :] > 0).squeeze(),
+                                                 's2': np.argwhere(res['W'][nodes[1], :] > 0).squeeze()}
 
 # store results in Dataframe
 results = DataFrame(data=D, index=index, columns=columns)
