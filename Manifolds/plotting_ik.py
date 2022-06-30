@@ -112,7 +112,6 @@ ax.set_xlabel(rf"${in_var_label}$")
 # plot exemplary input distributions in network
 dists = mf_data['dists']
 cols = ['blue', 'orange', 'green']
-linestyles = ['solid', 'dashed']
 lb, ub = -60.0, 60.0
 n_bins = 50
 ax1 = fig.add_subplot(grid[2, 2:4])
@@ -132,20 +131,18 @@ for l, (p, in_var_data) in enumerate(dists.items()):
         ax1.set_xlabel(r'$\bar \eta + I_{ext}$')
         ax1.set_ylabel('PDF')
         ax1.set_xlim([lb, ub])
+        ax1.set_title(r'$p = 1.0$')
 
     # plot exemplary local mean-field distributions
-    for i, (in_var, data) in enumerate(in_var_data.items()):
-        d = data['dist'][data['s1']]
-        idx = (d >= lb) * (d <= ub)
-        _, _, line = ax2.hist(d[idx], bins=n_bins, density=True, histtype='step', linestyle=linestyles[l],
-                              color=cols[i])
-        lines.append(line[0])
-        legends.append(rf"$p = {p}$, ${in_var_label} = {in_var}$")
-plt.sca(ax2)
-plt.legend(lines, legends)
-ax2.set_xlim([-60, 60])
-ax2.set_xlabel(r'$\bar \eta + I_{ext}$')
-ax2.set_ylabel('PDF')
+    else:
+        for i, (in_var, data) in enumerate(in_var_data.items()):
+            d = data['dist'][data['s1']]
+            idx = (d >= lb) * (d <= ub)
+            ax2.hist(d[idx], bins=n_bins, density=True, histtype='step', color=cols[i])
+            ax2.set_xlim([-60, 60])
+            ax2.set_xlabel(r'$\bar \eta + I_{ext}$')
+            ax2.set_ylabel('PDF')
+            ax2.set_title(rf'$p = {p}$')
 
 # finishing touches
 ###################
