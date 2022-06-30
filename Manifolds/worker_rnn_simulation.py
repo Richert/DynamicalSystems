@@ -21,16 +21,15 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
     dy = np.zeros_like(y)
 
     # extract state variables from u
-    m = 2*N
-    v, u, s = y[:N], y[N:m], y[m:]
+    v, u, s = y[:N], y[N], y[N+1:]
 
     # retrieve extrinsic input at time t
     inp = infunc(t, *inargs)
 
     # calculate state vector updates
     dy[:N] = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) + eta - u)/C
-    dy[N:m] = a*(b*(v-v_r) - u) + d*rates
-    dy[m:] = -s/tau_s + rates @ W
+    dy[N] = a*(b*(np.mean(v)-v_r) - u) + d*np.mean(rates)
+    dy[N+1:] = -s/tau_s + rates @ W
 
     return dy
 
@@ -59,7 +58,7 @@ eta_dist = Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
 ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
-cond = int(sys.argv[1])
+cond = 0#int(sys.argv[1])
 p = ps[cond]
 W = random_connectivity(N, p)
 
@@ -70,12 +69,12 @@ dt = 1e-2
 dts = 1e-1
 
 # initial state
-u_init = np.zeros((3*N,))
+u_init = np.zeros((2*N+1,))
 u_init[:N] -= v_r
 
 # define outputs
-outputs = {'v': {'idx': np.arange(0, N), 'avg': True}, 'u': {'idx': np.arange(N, 2*N), 'avg': True},
-           's': {'idx': np.arange(2*N, 3*N), 'avg': False}}
+outputs = {'v': {'idx': np.arange(0, N), 'avg': True}, 'u': {'idx': np.asarray([N]), 'avg': False},
+           's': {'idx': np.arange(N+1, 2*N+1), 'avg': False}}
 
 # collect parameters
 func_args = (v_r, v_t, k, E_r, C, g, tau_s, b, a, d, W)
@@ -84,7 +83,7 @@ callback_args = (v_spike, v_reset)
 # perform simulations for different background inputs
 #####################################################
 
-etas = np.arange(30, 80, step=20)
+etas = np.asarray([40.0, 50.0, 60.0])
 results = {'results': [], 'etas': etas, 'p': p, 'W': W}
 for eta in etas:
 
@@ -92,10 +91,11 @@ for eta in etas:
     model = RNN(N, 3*N, ik, (eta + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
 
     # run simulation
-    res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='midpoint', decorator=nb.njit)
+    res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='midpoint', decorator=nb.njit,
+                    parallel=True, fastmath=True)
 
     # store results
     results['results'].append(res)
 
 # save results
-pickle.dump(results, open(f"results/rnn_{cond}.p", "wb"))
+pickle.dump(results, open(f"results/rnn_simulations/rnn_{cond}.p", "wb"))
