@@ -3,14 +3,22 @@ from pandas import DataFrame
 import pickle
 import matplotlib.pyplot as plt
 
-# calculate variance around mean-field manifold
+# preparations
 N = 7
 conditions = np.arange(0, N)
 D = np.zeros((N, N))
 index = []
 columns = []
+in_vars = [0, 3, 6]
+nodes = [300, 600]
+ps = [2, 4]
+dists = {}
 for n in conditions:
+
+    # load data
     res = pickle.load(open(f"results/rnn_simulations/rnn_{n}.p", "rb"))
+
+    # calculate variance around mean-field manifold
     for m in range(len(res['in_var'])):
         r = res['results'][m]['v']
         D[n, m] = np.var(r)
@@ -18,12 +26,16 @@ for n in conditions:
     if n == 0:
         columns.extend(res['in_var'])
 
+    # store input distributions
+    if n in ps:
+        dists[res['p']] = {}
+        for v in in_vars:
+            dists[res['p']][res['in_var'][v]] = {'dist': res['etas'][v],
+                                                 's1': res['W'][nodes[0], :],
+                                                 's2': res['W'][nodes[1], :]}
+
 # store results in Dataframe
 results = DataFrame(data=D, index=index, columns=columns)
 
-plt.imshow(results)
-plt.colorbar()
-plt.show()
-
 # save results
-results.to_pickle("results/manifold_deviations.p")
+pickle.dump({'D': results, 'dists': dists}, open("results/manifold_deviations.p", "wb"))
