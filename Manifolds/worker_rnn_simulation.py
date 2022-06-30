@@ -83,12 +83,13 @@ callback_args = (v_spike, v_reset)
 # perform simulations for different background inputs
 #####################################################
 
-in_var = np.asarray([0.0, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0])
-results = {'results': [], 'in_var': in_var, 'p': p, 'W': W}
+in_var = np.asarray([0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0])
+results = {'results': [], 'in_var': in_var, 'etas': [], 'p': p, 'W': W}
 for v in in_var:
 
     # draw random input weights
     eta_in = np.random.randn(N) * v
+    eta_in -= np.mean(eta_in)
 
     # initialize model
     model = RNN(N, 3*N, ik, (eta_in + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
@@ -99,6 +100,7 @@ for v in in_var:
 
     # store results
     results['results'].append(res)
+    results['etas'].append(eta_in + eta_dist - eta)
 
 # save results
 pickle.dump(results, open(f"results/rnn_{cond}.p", "wb"))

@@ -1,6 +1,7 @@
 import numpy as np
 from pandas import DataFrame
 import pickle
+import matplotlib.pyplot as plt
 
 # calculate variance around mean-field manifold
 N = 7
@@ -19,6 +20,10 @@ for n in conditions:
 
 # store results in Dataframe
 results = DataFrame(data=D, index=index, columns=columns)
+
+plt.imshow(results)
+plt.colorbar()
+plt.show()
 
 # save results
 results.to_pickle("results/manifold_deviations.p")
