@@ -23,7 +23,7 @@ dt = 1e-2
 dts = 1e-1
 
 # define parameter grid
-param_grid = {'eta': np.arange(30, 80, step=2)}
+param_grid = {'eta': [45.0, 60.0, 75.0]}
 param_map = {'eta': {'vars': ['ik_op/eta'], 'nodes': ['p']}}
 
 # set up IK mean-field model

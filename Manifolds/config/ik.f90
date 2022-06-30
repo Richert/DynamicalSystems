@@ -75,7 +75,7 @@ double precision, intent(in) :: t
 args(1) = -40.0  ! v_t
 args(2) = -60.0  ! v_r
 args(3) = 0.7  ! k
-args(4) = 15.0  ! g
+args(4) = 5.0  ! g
 args(5) = 0.0  ! eta
 args(6) = 2.0  ! Delta
 args(7) = 100.0  ! C

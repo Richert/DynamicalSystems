@@ -3,10 +3,9 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
 import numpy as np
 from pyrecu.neural_models import ik_spike_reset
-from pyrecu import RNN, random_connectivity
+from pyrecu import RNN
 from typing import Union, Callable
 import pickle
-import sys
 
 
 # function definitions
@@ -14,22 +13,25 @@ import sys
 
 def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: Callable, inargs: tuple, eta: float,
        v_r: float, v_t: np.ndarray, k: float, E_r: float, C: float, g: float, tau_s: float, b: float, a: float,
-       d: float, W: np.ndarray) -> np.ndarray:
+       d: float) -> np.ndarray:
     """Calculates right-hand side update of a network of coupled Izhikevich neurons of the biophysical form
      with heterogeneous background excitabilities."""
 
     dy = np.zeros_like(y)
 
     # extract state variables from u
-    v, u, s = y[:N], y[N], y[N+1:]
+    v, u, s = y[:N], y[N], y[N+1]
 
     # retrieve extrinsic input at time t
     inp = infunc(t, *inargs)
 
+    # calculate average firing rate
+    r = np.mean(rates)
+
     # calculate state vector updates
     dy[:N] = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) + eta - u)/C
-    dy[N] = a*(b*(np.mean(v)-v_r) - u) + d*np.mean(rates)
-    dy[N+1:] = -s/tau_s + rates @ W
+    dy[N] = a*(b*(np.mean(v)-v_r) - u) + d*r
+    dy[N+1] = -s/tau_s + r
 
     return dy
 
@@ -43,7 +45,6 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 2.0
-eta = 45.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -55,13 +56,7 @@ v_reset = -1000.0
 
 # eta distribution
 N = 1000
-eta_dist = eta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
-
-# connectivity matrix
-ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
-cond = int(sys.argv[1])
-p = ps[cond]
-W = random_connectivity(N, p)
+eta_dist = Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # simulation parameters
 T = 2500.0
@@ -77,21 +72,18 @@ u_init[:N] -= v_r
 outputs = {'v': {'idx': np.arange(0, N), 'avg': True}}
 
 # collect parameters
-func_args = (v_r, v_t, k, E_r, C, g, tau_s, b, a, d, W)
+func_args = (v_r, v_t, k, E_r, C, g, tau_s, b, a, d)
 callback_args = (v_spike, v_reset)
 
 # perform simulations for different background inputs
 #####################################################
 
-in_var = np.asarray([0.0, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0])
-results = {'results': [], 'in_var': in_var, 'p': p, 'W': W}
-for v in in_var:
-
-    # draw random input weights
-    eta_in = np.random.randn(N) * v
+etas = np.asarray([45.0, 60.0, 75.0])
+results = {'results': [], 'etas': etas}
+for eta in etas:
 
     # initialize model
-    model = RNN(N, 3*N, ik, (eta_in + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
+    model = RNN(N, 3*N, ik, (eta + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
 
     # run simulation
     res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='midpoint', decorator=nb.njit,
@@ -101,4 +93,4 @@ for v in in_var:
     results['results'].append(res)
 
 # save results
-pickle.dump(results, open(f"results/rnn_{cond}.p", "wb"))
+pickle.dump(results, open(f"results/rnn_results.p", "wb"))
