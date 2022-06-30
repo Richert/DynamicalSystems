@@ -5,6 +5,7 @@ import sys
 sys.path.append('../')
 import pickle
 import numpy as np
+from pandas import read_pickle
 
 # load pyauto data
 path = sys.argv[-1]
@@ -15,13 +16,16 @@ a = PyAuto.from_file(f"results/ik_bifs.pkl", auto_dir=auto_dir)
 fre = pickle.load(open("results/fre_results.p", "rb"))
 snn = pickle.load(open(f"results/rnn_results.p", "rb"))
 
+# load manifold deviation data
+mf_data = read_pickle("results/manifold_deviations.p")
+
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 5)
+plt.rcParams['figure.figsize'] = (12, 7)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -34,7 +38,7 @@ markersize = 6
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=2, ncols=6, figure=fig)
+grid = gridspec.GridSpec(nrows=3, ncols=6, figure=fig)
 
 # 2D continuation
 #################
@@ -91,6 +95,57 @@ for i, (eta, snn_res) in enumerate(zip(snn['etas'], snn['results'])):
     if i == 0:
         ax.set_ylabel('v (mV)')
         plt.legend(['SNN', 'FRE'])
+
+# manifold deviation stuff
+##########################
+
+# plot deviation matrix
+in_var_label = r"var(I_{ext})"
+D = mf_data['D']
+ax = fig.add_subplot(grid[2, :2])
+ax.imshow(D, cmap='copper')
+ax.set_yticks(np.arange(0, D.shape[0]), labels=D.index)
+ax.set_xticks(np.arange(0, D.shape[1]), labels=D.columns.values)
+ax.set_ylabel(r'$p$')
+ax.set_xlabel(rf"${in_var_label}$")
+
+# plot exemplary input distributions in network
+dists = mf_data['dists']
+cols = ['blue', 'orange', 'green']
+linestyles = ['solid', 'dashed']
+lb, ub = -60.0, 60.0
+n_bins = 50
+ax1 = fig.add_subplot(grid[2, 2:4])
+ax2 = fig.add_subplot(grid[2, 4:])
+lines, legends = [], []
+for l, (p, in_var_data) in enumerate(dists.items()):
+
+    # draw input distribution
+    if p > 0.2:
+        labels = []
+        for i, (in_var, data) in enumerate(in_var_data.items()):
+            idx = (data['dist'] >= lb) * (data['dist'] <= ub)
+            ax1.hist(data['dist'][idx], bins=n_bins, density=True, histtype='step', color=cols[i])
+            labels.append(in_var)
+        plt.sca(ax1)
+        plt.legend(labels, title=rf"${in_var_label}$")
+        ax1.set_xlabel(r'$\bar \eta + I_{ext}$')
+        ax1.set_ylabel('PDF')
+        ax1.set_xlim([lb, ub])
+
+    # plot exemplary local mean-field distributions
+    for i, (in_var, data) in enumerate(in_var_data.items()):
+        d = data['dist'][data['s1']]
+        idx = (d >= lb) * (d <= ub)
+        _, _, line = ax2.hist(d[idx], bins=n_bins, density=True, histtype='step', linestyle=linestyles[l],
+                              color=cols[i])
+        lines.append(line[0])
+        legends.append(rf"$p = {p}$, ${in_var_label} = {in_var}$")
+plt.sca(ax2)
+plt.legend(lines, legends)
+ax2.set_xlim([-60, 60])
+ax2.set_xlabel(r'$\bar \eta + I_{ext}$')
+ax2.set_ylabel('PDF')
 
 # finishing touches
 ###################
