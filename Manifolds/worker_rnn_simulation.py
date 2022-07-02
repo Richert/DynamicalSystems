@@ -29,7 +29,7 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
     # calculate state vector updates
     dy[:N] = (k*(v**2 - (v_r+v_t)*v + v_r*v_t) + inp + g*s*(E_r - v) + eta - u)/C
     dy[N] = a*(b*(np.mean(v)-v_r) - u) + d*np.mean(rates)
-    dy[N+1:] = -s/tau_s + rates @ W
+    dy[N+1:] = -s/tau_s + W @ rates
 
     return dy
 
