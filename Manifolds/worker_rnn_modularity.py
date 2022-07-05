@@ -21,6 +21,7 @@ results = pickle.load(open(f"results/rnn_simulations/rnn_{cond}.p", "rb"))['resu
 data = {}
 data['modules'] = []
 data['adjacency'] = []
+data['nodes'] = []
 
 for res in results:
 
@@ -37,7 +38,8 @@ for res in results:
                                    cross_corr_method='fft')
 
     # store results
-    data['adjacency'] = A
-    data['modules'] = modules
+    data['adjacency'].append(A)
+    data['modules'].append(modules)
+    data['nodes'].append(nodes)
 
 pickle.dump(data, open(f"results/mod_{cond}.p", "wb"))
