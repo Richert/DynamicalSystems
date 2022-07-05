@@ -3,43 +3,42 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(6)
 import pickle
 import numpy as np
-from pyrecu import modularity, sort_via_modules
-import matplotlib.pyplot as plt
+from pyrecu import modularity
 import sys
-cond = 4 #sys.argv[-1]
+cond = sys.argv[-1]
 
 
 # preparations
 ##############
 
 # load rnn data
-results = pickle.load(open(f"results/rnn_simulations/rnn_{cond}.p", "rb"))['results']
-
+results = pickle.load(open(f"results/rnn_{cond}.p", "rb"))['results']
 
 # analysis
 ##########
 
-data = {}
+data = dict()
 data['modules'] = []
 data['adjacency'] = []
+data['nodes'] = []
 
-for res in results[10:]:
+for res in results:
+
+    # z-transform membrane potentials
+    z = np.zeros_like(res['v'])
+    for idx in range(z.shape[1]):
+        z_tmp = res['v'][:, idx]
+        z_tmp -= np.mean(z_tmp)
+        z_tmp /= np.max(np.abs(z_tmp))
+        z[:, idx] = z_tmp
 
     # calculate modularity
-    modules, A, nodes = modularity(res['s'].T, threshold=0.1, min_connections=4, min_nodes=4, decorator=nb.njit,
-                                   cross_corr_method='fft', parallel=True, fastmath=True)
-
-    # re-arrange adjacency matrix according to modules
-    C = sort_via_modules(A, modules)
+    modules, A, nodes = modularity(z.T, threshold=0.1, min_connections=4, min_nodes=4, decorator=None,
+                                   cross_corr_method='fft')
 
     # store results
-    data['adjacency'] = A
-    data['modules'] = modules
+    data['adjacency'].append(A)
+    data['modules'].append(modules)
+    data['nodes'].append(nodes)
 
-    # visualize modules
-    fig, ax = plt.subplots(ncols=2, figsize=(10, 5))
-    ax[0].imshow(A)
-    ax[1].imshow(C, cmap='nipy_spectral')
-    plt.show()
-
-pickle.dump(data, open(f"results/rnn_modularity/mod_{cond}.p", "wb"))
+pickle.dump(data, open(f"results/mod_{cond}.p", "wb"))

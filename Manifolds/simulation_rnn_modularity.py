@@ -6,6 +6,7 @@ from pyrecu.neural_models import ik_spike_reset
 from pyrecu import RNN, random_connectivity, modularity, sort_via_modules
 from typing import Union, Callable
 import matplotlib.pyplot as plt
+import pickle
 
 
 # function definitions
@@ -57,8 +58,8 @@ N = 1000
 eta_dist = eta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
-p = 0.05
-W = random_connectivity(N, N)
+p = 0.6
+W = random_connectivity(N, p)
 
 # input matrix
 m = 1
@@ -80,7 +81,7 @@ outputs = {'v': {'idx': np.arange(0, N), 'avg': False}}
 # define inputs
 steps = int(T/dt)
 inp = np.zeros((m, steps))
-inp[:, :] = np.random.poisson(10.0, (m, steps))
+#inp[:, :] = np.random.poisson(10.0, (m, steps))
 
 # collect parameters
 func_args = (eta_dist, v_r, v_t, k, E_r, C, g, tau_s, b, a, d, W)
@@ -114,6 +115,10 @@ modules, A, nodes = modularity(z.T, threshold=0.1, min_connections=4, min_nodes=
 # re-arrange adjacency matrix according to modules
 C = sort_via_modules(A, modules)
 
+# save results
+pickle.dump({'A': A, 'C': C, 'modules': modules, 'W': W, 'W_in': W_in, 'etas': eta_dist, 'nodes': nodes},
+            open("results/modularity_hetconn.p", "wb"))
+
 # plotting
 ##########
 
@@ -124,6 +129,6 @@ ax1[1].imshow(C, cmap='nipy_spectral')
 ax1[1].set_title('Modules')
 plt.show()
 
-fig2, ax2 = plt.subplots(figsize=(10, 4))
-ax2.plot(z)
+# fig2, ax2 = plt.subplots(figsize=(10, 4))
+# ax2.plot(z)
 plt.show()
