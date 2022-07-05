@@ -12,13 +12,12 @@ cond = sys.argv[-1]
 ##############
 
 # load rnn data
-results = pickle.load(open(f"results/rnn_simulations/rnn_{cond}.p", "rb"))['results']
-
+results = pickle.load(open(f"results/rnn_{cond}.p", "rb"))['results']
 
 # analysis
 ##########
 
-data = {}
+data = dict()
 data['modules'] = []
 data['adjacency'] = []
 data['nodes'] = []
