@@ -74,7 +74,7 @@ u_init = np.zeros((2*N+1,))
 u_init[:N] -= v_r
 
 # define outputs
-outputs = {'v': {'idx': np.arange(0, N), 'avg': True}}
+outputs = {'v': {'idx': np.arange(0, N), 'avg': False}}
 
 # collect parameters
 func_args = (v_r, v_t, k, E_r, C, g, tau_s, b, a, d, W)
@@ -92,10 +92,10 @@ for v in in_var:
     eta_in -= np.mean(eta_in)
 
     # initialize model
-    model = RNN(N, 3*N, ik, (eta_in + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
+    model = RNN(N, 2*N+1, ik, (eta_in + eta_dist,) + func_args, ik_spike_reset, callback_args, u_init=u_init)
 
     # run simulation
-    res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='midpoint', decorator=nb.njit,
+    res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=cutoff, solver='heun', decorator=nb.njit,
                     fastmath=True)
 
     # store results
