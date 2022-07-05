@@ -83,7 +83,7 @@ callback_args = (v_spike, v_reset)
 # perform simulations for different background inputs
 #####################################################
 
-in_var = np.asarray([0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0])
+in_var = np.asarray([0.0, 0.025, 0.5, 1.0, 2.0, 4.0, 8.0])
 results = {'results': [], 'in_var': in_var, 'etas': [], 'p': p, 'W': W}
 for v in in_var:
 
