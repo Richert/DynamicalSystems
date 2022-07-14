@@ -17,7 +17,7 @@ fre = pickle.load(open("results/fre_results.p", "rb"))
 snn = pickle.load(open(f"results/rnn_results.p", "rb"))
 
 # load manifold deviation data
-mf_data = read_pickle("results/manifold_deviations.p")
+mf_data = read_pickle("results/manifold_results.p")
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -103,7 +103,7 @@ for i, (eta, snn_res) in enumerate(zip(snn['etas'], snn['results'])):
 in_var_label = r"var(I_{ext})"
 D = mf_data['D']
 ax = fig.add_subplot(grid[2, :2])
-ax.imshow(D, cmap='copper')
+ax.imshow(D, cmap='nipy_spectral')
 ax.set_yticks(np.arange(0, D.shape[0]), labels=D.index)
 ax.set_xticks(np.arange(0, D.shape[1]), labels=D.columns.values)
 ax.set_ylabel(r'$p$')

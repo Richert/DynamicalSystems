@@ -58,7 +58,7 @@ N = 1000
 eta_dist = eta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
-p = 0.6
+p = 0.05
 W = random_connectivity(N, p)
 
 # input matrix
@@ -66,10 +66,10 @@ m = 1
 W_in = np.random.randn(N, m)
 
 # simulation parameters
-T = 2500.0
+T = 20500.0
 cutoff = 500.0
-dt = 1e-2
-dts = 1e-1
+dt = 5e-2
+dts = 1.0
 
 # initial state
 u_init = np.zeros((2*N+1,))
@@ -129,6 +129,6 @@ ax1[1].imshow(C, cmap='nipy_spectral')
 ax1[1].set_title('Modules')
 plt.show()
 
-# fig2, ax2 = plt.subplots(figsize=(10, 4))
-# ax2.plot(z)
+fig2, ax2 = plt.subplots(figsize=(10, 4))
+ax2.plot(z)
 plt.show()

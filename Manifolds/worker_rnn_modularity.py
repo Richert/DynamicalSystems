@@ -5,14 +5,14 @@ import pickle
 import numpy as np
 from pyrecu import modularity
 import sys
-cond = sys.argv[-1]
+cond = 2#sys.argv[-1]
 
 
 # preparations
 ##############
 
 # load rnn data
-results = pickle.load(open(f"results/rnn_{cond}.p", "rb"))['results']
+results = pickle.load(open(f"results/rnn_simulations/rnn_{cond}.p", "rb"))['results']
 
 # analysis
 ##########
@@ -35,6 +35,17 @@ for res in results:
     # calculate modularity
     modules, A, nodes = modularity(z.T, threshold=0.1, min_connections=4, min_nodes=4, decorator=None,
                                    cross_corr_method='fft')
+
+    # import matplotlib.pyplot as plt
+    # from pyrecu import sort_via_modules
+    # C = sort_via_modules(A, modules)
+    #
+    # fig, ax = plt.subplots(ncols=2, figsize=(12, 4))
+    # ax[0].imshow(A)
+    # ax[0].set_title('Adjacency')
+    # ax[1].imshow(C, cmap='nipy_spectral')
+    # ax[1].set_title('Modules')
+    # plt.show()
 
     # store results
     data['adjacency'].append(A)
