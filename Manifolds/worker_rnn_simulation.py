@@ -36,11 +36,6 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
     return dy
 
 
-def pos(x):
-    #x[x < 0] = 0.0
-    return x
-
-
 # parameter definition
 ######################
 
@@ -66,15 +61,15 @@ eta_dist = eta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
 ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
-cond = 4#int(sys.argv[1])
+cond = int(sys.argv[1])
 p = ps[cond]
 
 # simulation parameters
 T_cutoff = 1000.0
-T_compare = 0.0
+T_compare = 2000.0
 T_epoch = 1000.0
-n_train_epochs = 16
-n_test_epochs = 4
+n_train_epochs = 20
+n_test_epochs = 5
 T = T_cutoff + T_compare + T_epoch*(n_train_epochs + n_test_epochs)
 dt = 1e-2
 dts = 2e-1
@@ -93,10 +88,10 @@ in_steps = int(T_epoch / dt)
 target_steps = int(T_epoch/dts)
 time1 = np.linspace(0, T_epoch * (n_train_epochs + n_test_epochs), num=in_steps)
 time2 = np.linspace(0, T_epoch * (n_train_epochs + n_test_epochs), num=target_steps)
-s1 = pos(np.sin(2.0*np.pi*time1*0.004))
-s2 = pos(np.sin(2.0*np.pi*time1*0.002))
-s3 = pos(np.sin(2.0*np.pi*time2*0.004))
-s4 = pos(np.sin(2.0*np.pi*time2*0.002))
+s1 = np.sin(2.0*np.pi*time1*0.004)
+s2 = np.sin(2.0*np.pi*time1*0.002)
+s3 = np.sin(2.0*np.pi*time2*0.004)
+s4 = np.sin(2.0*np.pi*time2*0.002)
 for i in range(n_train_epochs + n_test_epochs):
     inp[0, in_start + i * in_steps:in_start + (i + 1) * in_steps] = s1
     inp[1, in_start + i * in_steps:in_start + (i + 1) * in_steps] = s2
@@ -165,14 +160,14 @@ for _ in range(n_reps):
 
     print(f'Test score: {score}')
 
-    import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(nrows=3, figsize=(10, 6))
-    axes[0].plot(np.mean(X, axis=1))
-    axes[1].plot(y_predict[:, 0])
-    axes[1].plot(y_test[:, 0])
-    axes[2].plot(y_predict[:, 1])
-    axes[2].plot(y_test[:, 1])
-    plt.show()
+    # import matplotlib.pyplot as plt
+    # fig, axes = plt.subplots(nrows=3, figsize=(10, 6))
+    # axes[0].plot(X)
+    # axes[1].plot(y_predict[:, 0])
+    # axes[1].plot(y_test[:, 0])
+    # axes[2].plot(y_predict[:, 1])
+    # axes[2].plot(y_test[:, 1])
+    # plt.show()
 
 # save results
 pickle.dump(results, open(f"results/rnn_{cond}.p", "wb"))
