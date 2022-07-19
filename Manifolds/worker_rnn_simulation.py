@@ -3,7 +3,7 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
 import numpy as np
 from pyrecu.neural_models import ik_spike_reset
-from pyrecu import RNN, random_connectivity, ReadoutTraining
+from pyrecu import RNN, random_connectivity, ReadoutTraining, modularity
 from typing import Union, Callable
 import pickle
 import sys
@@ -86,6 +86,8 @@ targets = np.zeros((int((T-T_cutoff-T_compare)/dts), m))
 in_start = int((T_compare + T_cutoff)/dt)
 in_steps = int(T_epoch / dt)
 target_steps = int(T_epoch/dts)
+target_start = int(T_compare/dts)
+split = int(T_epoch*n_train_epochs/dts)
 time1 = np.linspace(0, T_epoch * (n_train_epochs + n_test_epochs), num=in_steps)
 time2 = np.linspace(0, T_epoch * (n_train_epochs + n_test_epochs), num=target_steps)
 s1 = np.sin(2.0*np.pi*time1*0.004)
@@ -105,12 +107,17 @@ outputs = {'v': {'idx': np.arange(0, N), 'avg': False}}
 func_args = (eta_dist, v_r, v_t, k, E_r, C, g, tau_s, b, a, d)
 callback_args = (v_spike, v_reset)
 
-# perform simulations for different background inputs
-#####################################################
+#######################################################
+# perform simulations for different background inputs #
+#######################################################
 
 n_reps = 10
-results = {'v': [], 'W': [], 'W_in': [], 'p': p, 'inp': inp, 'targets': targets}
+results = {'v': [], 'W': [], 'W_in': [], 'p': p, 'inp': inp, 'targets': targets, 'predictions': [], 'scores': [],
+           'spikes': [], 'modules': [], 'adjacency': [], 'nodes': []}
 for _ in range(n_reps):
+
+    # simulate signal
+    #################
 
     # sample random connectivity matrix
     W = random_connectivity(N, p)
@@ -127,10 +134,16 @@ for _ in range(n_reps):
     res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=T_cutoff, solver='heun', decorator=nb.njit,
                     fastmath=True, inp=inp, W_in=W_in)
 
+    # reservoir computing
+    #####################
+
     # find spikes
-    X = np.zeros_like(res['v'])
+    spikes = []
+    res_signal = res['v'][target_start:, :]
+    X = np.zeros_like(res_signal)
     for i in range(X.shape[1]):
-        peaks, _ = find_peaks(res['v'][:, i])
+        peaks, _ = find_peaks(res_signal[:, i])
+        spikes.append(peaks)
         X[np.squeeze(peaks), i] = 1.0
 
     # prepare training data
@@ -153,13 +166,43 @@ for _ in range(n_reps):
     # calculate classification score on test data
     score, y_predict = rnn.test(X=X_test, y=y_test, readout_key=key)
 
+    # modularity calculation
+    ########################
+
+    # z-transform membrane potentials
+    comp_signal = res['v'][:target_start, :]
+    z = np.zeros_like(comp_signal)
+    for idx in range(z.shape[1]):
+        z_tmp = comp_signal[:, idx]
+        z_tmp -= np.mean(z_tmp)
+        z_tmp /= np.max(np.abs(z_tmp))
+        z[:, idx] = z_tmp
+
+    # calculate functional modularity of network
+    modules, A, nodes = modularity(z.T, threshold=0.1, min_connections=4, min_nodes=4, cross_corr_method='fft',
+                                   decorator=None)
+
     # save results
-    results['v'].append(res['v'])
+    ##############
+
+    results['v'].append(comp_signal)
     results['W'].append(W)
     results['W_in'].append(W_in)
+    results['predictions'].append(y_predict)
+    results['scores'].append(score)
+    results['spikes'].append(spikes)
+    results['modules'].append(modules)
+    results['adjacency'].append(A)
+    results['nodes'].append(nodes)
 
-    print(f'Test score: {score}')
+    # testing stuff (comment out for cluster computations)
+    ######################################################
 
+    # # printing
+    # print(f'Test score: {score}')
+    # print(f'Number of modules: {len(modules)}')
+    #
+    # # plotting
     # import matplotlib.pyplot as plt
     # fig, axes = plt.subplots(nrows=3, figsize=(10, 6))
     # axes[0].plot(X)
