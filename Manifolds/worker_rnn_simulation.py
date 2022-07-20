@@ -113,7 +113,7 @@ callback_args = (v_spike, v_reset)
 
 n_reps = 10
 results = {'v': [], 'W': [], 'W_in': [], 'p': p, 'inp': inp, 'targets': targets, 'predictions': [], 'scores': [],
-           'spikes': [], 'modules': [], 'adjacency': [], 'nodes': []}
+           'modules': [], 'adjacency': [], 'nodes': []}
 for _ in range(n_reps):
 
     # simulate signal
@@ -138,12 +138,12 @@ for _ in range(n_reps):
     #####################
 
     # find spikes
-    spikes = []
+    #spikes = []
     res_signal = res['v'][target_start:, :]
     X = np.zeros_like(res_signal)
     for i in range(X.shape[1]):
         peaks, _ = find_peaks(res_signal[:, i])
-        spikes.append(peaks)
+        #spikes.append(peaks)
         X[np.squeeze(peaks), i] = 1.0
 
     # prepare training data
@@ -190,7 +190,7 @@ for _ in range(n_reps):
     results['W_in'].append(W_in)
     results['predictions'].append(y_predict)
     results['scores'].append(score)
-    results['spikes'].append(spikes)
+    #results['spikes'].append(spikes)
     results['modules'].append(modules)
     results['adjacency'].append(A)
     results['nodes'].append(nodes)
