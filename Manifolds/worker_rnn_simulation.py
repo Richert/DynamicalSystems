@@ -213,4 +213,4 @@ for _ in range(n_reps):
     # plt.show()
 
 # save results
-pickle.dump(results, open(f"results/rnn_{cond}.p", "wb"))
+pickle.dump(results, open(f"/projects/p31302/results/rnn_{cond}.p", "wb"))
