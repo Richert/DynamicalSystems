@@ -131,7 +131,7 @@ ax2.set_ylabel(r'$r_i-r_{\infty}$')
 ax3.set_ylabel(r'$I^*$')
 ax1.set_title('(A) Input-output curves')
 ax2.set_title('(B) Output differences')
-ax3.set_title('(C) Input differences')
+ax3.set_title('(C) Adjusted input')
 
 # plot the 1D bifurcation diagrams
 v_reset = a.additional_attributes['v_reset']
@@ -139,7 +139,7 @@ n = len(v_reset)
 cmap = plt.get_cmap('copper', lut=n)
 ax = fig.add_subplot(grid[2:, :3])
 lines = []
-for j in range(1, n + 1):
+for j in range(n, 0, -1):
     c = to_hex(cmap(j, alpha=1.0))
     line = a.plot_continuation('PAR(16)', 'U(4)', cont=f'I:{j}', ax=ax, line_color_stable=c, line_color_unstable=c)
     lines.append(line)
@@ -149,7 +149,7 @@ ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$s$')
 ax.set_title(r'(D) 1D bifurcation diagrams for different $v_0$')
 ax.set_xlim([0.0, 80.0])
-plt.legend(handles=lines, labels=[fr'${v}$' for v in v_reset] + [r'$\infty$'], loc=2, title=r'$\mathrm{v_0}$')
+plt.legend(handles=lines, labels=[fr'${v}$' for v in v_reset[::-1]] + [r'$\infty$'], loc=2, title=r'$\mathrm{v_0}$')
 
 # plot the time signals
 data = [[fre_low, rnn_low, fre_inf], [fre_high, rnn_high, fre_inf]]

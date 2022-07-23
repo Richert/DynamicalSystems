@@ -75,6 +75,6 @@ a.run(starting_point='LP2', c='qif_lc', ICP=[30, 36, 11], NPAR=n_params, NDIM=n_
 # save results
 ##############
 
-fname = '../results/eic_corrected2.pkl'
+fname = '../results/eic_corrected0.pkl'
 kwargs = {'deltas': vals}
 a.to_file(fname, **kwargs)
