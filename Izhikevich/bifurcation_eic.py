@@ -83,6 +83,6 @@ a.run(starting_point='HB1', c='qif2', ICP=[30, 36], NPAR=n_params, NDIM=n_dim, n
 # save results
 ##############
 
-fname = '../results/eic2.pkl'
+fname = '../results/eic.pkl'
 kwargs = {'deltas': vals}
 a.to_file(fname, **kwargs)
