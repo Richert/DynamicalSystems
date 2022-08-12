@@ -1,3 +1,16 @@
+"""
+This script uses the dynamical systems software PyRates (https://github.com/pyrates-neuroscience/PyRates) to simulate
+the dynamics of a three-population model of interconnected Izhikevich neuron populations, representing regular-spiking,
+fast-spiking, and low-threshold-spiking neurons. The model equations and default parameters are defined in a separate
+YAML file. To run this script, you need to execute it from within a Python >= 3.6 environment with the following
+packages installed:
+- PyRates (see https://github.com/pyrates-neuroscience/PyRates for installation instructions)
+- matplotlib
+- numba
+Also, make sure that the `path_to_yaml_config` variable provides the correct path to the YAML config file with the
+model equations.
+"""
+
 from pyrates import CircuitTemplate
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,15 +43,12 @@ I_l[int((cutoff+start+0.5*dur)/dt):int((cutoff+start+dur)/dt)] += 25.0
 ###############
 
 # initialize model
-eic = CircuitTemplate.from_yaml("config/ik/eiic")
+path_to_yaml_config = "config/ik/eiic"
+eic = CircuitTemplate.from_yaml(path_to_yaml_config)
 
-# update parameters
+# update parameters (can also be used to alter the initial state of the system)
 eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs, 'lts/lts_op/Delta': Delta_lts,
                           'rs/rs_op/r': 0.02, 'rs/rs_op/v': -45.0})
-
-# generate run function
-# eic.get_run_func(func_name='eic_run', file_name='config/eiic', step_size=dt, backend='fortran',
-#                  auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
@@ -56,4 +66,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res, 'input': I_l}, open("results/eiic_fre_het.p", "wb"))
+# pickle.dump({'results': res, 'input': I_l}, open("results/eiic_fre_het.p", "wb"))
