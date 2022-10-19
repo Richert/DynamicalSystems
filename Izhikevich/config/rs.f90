@@ -41,11 +41,11 @@ s = y(4)
 
 r_in = r
 
-dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)&
+dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*abs(v-v_r)&
      & /(pi*C))/C
 dy(2) = (-pi*C*r*(pi*C*r/k &
-     & + Delta) + C*q*r*log(v_p/v_z)/k + I_ext + g*s*(E_r &
-     & - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
+     & + Delta*sign(1, v-v_r)) + C*q*r*log(v_p/v_z)/k + I_ext &
+     & + g*s*(E_r-v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
 dy(4) = r_in - s/tau_s
 

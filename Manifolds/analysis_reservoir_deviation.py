@@ -13,15 +13,15 @@ plt.rcParams["font.family"] = "Roboto"
 #plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['figure.figsize'] = (12, 8)
-plt.rcParams['font.size'] = 12.0
-plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['axes.labelsize'] = 14
+plt.rcParams['font.size'] = 14.0
+plt.rcParams['axes.titlesize'] = 16
+plt.rcParams['axes.labelsize'] = 16
 plt.rcParams['axes.labelweight'] = 'bold'
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
 # get filenames
-path = '/home/rgast/OneDrive/data'
+path = 'C:\\Users\\rgf3807\\OneDrive - Northwestern University\\data'
 fn = 'rnn_'
 fns = [f for f in listdir(path) if fn in f]
 
@@ -59,20 +59,21 @@ ax1.set_xticks(np.arange(0, len(x)), labels=[ps[idx] for idx in x])
 ax1.set_xlabel('# incoming synapses')
 ax1.set_ylabel('SEM')
 ax2 = axes[1, 0]
-ax2.bar(standard_errors, [m[0] for m in modules], yerr=[m[1] for m in modules], color='grey')
-ax2.set_xlabel('SEM')
+ax2.bar(np.arange(0, len(x)), [m[0] for m in modules], yerr=[m[1] for m in modules], color='grey')
+ax2.set_xticks(np.arange(0, len(x), step=2), labels=[ps[idx] for idx in x[::2]])
+ax2.set_xlabel('# incoming synapses')
 ax2.set_ylabel('# communities')
 ax3 = axes[1, 1]
 C1 = C[:, :]
-C1[C > 0] = 1.0
-ax3.imshow(C1, cmap='magma')
+C1[C1 > 0] = 1.0
+ax3.imshow(C1, cmap='magma', interpolation='none')
 ax3.set_xlabel('neuron id')
 ax3.set_ylabel('neuron id')
 ax4 = axes[1, 2]
 cmap = cm.get_cmap('tab10')
 x, y = 0, 0
 for key, (indices, _) in mods.items():
-    mean_signal = np.mean(signal[9000:, nodes[indices]], axis=1)
+    mean_signal = np.mean(signal[9000:9800, nodes[indices]], axis=1)
     ax4.plot(mean_signal, c=cmap(key-1))
     inc = len(indices)
     rect = Rectangle([x, y], inc, inc, edgecolor=cmap(key-1), facecolor='none')
@@ -80,7 +81,7 @@ for key, (indices, _) in mods.items():
     x += inc
     y += inc
 
-ax4.plot(np.mean(signal[9000:, :], axis=1), c='black')
+ax4.plot(np.mean(signal[9000:9800, :], axis=1), c='black')
 ax4.set_xlabel('time (ms)')
 ax4.set_ylabel('v (mV)')
 plt.tight_layout()

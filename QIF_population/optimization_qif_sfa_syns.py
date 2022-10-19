@@ -77,6 +77,7 @@ for i in range(n_runs):
     # add input and output layers
     net.add_input_layer(N, m, weights=W_in, trainable=False)
     net.add_output_layer(N, k, trainable=True, activation_function='softmax')
+    net.compile()
 
     # perform optimization
     net.train(inp[:train_epochs], targets[:train_epochs], optimizer='sgd', loss='ce', sampling_steps=1,
