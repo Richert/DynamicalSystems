@@ -1,6 +1,6 @@
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 import numpy as np
 import pickle
@@ -9,7 +9,7 @@ sys.path.append('../')
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/eiic.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/eiic.pkl", auto_dir=auto_dir)
 deltas = a.additional_attributes['deltas']
 
 # load simulation data
@@ -19,7 +19,7 @@ fre_het = pickle.load(open(f"results/eiic_fre_het.p", "rb"))['results']
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
-plt.rc('text', usetex=True)
+# plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['figure.figsize'] = (12, 4.5)
@@ -66,10 +66,10 @@ line = a.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:hb2', ax=ax, l
                            line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
-line = a.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:pd1', ax=ax, line_style_unstable='solid',
-                           ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
-line_data = line.get_paths()[0].vertices
-plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
+# line = a.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:pd1', ax=ax, line_style_unstable='solid',
+#                            ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
+# line_data = line.get_paths()[0].vertices
+# plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=0.1, color='black', linestyle='--')
 ax.axhline(y=0.6, color='grey', linestyle='--')
 ax.axhline(y=1.8, color='grey', linestyle='--')

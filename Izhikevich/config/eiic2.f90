@@ -133,8 +133,8 @@ r_e_1 = r*w_lts
 r_i_1 = r_in0*w_lts
 
 dy(1) = (r*(-g_ampa*s_ampa - g_gabaa*s_gabaa &
-     & + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*(v - v_r)/(pi*C))/C
-dy(2) = (-pi*C*r*(Delta+pi*C*r/k) &
+     & + k*(2.0*v - v_r - v_t) - q) + Delta*k**2*abs(v-v_r)/(pi*C))/C
+dy(2) = (-pi*C*r*(Delta*sign(dble(1), v-v_r)+pi*C*r/k) &
      & + C*q*r*log(v_p/v_z)/k + I_ext + g_ampa*s_ampa*(E_ampa &
      & - v) + g_gabaa&
      & *s_gabaa*(E_gabaa - v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
@@ -143,9 +143,9 @@ dy(4) = r_e - s_ampa/tau_ampa
 dy(5) = r_i - s_gabaa/tau_gabaa
 dy(6) = (r_in0*(-g_ampa_0*s_ampa_0 - g_gabaa_0*s_gabaa_0 &
      & + k_0*(2.0*v_0 - v_r_0 - v_t_0) - q_0) + Delta_0*k_0&
-     & **2*(v_0 - v_r_0)/(pi*C_0))/C_0
-dy(7) = (-pi*C_0*r_in0*(Delta_0+pi*C_0*r_in0/k_0) &
-     & + C_0*q_0*r_in0*log(v_p_0&
+     & **2*abs(v_0 - v_r_0)/(pi*C_0))/C_0
+dy(7) = (-pi*C_0*r_in0*(Delta_0*sign(dble(1),v_0-v_r_0) &
+     & +pi*C_0*r_in0/k_0) + C_0*q_0*r_in0*log(v_p_0&
      & /v_z_0)/k_0 + I_ext_0 + g_ampa_0*s_ampa_0*(E_ampa_0 &
      & - v_0) + g_gabaa_0&
      & *s_gabaa_0*(E_gabaa_0 - v_0) &
@@ -155,9 +155,9 @@ dy(9) = r_e_0 - s_ampa_0/tau_ampa_0
 dy(10) = r_i_0 - s_gabaa_0/tau_gabaa_0
 dy(11) = (r_in1*(-g_ampa_1*s_ampa_1 - g_gabaa_1*s_gabaa_1 &
      & + k_1*(2.0*v_1 - v_r_1 - v_t_1) - q_1) + Delta_1*k_1&
-     & **2*(v_1 - v_r_1)/(pi*C_1))/C_1
-dy(12) = (-pi*C_1*r_in1*(Delta_1+pi*C_1*r_in1/k_1) &
-     & + C_1*q_1*r_in1*log(v_p_1&
+     & **2*abs(v_1 - v_r_1)/(pi*C_1))/C_1
+dy(12) = (-pi*C_1*r_in1*(Delta_1*sign(dble(1), v_1-v_r_1) &
+     & +pi*C_1*r_in1/k_1) + C_1*q_1*r_in1*log(v_p_1&
      & /v_z_1)/k_1 + I_ext_1 + g_ampa_1*s_ampa_1*(E_ampa_1 &
      & - v_1) + g_gabaa_1&
      & *s_gabaa_1*(E_gabaa_1 - v_1) &

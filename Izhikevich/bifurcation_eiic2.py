@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 
 """
@@ -17,7 +17,7 @@ auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjec
 # config
 n_dim = 15
 n_params = 66
-a = PyAuto("config", auto_dir=auto_dir)
+a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time (to converge to fixed point)
 t_sols, t_cont = a.run(e='eiic2', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04,
@@ -77,9 +77,9 @@ a.run(starting_point='HB1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, n
       NMX=8000, DSMAX=0.05, UZR={}, STOP=['CP2'], NPR=10, RL1=2.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB2', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:1:hb2', origin=c3_cont,
       NMX=8000, DSMAX=0.05, UZR={}, STOP=['CP2'], NPR=10, RL1=2.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='PD2', c='qif3', ICP=[48, 54, 11], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:1:pd1',
-      origin=lc0_cont, NMX=2000, DSMAX=0.1, UZR={}, STOP=['BP1', 'LP2'], NPR=10, RL1=2.0, RL0=0.001,
-      bidirectional=True)
+# a.run(starting_point='PD2', c='qif3', ICP=[48, 54, 11], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:1:pd1',
+#       origin=lc0_cont, NMX=2000, DSMAX=0.1, UZR={}, STOP=['BP1', 'LP2'], NPR=10, RL1=2.0, RL0=0.001,
+#       bidirectional=True)
 
 # 2D continuation in Delta_lts and I_lts for high Delta_fs
 a.run(starting_point='LP1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:2:lp1', origin=c4_cont,

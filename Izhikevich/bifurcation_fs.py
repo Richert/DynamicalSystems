@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 
 """
@@ -17,7 +17,7 @@ auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjec
 # config
 n_dim = 4
 n_params = 20
-a = PyAuto("config", auto_dir=auto_dir)
+a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time (to converge to fixed point)
 t_sols, t_cont = a.run(e='fs', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NDIM=n_dim, NPAR=n_params,
@@ -44,7 +44,7 @@ for i, v in enumerate(vals):
 
     # continuation of limit cycle
     a.run(starting_point='HB1', c='qif2b', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{i+1}:lc',
-          origin=f'I:{i+1}', NMX=10000, DSMAX=0.1, NPR=20, RL1=700.0, RL0=0.0, STOP=['BP1', 'LP3'])
+          origin=f'I:{i+1}', NMX=10000, DSMAX=0.1, NPR=20, RL1=131.0, RL0=0.0, STOP=['BP1', 'LP3'])
 
 # 2D continuation follow-up I
 target = 0

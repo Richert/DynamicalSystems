@@ -1,4 +1,4 @@
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 
 """
@@ -17,7 +17,7 @@ auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjec
 # config
 n_dim = 4
 n_params = 20
-a = PyAuto("config", auto_dir=auto_dir)
+a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time to converge to fixed point
 t_sols, t_cont = a.run(e='rs', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params, NDIM=n_dim,
@@ -41,7 +41,7 @@ c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=6, NPAR=n_params, ND
                          origin=c1_cont, NMX=8000, DSMAX=0.01, UZR={6: vals}, STOP=[f'UZ{len(vals)}'], NPR=100,
                          RL1=10.0, RL0=0.0, bidirectional=True)
 
-# continuation in resting membrane potential
+# continuation in extrinsic input
 for i, v in enumerate(vals):
     a.run(starting_point=f'UZ{i+1}', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name=f'I:{i+1}', origin=c2_cont,
           NMX=8000, DSMAX=0.1, NPR=10, RL1=100.0)

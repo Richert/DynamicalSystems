@@ -3,17 +3,17 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import gridspec
-from pyauto import PyAuto
+from pycobi import ODESystem
 
 sys.path.append('../')
 
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/eic.pkl", auto_dir=auto_dir)
-a0 = PyAuto.from_file(f"results/eic_corrected0.pkl", auto_dir=auto_dir)
-a1 = PyAuto.from_file(f"results/eic_corrected1.pkl", auto_dir=auto_dir)
-a2 = PyAuto.from_file(f"results/eic_corrected2.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/eic.pkl", auto_dir=auto_dir)
+a0 = ODESystem.from_file(f"results/eic_corrected0.pkl", auto_dir=auto_dir)
+a1 = ODESystem.from_file(f"results/eic_corrected1.pkl", auto_dir=auto_dir)
+a2 = ODESystem.from_file(f"results/eic_corrected2.pkl", auto_dir=auto_dir)
 deltas = a.additional_attributes['deltas']
 
 # load simulation data

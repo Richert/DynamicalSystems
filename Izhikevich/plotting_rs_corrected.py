@@ -1,7 +1,7 @@
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_hex
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 import numpy as np
 sys.path.append('../')
@@ -10,7 +10,7 @@ import pickle
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/rs_corrected.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/rs_corrected.pkl", auto_dir=auto_dir)
 v_reset = a.additional_attributes['v_reset']
 n = len(v_reset)
 
