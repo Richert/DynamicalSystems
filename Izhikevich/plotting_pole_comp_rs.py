@@ -15,10 +15,10 @@ ds = a_orig.additional_attributes['d']
 n = len(ds)
 
 # load simulation data
-orig_low = pickle.load(open(f"results/sfa_fre_low.p", "rb"))
-orig_high = pickle.load(open(f"results/sfa_fre_high.p", "rb"))
-new_low = pickle.load(open(f"results/sfa_fre_low.p", "rb"))
-new_high = pickle.load(open(f"results/sfa_fre_high.p", "rb"))
+orig_low = pickle.load(open(f"results/pole_comp_rs_orig.p", "rb"))
+orig_high = pickle.load(open(f"results/pole_comp_rs2_orig.p", "rb"))
+new_low = pickle.load(open(f"results/pole_comp_rs_new.p", "rb"))
+new_high = pickle.load(open(f"results/pole_comp_rs2_new.p", "rb"))
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -47,19 +47,21 @@ grid = gridspec.GridSpec(nrows=2, ncols=6, figure=fig)
 n_points = 2
 ax = fig.add_subplot(grid[:, :2])
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E',
-                         line_color_unstable='#5D6D7E', line_style_stable='dotted')
+                         line_color_unstable='#5D6D7E', line_style_unstable='solid', alpha=0.5)
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E',
-                         line_color_unstable='#5D6D7E', line_style_stable='dotted')
+                         line_color_unstable='#5D6D7E', line_style_unstable='solid', alpha=0.5)
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77',
-                         line_style_stable='dotted')
+                         line_style_unstable='solid', alpha=0.5)
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77',
-                         line_style_stable='dotted')
+                         line_style_unstable='solid', alpha=0.5)
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E',
-                        line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                        line_color_unstable='#5D6D7E', line_style_stable='dotted')
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E',
-                        line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77')
-a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77')
+                        line_color_unstable='#5D6D7E', line_style_stable='dotted')
+a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77',
+                        line_style_stable='dotted')
+a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77',
+                        line_style_stable='dotted')
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$\kappa$')
 ax.set_title('(A) 2D bifurcation diagram')
@@ -68,13 +70,13 @@ ax.set_xlim([20.0, 75.0])
 
 # plot the time signals
 data = [[orig_low, new_low], [orig_high, new_high]]
-titles = [rf'(D) $\kappa = {ds[0]}$', rf'(E) $\kappa = {ds[1]}$']
+titles = [rf'(B) $\kappa = {ds[0]}$', rf'(C) $\kappa = {ds[1]}$']
 for i, ((orig, new), title) in enumerate(zip(data, titles)):
 
     # plot synaptic activation
     ax = fig.add_subplot(grid[i, 2:])
-    ax.plot(orig['results'].index, orig['results']['s'])
-    ax.plot(new['results'].index, new['results']['s'])
+    ax.plot(orig['results'].index, orig['results']['s'], color="blue", alpha=0.5)
+    ax.plot(new['results'].index, new['results']['s'], color="blue", linestyle="dotted")
     if i == 0:
         plt.legend(['eqs.(20-23)', 'eqs.(24-27)'], loc=2)
     ax.set_ylabel(r'$s$')
