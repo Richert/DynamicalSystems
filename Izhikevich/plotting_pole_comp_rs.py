@@ -31,7 +31,7 @@ plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['lines.linewidth'] = 1.0
+plt.rcParams['lines.linewidth'] = 1.5
 markersize = 6
 cmap = plt.get_cmap('copper', lut=n)
 
@@ -47,21 +47,21 @@ grid = gridspec.GridSpec(nrows=2, ncols=6, figure=fig)
 n_points = 2
 ax = fig.add_subplot(grid[:, :2])
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E',
-                         line_color_unstable='#5D6D7E', line_style_unstable='solid', alpha=0.5)
+                         line_color_unstable='#5D6D7E', line_style_unstable='solid', alpha=0.3)
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E',
-                         line_color_unstable='#5D6D7E', line_style_unstable='solid', alpha=0.5)
+                         line_color_unstable='#5D6D7E', line_style_unstable='solid', alpha=0.3)
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77',
-                         line_style_unstable='solid', alpha=0.5)
+                         line_style_unstable='solid', alpha=0.3)
 a_orig.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77',
-                         line_style_unstable='solid', alpha=0.5)
+                         line_style_unstable='solid', alpha=0.3)
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E',
-                        line_color_unstable='#5D6D7E', line_style_stable='dotted')
+                        line_color_unstable='#5D6D7E', line_style_stable='dashed')
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E',
-                        line_color_unstable='#5D6D7E', line_style_stable='dotted')
+                        line_color_unstable='#5D6D7E', line_style_stable='dashed')
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77',
-                        line_style_stable='dotted')
+                        line_style_stable='dashed')
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77',
-                        line_style_stable='dotted')
+                        line_style_stable='dashed')
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$\kappa$')
 ax.set_title('(A) 2D bifurcation diagram')
@@ -75,8 +75,8 @@ for i, ((orig, new), title) in enumerate(zip(data, titles)):
 
     # plot synaptic activation
     ax = fig.add_subplot(grid[i, 2:])
-    ax.plot(orig['results'].index, orig['results']['s'], color="blue", alpha=0.5)
-    ax.plot(new['results'].index, new['results']['s'], color="blue", linestyle="dotted")
+    ax.plot(orig['results'].index, orig['results']['s'], color="blue", alpha=0.3)
+    ax.plot(new['results'].index, new['results']['s'], color="blue", linestyle="dashed")
     if i == 0:
         plt.legend(['eqs.(20-23)', 'eqs.(24-27)'], loc=2)
     ax.set_ylabel(r'$s$')
