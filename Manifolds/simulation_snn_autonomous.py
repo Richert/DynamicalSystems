@@ -7,13 +7,13 @@ import pickle
 
 # network parameters
 N = 1000
-p = 0.05
+p = 0.5
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.5
-eta = 60.0
+Delta = 2.0
+eta = 40.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -31,19 +31,19 @@ etas = eta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # collect remaining model parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": 1/a, "b": b, "kappa": d, "g": g,
-             "E_r": E_r, "tau_s": tau_s}
+             "E_r": E_r, "tau_s": tau_s, "v": v_r}
 
 # initialize model
-net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
+net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.iku", weights=J, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", node_vars=node_vars,
-                        op="ik_op", spike_reset=v_reset, spike_threshold=v_spike)
+                        op="iku_op", spike_reset=v_reset, spike_threshold=v_spike)
 
 # simulation
 ############
 
 # input definition
-T = 70000.0
-dt = 5e-2
+T = 10000.0
+dt = 1e-2
 steps = int(T/dt)
 I_ext = np.zeros((steps, 1))
 

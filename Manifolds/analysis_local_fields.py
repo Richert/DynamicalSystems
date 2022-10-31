@@ -1,4 +1,4 @@
-from rectipy import random_connectivity
+from rectipy import random_connectivity, normalize
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import rel_entr
@@ -6,6 +6,7 @@ import pickle
 from sklearn import linear_model as lm
 
 plt.rc('text', usetex=True)
+
 
 # load data
 ###########
@@ -20,13 +21,21 @@ N = len(etas)
 #######################
 
 # calculate differences between background inputs
-eta_diff = np.asarray([[np.abs(etas[i] - etas[j]) for j in range(N)] for i in range(N)])
+eta_diff = np.zeros_like(J)
+for i in range(N):
+    for j in range(i+1, N):
+        eta_diff[i, j] = np.abs(etas[i] - etas[j])
+        eta_diff[j, i] = eta_diff[i, j]
 
 # calculate local fields
 fields = [etas[np.argwhere(J[i, :] > 0).squeeze()] for i in range(N)]
 
 # calculate differences in local field means
-field_diff = np.asarray([[np.abs(np.mean(fields[i]) - np.mean(fields[j])) for j in range(N)] for i in range(N)])
+field_diff = np.zeros_like(J)
+for i in range(N):
+    for j in range(i+1, N):
+        field_diff[i, j] = np.abs(np.mean(fields[i]) - np.mean(fields[j]))
+        field_diff[j, i] = field_diff[i, j]
 
 # calculate Kullback-Leibler divergence between local fields
 eta_grid = np.linspace(np.min(etas), np.max(etas), num=100)
@@ -37,7 +46,13 @@ for i in range(N):
         idx = np.argmin(np.abs(eta_grid - eta))
         grid_fields[idx] += 1
     field_rhos.append(grid_fields/len(fields[i]))
-field_kld = np.asarray([[np.sum(rel_entr(field_rhos[i], field_rhos[j])) for j in range(N)] for i in range(N)])
+field_kld = np.zeros_like(J)
+for i in range(N):
+    for j in range(i+1, N):
+        kld1 = np.sum(rel_entr(field_rhos[i], field_rhos[j]))
+        kld2 = np.sum(rel_entr(field_rhos[j], field_rhos[i]))
+        field_kld[i, j] = np.min([kld1, kld2])
+        field_kld[j, i] = field_kld[i, j]
 
 # data normalization
 ####################
@@ -45,12 +60,7 @@ field_kld = np.asarray([[np.sum(rel_entr(field_rhos[i], field_rhos[j])) for j in
 data_normalized = {}
 predictors = ["J", "eta_diff", "field_diff", "field_kld"]
 for key, mat in zip(predictors + ["cc"], [J, eta_diff, field_diff, field_kld, CC]):
-    for i in range(N):
-        mat[i, :] -= np.min(mat[i, :])
-        max_val = np.max(mat[i, :])
-        if max_val > 0:
-            mat[i, :] /= max_val
-    data_normalized[key] = mat
+    data_normalized[key] = normalize(mat, mode="minmax", row_wise=False)
 
 # linear model
 ##############
@@ -81,6 +91,6 @@ for key, val in data_normalized.items():
 _, ax = plt.subplots()
 im = ax.imshow(Y_predict, aspect=1.0, interpolation="none")
 plt.colorbar(mappable=im)
-ax.set_title(r"$CC^*$")
+ax.set_title(r"$cc^*$")
 
 plt.show()
