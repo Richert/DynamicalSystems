@@ -168,7 +168,7 @@ for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
     elif i == 0:
         plt.legend([l1[0], l2[0], l3[0], l4[0]], [r"$s_{rs}$ (spiking network)", r"$s_{fs}$ (spiking network)",
                                                   r"$s_{rs}$ (mean-field)", r"$s_{fs}$ (mean-field)"], loc=2)
-    ax.set_ylabel(r'$r$')
+    ax.set_ylabel(r'$s$')
 
 # finishing touches
 ###################

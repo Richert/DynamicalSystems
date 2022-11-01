@@ -1,6 +1,6 @@
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 sys.path.append('../')
 import pickle
@@ -11,7 +11,7 @@ from scipy.signal import find_peaks
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/sfa.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/sfa.pkl", auto_dir=auto_dir)
 ds = a.additional_attributes['d']
 n = len(ds)
 
