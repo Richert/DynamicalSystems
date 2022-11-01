@@ -56,7 +56,7 @@ a_new.plot_continuation('PAR(36)', 'PAR(30)', cont='D_fs/I_fs:lp2', ax=ax, line_
                         line_color_unstable='#5D6D7E', line_style_stable='dashed', linewidth=1.0)
 l4 = a_new.plot_continuation('PAR(36)', 'PAR(30)', cont='D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
                              line_style_stable='dashed', linewidth=1.0)
-plt.legend([l1, l2, l3, l4], ["Fold, eqs.(20-23)", "Hopf, eqs.(20-23)", "Fold, eqs.(24-27)", "Hopf, eqs.(24-27)"])
+plt.legend([l1, l2, l3, l4], ["Fold, eqs.(1-4)", "Hopf, eqs.(1-4)", "Fold, eqs.(5-8)", "Hopf, eqs.(5-8)"])
 ax.set_xlabel(r'$I_{fs}$')
 ax.set_ylabel(r'$\Delta_{fs}$')
 ax.set_title('(A) 2D bifurcation diagram')
@@ -71,9 +71,9 @@ for i, (pop, color) in enumerate(zip(["rs", "fs"], ["blue", "orange"])):
     ax.plot(orig['results'].index, orig['results'][pop], c=color)
     ax.plot(new['results'].index, new['results'][pop], c="white", linestyle="dashed", linewidth=1.0)
     if i == 0:
-        plt.legend(['eqs.(20-23)', 'eqs.(24-27)'], loc=3).get_frame().set_facecolor("grey")
+        plt.legend(['eqs.(1-4)', 'eqs.(5-8)'], loc=3).get_frame().set_facecolor("grey")
     elif i == 1:
-        plt.legend(['eqs.(20-23)', 'eqs.(24-27)'], loc=2).get_frame().set_facecolor("grey")
+        plt.legend(['eqs.(1-4)', 'eqs.(5-8)'], loc=2).get_frame().set_facecolor("grey")
         ax.set_xlabel('time (ms)')
     ax.set_ylabel(r'$r$ (Hz)')
     ax.set_yticks([0.0, 0.015, 0.03])

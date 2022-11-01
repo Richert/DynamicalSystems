@@ -16,7 +16,7 @@ v_t = -40.0  # unit: mV
 v_spike = 40.0  # unit: mV
 v_reset = 60.0  # unit: mV
 Delta = 1.0  # unit: mV
-d = 25.0
+d = 100.0
 a = 0.03
 b = -2.0
 tau_s = 6.0
@@ -29,9 +29,9 @@ T = 5500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 20.0
-inp[int(1000/dt):int(3000/dt)] += np.linspace(0.0, 30.0, num=int(2000/dt))
-inp[int(3000/dt):int(5000/dt)] += np.linspace(30.0, 0.0, num=int(2000/dt))
+inp = np.zeros((int(T/dt),)) + 40.0
+inp[int(1000/dt):int(5000/dt)] += np.linspace(0.0, 30.0, num=int(4000/dt))
+#inp[int(3000/dt):int(5000/dt)] += np.linspace(30.0, 0.0, num=int(2000/dt))
 
 # run the model
 ###############
@@ -60,4 +60,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res, 'inp': inp[int(cutoff/dt)::int(dts/dt)]}, open("results/sfa_fre_low.p", "wb"))
+pickle.dump({'results': res, 'inp': inp[int(cutoff/dt)::int(dts/dt)]}, open("results/sfa_fre_high.p", "wb"))

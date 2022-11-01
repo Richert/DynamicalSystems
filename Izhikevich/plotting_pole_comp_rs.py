@@ -64,7 +64,7 @@ l4 = a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_c
                              line_style_stable='dashed', line_style_unstable='dashed', linewidth=1.0)
 a_new.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77',
                         line_style_stable='dashed', line_style_unstable='dashed', linewidth=1.0)
-plt.legend([l1, l2, l3, l4], ["Fold, eqs.(20-23)", "Hopf, eqs.(20-23)", "Fold, eqs.(24-27)", "Hopf, eqs.(24-27)"],
+plt.legend([l1, l2, l3, l4], ["Fold, eqs.(1-4)", "Hopf, eqs.(1-4)", "Fold, eqs.(5-8)", "Hopf, eqs.(5-8)"],
            loc=4)
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$\kappa$')
@@ -82,9 +82,9 @@ for i, ((orig, new), title) in enumerate(zip(data, titles)):
     ax.plot(orig['results'].index, orig['results']['s'], color="blue")
     ax.plot(new['results'].index, new['results']['s'], color="white", linestyle="dashed", linewidth=1.0)
     if i == 0:
-        plt.legend(['eqs.(20-23)', 'eqs.(24-27)'], loc=2).get_frame().set_facecolor("grey")
+        plt.legend(['eqs.(1-4)', 'eqs.(5-8)'], loc=2).get_frame().set_facecolor("grey")
     elif i == 1:
-        plt.legend(['eqs.(20-23)', 'eqs.(24-27)'], loc=2).get_frame().set_facecolor("grey")
+        plt.legend(['eqs.(1-4)', 'eqs.(5-8)'], loc=2).get_frame().set_facecolor("grey")
         ax.set_xlabel('time (ms)')
     ax.set_ylabel(r'$s$')
     ax.set_title(title)
