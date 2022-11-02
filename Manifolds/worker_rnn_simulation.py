@@ -61,15 +61,15 @@ eta_dist = eta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
 
 # connectivity matrix
 ps = 1 / 2**(np.asarray([0, 1, 2, 3, 4, 5, 6]))
-cond = int(sys.argv[1])
+cond = 1 #int(sys.argv[1])
 p = ps[cond]
 
 # simulation parameters
 T_cutoff = 1000.0
 T_compare = 2000.0
 T_epoch = 1000.0
-n_train_epochs = 20
-n_test_epochs = 5
+n_train_epochs = 1
+n_test_epochs = 1
 T = T_cutoff + T_compare + T_epoch*(n_train_epochs + n_test_epochs)
 dt = 1e-2
 dts = 2e-1
@@ -198,19 +198,19 @@ for _ in range(n_reps):
     # testing stuff (comment out for cluster computations)
     ######################################################
 
-    # # printing
-    # print(f'Test score: {score}')
-    # print(f'Number of modules: {len(modules)}')
-    #
-    # # plotting
-    # import matplotlib.pyplot as plt
-    # fig, axes = plt.subplots(nrows=3, figsize=(10, 6))
-    # axes[0].plot(X)
-    # axes[1].plot(y_predict[:, 0])
-    # axes[1].plot(y_test[:, 0])
-    # axes[2].plot(y_predict[:, 1])
-    # axes[2].plot(y_test[:, 1])
-    # plt.show()
+    # printing
+    print(f'Test score: {score}')
+    print(f'Number of modules: {len(modules)}')
+
+    # plotting
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(nrows=3, figsize=(10, 6))
+    axes[0].plot(X)
+    axes[1].plot(y_predict[:, 0])
+    axes[1].plot(y_test[:, 0])
+    axes[2].plot(y_predict[:, 1])
+    axes[2].plot(y_test[:, 1])
+    plt.show()
 
 # save results
 pickle.dump(results, open(f"/projects/p31302/richard/results/rnn_{cond}.p", "wb"))

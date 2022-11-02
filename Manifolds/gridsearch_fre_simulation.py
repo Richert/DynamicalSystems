@@ -34,7 +34,8 @@ ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/
 
 # perform grid-search over etas
 results, param_map = grid_search(ik, param_grid=param_grid, param_map=param_map, step_size=dt, simulation_time=T,
-                                 sampling_step_size=dts, outputs={'v': 'p/ik_op/v'}, solver='scipy', cutoff=cutoff)
+                                 sampling_step_size=dts, outputs={'v': 'p/ik_op/v'}, solver='scipy',
+                                 cutoff=cutoff)
 
 # save results to file
 pickle.dump({'results': results, 'map': param_map}, open('results/fre_results.p', 'wb'))

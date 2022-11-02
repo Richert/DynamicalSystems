@@ -7,10 +7,10 @@ data = pickle.load(open("results/snn_autonomous.pkl", "rb"))
 
 # pre-compile cross-correlation function
 cc_func = cross_corr
-cc_func(2, signals=data["res"].loc[:1000, :].values.T)
+# cc_func(2, signals=data["s"].loc[:1000, :].values.T)
 
 # calculate cross-correlation between time series
-cc = cc_func(len(data["etas"]), signals=data["res"].loc[300000:, :].values.T, method="fft")
+cc = cc_func(len(data["etas"]), signals=data["s"].loc[100000:, :].values.T, method="fft")
 
 # saving
 data["cc"] = cc

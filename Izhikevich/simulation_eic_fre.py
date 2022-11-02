@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter1d
 
 # model parameters
 Delta_rs = 1.0
-Delta_fs = 0.2
+Delta_fs = 0.8
 
 # define inputs
 T = 4000.0
@@ -28,7 +28,7 @@ I_i = gaussian_filter1d(I_i, sigma=3000)
 ###############
 
 # initialize model
-eic = CircuitTemplate.from_yaml("config/ik/eic")
+eic = CircuitTemplate.from_yaml("config/ik2/eic")
 
 # update parameters
 eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs, 'rs/rs_op/r': 0.02,
@@ -54,4 +54,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_fre_hom.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_fre_het.p", "wb"))
