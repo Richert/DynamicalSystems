@@ -39,6 +39,9 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 cmap = plt.get_cmap('copper', lut=n)
 
+a.update_bifurcation_style("BT", color="#e08e12")
+a.update_bifurcation_style("HB", color="#76448A")
+
 ############
 # plotting #
 ############
@@ -56,18 +59,18 @@ ax.scatter(rnn_bfs['hb1'][::n_points, 0], rnn_bfs['hb1'][::n_points, 1], c='#148
 ax.scatter(rnn_bfs['hb2'][::n_points, 0], rnn_bfs['hb2'][::n_points, 1], c='#148F77', marker='x', s=10, alpha=0.5)
 line1 = a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp1', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
-line2 = a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:lp2', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E', line_style_unstable='solid')
-l1, l2 = line2.get_paths()[:2]
-l3 = line1.get_paths()[0]
-l1 = np.concatenate([l1.vertices, l2.vertices], axis=0)
-l3 = np.interp(l1[:, 1], l3.vertices[:, 1], l3.vertices[:, 0])
-plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l3, color='#5D6D7E', alpha=0.5)
+l1, l2, l3 = line1.get_paths()
+l2 = np.concatenate([l2.vertices, l3.vertices], axis=0)
+l1 = np.interp(l2[:, 1], l1.vertices[:, 1], l1.vertices[:, 0])
+plt.fill_betweenx(y=l2[:, 1], x1=l2[:, 0], x2=l1, color='#5D6D7E', alpha=0.5)
 line3 = a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb1', ax=ax, line_color_stable='#148F77')
 line4 = a.plot_continuation('PAR(16)', 'PAR(19)', cont='d/I:hb2', ax=ax, line_color_stable='#148F77')
 l3, l4_tmp = line3.get_paths()[0], line4.get_paths()[0]
 l4 = np.interp(l3.vertices[:, 1], l4_tmp.vertices[:, 1], l4_tmp.vertices[:, 0])
 plt.fill_betweenx(y=l3.vertices[:, 1], x2=l3.vertices[:, 0], x1=l4, color='#148F77', alpha=0.5)
+points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
+points[0].set_zorder(20)
+plt.legend([points[i] for i in [0, 1, 8]], ["Cusp", "Bogdanov-Takens", "Generalized Hopf"], loc=4)
 ax.set_xlabel(r'$I$')
 ax.set_ylabel(r'$\kappa$')
 ax.set_title('(A) 2D bifurcation diagram')
@@ -84,6 +87,9 @@ for j in range(0, n):
         a.plot_continuation('PAR(16)', 'U(4)', cont=f'I:{j+1}:lc', ax=ax, line_color_stable='#148F77', ignore=['BP'])
     except KeyError:
         pass
+    if j == 1:
+        points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
+        plt.legend([points[i] for i in [0, 3]], ["Andronov-Hopf", "Fold"], loc=2)
     ax.set_ylabel(r'$s$')
     ax.set_title(rf'({titles[j]}) $\kappa= {ds[j]}$')
     ax.set_xlabel(R'$I$' if j == n-1 else '')
