@@ -41,6 +41,7 @@ cmap = plt.get_cmap('copper', lut=n)
 
 a.update_bifurcation_style("BT", color="#e08e12")
 a.update_bifurcation_style("HB", color="#76448A")
+a.update_bifurcation_style("CP", color="k")
 
 ############
 # plotting #
@@ -71,8 +72,8 @@ plt.fill_betweenx(y=l3.vertices[:, 1], x2=l3.vertices[:, 0], x1=l4, color='#148F
 points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
 points[0].set_zorder(20)
 plt.legend([points[i] for i in [0, 1, 8]], ["Cusp", "Bogdanov-Takens", "Generalized Hopf"], loc=4)
-ax.set_xlabel(r'$I$')
-ax.set_ylabel(r'$\kappa$')
+ax.set_xlabel(r'$I$ (pA)')
+ax.set_ylabel(r'$\kappa$ (pA)')
 ax.set_title('(A) 2D bifurcation diagram')
 ax.set_ylim([10.0, 120.0])
 ax.set_xlim([20.0, 75.0])
@@ -91,13 +92,13 @@ for j in range(0, n):
         points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
         plt.legend([points[i] for i in [0, 3]], ["Andronov-Hopf", "Fold"], loc=2)
     ax.set_ylabel(r'$s$')
-    ax.set_title(rf'({titles[j]}) $\kappa= {ds[j]}$')
-    ax.set_xlabel(R'$I$' if j == n-1 else '')
+    ax.set_title(rf'({titles[j]}) $\kappa= {ds[j]}$ pA')
+    ax.set_xlabel(r'$I$ (pA)' if j == n-1 else '')
     ax.set_xlim([20.0, 75.0])
 
 # plot the time signals
 data = [[fre_low, rnn_low, rnn2_low], [fre_high, rnn_high, rnn2_high]]
-titles = [rf'(D) $\kappa = {ds[0]}$', rf'(E) $\kappa = {ds[1]}$']
+titles = [rf'(D) $\kappa = {ds[0]}$ pA', rf'(E) $\kappa = {ds[1]}$ pA']
 for i, ((fre, rnn, rnn2), title) in enumerate(zip(data, titles)):
 
     # fold bifurcation
@@ -129,7 +130,7 @@ for i, ((fre, rnn, rnn2), title) in enumerate(zip(data, titles)):
     ax.plot(fre['results'].index, rnn['u'])
     ax.plot(fre['results'].index, rnn2['u'])
     ax.plot(fre['results']['u'])
-    ax.set_ylabel(r'$u$')
+    ax.set_ylabel(r'$u$ (pA)')
     ymin, ymax = ax.get_ylim()
     for p in peaks:
         ax.vlines(x=fre['results'].index[p], ymin=ymin, ymax=ymax, linestyle='dashed',
@@ -139,7 +140,7 @@ for i, ((fre, rnn, rnn2), title) in enumerate(zip(data, titles)):
     # plot input
     ax = fig.add_subplot(grid[4, i * 3:(i + 1) * 3])
     ax.plot(fre['results'].index, fre['inp'], c='grey')
-    ax.set_ylabel(r'$I$')
+    ax.set_ylabel(r'$I$ (pA)')
     ax.set_xlabel('time (ms)')
     ax.vlines(x=fre['results'].index[peaks[0]], ymin=0, ymax=I_r, linestyle='dashed', color='k')
     ax.vlines(x=fre['results'].index[peaks[-1]], ymin=0, ymax=I_l, linestyle='dashed', color='red')

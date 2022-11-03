@@ -22,27 +22,29 @@ def correct_input(inp: float, k: float, v_r: float, v_t: float, v_spike: float, 
     return inp_c
 
 
-def ik_run(y, N, inp, v_t, v_r, k, J, g, Delta, C, v_z, v_p, E_r, b, a, d, tau_s, dt):
+def ik_run(t, y, N, spikes, in_func, in_args, v_t, v_r, k, J, g, Delta, C, v_z, v_p, E_r, b, a, d, tau_s, dt):
+
+    dy = np.zeros_like(y)
 
     r = y[0]
     v = y[1]
     u = y[2]
     s = y[3]
     r_in = J*r
+    inp = in_func(t, *in_args)
     I_ext = correct_input(inp, k, v_r, v_t, v_p, v_z, g, s, E_r, u, Delta)
 
-    dr = (r * (-g * s + k * (2.0 * v - v_r - v_t)) + Delta * k ** 2 * (v - v_r) / (pi * C)) / C
-    dv = (-pi * C * r * (pi * C * r / k + Delta) + I_ext + g * s * (
+    dy[0] = (r * (-g * s + k * (2.0 * v - v_r - v_t)) + Delta * k ** 2 * (v - v_r) / (pi * C)) / C
+    dy[1] = (-pi * C * r * (pi * C * r / k + Delta) + I_ext + g * s * (
                 E_r - v) + k * v * (v - v_r - v_t) + k * v_r * v_t - u) / C
-    du = a * (b * (v - v_r) - u) + d * r
-    ds = r_in - s / tau_s
+    dy[2] = a * (b * (v - v_r) - u) + d * r
+    dy[3] = r_in - s / tau_s
 
-    y[0] += dt * dr
-    y[1] += dt * dv
-    y[2] += dt * du
-    y[3] += dt * ds
+    return dy
 
-    return y
+
+def cb(u, N, *args):
+    return u, np.zeros((N,))
 
 
 # define parameters
@@ -53,8 +55,8 @@ C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 50.0  # unit: mV
-v_reset = -120.0  # unit: mV
+v_spike = np.inf  # unit: mV
+v_reset = -np.inf  # unit: mV
 Delta = 0.5  # unit: mV
 d = 0.0
 a = 0.003
@@ -73,14 +75,15 @@ inp = np.zeros((int(T/dt),)) + 50.0
 inp[int(1500/dt):int(2500/dt)] = 70.0
 inp[int(2500/dt):int(3500/dt)] = 27.5
 
+model_params = (v_t, v_r, k, J, g, Delta, C, v_reset, v_spike, E_r, b, a, d, tau_s, dt)
+
 # run the model
 ###############
 
 # initialize model
 u_init = np.zeros((4,))
 u_init[1] = -60.0
-model = RNN(1, 4, ik_run, C=C, k=k, v_r=v_r, v_t=v_t, v_p=v_spike, v_z=v_reset, tau_s=tau_s, J=J,
-            g=g, E_r=E_r, d=d, a=a, b=b, Delta=Delta, u_init=u_init)
+model = RNN(1, 4, ik_run, evolution_args=model_params, callback_func=cb, callback_args=(), u_init=u_init)
 
 # define outputs
 outputs = {'s': {'idx': np.asarray([3]), 'avg': False}}
@@ -97,4 +100,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/spike_mech_fre2.p", "wb"))
+pickle.dump({'results': res}, open("results/spike_mech_fre_inf.p", "wb"))

@@ -42,6 +42,8 @@ marker = "*"
 alpha = 0.5
 ls = 'dotted'
 
+a.update_bifurcation_style("CP", color="k")
+
 ############
 # plotting #
 ############
@@ -73,9 +75,9 @@ line = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, 
                             line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(A) $v_{p} = 1000$, $v_0 = -1000$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_title(r'(A) $v_{p} = 1000$ mV, $v_0 = -1000$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
@@ -97,9 +99,9 @@ line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, l
                            line_color_unstable='#148F77')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(D) $v_{p} = 1000$, $v_0 = -1000$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_title(r'(D) $v_{p} = 1000$ mV, $v_0 = -1000$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
@@ -121,9 +123,9 @@ line = a1.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, 
                             line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(B) $v_{p} = 50$, $v_0 = -100$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_title(r'(B) $v_{p} = 50$ mV, $v_0 = -100$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
@@ -146,9 +148,9 @@ line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, l
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5,
                  edgecolor="none")
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(E) $v_{p} = 50$, $v_0 = -100$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_title(r'(E) $v_{p} = 50$ mV, $v_0 = -100$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
@@ -170,9 +172,9 @@ line = a2.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, 
                             line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(C) $v_{p} = 40$, $v_0 = -60$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_title(r'(C) $v_{p} = 40$ mV, $v_0 = -60$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
@@ -195,9 +197,9 @@ line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, l
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5,
                  edgecolor="none")
-ax.set_ylabel(r'$\Delta_{fs}$')
-ax.set_xlabel(r'$I_{fs}$')
-ax.set_title(r'(F) $v_{p} = 40$, $v_0 = -60$')
+ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
+ax.set_xlabel(r'$I_{fs}$ (pA)')
+ax.set_title(r'(F) $v_{p} = 40$ mV, $v_0 = -60$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([10.0, 80.0])
 
@@ -206,8 +208,8 @@ ax.set_xlim([10.0, 80.0])
 
 data = [(fre_uncorrect, rnn_uncorrect), (fre_correct, rnn_correct)]
 time = np.linspace(1000, 4000, num=30000)
-titles = [r'(G) Two-population model dynamics for $v_{p} = 1000$, $v_0 = -1000$',
-          r'(H) Two-population model dynamics for $v_{p} = 50$, $v_0 = -100$']
+titles = [r'(G) Two-population model dynamics for $v_{p} = 1000$ mV, $v_0 = -1000$ mV',
+          r'(H) Two-population model dynamics for $v_{p} = 50$ mV, $v_0 = -100$ mV']
 for i, ((fre, rnn), title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[4+i, :])
     l1 = ax.plot(time, rnn["se"], color="blue")

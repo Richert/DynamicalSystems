@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import to_hex
 from matplotlib import gridspec
-from pyauto import PyAuto
+from pycobi import ODESystem
 import sys
 sys.path.append('../')
 import pickle
@@ -10,8 +10,8 @@ import pickle
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = PyAuto.from_file(f"results/rs_corrected.pkl", auto_dir=auto_dir)
-a2 = PyAuto.from_file(f"results/rs_uncorrected.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/rs_corrected.pkl", auto_dir=auto_dir)
+a2 = ODESystem.from_file(f"results/rs_uncorrected.pkl", auto_dir=auto_dir)
 
 # load simulation data
 fre_low = pickle.load(open(f"results/spike_mech_fre.p", "rb"))['results']
@@ -122,13 +122,13 @@ for i, (fr, diff, inp_mf) in enumerate(zip(frs, diffs, inp_mfs)):
     ax2.plot(inp, diff*1e3, c=c)
     ax3.plot(inp, inp_mf, c=c)
 plt.sca(ax2)
-plt.legend([fr'${v}$' for v in v_reset], loc=2, title=r'$\mathrm{v_0}$')
-ax1.set_xlabel(r'$I$')
-ax2.set_xlabel(r'$I$')
-ax3.set_xlabel(r'$I$')
-ax1.set_ylabel(r'$r_i$')
-ax2.set_ylabel(r'$r_i-r_{\infty}$')
-ax3.set_ylabel(r'$I^*$')
+plt.legend([fr'${v}$' for v in v_reset], loc=2, title=r'$\mathrm{v_0}$ (mV)')
+ax1.set_xlabel(r'$I$ (pA)')
+ax2.set_xlabel(r'$I$ (pA)')
+ax3.set_xlabel(r'$I$ (pA)')
+ax1.set_ylabel(r'$r_i$ (Hz)')
+ax2.set_ylabel(r'$r_i-r_{\infty}$ (Hz)')
+ax3.set_ylabel(r'$I^*$ (pA)')
 ax1.set_title('(A) Input-output curves')
 ax2.set_title('(B) Output differences')
 ax3.set_title('(C) Adjusted input')
@@ -145,15 +145,15 @@ for j in range(n, 0, -1):
     lines.append(line)
 line = a2.plot_continuation('PAR(16)', 'U(4)', cont=f'I:1', ax=ax)
 lines.append(line)
-ax.set_xlabel(r'$I$')
+ax.set_xlabel(r'$I$ (pA)')
 ax.set_ylabel(r'$s$')
 ax.set_title(r'(D) 1D bifurcation diagrams for different $v_0$')
 ax.set_xlim([0.0, 80.0])
-plt.legend(handles=lines, labels=[fr'${v}$' for v in v_reset[::-1]] + [r'$\infty$'], loc=2, title=r'$\mathrm{v_0}$')
+plt.legend(handles=lines, labels=[fr'${v}$' for v in v_reset[::-1]] + [r'$\infty$'], loc=2, title=r'$\mathrm{v_0}$ (mV)')
 
 # plot the time signals
 data = [[fre_low, rnn_low, fre_inf], [fre_high, rnn_high, fre_inf]]
-titles = [rf'(E) $v_0 = {v_reset[-1]}$', rf'(F) $v_0 = {v_reset[0]}$']
+titles = [rf'(E) $v_0 = {v_reset[-1]}$ mV', rf'(F) $v_0 = {v_reset[0]}$ mV']
 time = np.linspace(500.0, 4500.0, num=fre_low['s'].shape[0])
 for i, ((fre, rnn, inf), title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[i+2, 3:])

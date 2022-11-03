@@ -3,7 +3,7 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
 import numpy as np
 from pyrecu import RNN
-from pyrecu.neural_models import ik_ata
+from pyrecu.neural_models import ik_ata, ik_spike_reset
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
@@ -30,7 +30,7 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 v_spike = 50.0  # unit: mV
-v_reset = -60.0  # unit: mV
+v_reset = -120.0  # unit: mV
 Delta = 0.5  # unit: mV
 d = 0.0
 a = 0.003
@@ -58,8 +58,10 @@ inp[int(2500/dt):int(3500/dt)] = 27.5
 # initialize model
 u_init = np.zeros((2*N+2,))
 u_init[:N] -= 60.0
-model = RNN(N, 2*N+2, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
-            tau_s=tau_s, J=J, g=g, E_r=E_r, q=0.0, u_init=u_init)
+run_args = (v_r, spike_thresholds, k, E_r, C, g, tau_s, b, a, d, 0.0, J)
+spike_args = (v_spike, v_reset)
+model = RNN(N, 2*N+2, ik_ata, evolution_args=run_args, callback_func=ik_spike_reset, callback_args=spike_args,
+            u_init=u_init)
 
 # define outputs
 outputs = {'s': {'idx': np.asarray([2*N]), 'avg': False}}
@@ -76,4 +78,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/spike_mech_rnn.p", "wb"))
+pickle.dump({'results': res}, open("results/spike_mech_rnn2.p", "wb"))
