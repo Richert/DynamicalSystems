@@ -54,7 +54,7 @@ c3_sols, c3_cont = a.run(starting_point='UZ1', c='qif', ICP=54, NPAR=n_params, N
                          origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=200.0)
 a.run(starting_point='HB1', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc1',
       origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
-lc0_sols, lc0_cont = a.run(starting_point='HB2', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc2',
+lc0_sols, lc0_cont = a.run(starting_point='HB3', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:1:lc2',
                            origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
 
 # continuation in LTS input for high Delta_fs
@@ -62,7 +62,7 @@ c4_sols, c4_cont = a.run(starting_point='UZ2', c='qif', ICP=54, NPAR=n_params, N
                          origin=c2_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=20, RL1=300.0)
 lc1_sols, lc1_cont = a.run(starting_point='HB1', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:2:lc1',
                            origin=c4_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
-lc2_sols, lc2_cont = a.run(starting_point='HB3', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:2:lc2',
+lc2_sols, lc2_cont = a.run(starting_point='HB2', c='qif2b', ICP=[54, 11], NPAR=n_params, NDIM=n_dim, name='I_lts:2:lc2',
                            origin=c4_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=['LP3', 'BP1'], NPR=20, RL1=200.0, RL0=0.0)
 
 # c) 2D continuations
@@ -77,9 +77,9 @@ a.run(starting_point='HB1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, n
       NMX=8000, DSMAX=0.05, UZR={}, STOP=['CP2'], NPR=10, RL1=2.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB2', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:1:hb2', origin=c3_cont,
       NMX=8000, DSMAX=0.05, UZR={}, STOP=['CP2'], NPR=10, RL1=2.0, RL0=0.0, bidirectional=True)
-# a.run(starting_point='PD2', c='qif3', ICP=[48, 54, 11], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:1:pd1',
-#       origin=lc0_cont, NMX=2000, DSMAX=0.1, UZR={}, STOP=['BP1', 'LP2'], NPR=10, RL1=2.0, RL0=0.001,
-#       bidirectional=True)
+a.run(starting_point='PD2', c='qif3', ICP=[48, 54, 11], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:1:pd1',
+      origin=lc0_cont, NMX=2000, DSMAX=0.1, UZR={}, STOP=['BP1', 'LP2'], NPR=10, RL1=2.0, RL0=0.001,
+      bidirectional=True)
 
 # 2D continuation in Delta_lts and I_lts for high Delta_fs
 a.run(starting_point='LP1', c='qif2', ICP=[48, 54], NPAR=n_params, NDIM=n_dim, name='D_lts/I_lts:2:lp1', origin=c4_cont,

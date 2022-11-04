@@ -20,7 +20,7 @@ n_params = 45
 a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time (to converge to fixed point)
-t_sols, t_cont = a.run(e='eic', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-05, EPSU=1e-05, EPSS=1e-04,
+t_sols, t_cont = a.run(e='eic_corrected', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-05, EPSU=1e-05, EPSS=1e-04,
                        DSMAX=0.1, NMX=50000, UZR={14: 2000.0}, STOP={'UZ1'}, NPR=1000, NDIM=n_dim, NPAR=n_params)
 
 ########################
@@ -75,6 +75,6 @@ a.run(starting_point='LP2', c='qif_lc', ICP=[30, 36], NPAR=n_params, NDIM=n_dim,
 # save results
 ##############
 
-fname = '../results/eic_corrected2.pkl'
+fname = '../results/eic_corrected0.pkl'
 kwargs = {'deltas': vals}
 a.to_file(fname, **kwargs)

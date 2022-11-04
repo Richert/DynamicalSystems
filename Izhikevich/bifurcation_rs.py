@@ -20,7 +20,7 @@ n_params = 20
 a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time to converge to fixed point
-t_sols, t_cont = a.run(e='rs', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params, NDIM=n_dim,
+t_sols, t_cont = a.run(e='rs2', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params, NDIM=n_dim,
                        EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 500.0}, STOP={'UZ1'})
 
 ########################

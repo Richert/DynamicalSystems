@@ -19,7 +19,7 @@ fre_het = pickle.load(open(f"results/eic_fre_het.p", "rb"))['results']
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
-#plt.rc('text', usetex=True)
+plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['figure.figsize'] = (12, 4.5)
@@ -29,6 +29,7 @@ plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
+a.update_bifurcation_style("HB", color="#76448A")
 
 ############
 # plotting #
@@ -53,15 +54,20 @@ line = a.plot_continuation('PAR(36)', 'PAR(7)', cont=f'D_rs/I_fs:hb3', ax=ax, li
 line_data = line.get_paths()[0].vertices
 plt.fill_betweenx(y=line_data[:, 1], x1=line_data[:, 0], x2=np.zeros_like(line_data[:, 0])+100.0, color='#148F77',
                   alpha=0.5)
+a.plot_continuation('PAR(36)', 'PAR(7)', cont=f'D_rs/I_fs:hb2', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77', line_style_unstable='solid', ignore=["UZ"])
 line = a.plot_continuation('PAR(36)', 'PAR(7)', cont=f'D_rs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                           line_color_unstable='#5D6D7E', line_style_unstable='solid')
-line_data = line.get_paths()[1].vertices
+                           line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["UZ"])
+l1, l2 = line.get_paths()
+line_data = np.concatenate([l1.vertices, l2.vertices], axis=0)
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 1]), y2=line_data[:, 1], color='#5D6D7E', alpha=0.5)
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title(r'(A) $\Delta_{fs} = 0.2$')
+ax.set_title(r'(A) $\Delta_{fs} = 0.2$ mV')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([20.0, 80.0])
+points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
+bt = points[6]
 
 # continuation in Delta_fs and I_fs
 ax = fig.add_subplot(grid[:2, 2:4])
@@ -73,19 +79,24 @@ l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
-line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
+line3 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
                            line_color_unstable='#148F77', line_style_unstable='solid')
-line_data = line.get_paths()[0].vertices
+line_data = line3.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
-line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, line_style_unstable='solid',
+line4 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, line_style_unstable='solid',
                            ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
-line_data = line.get_paths()[0].vertices
+line_data = line4.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=deltas[0], color='black', linestyle='--')
 ax.axhline(y=deltas[1], color='black', linestyle='--')
+points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
+gh, cp = points[5], points[0]
+plt.legend([line1, line3, line4] + [gh, cp, bt],
+           ["Fold", "Andronov-Hopf", "Period Doubling", "Generalized Hopf", "Cusp", "Bogdanov-Takens"],
+           loc=1)
 ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title('(B) $\Delta_{rs} = 1.0$')
+ax.set_title('(B) $\Delta_{rs} = 1.0$ mV')
 ax.set_ylim([0.0, 1.0])
 ax.set_xlim([20.0, 80.0])
 
@@ -93,20 +104,6 @@ ax.set_xlim([20.0, 80.0])
 ##################
 
 delta_str = r"\Delta_{fs}"
-
-# continuation in FS input for high Delta_fs
-ax = fig.add_subplot(grid[0, 4:6])
-a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:2', ax=ax, line_color_stable='#76448A',
-                    line_color_unstable='#5D6D7E')
-ax.axvline(x=36.0, color='black', linestyle='--')
-ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
-ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
-ax.set_ylabel(r'$r_{rs}$ (Hz)')
-ax.set_xlabel('')
-ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$' + r', $\Delta_{rs} = 1.0$')
-ax.set_xlim([20.0, 80.0])
-ax.set_yticks([0.0, 0.01, 0.02])
-ax.set_yticklabels(['0', '10', '20'])
 
 # continuation in FS input for low Delta_fs
 ax = fig.add_subplot(grid[1, 4:6])
@@ -119,17 +116,33 @@ ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_ylabel(r'$r_{rs}$ (Hz)')
-ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$' + r', $\Delta_{rs} = 1.0$')
+ax.set_title(fr'(D) ${delta_str} = {deltas[1]}$ mV' + r', $\Delta_{rs} = 1.0$ mV')
 ax.set_xlim([20.0, 80.0])
 ax.set_yticks([0.0, 0.01, 0.02])
 ax.set_yticklabels(['0', '10', '20'])
+points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
+
+# continuation in FS input for high Delta_fs
+ax = fig.add_subplot(grid[0, 4:6])
+a.plot_continuation('PAR(36)', 'U(1)', cont='I_fs:3', ax=ax, line_color_stable='#76448A',
+                    line_color_unstable='#5D6D7E')
+ax.axvline(x=36.0, color='black', linestyle='--')
+ax.axvline(x=50.0, color='grey', alpha=0.15, linestyle='--')
+ax.axvline(x=75.0, color='grey', alpha=0.3, linestyle='--')
+ax.set_ylabel(r'$r_{rs}$ (Hz)')
+ax.set_xlabel('')
+ax.set_title(fr'(C) ${delta_str} = {deltas[2]}$ mV' + r', $\Delta_{rs} = 1.0$ mV')
+ax.set_xlim([20.0, 80.0])
+ax.set_yticks([0.0, 0.01, 0.02])
+ax.set_yticklabels(['0', '10', '20'])
+plt.legend([points[2], points[1]], ["Fold", "Andronov-Hopf"], loc=1)
 
 # time series
 #############
 
 data = [fre_hom, fre_het]
-titles = [fr'(E) ${delta_str} = {deltas[1]}$' + r', $\Delta_{rs} = 1.0$',
-          fr'(F) ${delta_str} = {deltas[2]}$' + r', $\Delta_{rs} = 1.0$']
+titles = [fr'(E) ${delta_str} = {deltas[1]}$ mV' + r', $\Delta_{rs} = 1.0$ mV',
+          fr'(F) ${delta_str} = {deltas[2]}$ mV' + r', $\Delta_{rs} = 1.0$ mV']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
@@ -140,12 +153,12 @@ for i, (fre, title) in enumerate(zip(data, titles)):
     ax.set_xlabel('time (ms)')
     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
+    ax.set_ylabel(r'$r$ (Hz)')
     if i == len(data)-1:
         plt.legend(fre.columns.values)
         ax.set_yticks([0.0, 0.025, 0.05])
         ax.set_yticklabels(['0', '25', '50'])
     elif i == 0:
-        ax.set_ylabel(r'$r$ (Hz)')
         ax.set_yticks([0.0, 0.1, 0.2])
         ax.set_yticklabels(['0', '100', '200'])
 

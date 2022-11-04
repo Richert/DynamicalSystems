@@ -23,7 +23,7 @@ import numba as nb
 
 # model parameters
 Delta_rs = 0.5
-Delta_fs = 0.8
+Delta_fs = 0.4
 Delta_lts = 0.1
 
 # define inputs
@@ -43,7 +43,7 @@ I_l[int((cutoff+start+0.5*dur)/dt):int((cutoff+start+dur)/dt)] += 25.0
 ###############
 
 # initialize model
-path_to_yaml_config = "config/ik/eiic"
+path_to_yaml_config = "config/ik2/eiic"
 eic = CircuitTemplate.from_yaml(path_to_yaml_config)
 
 # update parameters (can also be used to alter the initial state of the system)
@@ -66,4 +66,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res, 'input': I_l}, open("results/eiic_fre_het.p", "wb"))
+pickle.dump({'results': res, 'input': I_l}, open("results/eiic_fre_hom.p", "wb"))

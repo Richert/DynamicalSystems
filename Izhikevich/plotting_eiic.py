@@ -19,7 +19,7 @@ fre_het = pickle.load(open(f"results/eiic_fre_het.p", "rb"))['results']
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
-# plt.rc('text', usetex=True)
+plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['figure.figsize'] = (12, 4.5)
@@ -66,16 +66,16 @@ line = a.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:hb2', ax=ax, l
                            line_color_unstable='#148F77', line_style_unstable='solid')
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
-# line = a.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:pd1', ax=ax, line_style_unstable='solid',
-#                            ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
-# line_data = line.get_paths()[0].vertices
-# plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
+line = a.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:pd1', ax=ax, line_style_unstable='solid',
+                           ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
+line_data = line.get_paths()[0].vertices
+plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=0.1, color='black', linestyle='--')
 ax.axhline(y=0.6, color='grey', linestyle='--')
 ax.axhline(y=1.8, color='grey', linestyle='--')
 ax.set_ylabel(r'$\Delta_{lts}$ (mV)')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(fr'(A) ${delta_str} = {deltas[0]}$')
+ax.set_title(fr'(A) ${delta_str} = {deltas[0]}$ mV')
 ax.set_ylim([0.0, 2.0])
 ax.set_xlim([70.0, 140.0])
 
@@ -102,7 +102,7 @@ ax.axhline(y=0.6, color='grey', linestyle='--')
 ax.axhline(y=1.8, color='grey', linestyle='--')
 ax.set_ylabel(r'$\Delta_{lts}$ (mV)')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(fr'(B) ${delta_str} = {deltas[-1]}$')
+ax.set_title(fr'(B) ${delta_str} = {deltas[-1]}$ mV')
 ax.set_ylim([0.0, 2.0])
 ax.set_xlim([70.0, 140.0])
 
@@ -121,9 +121,9 @@ ax.axvline(x=105.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=130.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
 ax.set_ylabel(r'$r_{lts}$ (Hz)')
-ax.set_title(fr'(C) ${delta_str} = {deltas[-1]}$' + r', $\Delta_{lts} = 0.1$')
+ax.set_title(fr'(C) ${delta_str} = {deltas[-1]}$ mV' + r', $\Delta_{lts} = 0.1$ mV')
 ax.set_xlim([70.0, 140.0])
-ax.set_ylim([0.0, 0.046])
+ax.set_ylim([-0.002, 0.046])
 ax.set_yticks([0.0, 0.02, 0.04])
 ax.set_yticklabels(['0', '20', '40'])
 
@@ -138,9 +138,9 @@ ax.axvline(x=105.0, color='grey', alpha=0.15, linestyle='--')
 ax.axvline(x=130.0, color='grey', alpha=0.3, linestyle='--')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
 ax.set_ylabel(r'$r_{lts}$ (Hz)')
-ax.set_title(fr'(D) ${delta_str} = {deltas[-2]}$' + r', $\Delta_{lts} = 0.1$')
+ax.set_title(fr'(D) ${delta_str} = {deltas[-2]}$ mV' + r', $\Delta_{lts} = 0.1$ mV')
 ax.set_xlim([70.0, 140.0])
-ax.set_ylim([0.0, 0.046])
+ax.set_ylim([-0.002, 0.046])
 ax.set_yticks([0.0, 0.02, 0.04])
 ax.set_yticklabels(['0', '20', '40'])
 
@@ -148,10 +148,10 @@ ax.set_yticklabels(['0', '20', '40'])
 #############
 
 data = [fre_hom, fre_het]
-titles = [r'(E) $\Delta_{fs} = 0.4$, $\Delta_{lts} = 0.1$', r'(F) $\Delta_{fs} = 0.8$, $\Delta_{lts} = 0.1$']
+titles = [r'(E) $\Delta_{fs} = 0.4$ mV, $\Delta_{lts} = 0.1$ mV',
+          r'(F) $\Delta_{fs} = 0.8$ mV, $\Delta_{lts} = 0.1$ mV']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
-    fre = fre*1e3
     ax.plot(fre)
     xmin = np.min(fre.values)
     xmax = np.max(fre.values)
@@ -160,9 +160,14 @@ for i, (fre, title) in enumerate(zip(data, titles)):
     ax.set_xlabel('time (ms)')
     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
+    ax.set_ylabel(r'$r$ (Hz)')
     if i == 0:
-        plt.legend(fre.columns.values, loc=2)
-        ax.set_ylabel(r'$r$ (Hz)')
+        ax.set_yticks([0.0, 0.07, 0.14])
+        ax.set_yticklabels(['0', '70', '140'])
+    elif i == len(data)-1:
+        plt.legend(fre.columns.values)
+        ax.set_yticks([0.0, 0.03, 0.06])
+        ax.set_yticklabels(['0', '30', '60'])
 
 # finishing touches
 ###################
