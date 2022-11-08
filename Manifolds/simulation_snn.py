@@ -1,7 +1,9 @@
-from rectipy import Network, random_connectivity
+import pandas as pd
+from rectipy import Network, random_connectivity, input_connections
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+
 # model definition
 ##################
 
@@ -12,8 +14,9 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 2.0
-eta = 40.0
+Delta = 0.5
+eta = 45.0
+sigma = 10.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -34,26 +37,32 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": 1
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 3000.0
+T = 10000.0
 dt = 1e-2
 steps = int(T/dt)
-I_ext = np.zeros((steps, 1))
+sampling_steps = 100
+I_ext = np.random.randn(steps, 1)*sigma*np.sqrt(dt)
+W_in = input_connections(N, 1, 1.0, variance=1.0, zero_mean=True)
 
 # initialize model
 net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.iku", weights=J, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", node_vars=node_vars,
                         op="iku_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt)
+net.add_input_layer(1, W_in, trainable=False)
 
 # simulation
 ############
 
 # simulation
-obs = net.run(inputs=I_ext, device="cpu", sampling_steps=100, record_output=True, record_vars=[("v", False)])
+obs = net.run(inputs=I_ext, device="cpu", sampling_steps=sampling_steps, record_output=True, record_vars=[("v", False)])
 
 # save results
-pickle.dump({"s": obs["out"], "v": obs["v"], "J": J, "etas": etas}, open("results/snn_autonomous.pkl", "wb"))
+inp = pd.DataFrame(index=obs["v"].index, data=I_ext[::sampling_steps, :])
+pickle.dump({"s": obs["out"], "v": obs["v"], "J": J, "etas": etas, "I_ext": inp, "W_in": W_in, "params": node_vars,
+             "dt": dt, "sr": sampling_steps, "v_reset": v_reset, "v_spike": v_spike},
+            open("results/snn_data.pkl", "wb"))
 
 # exemplary plotting
-s = obs["v"]
+s = obs["out"]
 plt.plot(s.mean(axis=1))
 plt.show()

@@ -32,7 +32,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['figure.figsize'] = (12, 9)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -43,6 +43,9 @@ alpha = 0.5
 ls = 'dotted'
 
 a.update_bifurcation_style("CP", color="k")
+a0.update_bifurcation_style("CP", color="k")
+a1.update_bifurcation_style("CP", color="k")
+a2.update_bifurcation_style("CP", color="k")
 
 ############
 # plotting #
@@ -64,15 +67,15 @@ ax.scatter(rnn_bfs['lp2'][::n_points, 0], rnn_bfs['lp2'][::n_points, 1], c='#5D6
 ax.scatter(rnn_bfs['hb1'][::n_points, 0], rnn_bfs['hb1'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 ax.scatter(rnn_bfs['hb2'][::n_points, 0], rnn_bfs['hb2'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 line1 = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["BT"])
 line2 = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["BT"])
 l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a0.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
-                            line_color_unstable='#148F77', line_style_unstable='solid')
+                            line_color_unstable='#148F77', line_style_unstable='solid', ignore=["BT"])
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
 ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
@@ -88,15 +91,15 @@ ax.scatter(rnn_bfs['lp2'][::n_points, 0], rnn_bfs['lp2'][::n_points, 1], c='#5D6
 ax.scatter(rnn_bfs['hb1'][::n_points, 0], rnn_bfs['hb1'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 ax.scatter(rnn_bfs['hb2'][::n_points, 0], rnn_bfs['hb2'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 line1 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E')
+                            line_color_unstable='#5D6D7E', ignore=["BT"])
 line2 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E')
+                            line_color_unstable='#5D6D7E', ignore=["BT"])
 l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
-                           line_color_unstable='#148F77')
+                           line_color_unstable='#148F77', ignore=["BT"])
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5)
 ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
@@ -112,15 +115,15 @@ ax.scatter(rnn2_bfs['lp2'][::n_points, 0], rnn2_bfs['lp2'][::n_points, 1], c='#5
 ax.scatter(rnn2_bfs['hb1'][::n_points, 0], rnn2_bfs['hb1'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 ax.scatter(rnn2_bfs['hb2'][::n_points, 0], rnn2_bfs['hb2'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 line1 = a1.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["BT"])
 line2 = a1.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["BT"])
 l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a1.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
-                            line_color_unstable='#148F77', line_style_unstable='solid')
+                            line_color_unstable='#148F77', line_style_unstable='solid', ignore=["BT"])
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
 ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
@@ -136,15 +139,15 @@ ax.scatter(rnn2_bfs['lp2'][::n_points, 0], rnn2_bfs['lp2'][::n_points, 1], c='#5
 ax.scatter(rnn2_bfs['hb1'][::n_points, 0], rnn2_bfs['hb1'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 ax.scatter(rnn2_bfs['hb2'][::n_points, 0], rnn2_bfs['hb2'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 line1 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E')
+                            line_color_unstable='#5D6D7E', ignore=["BT"])
 line2 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E')
+                            line_color_unstable='#5D6D7E', ignore=["BT"])
 l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
-                           line_color_unstable='#148F77')
+                           line_color_unstable='#148F77', ignore=["BT"])
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5,
                  edgecolor="none")
@@ -161,15 +164,15 @@ ax.scatter(rnn3_bfs['lp2'][::n_points, 0], rnn3_bfs['lp2'][::n_points, 1], c='#5
 ax.scatter(rnn3_bfs['hb1'][::n_points, 0], rnn3_bfs['hb1'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 ax.scatter(rnn3_bfs['hb2'][::n_points, 0], rnn3_bfs['hb2'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 line1 = a2.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["BT"])
 line2 = a2.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
-                             line_color_unstable='#5D6D7E', line_style_unstable='solid')
+                             line_color_unstable='#5D6D7E', line_style_unstable='solid', ignore=["BT"])
 l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a2.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
-                            line_color_unstable='#148F77', line_style_unstable='solid')
+                            line_color_unstable='#148F77', line_style_unstable='solid', ignore=["BT"])
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5, edgecolor="none")
 ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
@@ -185,15 +188,15 @@ ax.scatter(rnn3_bfs['lp2'][::n_points, 0], rnn3_bfs['lp2'][::n_points, 1], c='#5
 ax.scatter(rnn3_bfs['hb1'][::n_points, 0], rnn3_bfs['hb1'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 ax.scatter(rnn3_bfs['hb2'][::n_points, 0], rnn3_bfs['hb2'][::n_points, 1], c='#148F77', marker=marker, s=s, alpha=alpha)
 line1 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp1', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E')
+                            line_color_unstable='#5D6D7E', ignore=["BT"])
 line2 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:lp2', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E')
+                            line_color_unstable='#5D6D7E', ignore=["BT"])
 l1 = line1.get_paths()[0].vertices
 l2_tmp = line2.get_paths()[0].vertices
 l2 = np.interp(l1[:, 1], l2_tmp[:, 1], l2_tmp[:, 0])
 plt.fill_betweenx(y=l1[:, 1], x2=l1[:, 0], x1=l2, color='#5D6D7E', alpha=0.5)
 line = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:hb1', ax=ax, line_color_stable='#148F77',
-                           line_color_unstable='#148F77')
+                           line_color_unstable='#148F77', ignore=["BT"])
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#148F77', alpha=0.5,
                  edgecolor="none")
