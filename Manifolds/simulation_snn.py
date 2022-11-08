@@ -15,8 +15,8 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 0.5
-eta = 45.0
-sigma = 10.0
+eta = 50.0
+sigma = 5.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -42,7 +42,7 @@ dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 I_ext = np.random.randn(steps, 1)*sigma*np.sqrt(dt)
-W_in = input_connections(N, 1, 1.0, variance=1.0, zero_mean=True)
+W_in = input_connections(N, 1, 1.0, variance=2.0, zero_mean=False)
 
 # initialize model
 net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.iku", weights=J, source_var="s", target_var="s_in",
