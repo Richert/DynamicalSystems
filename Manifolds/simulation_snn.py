@@ -8,22 +8,22 @@ import pickle
 ##################
 
 # file name for saving
-fname = "snn_data3"
+fname = "snn_data5"
 
 # network parameters
 N = 1000
-p = 0.2
+p = 0.1
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
-eta = 50.0
-sigma = 10.0
+Delta = 2.0
+eta = 37.0
+sigma = 20.0
 a = 0.03
-b = -2.0
-d = 100.0
-g = 5.0
+b = -3.5
+d = 50.0
+g = 8.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -45,7 +45,7 @@ dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 I_ext = np.random.randn(steps, 1)*sigma*np.sqrt(dt)
-W_in = input_connections(N, 1, 1.0, variance=1.0, zero_mean=False)
+W_in = random_connectivity(N, 1, 0.2, normalize=False)
 
 # initialize model
 net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",

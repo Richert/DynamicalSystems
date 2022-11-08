@@ -10,7 +10,8 @@ plt.rc('text', usetex=True)
 # load data
 ###########
 
-data = pickle.load(open("results/snn_autonomous.pkl", "rb"))
+fname = "snn_data5"
+data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 etas = data["etas"]
 J = data["J"]
 CC = data["cc"]

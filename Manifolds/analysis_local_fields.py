@@ -11,7 +11,8 @@ plt.rc('text', usetex=True)
 # load data
 ###########
 
-data = pickle.load(open("results/snn_autonomous.pkl", "rb"))
+fname = "snn_data"
+data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 etas = data["etas"]
 J = data["J"]
 CC = data["cc"]
@@ -60,7 +61,7 @@ for i in range(N):
 data_normalized = {}
 predictors = ["J", "eta_diff", "field_diff", "field_kld"]
 for key, mat in zip(predictors + ["cc"], [J, eta_diff, field_diff, field_kld, CC]):
-    data_normalized[key] = normalize(mat, mode="minmax", row_wise=False)
+    data_normalized[key] = normalize(mat, mode="zscore", row_wise=True)
 
 # linear model
 ##############

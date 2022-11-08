@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 
 # load data
-fname = "snn_data3"
+fname = "snn_data5"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 I_ext = data["I_ext"].loc[:, 0]
 
