@@ -3,6 +3,7 @@ from rectipy import Network, random_connectivity, input_connections
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+from scipy.ndimage import gaussian_filter1d
 
 # model definition
 ##################
@@ -18,12 +19,11 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 2.0
-eta = 37.0
-sigma = 20.0
+eta = 40.0
 a = 0.03
-b = -3.5
-d = 50.0
-g = 8.0
+b = -2.0
+d = 150.0
+g = 20.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -40,12 +40,16 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": 1
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 10000.0
+T = 4000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
-I_ext = np.random.randn(steps, 1)*sigma*np.sqrt(dt)
-W_in = random_connectivity(N, 1, 0.2, normalize=False)
+in_start = int(1100.0/dt)
+sigma, amp = 200.0, 100.0
+I_ext = np.zeros((steps, 1))
+I_ext[in_start] = amp
+I_ext = gaussian_filter1d(I_ext, sigma=sigma, axis=0)
+W_in = input_connections(N, 1, 0.2, variance=5.0, zero_mean=False)
 
 # initialize model
 net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
@@ -57,15 +61,19 @@ net.add_input_layer(1, W_in, trainable=False)
 ############
 
 # simulation
-obs = net.run(inputs=I_ext, device="cpu", sampling_steps=sampling_steps, record_output=True, record_vars=[("v", False)])
+obs = net.run(inputs=I_ext, device="cpu", sampling_steps=sampling_steps, record_output=True)
 
 # save results
-inp = pd.DataFrame(index=obs["v"].index, data=I_ext[::sampling_steps, :])
-pickle.dump({"s": obs["out"], "v": obs["v"], "J": J, "etas": etas, "I_ext": inp, "W_in": W_in, "params": node_vars,
+inp = pd.DataFrame(index=obs["out"].index, data=I_ext[::sampling_steps, :])
+pickle.dump({"s": obs["out"], "J": J, "etas": etas, "I_ext": inp, "W_in": W_in, "params": node_vars,
              "dt": dt, "sr": sampling_steps, "v_reset": v_reset, "v_spike": v_spike},
             open(f"results/{fname}.pkl", "wb"))
 
 # exemplary plotting
 s = obs["out"]
-plt.plot(s.mean(axis=1))
+_, ax = plt.subplots()
+ax.plot(s.mean(axis=1), color="blue")
+ax2 = ax.twinx()
+ax2.plot(I_ext, color="orange")
+plt.legend(["s", "I_ext"])
 plt.show()

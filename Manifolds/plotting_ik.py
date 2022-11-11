@@ -5,19 +5,11 @@ import sys
 sys.path.append('../')
 import pickle
 import numpy as np
-from pandas import read_pickle
 
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 a = ODESystem.from_file(f"results/ik_bifs.pkl", auto_dir=auto_dir)
-
-# load simulation data
-fre = pickle.load(open("results/fre_results.p", "rb"))
-snn = pickle.load(open(f"results/rnn_results.p", "rb"))
-
-# load manifold deviation data
-# mf_data = read_pickle("results/manifold_results.p")
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -38,136 +30,49 @@ markersize = 6
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=3, ncols=6, figure=fig)
+grid = gridspec.GridSpec(nrows=4, ncols=2, figure=fig)
 
 # 2D continuation
 #################
 
-# 2D bifurcation diagram in I and g
-ax = fig.add_subplot(grid[0, :3])
-a.plot_continuation('PAR(5)', 'PAR(4)', cont=f'g/eta:lp1', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(5)', 'PAR(4)', cont=f'g/eta:lp2', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(5)', 'PAR(4)', cont=f'g/eta:hb1', ax=ax, line_color_stable='#148F77',
-                    line_color_unstable='#148F77')
-a.plot_continuation('PAR(5)', 'PAR(4)', cont=f'g/eta:hb2', ax=ax, line_color_stable='#148F77',
-                    line_color_unstable='#148F77')
-a.plot_continuation('PAR(5)', 'PAR(4)', cont=f'g/eta:hc1', ax=ax, line_style_stable='dotted')
-ax.set_xlabel(r'$\bar\eta$ (pA)')
-ax.set_ylabel(r'$g$ (nS)')
-ax.set_title('(A) 2D bifurcation diagram')
-ax.set_xlim([0.0, 100.0])
-ax.set_ylim([0.0, 30.0])
+# settings
+x_params = [("eta", 5), ("eta", 5)]
+y_params = [("g", 4), ("d", 16)]
+grid_locs = [grid[:2, 0], grid[:2, 1]]
+bfs = ["lp1", "lp2", "hb1"]
+colors = ['#5D6D7E', '#5D6D7E', '#148F77']
 
-# 2D bifurcation diagram in I and d
-ax = fig.add_subplot(grid[0, 3:])
-a.plot_continuation('PAR(5)', 'PAR(16)', cont=f'd/eta:lp1', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(5)', 'PAR(16)', cont=f'd/eta:lp2', ax=ax, line_color_stable='#5D6D7E',
-                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(5)', 'PAR(16)', cont=f'd/eta:hb1', ax=ax, line_color_stable='#148F77',
-                    line_color_unstable='#148F77')
-a.plot_continuation('PAR(5)', 'PAR(16)', cont=f'd/eta:hb2', ax=ax, line_color_stable='#148F77',
-                    line_color_unstable='#148F77')
-ax.set_xlabel(r'$\bar\eta$ (pA)')
-ax.set_ylabel(r'$d$ (pA)')
-ax.set_title('(B) 2D bifurcation diagram')
-#ax.set_xlim([0.0, 100.0])
-#ax.set_ylim([0.0, 100.0])
+# plotting
+for (x_key, x_idx), (y_key, y_idx), loc in zip(x_params, y_params, grid_locs):
+
+    ax = fig.add_subplot(loc)
+    for bf, c in zip(bfs, colors):
+        try:
+            a.plot_continuation(f'PAR({x_idx})', f'PAR({y_idx})', cont=f'{y_key}/{x_key}:{bf}', ax=ax,
+                                line_color_stable=c, line_color_unstable=c)
+        except KeyError:
+            pass
+    ax.set_xlabel(x_key)
+    ax.set_ylabel(y_key)
 
 # 1D continuations
 ##################
 
-# plot continuation in input current for high g
-ax = fig.add_subplot(grid[1, :3])
-a.plot_continuation('PAR(5)', 'U(1)', cont=f'eta:1', ax=ax, line_color_unstable='#5D6D7E')
-a.plot_continuation('PAR(5)', 'U(1)', cont=f'eta:1:lc', ax=ax, ignore=['BP'], line_color_stable='#148F77')
-for eta in snn['etas']:
-    ax.axvline(x=eta, color='blue', linestyle='--')
-ax.set_xlabel(r'$\bar\eta$ (pA)')
-ax.set_ylabel(r'$v$ (mV)')
-ax.set_title(r'(C) 1D bifurcation diagram for $g = 15$')
-#ax.set_ylim([-60.0, -36.0])
-ax.set_xlim([30.0, 80.0])
+# settings
+params = [("b", 9, 1), ("g", 4, 2), ("d", 16, 1), ("delta", 6, 1)]
+var = "U(1)"
+grid_locs = [grid[2, 0], grid[2, 1], grid[3, 0], grid[3, 1]]
 
-# plot continuation in input current for low g
-ax = fig.add_subplot(grid[1, 3:])
-a.plot_continuation('PAR(5)', 'U(1)', cont=f'eta:2', ax=ax, line_color_unstable='#5D6D7E')
-ax.set_xlabel(r'$\bar\eta$ (pA)')
-ax.set_ylabel(r'$v$ (mV)')
-ax.set_title(r'(D) 1D bifurcation diagram for $g = 15$')
-#ax.set_ylim([-60.0, -36.0])
-#ax.set_xlim([30.0, 80.0])
+# plotting
+for (param, idx, cont), loc in zip(params, grid_locs):
 
-# time series
-#############
-
-for i, (eta, snn_res) in enumerate(zip(snn['etas'], snn['results'])):
-
-    # extract relevant signals
-    snn_signal = np.squeeze(snn_res['v'])
-    idx = np.argmin(np.abs(fre['map'].loc[:, 'eta'] - eta))
-    fre_signal = fre['results']["v"][fre['map'].index[idx]]
-
-    # plot signals
-    ax = fig.add_subplot(grid[2, i*2:(i+1)*2])
-    ax.plot(fre_signal.index, snn_signal)
-    ax.plot(fre_signal)
-    ax.set_xlabel('time (ms)')
-    ax.set_ylim([-57.0, -38.0])
-    ax.set_title(rf'$\bar \eta = {eta}$')
-    if i == 0:
-        ax.set_ylabel('v (mV)')
-        plt.legend(['SNN', 'FRE'])
-
-# manifold deviation stuff
-##########################
-
-# plot deviation matrix
-# in_var_label = r"var(I_{ext})"
-# D = mf_data['D']
-# ax = fig.add_subplot(grid[2, :2])
-# ax.imshow(D, cmap='nipy_spectral')
-# ax.set_yticks(np.arange(0, D.shape[0]), labels=D.index)
-# ax.set_xticks(np.arange(0, D.shape[1]), labels=D.columns.values)
-# ax.set_ylabel(r'$p$')
-# ax.set_xlabel(rf"${in_var_label}$")
-#
-# # plot exemplary input distributions in network
-# dists = mf_data['dists']
-# cols = ['blue', 'orange', 'green']
-# lb, ub = -60.0, 60.0
-# n_bins = 50
-# ax1 = fig.add_subplot(grid[2, 2:4])
-# ax2 = fig.add_subplot(grid[2, 4:])
-# lines, legends = [], []
-# for l, (p, in_var_data) in enumerate(dists.items()):
-#
-#     # draw input distribution
-#     if p > 0.2:
-#         labels = []
-#         for i, (in_var, data) in enumerate(in_var_data.items()):
-#             idx = (data['dist'] >= lb) * (data['dist'] <= ub)
-#             ax1.hist(data['dist'][idx], bins=n_bins, density=True, histtype='step', color=cols[i])
-#             labels.append(in_var)
-#         plt.sca(ax1)
-#         plt.legend(labels, title=rf"${in_var_label}$")
-#         ax1.set_xlabel(r'$\bar \eta + I_{ext}$')
-#         ax1.set_ylabel('PDF')
-#         ax1.set_xlim([lb, ub])
-#         ax1.set_title(r'$p = 1.0$')
-#
-#     # plot exemplary local mean-field distributions
-#     else:
-#         for i, (in_var, data) in enumerate(in_var_data.items()):
-#             d = data['dist'][data['s1']]
-#             idx = (d >= lb) * (d <= ub)
-#             ax2.hist(d[idx], bins=n_bins, density=True, histtype='step', color=cols[i])
-#             ax2.set_xlim([-60, 60])
-#             ax2.set_xlabel(r'$\bar \eta + I_{ext}$')
-#             ax2.set_ylabel('PDF')
-#             ax2.set_title(rf'$p = {p}$')
+    ax = fig.add_subplot(loc)
+    try:
+        a.plot_continuation(f'PAR({idx})', var, cont=f'{param}:{cont}', ax=ax)
+    except KeyError:
+        pass
+    ax.set_xlabel(param)
+    ax.set_ylabel(var)
 
 # finishing touches
 ###################

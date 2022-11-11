@@ -14,6 +14,7 @@ I_ext = data["I_ext"].loc[:, 0]
 # create time vector
 dt = data["dt"]
 time = (I_ext.index - np.min(I_ext.index)) * dt
+#I_ext = np.random.randn(I_ext.shape[0])
 
 # create target data
 taus = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0]
@@ -28,7 +29,7 @@ for tau in taus:
 #############################################
 
 # training procedure
-cutoff = 1000
+cutoff = 500
 plot_length = 1000
 s = data["s"].iloc[cutoff:-cutoff, :]
 scores = []

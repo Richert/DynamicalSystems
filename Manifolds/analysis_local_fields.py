@@ -11,7 +11,7 @@ plt.rc('text', usetex=True)
 # load data
 ###########
 
-fname = "snn_data"
+fname = "snn_data5"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 etas = data["etas"]
 J = data["J"]

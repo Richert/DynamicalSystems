@@ -154,8 +154,8 @@ for i, (fre, title) in enumerate(zip(data, titles)):
     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
     ax.set_ylabel(r'$r$ (Hz)')
+    plt.legend(fre.columns.values)
     if i == len(data)-1:
-        plt.legend(fre.columns.values)
         ax.set_yticks([0.0, 0.025, 0.05])
         ax.set_yticklabels(['0', '25', '50'])
     elif i == 0:
