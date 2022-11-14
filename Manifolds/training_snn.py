@@ -2,6 +2,7 @@ from rectipy import readout
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+from scipy.ndimage import gaussian_filter1d
 
 # load data
 fname = "snn_data5"
@@ -17,30 +18,32 @@ time = (I_ext.index - np.min(I_ext.index)) * dt
 #I_ext = np.random.randn(I_ext.shape[0])
 
 # create target data
-taus = [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0]
-epsilon = 1e-5
+taus = [1100.0, 1200.0, 1400.0, 1800.0, 2600.0]
+steps = int(I_ext.shape[0]/dt)
+sigma, amp = 200.0, np.max(I_ext)
 targets = []
 for tau in taus:
-    kernel_length = - int(tau * np.log(epsilon))
-    kernel = np.exp(-time[:kernel_length]/tau)
-    targets.append(np.convolve(I_ext, kernel, mode="same"))
+    I_tmp = np.zeros((steps, 1))
+    I_tmp[int(tau/dt)] = amp
+    I_tmp = gaussian_filter1d(I_tmp, sigma=sigma, axis=0)
+    targets.append(I_tmp[::100])
 
 # perform readout for each set of target data
 #############################################
 
 # training procedure
-cutoff = 500
-plot_length = 1000
-s = data["s"].iloc[cutoff:-cutoff, :]
+cutoff = 1000
+plot_length = 2000
+s = data["s"].iloc[cutoff:, :]
 scores = []
 for tau, target in zip(taus, targets):
 
     # ridge regression
-    res = readout(s, target[cutoff:-cutoff])
+    res = readout(s, target[cutoff:])
 
     # plotting
-    plt.plot(res["target"][-plot_length:], color="black", linestyle="dashed")
-    plt.plot(res["prediction"][-plot_length:], color="orange")
+    plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
+    plt.plot(res["prediction"][:plot_length], color="orange")
     plt.legend(["target", "prediction"])
     plt.title(f"tau = {tau}, score = {res['train_score']}")
     plt.show()

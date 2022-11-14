@@ -1,15 +1,18 @@
 import pickle
 import matplotlib.pyplot as plt
 from pyrecu import cross_corr, modularity
+from scipy.spatial.distance import pdist, squareform
+import numpy as np
 
 # load data
-fname = "snn_data5"
+fname = "snn_data2"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 
 # calculate cross-correlation between time series
 cutoff = 1000
 var = "s"
 cc = cross_corr(len(data["etas"]), signals=data[var].iloc[cutoff:, :].values.T, method="fft")
+#cc = squareform(pdist(data[var].iloc[cutoff:, :].values.T, metric="euclidean"))
 
 # saving
 data["cc"] = cc
