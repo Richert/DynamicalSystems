@@ -13,21 +13,13 @@ I_ext = data["I_ext"].loc[:, 0]
 # create target data for different taus
 #######################################
 
-# create time vector
-dt = data["dt"]
-time = (I_ext.index - np.min(I_ext.index)) * dt
-#I_ext = np.random.randn(I_ext.shape[0])
-
 # create target data
-taus = [1100.0, 1400.0, 1700.0, 2000.0, 2300.0, 2600.0, 2900.0]
-steps = int(I_ext.shape[0]/dt)
-sigma, amp = 200.0, np.max(I_ext)
+taus = [2.0, 4.0, 8.0, 16.0]
+steps = int(I_ext.shape[0]/data["dt"])
 targets = []
 for tau in taus:
-    I_tmp = np.zeros((steps, 1))
-    I_tmp[int(tau/dt)] = amp
-    I_tmp = gaussian_filter1d(I_tmp, sigma=sigma, axis=0)
-    targets.append(I_tmp[::100])
+    I_tmp = gaussian_filter1d(I_ext, sigma=tau, axis=0)
+    targets.append(I_tmp)
 
 # perform readout for each set of target data
 #############################################
@@ -46,15 +38,15 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(taus, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:])
-        scores.iloc[i, j] = res['train_score']
+        res = readout(s, target[cutoff:], train_split=2500)
+        scores.iloc[i, j] = res['test_score']
 
         # plotting
-        # plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
-        # plt.plot(res["prediction"][:plot_length], color="orange")
-        # plt.legend(["target", "prediction"])
-        # plt.title(f"tau = {tau}, score = {res['train_score']}")
-        # plt.show()
+        plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
+        plt.plot(res["prediction"][:plot_length], color="orange")
+        plt.legend(["target", "prediction"])
+        plt.title(f"tau = {tau}, score = {res['test_score']}")
+        plt.show()
 
 # save data to file
 data["taus"] = taus

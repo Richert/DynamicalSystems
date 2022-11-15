@@ -9,11 +9,11 @@ from scipy.ndimage import gaussian_filter1d
 ##################
 
 # file name for saving
-fname = "snn_data2"
+fname = "snn_data"
 
 # network parameters
 N = 1000
-p = 0.1
+p = 0.05
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -23,7 +23,7 @@ eta = 60.0
 a = 0.03
 b = -2.0
 d = 100.0
-g = 15.0
+g = 5.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -49,11 +49,11 @@ sigma, amp = 10.0, 100.0
 I_ext = np.random.uniform(low=0, high=1.0, size=(steps, 1)) * amp #np.zeros((steps, 1))
 # I_ext[in_start] = amp
 # I_ext = gaussian_filter1d(I_ext, sigma=sigma, axis=0)
-W_in = input_connections(N, 1, 0.2, variance=sigma, zero_mean=False)
+W_in = input_connections(N, 1, 0.5, variance=sigma, zero_mean=False)
 
 # parameter sweep definition
-param = "g"
-values = np.linspace(2.0, 20.0, num=7)
+param = "eta"
+values = np.linspace(30.0, 70.0, num=7)
 
 # simulation
 ############
