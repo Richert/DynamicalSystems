@@ -2,7 +2,27 @@ from rectipy import readout
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, hilbert
+from scipy.optimize import minimize
+
+
+def gaussian(x, mu: float = 0.0, sigma: float = 1.0):
+    return np.exp(-0.5*((x - mu)/sigma)**2)
+
+
+def rmse(x: np.ndarray, y: np.ndarray):
+    diff = x - y
+    return np.sqrt((diff @ diff.T)/diff.shape[0])
+
+
+def fit_gaussian(sigma: float, x: np.ndarray):
+    y_coords = np.arange(x.shape[0])
+    center = int(x.shape[0]/2)
+    y_coords -= center
+    y_coords[center:] += 1
+    y = gaussian(y_coords, sigma=sigma)
+    y /= np.max(y)
+    return rmse(x, y)
 
 
 def get_kernel(X: np.ndarray, alpha: float = 1e-12):
@@ -12,42 +32,62 @@ def get_kernel(X: np.ndarray, alpha: float = 1e-12):
     return X @ np.linalg.inv(X_t @ X + alpha*np.eye(X.shape[1])) @ X_t
 
 
-def get_kernel_width(x: np.ndarray, **kwargs):
-    peaks, props = find_peaks(x, **kwargs)
-    plt.plot(x)
-    plt.vlines(peaks, ymin=np.min(x), ymax=np.max(x), color='orange', linestyle='dashed')
-    plt.show()
-    h = props["peak_heights"]
-    idx = np.argsort(h)
-    return np.abs(peaks[idx[-1]] - peaks[idx[-2]])/(h[idx[-1]] - h[idx[-2]])
+def get_kernel_peaks(K: np.ndarray, **kwargs):
+    x = K[::-1, :][np.eye(K.shape[0]) > 0]
+    kmax = np.max(x)
+    if kmax <= 0:
+        return 0
+    x /= np.max(x)
+    center = int(len(x) / 2) - 1
+    p, _ = find_peaks(x[:center], **kwargs)
+    return len(p)/center
+
+
+def get_kernel_var(K: np.ndarray):
+    x = K[::-1, :][np.eye(K.shape[0]) > 0]
+    kmax = np.max(x)
+    if kmax <= 0:
+        return 0
+    x /= np.max(x)
+    center = int(len(x)/2) - 1
+    return np.var(x[:center])
+
+
+def get_kernel_width(K: np.ndarray, **kwargs):
+    x = K[::-1, :][np.eye(K.shape[0]) > 0]
+    kmax = np.max(x)
+    if kmax <= 0:
+        return 0
+    # x_hil = hilbert(x)
+    # x_env = np.abs(x_hil)
+    x /= np.max(x)
+    res = minimize(fit_gaussian, x0=np.asarray([1.0]), args=(x,), **kwargs)
+    return res.x[0]*res.fun
 
 
 # load data
-fname = "snn_data"
+fname = "snn_data2"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 
 # get system dynamics kernel matrix
 ###################################
 
 cutoff = 1000
-kernels, kernel_widths = [], []
+kernels, peaks, vars, widths = [], [], [], []
 for d in data["s"]:
 
     X = d.iloc[cutoff:, :].values
     K = get_kernel(X)
-    off_diag = K[::-1, :][np.eye(K.shape[0]) > 0]
-    kmax = np.max(off_diag)
-    if kmax > 0:
-        off_diag /= kmax
-        kernel_width = get_kernel_width(off_diag[:1515], height=0.2, prominence=0.2)
-    else:
-        kernel_width = 0
+    peaks.append(get_kernel_peaks(K, prominence=0.4, height=0.4))
+    vars.append(get_kernel_var(K))
+    widths.append(get_kernel_width(K))
     kernels.append(K)
-    kernel_widths.append(kernel_width)
 
 # save data to file
 data["K"] = kernels
-data["K_widths"] = kernel_widths
+data["K_peaks"] = peaks
+data["K_var"] = vars
+data["K_width"] = widths
 pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
 
 # plotting

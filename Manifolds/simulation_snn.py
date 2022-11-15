@@ -9,7 +9,7 @@ from scipy.ndimage import gaussian_filter1d
 ##################
 
 # file name for saving
-fname = "snn_data"
+fname = "snn_data2"
 
 # network parameters
 N = 1000
@@ -19,7 +19,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 2.0
-eta = 46.0
+eta = 60.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -45,15 +45,15 @@ dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 in_start = int(1100.0/dt)
-sigma, amp = 200.0, 100.0
-I_ext = np.zeros((steps, 1))
-I_ext[in_start] = amp
-I_ext = gaussian_filter1d(I_ext, sigma=sigma, axis=0)
-W_in = input_connections(N, 1, 0.2, variance=5.0, zero_mean=False)
+sigma, amp = 10.0, 100.0
+I_ext = np.random.uniform(low=0, high=1.0, size=(steps, 1)) * amp #np.zeros((steps, 1))
+# I_ext[in_start] = amp
+# I_ext = gaussian_filter1d(I_ext, sigma=sigma, axis=0)
+W_in = input_connections(N, 1, 0.2, variance=sigma, zero_mean=False)
 
 # parameter sweep definition
-param = "eta"
-values = np.linspace(30.0, 70.0, num=5)
+param = "g"
+values = np.linspace(2.0, 20.0, num=7)
 
 # simulation
 ############
@@ -87,7 +87,4 @@ for idx in [0, 2, 4]:
     s = results[idx]
     _, ax = plt.subplots()
     ax.plot(s.mean(axis=1), color="blue")
-    ax2 = ax.twinx()
-    ax2.plot(I_ext, color="orange")
-    plt.legend(["s", "I_ext"])
     plt.show()
