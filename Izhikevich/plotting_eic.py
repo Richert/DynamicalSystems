@@ -87,8 +87,8 @@ line4 = a.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax=ax, 
                            ignore=['LP'], line_color_stable='#4287f5', line_color_unstable='#4287f5')
 line_data = line4.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
-ax.axhline(y=deltas[0], color='black', linestyle='--')
 ax.axhline(y=deltas[1], color='black', linestyle='--')
+ax.axhline(y=deltas[2], color='black', linestyle='--')
 points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
 gh, cp = points[5], points[0]
 plt.legend([line1, line3, line4] + [gh, cp, bt],
