@@ -6,7 +6,7 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = "snn_data2"
+fname = "snn_data"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 I_ext = data["I_ext"].loc[:, 0]
 
@@ -38,7 +38,7 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(taus, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], train_split=2500)
+        res = readout(s, target[cutoff:], train_split=8000)
         scores.iloc[i, j] = res['test_score']
 
         # plotting

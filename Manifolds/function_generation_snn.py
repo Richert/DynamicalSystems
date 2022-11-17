@@ -66,7 +66,7 @@ def get_kernel_width(K: np.ndarray, **kwargs):
 
 
 # load data
-fname = "snn_data2"
+fname = "snn_data"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 
 # get system dynamics kernel matrix
