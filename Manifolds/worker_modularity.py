@@ -8,6 +8,7 @@ from typing import Union, Callable
 import pickle
 import sys
 from scipy.stats import cauchy
+from scipy.ndimage import gaussian_filter1d
 
 
 # function definitions
@@ -48,7 +49,7 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 # parameter definition
 ######################
 
-cond = 10 #int(sys.argv[1])
+cond = int(sys.argv[1])
 deltas = np.arange(0.2, 4.0, 0.2)
 
 # model parameters
@@ -81,9 +82,9 @@ u_init = np.zeros((2*N+1,))
 u_init[:N] -= v_r
 
 # define inputs
-m = 2
-in_var = 10.0
-inp = np.zeros((m, int(T/dt)))
+#in_var = 50.0
+inp = np.zeros((int(T/dt),)) #* in_var
+#inp = gaussian_filter1d(inp, sigma=100.0)
 
 # define outputs
 outputs = {'v': {'idx': np.arange(0, N), 'avg': False}}
@@ -109,18 +110,13 @@ for _ in range(n_reps):
     # sample random connectivity matrix
     W = random_connectivity(N, p)
 
-    # sample random input weights
-    W_in = np.random.randn(N, m) * in_var
-    for i in range(m):
-        W_in[:, i] -= np.sum(W_in[:, i])
-
     # initialize model
     func_args = (eta, v_r, theta_dist, k, E_r, C, g, tau_s, b, a, d)
     model = RNN(N, 2*N+1, ik, func_args + (W,), ik_spike_reset, callback_args, u_init=u_init)
 
     # run simulation
     res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=T_cutoff, solver='heun', decorator=nb.njit,
-                    fastmath=True, inp=inp, W_in=W_in)
+                    fastmath=True, inp=inp)
 
     # modularity calculation
     ########################
@@ -143,7 +139,6 @@ for _ in range(n_reps):
 
     results['v'].append(comp_signal)
     results['W'].append(W)
-    results['W_in'].append(W_in)
     results['modules'].append(modules)
     results['adjacency'].append(A)
     results['nodes'].append(nodes)
