@@ -65,6 +65,10 @@ def get_kernel_width(K: np.ndarray, **kwargs):
     return res.x[0]*res.fun
 
 
+def get_kernel_diff(K: np.ndarray, **kwargs):
+    return np.mean(K - np.eye(K.shape[0]))
+
+
 # load data
 fname = "snn_data"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
@@ -73,7 +77,7 @@ data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 ###################################
 
 cutoff = 1000
-kernels, peaks, vars, widths = [], [], [], []
+kernels, peaks, vars, widths, diffs = [], [], [], [], []
 for d in data["s"]:
 
     X = d.iloc[cutoff:, :].values
@@ -81,6 +85,7 @@ for d in data["s"]:
     peaks.append(get_kernel_peaks(K, prominence=0.4, height=0.4))
     vars.append(get_kernel_var(K))
     widths.append(get_kernel_width(K))
+    diffs.append(get_kernel_diff(K))
     kernels.append(K)
 
 # save data to file
@@ -88,6 +93,7 @@ data["K"] = kernels
 data["K_peaks"] = peaks
 data["K_var"] = vars
 data["K_width"] = widths
+data["K_diff"] = diffs
 pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
 
 # plotting

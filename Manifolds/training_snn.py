@@ -42,11 +42,11 @@ for i, signal in enumerate(data["s"]):
         scores.iloc[i, j] = res['test_score']
 
         # plotting
-        plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
-        plt.plot(res["prediction"][:plot_length], color="orange")
-        plt.legend(["target", "prediction"])
-        plt.title(f"tau = {tau}, score = {res['test_score']}")
-        plt.show()
+        # plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
+        # plt.plot(res["prediction"][:plot_length], color="orange")
+        # plt.legend(["target", "prediction"])
+        # plt.title(f"tau = {tau}, score = {res['test_score']}")
+        # plt.show()
 
 # save data to file
 data["taus"] = taus
@@ -70,15 +70,15 @@ plt.colorbar(im, ax=ax)
 
 # average training scores vs. kernel peaks
 ax = axes[0, 1]
-k = data["K_peaks"]
+k = data["K_diff"]
 ax.plot(k, color="blue")
 ax2 = ax.twinx()
 ax2.plot(np.mean(scores.values, axis=1), color="orange")
 ax.set_xlabel(var)
 ax.set_xticks(np.arange(len(params)), labels=params)
-ax.set_ylabel("peaks", color="blue")
+ax.set_ylabel("diff", color="blue")
 ax2.set_ylabel("score", color="orange")
-ax.set_title("kernel peaks vs. training score")
+ax.set_title("kernel diff vs. training score")
 
 # average training scores vs. kernel variance
 ax = axes[1, 0]
