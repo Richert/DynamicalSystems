@@ -50,7 +50,7 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 ######################
 
 cond = int(sys.argv[1])
-deltas = np.arange(0.2, 4.0, 0.2)
+deltas = np.arange(0.2, 4.1, 0.2)
 
 # model parameters
 C = 100.0
