@@ -55,5 +55,5 @@ a.run(starting_point='LP2', c='qif2', ICP=[6, 16], name='D/I:lp2', origin=f'I:{t
 
 # save results
 fname = '../results/rs.pkl'
-kwargs = {'D': vals, 'target': target}
+kwargs = {'deltas': vals, 'target': target}
 a.to_file(fname, **kwargs)

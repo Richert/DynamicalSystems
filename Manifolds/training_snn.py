@@ -42,11 +42,11 @@ for i, signal in enumerate(data["s"]):
         scores.iloc[i, j] = res['test_score']
 
         # plotting
-        plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
-        plt.plot(res["prediction"][:plot_length], color="orange")
-        plt.legend(["target", "prediction"])
-        plt.title(f"tau = {tau}, score = {res['test_score']}")
-        plt.show()
+        # plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
+        # plt.plot(res["prediction"][:plot_length], color="orange")
+        # plt.legend(["target", "prediction"])
+        # plt.title(f"tau = {tau}, score = {res['test_score']}")
+        # plt.show()
 
 # save data to file
 data["taus"] = taus

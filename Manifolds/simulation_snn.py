@@ -13,7 +13,7 @@ fname = "snn_data"
 
 # network parameters
 N = 1000
-p = 0.05
+p = 0.1
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -23,7 +23,7 @@ eta = 60.0
 a = 0.03
 b = -2.0
 d = 100.0
-g = 8.0
+g = 20.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -45,14 +45,14 @@ dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 in_start = int(1100.0/dt)
-sigma, amp = 100.0, 20.0
+sigma, amp = 100.0, 100.0
 I_ext = np.random.uniform(low=-1.0, high=1.0, size=(steps, 1)) * amp
 I_ext[:, 0] = gaussian_filter1d(I_ext[:, 0], sigma=sigma, axis=0)
 W_in = input_connections(N, 1, 0.5, variance=5.0, zero_mean=False)
 
 # parameter sweep definition
 param = "eta"
-values = np.linspace(30.0, 70.0, num=7)
+values = np.linspace(20.0, 50.0, num=7)
 
 # simulation
 ############
