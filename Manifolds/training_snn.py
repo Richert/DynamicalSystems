@@ -38,7 +38,7 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(taus, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], train_split=2500)
+        res = readout(s, target[cutoff:], train_split=8000)
         scores.iloc[i, j] = res['test_score']
 
         # plotting
@@ -70,15 +70,15 @@ plt.colorbar(im, ax=ax)
 
 # average training scores vs. kernel peaks
 ax = axes[0, 1]
-k = data["K_peaks"]
+k = data["K_diff"]
 ax.plot(k, color="blue")
 ax2 = ax.twinx()
 ax2.plot(np.mean(scores.values, axis=1), color="orange")
 ax.set_xlabel(var)
 ax.set_xticks(np.arange(len(params)), labels=params)
-ax.set_ylabel("peaks", color="blue")
+ax.set_ylabel("diff", color="blue")
 ax2.set_ylabel("score", color="orange")
-ax.set_title("kernel peaks vs. training score")
+ax.set_title("kernel diff vs. training score")
 
 # average training scores vs. kernel variance
 ax = axes[1, 0]
