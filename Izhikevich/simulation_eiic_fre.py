@@ -24,11 +24,11 @@ import numba as nb
 # model parameters
 Delta_rs = 0.5
 Delta_fs = 0.4
-Delta_lts = 0.1
+Delta_lts = 0.6
 
 # define inputs
-T = 4000.0
-cutoff = 1000.0
+T = 5000.0
+cutoff = 2000.0
 start = 500.0
 dur = 2000.0
 dt = 1e-3
@@ -66,4 +66,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res, 'input': I_l}, open("results/eiic_fre_hom.p", "wb"))
+pickle.dump({'results': res, 'input': I_l}, open("results/eiic_fre_het2.p", "wb"))

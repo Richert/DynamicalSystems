@@ -18,7 +18,7 @@ a_3pop = ODESystem.from_file(f"results/eiic.pkl", auto_dir=auto_dir)
 fre_2pop_hom = pickle.load(open(f"results/eic_fre_hom.p", "rb"))['results']
 fre_2pop_het = pickle.load(open(f"results/eic_fre_het.p", "rb"))['results']
 fre_3pop_hom = pickle.load(open(f"results/eiic_fre_hom.p", "rb"))['results']
-fre_3pop_het = pickle.load(open(f"results/eiic_fre_het.p", "rb"))['results']
+fre_3pop_het = pickle.load(open(f"results/eiic_fre_het2.p", "rb"))['results']
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -26,7 +26,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 4.5)
+plt.rcParams['figure.figsize'] = (12, 5.5)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -60,8 +60,8 @@ ax.set_yticks([0.0, 0.01, 0.02, 0.03, 0.04])
 ax.set_yticklabels(['0', '10', '20', '30', '40'])
 ax.set_xlabel(r'$I$ (pA)')
 ax.set_ylabel(r'$r$ (Hz)')
-ax.set_title(r'(A) RS')
-plt.legend(handles=lines, labels=[D for D in deltas_1pop], title=r"$\Delta_v$ (mV)", loc=2)
+ax.set_title(r'(A) regular spiking neurons')
+plt.legend(handles=lines, labels=[D for D in deltas_1pop], title=r"$\Delta_v$ (mV)", loc=1)
 
 # RS-FS
 deltas_2pop = a_2pop.additional_attributes["deltas"]
@@ -83,15 +83,14 @@ line4 = a_2pop.plot_continuation('PAR(36)', 'PAR(30)', cont=f'D_fs/I_fs:pd1', ax
 line_data = line4.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=deltas_2pop[1], color='black', linestyle='--')
+plt.text(25.0, deltas_2pop[1]+0.02, "D")
 ax.axhline(y=deltas_2pop[2], color='black', linestyle='--')
+plt.text(25.0, deltas_2pop[2]+0.02, "E")
 points = [c for c in ax.collections if c.get_offsets().data.shape[0] == 1]
 gh, cp = points[5], points[0]
-plt.legend([line1, line3, line4] + [gh, cp],
-           ["Fold", "Andronov-Hopf", "Period Doubling", "Generalized Hopf", "Cusp"],
-           loc=1)
 ax.set_ylabel(r'$\Delta_{fs}$ (mV)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title('(B) RS-FS, $\Delta_{rs} = 1.0$ mV')
+ax.set_title('(B) rs+fs, $\Delta_{rs} = 1.0$ mV')
 ax.set_ylim([0.0, 1.0])
 ax.set_xlim([20.0, 80.0])
 
@@ -124,21 +123,25 @@ line = a_3pop.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:pd1', ax=
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=0.1, color='black', linestyle='--')
+plt.text(75.0, 0.12, "F")
 ax.axhline(y=0.6, color='grey', linestyle='--')
-ax.axhline(y=1.8, color='grey', linestyle='--')
+plt.text(75.0, 0.62, "G")
 ax.set_ylabel(r'$\Delta_{lts}$ (mV)')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(fr'(A) RS-FS-LTS, ${delta_str} = {deltas_3pop[0]}$ mV, ' + r'$\Delta_{rs} = 1.0$')
+ax.set_title(fr'(C) rs+fs+lts, ${delta_str} = {deltas_3pop[0]}$ mV, ' + r'$\Delta_{rs} = 1.0$')
 ax.set_ylim([0.0, 2.0])
 ax.set_xlim([70.0, 140.0])
+plt.legend([line1, line3, line4] + [gh, cp],
+           ["Fold", "Andronov-Hopf", "Period Doubling", "Generalized Hopf", "Cusp"],
+           loc=1)
 
 # time series
 #############
 
 # RS-FS
 data = [fre_2pop_hom, fre_2pop_het]
-titles = [fr'(E) ${delta_str} = {deltas_2pop[1]}$ mV' + r', $\Delta_{rs} = 1.0$ mV',
-          fr'(F) ${delta_str} = {deltas_2pop[2]}$ mV' + r', $\Delta_{rs} = 1.0$ mV']
+titles = [fr'(D) ${delta_str} = {deltas_2pop[1]}$ mV',
+          fr'(E) ${delta_str} = {deltas_2pop[2]}$ mV']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
@@ -150,7 +153,7 @@ for i, (fre, title) in enumerate(zip(data, titles)):
     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
     ax.set_ylabel(r'$r$ (Hz)')
-    plt.legend(fre.columns.values)
+    plt.legend(fre.columns.values, loc=2)
     if i == len(data)-1:
         ax.set_yticks([0.0, 0.025, 0.05])
         ax.set_yticklabels(['0', '25', '50'])
@@ -160,11 +163,12 @@ for i, (fre, title) in enumerate(zip(data, titles)):
 
 # RS-FS-LTS
 data = [fre_3pop_hom, fre_3pop_het]
-titles = [r'(E) $\Delta_{fs} = 0.4$ mV, $\Delta_{lts} = 0.1$ mV',
-          r'(F) $\Delta_{fs} = 0.8$ mV, $\Delta_{lts} = 0.1$ mV']
+titles = [r'(F) $\Delta_{lts} = 0.1$ mV',
+          r'(G) $\Delta_{lts} = 0.6$ mV']
+time = fre_3pop_hom.index
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[3, i*3:(i+1)*3])
-    ax.plot(fre)
+    ax.plot(time, fre)
     xmin = np.min(fre.values)
     xmax = np.max(fre.values)
     plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=1500, x2=2500.0, color='grey', alpha=0.15)
@@ -177,9 +181,9 @@ for i, (fre, title) in enumerate(zip(data, titles)):
         ax.set_yticks([0.0, 0.07, 0.14])
         ax.set_yticklabels(['0', '70', '140'])
     elif i == len(data)-1:
-        plt.legend(fre.columns.values)
-        ax.set_yticks([0.0, 0.03, 0.06])
-        ax.set_yticklabels(['0', '30', '60'])
+        ax.set_yticks([0.0, 0.06, 0.12])
+        ax.set_yticklabels(['0', '60', '120'])
+    plt.legend(fre.columns.values, loc=2)
 
 # finishing touches
 ###################

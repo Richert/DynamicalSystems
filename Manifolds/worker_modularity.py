@@ -50,14 +50,14 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 ######################
 
 cond = int(sys.argv[1])
-deltas = np.arange(0.2, 4.1, 0.2)
+ps = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
 
 # model parameters
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = deltas[cond]
+Delta = 2.0
 eta = 40.0
 a = 0.03
 b = -2.0
@@ -68,7 +68,7 @@ tau_s = 6.0
 v_spike = 1000.0
 v_reset = -1000.0
 N = 1000
-p = 0.1
+p = ps[cond]
 
 # simulation parameters
 T_cutoff = 1000.0
@@ -116,7 +116,7 @@ for _ in range(n_reps):
 
     # run simulation
     res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, cutoff=T_cutoff, solver='heun', decorator=nb.njit,
-                    fastmath=True, inp=inp)
+                    fastmath=True, verbose=False)
 
     # modularity calculation
     ########################
@@ -150,11 +150,11 @@ for _ in range(n_reps):
     print(f'Number of modules: {len(modules)}')
 
     # plotting
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
-    for neuron in [300, 500, 700]:
-        ax.plot(z)
-    plt.show()
+    # import matplotlib.pyplot as plt
+    # fig, ax = plt.subplots()
+    # for neuron in [300, 500, 700]:
+    #     ax.plot(z)
+    # plt.show()
 
 # save results
-pickle.dump(results, open(f"/projects/p31302/richard/results/rnn_{cond}.p", "wb"))
+pickle.dump(results, open(f"/projects/p31302/richard/results/rnn_het_{cond}.p", "wb"))
