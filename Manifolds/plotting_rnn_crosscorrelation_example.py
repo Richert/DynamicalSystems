@@ -9,7 +9,7 @@ data = pickle.load(open(f"results/rnn_simulations/{fn}.p", "rb"))
 
 # calculate crosscorrelation
 eta = 70
-n = np.argmin(np.abs(data['etas']-eta))
+n = np.argmin(np.abs(np.asarray(data['etas'])-eta))
 state_var = "s"
 indices = [100, 600]
 cc = correlate(data['results'][n][state_var][:, indices[0]], data['results'][n][state_var][:, indices[1]], method='fft',
