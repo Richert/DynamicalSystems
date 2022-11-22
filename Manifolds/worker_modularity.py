@@ -49,7 +49,8 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 ######################
 
 cond = int(sys.argv[1])
-ps = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
+m = 7
+ps = 1/2**np.arange(m)
 
 # model parameters
 C = 100.0

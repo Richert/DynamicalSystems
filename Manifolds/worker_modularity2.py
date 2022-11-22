@@ -3,7 +3,7 @@ nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
 import numpy as np
 from pyrecu.neural_models import ik_spike_reset
-from pyrecu import RNN, random_connectivity, modularity
+from pyrecu import RNN, random_connectivity, modularity, sort_via_modules
 from typing import Union, Callable
 import pickle
 import sys
@@ -49,7 +49,8 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 ######################
 
 cond = int(sys.argv[1])
-ps = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
+m = 7
+ps = 1/2**np.arange(m)
 
 # model parameters
 C = 100.0
@@ -57,7 +58,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 0.2
-eta = 45.0
+eta = 40.0
 a = 0.03
 b = -2.0
 d = 10.0
@@ -79,7 +80,8 @@ dts = 2e-1
 # initial state
 u_init = np.zeros((2*N+1,))
 u_init[:N] -= v_t + 10.0
-u_init[N:2*N] = 0.5
+u_init[N] = 0.5
+u_init[N:] = 0.01
 
 # define inputs
 #in_var = 50.0
@@ -87,7 +89,7 @@ u_init[N:2*N] = 0.5
 #inp = gaussian_filter1d(inp, sigma=100.0)
 
 # define outputs
-outputs = {'v': {'idx': np.arange(0, N), 'avg': False}}
+outputs = {'v': {'idx': np.arange(0, N), 'avg': False}, 's': {'idx': np.arange(N+1, 2*N+1), 'avg': False}}
 
 # collect parameters
 callback_args = (v_spike, v_reset)
@@ -97,8 +99,7 @@ callback_args = (v_spike, v_reset)
 #######################################################
 
 n_reps = 10
-results = {'v': [], 'W': [], 'W_in': [], 'p': p, 'predictions': [], 'scores': [], 'modules': [], 'adjacency': [],
-           'nodes': []}
+results = {'v': [], 'W': [], 'p': p, 'modules': [], 'adjacency': [], 'nodes': [], 's': []}
 for _ in range(n_reps):
 
     # simulate signal
@@ -122,7 +123,7 @@ for _ in range(n_reps):
     ########################
 
     # z-transform membrane potentials
-    comp_signal = res['v']
+    comp_signal = res['s']
     z = np.zeros_like(comp_signal)
     for idx in range(z.shape[1]):
         z_tmp = comp_signal[:, idx]
@@ -131,13 +132,14 @@ for _ in range(n_reps):
         z[:, idx] = z_tmp
 
     # calculate functional modularity of network
-    modules, A, nodes = modularity(z.T, threshold=0.1, min_connections=5, min_nodes=5, cross_corr_method='fft',
+    modules, A, nodes = modularity(z.T, threshold=0.1, min_connections=10, min_nodes=10, cross_corr_method='fft',
                                    decorator=None)
 
     # save results
     ##############
 
-    results['v'].append(comp_signal)
+    results['s'].append(comp_signal)
+    results['v'].append(res["v"])
     results['W'].append(W)
     results['modules'].append(modules)
     results['adjacency'].append(A)
@@ -146,14 +148,25 @@ for _ in range(n_reps):
     # testing stuff (comment out for cluster computations)
     ######################################################
 
-    # printing
-    print(f'Number of modules: {len(modules)}')
-
-    # plotting
+    # # printing
+    # print(f'Number of modules: {len(modules)}')
+    #
+    # # plotting
     # import matplotlib.pyplot as plt
     # fig, ax = plt.subplots()
     # for neuron in [300, 500, 700]:
-    #     ax.plot(z)
+    #     ax.plot(z[:, neuron])
+    # plt.show()
+    #
+    # # re-arrange adjacency matrix according to modules
+    # C = sort_via_modules(A, modules)
+    #
+    # # plotting
+    # fig2, ax2 = plt.subplots(ncols=2, figsize=(10, 5))
+    # ax2[0].imshow(A)
+    # ax2[0].set_title('Adjacency')
+    # ax2[1].imshow(C, cmap='nipy_spectral')
+    # ax2[1].set_title('Modules')
     # plt.show()
 
 # save results
