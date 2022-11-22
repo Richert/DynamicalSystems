@@ -78,7 +78,8 @@ dts = 2e-1
 
 # initial state
 u_init = np.zeros((2*N+1,))
-u_init[:N] -= v_t
+u_init[:N] -= v_t + 10.0
+u_init[N:2*N] = 0.5
 
 # define inputs
 #in_var = 50.0

@@ -48,7 +48,7 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 # parameter definition
 ######################
 
-cond = 1#int(sys.argv[1])
+cond = int(sys.argv[1])
 ps = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
 
 # model parameters
@@ -78,7 +78,8 @@ dts = 2e-1
 
 # initial state
 u_init = np.zeros((2*N+1,))
-u_init[:N] -= v_t
+u_init[:N] -= v_t + 10.0
+u_init[N:2*N] = 0.5
 
 # define inputs
 #in_var = 50.0
