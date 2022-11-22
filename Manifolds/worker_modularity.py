@@ -8,7 +8,6 @@ from typing import Union, Callable
 import pickle
 import sys
 from scipy.stats import cauchy
-from scipy.ndimage import gaussian_filter1d
 
 
 # function definitions
@@ -83,7 +82,7 @@ u_init[:N] -= v_r
 
 # define inputs
 #in_var = 50.0
-inp = np.zeros((int(T/dt),)) #* in_var
+# inp = np.zeros((int(T/dt),)) #* in_var
 #inp = gaussian_filter1d(inp, sigma=100.0)
 
 # define outputs
@@ -97,8 +96,8 @@ callback_args = (v_spike, v_reset)
 #######################################################
 
 n_reps = 10
-results = {'v': [], 'W': [], 'W_in': [], 'p': p, 'inp': inp, 'predictions': [], 'scores': [], 'modules': [],
-           'adjacency': [], 'nodes': []}
+results = {'v': [], 'W': [], 'W_in': [], 'p': p, 'predictions': [], 'scores': [], 'modules': [], 'adjacency': [],
+           'nodes': []}
 for _ in range(n_reps):
 
     # simulate signal
