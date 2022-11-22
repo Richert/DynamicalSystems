@@ -57,7 +57,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 2.0
-eta = 40.0
+eta = 45.0
 a = 0.03
 b = -2.0
 d = 10.0
@@ -78,7 +78,7 @@ dts = 2e-1
 
 # initial state
 u_init = np.zeros((2*N+1,))
-u_init[:N] -= v_r
+u_init[:N] -= v_t
 
 # define inputs
 #in_var = 50.0
