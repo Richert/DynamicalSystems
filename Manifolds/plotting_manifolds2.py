@@ -23,33 +23,29 @@ markersize = 6
 
 # get filenames
 path = 'results'
-n_files = 7
+n_files = 20
 
 # get eta distribution
 N = 1000
 v_t = -40.0
-Delta = 2.0
-theta_dist = v_t + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
+deltas = np.arange(0.2, 4.1, 0.2)
+
 
 # collect data
-example_idx = 5
-ps, modules_het, modules_hom, standard_errors, module_ex = [], [], [], [], []
+example_idx = 0
+modules, standard_errors, module_ex = [], [], []
 for n in range(n_files):
-    data_het = pickle.load(open(f"{path}/rnn_het_{n}.p", "rb"))
-    data_hom = pickle.load(open(f"{path}/rnn_hom_{n}.p", "rb"))
-    ps.append(data_het['p'])
-    mods = [len(m) for m in data_het['modules']]
-    modules_het.append((np.mean(mods), np.std(mods)))
-    mods = [len(m) for m in data_hom['modules']]
-    modules_hom.append((np.mean(mods), np.std(mods)))
-    means = [np.mean(theta_dist[data_het['W'][n][i, :] > 0]) for i in range(N) for n in range(len(data_het['W']))]
+    data = pickle.load(open(f"{path}/rnn_{n}.p", "rb"))
+    mods = [len(m) for m in data['modules']]
+    modules.append((np.mean(mods), np.std(mods)))
+    theta_dist = v_t + deltas[n]*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
+    means = [np.mean(theta_dist[data['W'][n][i, :] > 0]) for i in range(N) for n in range(len(data['W']))]
     standard_errors.append(np.std(means))
-    module_ex.append((data_het['modules'][example_idx], data_het['adjacency'][example_idx],
-                      data_het['nodes'][example_idx], data_het['v'][example_idx]))
+    module_ex.append((data['modules'][example_idx], data['adjacency'][example_idx],
+                      data['nodes'][example_idx], data['v'][example_idx]))
 
 # get example modules
-idx = np.argmin(np.abs([p-0.16 for p in ps]))
-p = ps[idx]
+idx = np.argmin(np.abs(deltas - 2.0))
 mods, A, nodes, signal = module_ex[idx]
 C = sort_via_modules(A, mods)
 
@@ -57,24 +53,25 @@ C = sort_via_modules(A, mods)
 fig, axes = plt.subplots(ncols=3, nrows=2)
 
 ax1 = axes[0, 2]
-ax1.bar(ps, standard_errors, color='grey')
-ax1.set_xlabel('p')
+ax1.bar(deltas, standard_errors, color='grey')
+ax1.set_xlabel(r'$\Delta_v$')
 ax1.set_ylabel('SEM')
 
 ax2 = axes[1, 0]
-x1 = np.arange(-0.2, len(ps)-0.2, step=1)
-x2 = np.arange(0.2, len(ps), step=1)
-ax2.bar(x1, [m[0] for m in modules_het], yerr=[m[1] for m in modules_het], color='grey')
-ax2.bar(x2, [m[0] for m in modules_hom], yerr=[m[1] for m in modules_hom], color='blue')
-ax2.set_xticks(np.arange(0, len(ps), step=2), labels=np.asarray(ps)[::2])
-ax2.set_xlabel('p')
+ax2.plot(deltas, [m[0] for m in modules])
+ax2.fill_between(deltas, [m[0] - m[1] for m in modules], [m[0] + m[1] for m in modules], alpha=0.3)
+ax2.set_xticks(deltas[::6])
+ax2.set_xlabel(r'$\Delta_v$')
 ax2.set_ylabel('# communities')
+
 ax3 = axes[1, 1]
 C1 = C[:, :]
 C1[C1 > 0] = 1.0
 ax3.imshow(C1, cmap='magma', interpolation='none')
 ax3.set_xlabel('neuron id')
 ax3.set_ylabel('neuron id')
+ax3.set_xticks(np.arange(0, 900, 400))
+
 ax4 = axes[1, 2]
 cmap = cm.get_cmap('tab10')
 x, y = 0, 0
@@ -95,5 +92,5 @@ plt.tight_layout()
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/ik_manifolds.svg')
+plt.savefig(f'results/ik_manifolds2.svg')
 plt.show()
