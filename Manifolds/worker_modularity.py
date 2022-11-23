@@ -99,7 +99,7 @@ callback_args = (v_spike, v_reset)
 #######################################################
 
 n_reps = 10
-results = {'v': [], 'W': [], 'p': p, 'modules': [], 'adjacency': [], 'nodes': [], 's': []}
+results = {'v': [], 'W': [], 'p': p, 'modules': [], 'adjacency': [], 'nodes': [], 's': [], 'thetas': []}
 for _ in range(n_reps):
 
     # simulate signal
@@ -144,6 +144,7 @@ for _ in range(n_reps):
     results['modules'].append(modules)
     results['adjacency'].append(A)
     results['nodes'].append(nodes)
+    results['thetas'].append(theta_dist)
 
     # testing stuff (comment out for cluster computations)
     ######################################################

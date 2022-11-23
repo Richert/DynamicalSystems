@@ -123,12 +123,12 @@ line = a_3pop.plot_continuation(p1, p2, cont=f'D_{neuron}/I_{neuron}:1:pd1', ax=
 line_data = line.get_paths()[0].vertices
 plt.fill_between(x=line_data[:, 0], y1=np.zeros_like(line_data[:, 0]), y2=line_data[:, 1], color='#4287f5', alpha=0.5)
 ax.axhline(y=0.1, color='black', linestyle='--')
-plt.text(75.0, 0.12, "F")
+plt.text(75.0, 0.14, "F")
 ax.axhline(y=0.6, color='grey', linestyle='--')
-plt.text(75.0, 0.62, "G")
+plt.text(75.0, 0.64, "G")
 ax.set_ylabel(r'$\Delta_{lts}$ (mV)')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(fr'(C) rs+fs+lts, ${delta_str} = {deltas_3pop[0]}$ mV, ' + r'$\Delta_{rs} = 1.0$')
+ax.set_title(fr'(C) rs+fs+lts, ${delta_str} = {deltas_3pop[0]}$ mV, ' + r'$\Delta_{rs} = 1.0$ mV')
 ax.set_ylim([0.0, 2.0])
 ax.set_xlim([70.0, 140.0])
 plt.legend([line1, line3, line4] + [gh, cp],
@@ -140,8 +140,8 @@ plt.legend([line1, line3, line4] + [gh, cp],
 
 # RS-FS
 data = [fre_2pop_hom, fre_2pop_het]
-titles = [fr'(D) ${delta_str} = {deltas_2pop[1]}$ mV',
-          fr'(E) ${delta_str} = {deltas_2pop[2]}$ mV']
+titles = [fr'(D) Low fs heterogeneity (${delta_str} = {deltas_2pop[1]}$ mV)',
+          fr'(E) High fs heterogeneity (${delta_str} = {deltas_2pop[2]}$ mV)']
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
@@ -163,8 +163,8 @@ for i, (fre, title) in enumerate(zip(data, titles)):
 
 # RS-FS-LTS
 data = [fre_3pop_hom, fre_3pop_het]
-titles = [r'(F) $\Delta_{lts} = 0.1$ mV',
-          r'(G) $\Delta_{lts} = 0.6$ mV']
+titles = [r'(F) Low lts heterogeneity ($\Delta_{lts} = 0.1$ mV)',
+          r'(G) High lts heterogeneity ($\Delta_{lts} = 0.6$ mV)']
 time = fre_3pop_hom.index
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[3, i*3:(i+1)*3])

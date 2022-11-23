@@ -11,13 +11,12 @@ from scipy.ndimage import gaussian_filter1d
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
-#plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['figure.figsize'] = (6, 5)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
-#plt.rcParams['axes.labelweight'] = 'bold'
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
@@ -32,7 +31,7 @@ deltas = np.arange(0.2, 4.1, 0.2)
 
 
 # collect data
-example_idx = 3
+example_idx = 0
 modules, standard_errors, module_ex = [], [], []
 for n in range(n_files):
     data = pickle.load(open(f"{path}/rnn_{n}.p", "rb"))
@@ -45,7 +44,7 @@ for n in range(n_files):
                       data['nodes'][example_idx], data['v'][example_idx]))
 
 # get example modules
-d = 1.5
+d = 1.0
 idx = np.argmin(np.abs(deltas - d))
 mods, A, nodes, signal = module_ex[idx]
 C = sort_via_modules(A, mods)

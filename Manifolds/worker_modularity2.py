@@ -57,7 +57,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.2
+Delta = 1.0
 eta = 40.0
 a = 0.03
 b = -2.0
@@ -99,7 +99,7 @@ callback_args = (v_spike, v_reset)
 #######################################################
 
 n_reps = 10
-results = {'v': [], 'W': [], 'p': p, 'modules': [], 'adjacency': [], 'nodes': [], 's': []}
+results = {'v': [], 'W': [], 'p': p, 'modules': [], 'adjacency': [], 'nodes': [], 's': [], 'thetas': []}
 for _ in range(n_reps):
 
     # simulate signal
@@ -144,6 +144,7 @@ for _ in range(n_reps):
     results['modules'].append(modules)
     results['adjacency'].append(A)
     results['nodes'].append(nodes)
+    results['thetas'].append(theta_dist)
 
     # testing stuff (comment out for cluster computations)
     ######################################################
@@ -170,4 +171,4 @@ for _ in range(n_reps):
     # plt.show()
 
 # save results
-pickle.dump(results, open(f"/projects/p31302/richard/results/rnn_hom_{cond}.p", "wb"))
+pickle.dump(results, open(f"/projects/p31302/richard/results/rnn_med_{cond}.p", "wb"))
