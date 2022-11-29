@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "snn_data"
+fname = "snn_example_data"
 
 # network parameters
 N = 1000
@@ -56,17 +56,17 @@ T = 6000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
-in_start = int(1100.0/dt)
-sigma, amp = 200.0, 6000.0
-I_ext = np.random.uniform(low=-1.0, high=1.0, size=(steps, 1)) * amp
-I_ext = gaussian_filter1d(I_ext, sigma=sigma, axis=0)
-W_in = input_connections(N, 1, 0.2, variance=1.0, zero_mean=True)
-plt.plot(I_ext)
-plt.show()
+m = 3
+alpha = 50.0
+I_ext = np.zeros((steps, m))
+for i, f in enumerate([0.005, 0.01, 0.03]):
+    I_ext[:, i] = np.sin(np.linspace(0, T, steps)*2.0*np.pi*f) * alpha
+W_in = input_connections(N, m, 0.2, variance=1.0, zero_mean=True)
+
 
 # parameter sweep definition
 param = "Delta"
-values = np.asarray([0.125, 0.25, 1.0, 2.0, 4.0])
+values = np.asarray([0.125, 0.25, 0.5, 1.0, 2.0, 4.0])
 
 # simulation
 ############
@@ -87,7 +87,7 @@ for v in values:
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
                             node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt)
-    net.add_input_layer(1, W_in, trainable=False)
+    net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
     obs = net.run(inputs=I_ext, device="cpu", sampling_steps=sampling_steps, record_output=True,
@@ -102,7 +102,7 @@ for v in values:
     # plt.show()
 
 # save results
-inp = pd.DataFrame(index=results[-1].index, data=I_ext[::sampling_steps, :])
+inp = pd.DataFrame(index=results[-1].index, data=I_ext[::sampling_steps, :], columns=np.arange(0, m))
 pickle.dump({"s": results, "J": J, "heterogeneity": thetas, "I_ext": inp, "W_in": W_in, "params": node_vars,
              "dt": dt, "sr": sampling_steps, "v_reset": v_reset, "v_spike": v_spike, "sweep": (param, values)},
             open(f"results/{fname}.pkl", "wb"))

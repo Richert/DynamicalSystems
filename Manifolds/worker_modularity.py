@@ -48,7 +48,7 @@ def ik(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: C
 # parameter definition
 ######################
 
-cond = int(sys.argv[1])
+cond = 0 #int(sys.argv[1])
 m = 7
 ps = 1/2**np.arange(m)
 
@@ -171,4 +171,4 @@ for _ in range(n_reps):
     # plt.show()
 
 # save results
-pickle.dump(results, open(f"/projects/p31302/richard/results/rnn_het_{cond}.p", "wb"))
+pickle.dump(results, open(f"results/rnn_het_{cond}.p", "wb"))

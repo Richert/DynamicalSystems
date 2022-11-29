@@ -6,32 +6,29 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = "snn_data"
+fname = "snn_example_data"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
-I_ext = data["I_ext"].loc[:, 0]
-
-
-def sigmoid(x, tau):
-    return 1.0/(1.0 + np.exp(-tau*x))
-
+I_ext = data["I_ext"]
 
 # create target data for different taus
 #######################################
 
 # create target data
-taus = [2.0, 4.0, 8.0, 16.0, 32.0]
-steps = int(I_ext.shape[0]/data["dt"])
+combinations = [([0, 2], "mult"), ([1, 2], "mult"), ([0, 1, 2], "mult")]
 targets = []
-for tau in taus:
-    I_tmp = gaussian_filter1d(I_ext, sigma=tau, axis=0)
-    targets.append(I_tmp)
+for (neurons, mode) in combinations:
+    if mode == "sum":
+        targets.append(np.sum(I_ext.iloc[:, neurons].values, axis=1))
+    else:
+        targets.append(np.prod(I_ext.iloc[:, neurons].values, axis=1))
 
 # perform readout for each set of target data
 #############################################
 
 # create 2D dataframe
 var, params = data["sweep"]
-scores = pd.DataFrame(columns=taus, index=params, data=np.zeros((len(params), len(taus))))
+scores = pd.DataFrame(columns=np.arange(0, len(combinations)), index=params,
+                      data=np.zeros((len(params), len(combinations))))
 
 # training procedure
 cutoff = 1000
@@ -40,7 +37,7 @@ for i, signal in enumerate(data["s"]):
 
     s = signal.iloc[cutoff:, :]
 
-    for j, (tau, target) in enumerate(zip(taus, targets)):
+    for j, target in enumerate(targets):
 
         # readout training
         res = readout(s, target[cutoff:], train_split=4500)
@@ -50,11 +47,11 @@ for i, signal in enumerate(data["s"]):
         plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
         plt.plot(res["prediction"][:plot_length], color="orange")
         plt.legend(["target", "prediction"])
-        plt.title(f"tau = {tau}, score = {res['train_score']}")
+        plt.title(f"score = {res['test_score']}")
         plt.show()
 
 # save data to file
-data["taus"] = taus
+data["combinations"] = combinations
 data["scores"] = scores
 pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
 
@@ -69,7 +66,7 @@ im = ax.imshow(scores)
 ax.set_ylabel(var)
 ax.set_yticks(np.arange(len(params)), labels=params)
 ax.set_xlabel("tau")
-ax.set_xticks(np.arange(len(taus)), labels=taus)
+ax.set_xticks(np.arange(len(combinations)))
 ax.set_title("Training Scores")
 plt.colorbar(im, ax=ax)
 
@@ -105,7 +102,7 @@ ax2 = ax.twinx()
 ax2.plot(np.mean(scores.values, axis=1), color="orange")
 ax.set_xlabel(var)
 ax.set_xticks(np.arange(len(params)), labels=params)
-ax.set_ylabel("dims", color="blue")
+ax.set_ylabel("dim", color="blue")
 ax2.set_ylabel("score", color="orange")
 ax.set_title("dimensionality vs. training score")
 
