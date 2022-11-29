@@ -32,22 +32,16 @@ N = 1000
 p = 0.05
 tau = 1.0
 Delta = 0.2
-eta = 0.0
+eta = -0.1
 J = 8.0
 alpha = 0.3
-tau_a = 100.0
-tau_s = 6.0
+tau_a = 10.0
+tau_s = 0.6
 v_spike = 1000.0
 v_reset = -1000.0
 
 # create connectivity matrix
 W = random_connectivity(N, N, p, normalize=True)
-
-# create background current distribution
-etas = lorentzian(N, eta, Delta, eta-100.0, eta+100.0)
-
-# collect remaining model parameters
-node_vars = {"tau": tau, "eta": etas, "k": J, "alpha": alpha, "tau_x": tau_a, "tau_s": tau_s}
 
 # input definition
 T = 600.0
@@ -56,13 +50,11 @@ steps = int(T/dt)
 sampling_steps = 100
 freqs = [0.02]
 m = len(freqs)
-alpha = 20.0
+amp = 20.0 * Delta
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
-    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=0.1, omega=1.0/f) * alpha
+    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=0.1, omega=1.0/f)
 W_in = input_connections(N, m, 0.1, variance=1.0, zero_mean=True)
-plt.plot(I_ext)
-plt.show()
 
 # parameter sweep definition
 param = "Delta"
@@ -74,10 +66,18 @@ values = np.asarray([0.2, 0.8, 2.0])
 results = []
 for v in values:
 
+    # create background current distribution
+    etas = lorentzian(N, eta, Delta, eta - 100.0, eta + 100.0)
+
+    # collect remaining model parameters
+    node_vars = {"tau": tau, "eta": etas, "k": J*np.sqrt(Delta), "alpha": alpha, "tau_x": tau_a, "tau_s": tau_s}
+
     if param == "eta":
-        node_vars["eta"] = v + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
+        node_vars["eta"] = v*Delta + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
     elif param == "Delta":
-        node_vars["eta"] = eta + v*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
+        amp *= v/Delta
+        node_vars["k"] = J*np.sqrt(v)
+        node_vars["eta"] = eta*v + v*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
     elif param == "p":
         W = random_connectivity(N, N, p, normalize=True)
     else:
@@ -91,7 +91,7 @@ for v in values:
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
-    obs = net.run(inputs=I_ext, device="cpu", sampling_steps=sampling_steps, record_output=True)
+    obs = net.run(inputs=I_ext*amp, device="cpu", sampling_steps=sampling_steps, record_output=True)
     results.append(obs["out"])
 
     # plotting
