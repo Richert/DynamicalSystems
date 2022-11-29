@@ -30,9 +30,9 @@
        S=U(4)
 
        F(1) = (D/(PI*tau) + 2.0*R*V)/tau
-       F(2) = (V*V + S*tau - A - PI*PI*R*R*tau*tau + eta)/tau
+       F(2) = (V*V + S*J*tau - A - (PI*R*R*tau)**2 + eta)/tau
        F(3) = -A/tau_a + alpha*R
-       F(4) = -S/tau_s + J*R
+       F(4) = -S/tau_s + R
 
       END SUBROUTINE FUNC
 

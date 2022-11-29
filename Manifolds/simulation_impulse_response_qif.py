@@ -25,12 +25,12 @@ def sigmoid(x, kappa, t_on, omega):
 ##################
 
 # file name for saving
-fname = "ir_rs_data2"
+fname = "ir_qif_data"
 
 # network parameters
 N = 1000
 p = 0.05
-tau = 10.0
+tau = 1.0
 Delta = 0.2
 eta = 0.0
 J = 8.0
@@ -47,26 +47,26 @@ W = random_connectivity(N, N, p, normalize=True)
 etas = lorentzian(N, eta, Delta, eta-100.0, eta+100.0)
 
 # collect remaining model parameters
-node_vars = {"tau": tau, "eta": etas, "J": J, "alpha": alpha, "tau_a": tau_a, "tau_s": tau_s}
+node_vars = {"tau": tau, "eta": etas, "k": J, "alpha": alpha, "tau_x": tau_a, "tau_s": tau_s}
 
 # input definition
-T = 6000.0
-dt = 1e-2
+T = 600.0
+dt = 1e-3
 steps = int(T/dt)
 sampling_steps = 100
-freqs = [0.002]
+freqs = [0.02]
 m = len(freqs)
-alpha = 300.0
+alpha = 20.0
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
-    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=1.0, omega=1.0/f) * alpha
+    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=0.1, omega=1.0/f) * alpha
 W_in = input_connections(N, m, 0.1, variance=1.0, zero_mean=True)
 plt.plot(I_ext)
 plt.show()
 
 # parameter sweep definition
 param = "Delta"
-values = np.asarray([0.5, 1.0, 2.0])
+values = np.asarray([0.2, 0.8, 2.0])
 
 # simulation
 ############
