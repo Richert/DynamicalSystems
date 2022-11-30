@@ -30,15 +30,15 @@ markersize = 6
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=4, ncols=2, figure=fig)
+grid = gridspec.GridSpec(nrows=3, ncols=3, figure=fig)
 
 # 2D continuation
 #################
 
 # settings
-x_params = [("eta", 5), ("eta", 5)]
-y_params = [("g", 4), ("d", 16)]
-grid_locs = [grid[:2, 0], grid[:2, 1]]
+y_params = [("g", 4), ("d", 19), ("delta", 6)]
+x_params = [("eta", 16), ("eta", 16), ("eta", 16)]
+grid_locs = [grid[:2, 0], grid[:2, 1], grid[:2, 2]]
 bfs = ["lp1", "lp2", "hb1"]
 colors = ['#5D6D7E', '#5D6D7E', '#148F77']
 
@@ -59,9 +59,9 @@ for (x_key, x_idx), (y_key, y_idx), loc in zip(x_params, y_params, grid_locs):
 ##################
 
 # settings
-params = [("b", 9, 1), ("g", 4, 2), ("d", 16, 1), ("delta", 6, 1)]
-var = "U(1)"
-grid_locs = [grid[2, 0], grid[2, 1], grid[3, 0], grid[3, 1]]
+params = [("eta", 16, 2), ("g", 4, 1), ("d", 19, 1)]
+var = "U(4)"
+grid_locs = [grid[2, 0], grid[2, 1], grid[2, 2]]
 
 # plotting
 for (param, idx, cont), loc in zip(params, grid_locs):
