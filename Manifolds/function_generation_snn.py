@@ -6,8 +6,8 @@ from scipy.optimize import minimize
 
 
 def get_dim(s: np.ndarray):
-    s -= np.mean(s)
-    s /= np.std(s)
+    s = s - np.mean(s)
+    s = s / np.std(s)
     cov = s.T @ s
     cov[np.eye(cov.shape[0]) > 0] = 0.0
     eigs = np.abs(np.linalg.eigvals(cov))
@@ -65,7 +65,7 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 
 # load data
-fname = "ir_rs_data2"
+fname = "ir_rs_data4"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 
 # get system dynamics kernel matrix
@@ -82,7 +82,7 @@ for d in data["s"]:
 
     kernels_tmp, vars_tmp, diffs_tmp, dims_tmp = [], [], [], []
     for idx in range(len(peaks)):
-        if peaks[idx]+isi < d.shape[0]:
+        if peaks[idx]+isi <= d.shape[0]:
             X = d[peaks[idx]:peaks[idx]+isi]
             K = get_kernel(X)
             vars_tmp.append(get_kernel_var(K))

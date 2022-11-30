@@ -6,7 +6,7 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = "ir_rs_data2"
+fname = "ir_rs_data4"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 I_ext = data["I_ext"].loc[:, 0].values
 
@@ -48,13 +48,17 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=1.0, solver='lsqr', tol=1e-4)
-        scores.iloc[i, j] = res['train_score']
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=9000)
+        res2 = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01)
+        res3 = readout(s[:-cutoff], target[cutoff:-cutoff], alpha=10.0, solver='lbfgs', positive=True, tol=0.01)
+        weight_diff = res2["readout_weights"] - res3["readout_weights"]
+        scores.iloc[i, j] = res['test_score']
 
         # plotting
-        plt.plot(res["target"][:plot_length], color="black", linestyle="dashed")
-        plt.plot(res["prediction"][:plot_length], color="orange")
-        plt.legend(["target", "prediction"])
+        plt.plot(res["target"][-plot_length:], color="black", linestyle="dashed")
+        plt.plot(res["prediction"][-plot_length:], color="orange")
+        plt.plot((s @ weight_diff + res["readout_bias"]).values[-plot_length:], color="purple")
+        plt.legend(["target", "prediction", "new"])
         plt.title(f"tau = {tau}, score = {res['train_score']}")
         plt.show()
 
