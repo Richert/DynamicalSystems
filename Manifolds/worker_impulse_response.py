@@ -103,4 +103,4 @@ for idx in range(n_reps):
     results["thetas"].append(thetas)
 
 # save results
-pickle.dump(results, open(f"results/{fname}.pkl", "wb"))
+pickle.dump(results, open(f"/projects/p31302/richard/results/{fname}.pkl", "wb"))
