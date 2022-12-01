@@ -88,7 +88,7 @@ if any(c1):
 
         # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
         i, j = 0, 0
-        for s in c1_sols.values():
+        for s in c1_sols.v1():
             if 'TR' in s['bifurcation']:
                 i += 1
                 p_tmp = f'TR{i}'
@@ -159,7 +159,7 @@ if any(c1):
         le_max_col = []
         fd_col = []
         i = 1
-        for point in c0_sols.values():
+        for point in c0_sols.v1():
             if 'UZ' in point['bifurcation']:
                 c1_sols, c1_cont = a.run(starting_point=f'UZ{i}', origin=c0_cont, c='qif_lc', ICP=[25, 11],
                                          NPAR=n_params, name='c1:omega', NDIM=n_dim, NMX=8000, DSMAX=0.05,
@@ -224,7 +224,7 @@ if any(c1):
 
         # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
         i, j = 0, 0
-        for s in c1_sols.values():
+        for s in c1_sols.v1():
             if 'TR' in s['bifurcation']:
                 i += 1
                 p_tmp = f'TR{i}'

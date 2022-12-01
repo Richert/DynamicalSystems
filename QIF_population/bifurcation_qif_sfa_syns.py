@@ -75,7 +75,7 @@ for point, point_info in eta_solutions.items():
 J_points, J_cont = solutions_J[cont_idx]
 
 # limit cycle continuation of hopf bifurcations in J
-hbs = ['HB' in s['bifurcation'] for s in J_points.values()]
+hbs = ['HB' in s['bifurcation'] for s in J_points.v1()]
 if any(hbs):
 
     a.run(starting_point='HB1', c='qif2b', ICP=[2, 11], DSMAX=0.05, NMX=6000, origin=J_cont, name='J_hb1',

@@ -56,24 +56,24 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 21000.0
+T = 6000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
-freqs = [0.001]
+freqs = [0.002]
 m = len(freqs)
-alpha = 200.0
+alpha = 800.0
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
     I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=1.0, omega=1.0/f) * alpha
-W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=False)
-W_in = np.abs(W_in)
+W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=True)
+#W_in = np.abs(W_in)
 plt.plot(I_ext)
 plt.show()
 
 # parameter sweep definition
 param = "Delta"
-values = np.asarray([2.0])
+values = np.asarray([0.2, 0.8, 3.2])
 
 # simulation
 ############

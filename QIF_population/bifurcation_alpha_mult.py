@@ -105,13 +105,13 @@ if codim1:
             etas = np.round(np.linspace(-6.5, -2.5, 100), decimals=4).tolist()
             period_solutions = np.zeros((len(alphas), len(etas)))
             i = 1
-            for s1 in eta_alpha_lp3_solutions.values():
+            for s1 in eta_alpha_lp3_solutions.v1():
                 if 'UZ' in s1['bifurcation']:
                     s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif', ICP=[1, 11], UZR={1: etas}, STOP=['LP1', 'BP1'],
                                      EPSL=1e-7, EPSU=1e-7, EPSS=1e-5, ISP=0, IPS=2, get_period=True, NPR=100,
                                      DSMAX=0.002, origin=eta_alpha_lp3_cont, NMX=40000, DS='-', THL={11: 0.0})
                     i += 1
-                    for s2 in s_tmp.values():
+                    for s2 in s_tmp.v1():
                         if 'UZ' in s2['bifurcation']:
                             idx_c = np.argwhere(np.round(s2['PAR(1)'], decimals=4) == etas)
                             idx_r = np.argwhere(np.round(s2['PAR(3)'], decimals=5) == alphas)

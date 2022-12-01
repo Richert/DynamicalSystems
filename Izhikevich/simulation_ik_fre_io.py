@@ -62,7 +62,7 @@ for mu in Is:
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, outputs={'s': 'p/ik_op/s'}, in_place=False,
                  solver='scipy', cutoff=cutoff, inputs={'p/ik_op/I_ext': inp})
     clear(ik)
-    results.append(np.mean(res['s'].values))
+    results.append(np.mean(res['s'].v1))
 
 # save results
 pickle.dump({'results': results, 'inputs': Is}, open("results/rs_fre_io.p", "wb"))

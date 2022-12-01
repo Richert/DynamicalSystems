@@ -153,8 +153,8 @@ titles = [r'(E) $\Delta_{fs} = 0.4$ mV, $\Delta_{lts} = 0.1$ mV',
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
-    xmin = np.min(fre.values)
-    xmax = np.max(fre.values)
+    xmin = np.min(fre.v1)
+    xmax = np.max(fre.v1)
     plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=1500, x2=2500.0, color='grey', alpha=0.15)
     plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=2500, x2=3500.0, color='grey', alpha=0.3)
     ax.set_xlabel('time (ms)')
@@ -165,7 +165,7 @@ for i, (fre, title) in enumerate(zip(data, titles)):
         ax.set_yticks([0.0, 0.07, 0.14])
         ax.set_yticklabels(['0', '70', '140'])
     elif i == len(data)-1:
-        plt.legend(fre.columns.values)
+        plt.legend(fre.columns.v1)
         ax.set_yticks([0.0, 0.03, 0.06])
         ax.set_yticklabels(['0', '30', '60'])
 

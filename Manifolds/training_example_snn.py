@@ -18,9 +18,9 @@ combinations = [([0, 2], "mult"), ([1, 2], "mult"), ([0, 1, 2], "mult")]
 targets = []
 for (neurons, mode) in combinations:
     if mode == "sum":
-        targets.append(np.sum(I_ext.iloc[:, neurons].values, axis=1))
+        targets.append(np.sum(I_ext.iloc[:, neurons].v1, axis=1))
     else:
-        targets.append(np.prod(I_ext.iloc[:, neurons].values, axis=1))
+        targets.append(np.prod(I_ext.iloc[:, neurons].v1, axis=1))
 
 # perform readout for each set of target data
 #############################################

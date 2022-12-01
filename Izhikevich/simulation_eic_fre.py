@@ -49,7 +49,7 @@ fig, ax = plt.subplots(figsize=(12, 4))
 ax.plot(res*1e3)
 ax.set_ylabel(r'$r(t)$')
 ax.set_xlabel("time (ms)")
-plt.legend(res.columns.values)
+plt.legend(res.columns.v1)
 plt.tight_layout()
 plt.show()
 

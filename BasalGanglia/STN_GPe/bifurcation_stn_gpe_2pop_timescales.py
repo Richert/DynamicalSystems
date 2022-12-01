@@ -93,7 +93,7 @@ for s, s_info in c2_b5_2d1_sols.items():
         s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[20, 11], UZR={20: tau_p}, get_period=True,
                          DSMAX=0.05, origin=c2_b5_2d1_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=12.0,
                          RL1=36.0, STOP=['BP1', 'LP2'])
-        for s2 in s_tmp.values():
+        for s2 in s_tmp.v1():
             if 'UZ' in s2['bifurcation']:
                 idx_c = np.argwhere(np.round(s2['PAR(19)'], decimals=2) == tau_e)
                 idx_r = np.argwhere(np.round(s2['PAR(20)'], decimals=2) == tau_p)
@@ -118,7 +118,7 @@ for s, s_info in c2_b5_2d2_sols.items():
         s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[22, 11], UZR={22: tau_gabaa}, get_period=True,
                          DSMAX=0.05, origin=c2_b5_2d2_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=5.0,
                          RL1=35.0, STOP=['BP1', 'LP2'])
-        for s2 in s_tmp.values():
+        for s2 in s_tmp.v1():
             if 'UZ' in s2['bifurcation']:
                 idx_c = np.argwhere(np.round(s2['PAR(21)'], decimals=2) == tau_ampa)
                 idx_r = np.argwhere(np.round(s2['PAR(22)'], decimals=2) == tau_gabaa)
@@ -143,7 +143,7 @@ for s, s_info in c2_b5_2d3_sols.items():
         s_tmp, _ = a.run(starting_point=f'UZ{i}', c='qif2b', ICP=[22, 11], UZR={22: tau_gabaa2}, get_period=True,
                          DSMAX=0.05, origin=c2_b5_2d3_cont, NMX=4000, NDIM=n_dim, NPAR=n_params, ILP=0, ISP=0, RL0=4.0,
                          RL1=30.0, STOP=['BP1', 'LP2'])
-        for s2 in s_tmp.values():
+        for s2 in s_tmp.v1():
             if 'UZ' in s2['bifurcation']:
                 idx_c = np.argwhere(np.round(s2['PAR(18)'], decimals=2) == tau_stn)
                 idx_r = np.argwhere(np.round(s2['PAR(22)'], decimals=2) == tau_gabaa2)

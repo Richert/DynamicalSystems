@@ -14,7 +14,7 @@ eta = 60
 idx = np.argmin(np.abs(snn['etas'] - eta))
 snn_res = np.mean(snn['results'][idx]['v'], axis=1)
 idx = np.argmin(np.abs(fre['map'].loc['eta', :] - eta))
-fre_res = fre['results'].loc[:, fre['map'].columns.values[idx]]
+fre_res = fre['results'].loc[:, fre['map'].columns.v1[idx]]
 
 # calculate mean and variance of mean-field difference
 diff = fre_res - snn_res
