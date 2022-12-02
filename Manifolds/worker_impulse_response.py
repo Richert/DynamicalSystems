@@ -33,7 +33,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 2.0
 eta = 40.0
 a = 0.03
 b = -2.0
@@ -45,8 +45,8 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # parameter sweep definition
-p1, p2 = "Delta", "alpha"
-v1s = np.asarray([0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4])
+p1, p2 = "p", "alpha"
+v1s = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
 v2s = np.asarray([0.0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1200.0])
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 cond = int(sys.argv[-1])
@@ -89,7 +89,7 @@ for idx in range(n_reps):
 
     # initialize model
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
+                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", file_name=f"rs_{cond}",
                             node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt)
     net.add_input_layer(m, W_in, trainable=False)
 
@@ -103,4 +103,4 @@ for idx in range(n_reps):
     results["thetas"].append(thetas)
 
 # save results
-pickle.dump(results, open(f"/projects/p31302/richard/results/{fname}.pkl", "wb"))
+pickle.dump(results, open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb"))
