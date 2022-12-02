@@ -105,5 +105,7 @@ for idx in range(n_reps):
     results["J"].append(J)
     results["thetas"].append(thetas)
 
+    print(f"Run {idx} done for condition {cond}.")
+
 # save results
 pickle.dump(results, open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb"))
