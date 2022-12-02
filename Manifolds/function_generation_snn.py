@@ -65,7 +65,7 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 
 # load data
-fname = "ir_rs_data2"
+fname = "ir_rs_data_10"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 
 # get system dynamics kernel matrix
@@ -75,8 +75,8 @@ cutoff = 900
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
-    d = d.iloc[cutoff:, :].v1
-    inp = data["I_ext"].iloc[cutoff:, 0].v1
+    d = d.iloc[cutoff:, :].values
+    inp = data["I_ext"][::data['sr'], :][cutoff:, 0]
     peaks, _ = find_peaks(inp)
     isi = peaks[1] - peaks[0]
 

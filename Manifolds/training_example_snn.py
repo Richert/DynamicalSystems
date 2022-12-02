@@ -6,7 +6,7 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = "snn_example_data"
+fname = "ir_rs_data_0"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 I_ext = data["I_ext"]
 
@@ -18,9 +18,9 @@ combinations = [([0, 2], "mult"), ([1, 2], "mult"), ([0, 1, 2], "mult")]
 targets = []
 for (neurons, mode) in combinations:
     if mode == "sum":
-        targets.append(np.sum(I_ext.iloc[:, neurons].v1, axis=1))
+        targets.append(np.sum(I_ext[:, neurons].v1, axis=1))
     else:
-        targets.append(np.prod(I_ext.iloc[:, neurons].v1, axis=1))
+        targets.append(np.prod(I_ext[:, neurons].v1, axis=1))
 
 # perform readout for each set of target data
 #############################################

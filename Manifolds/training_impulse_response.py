@@ -6,9 +6,11 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = "ir_rs_data2"
+fname = "ir_rs_data_10"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
-I_ext = data["I_ext"].loc[:, 0].v1
+I_ext = data["I_ext"][:, 0]
+
+print(f"Condition: {data['sweep']}")
 
 
 def sigmoid(x, kappa, t_on, omega):
@@ -20,8 +22,8 @@ def sigmoid(x, kappa, t_on, omega):
 
 # create target data
 phis = np.linspace(0.1, 0.9, num=7)*2.0*np.pi
-freq = 0.002
-T = I_ext.shape[0]
+freq = 0.001
+T = data["T"]
 steps = int(T/data["dt"])
 targets = []
 for phi in phis:
@@ -29,18 +31,20 @@ for phi in phis:
     # plt.plot(I_tmp[::100]*50.0)
     # plt.plot(I_ext, color='black', linestyle='--')
     # plt.show()
-    targets.append(I_tmp[::100])
+    targets.append(I_tmp[::data['sr']])
 
 # perform readout for each set of target data
 #############################################
 
 # create 2D dataframe
-var, params = data["sweep"]
+#var, params = data["sweep"]
+var = "test"
+params = np.arange(0, 10)
 scores = pd.DataFrame(columns=phis, index=params, data=np.zeros((len(params), len(phis))))
 
 # training procedure
 cutoff = 1000
-plot_length = 1000
+plot_length = 2000
 for i, signal in enumerate(data["s"]):
 
     s = signal.iloc[cutoff:, :]
@@ -48,24 +52,24 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=4000)
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=15000)
         res2 = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01)
         res3 = readout(s[:-cutoff], target[cutoff:-cutoff], alpha=10.0, solver='lbfgs', positive=True, tol=0.01)
         weight_diff = res2["readout_weights"] - res3["readout_weights"]
         scores.iloc[i, j] = res['test_score']
 
         # plotting
-        plt.plot(res["target"][-plot_length:], color="black", linestyle="dashed")
-        plt.plot(res["prediction"][-plot_length:], color="orange")
-        plt.plot((s @ weight_diff + res["readout_bias"]).v1[-plot_length:], color="purple")
-        plt.legend(["target", "prediction", "new"])
-        plt.title(f"tau = {tau}, score = {res['train_score']}")
-        plt.show()
+        # plt.plot(res["target"][-plot_length:], color="black", linestyle="dashed")
+        # plt.plot(res["prediction"][-plot_length:], color="orange")
+        # plt.plot((s @ weight_diff + res["readout_bias"]).values[-plot_length:], color="purple")
+        # plt.legend(["target", "prediction", "new"])
+        # plt.title(f"tau = {tau}, score = {res['train_score']}")
+        # plt.show()
 
 # save data to file
-data["taus"] = phis
-data["scores"] = scores
-pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
+# data["taus"] = phis
+# data["scores"] = scores
+# pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
 
 # plotting
 ##########
@@ -77,7 +81,7 @@ ax = axes[0, 0]
 im = ax.imshow(scores)
 ax.set_ylabel(var)
 ax.set_yticks(np.arange(len(params)), labels=params)
-ax.set_xlabel("tau")
+ax.set_xlabel("phi")
 ax.set_xticks(np.arange(len(phis)), labels=phis)
 ax.set_title("Training Scores")
 plt.colorbar(im, ax=ax)
