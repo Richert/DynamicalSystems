@@ -23,6 +23,9 @@ def sigmoid(x, kappa, t_on, omega):
 # model definition
 ##################
 
+# sweep condition
+cond = int(sys.argv[-1])
+
 # file name for saving
 fname = "ir_rs_data"
 
@@ -49,7 +52,6 @@ p1, p2 = "p", "alpha"
 v1s = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
 v2s = np.asarray([0.0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1200.0])
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
-cond = int(sys.argv[-1])
 v1, v2 = vals[cond]
 
 # input definition
@@ -90,12 +92,13 @@ for idx in range(n_reps):
     # initialize model
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", file_name=f"rs_{cond}",
-                            node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt)
+                            node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
+                            verbose=False)
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
     obs = net.run(inputs=I_ext * alpha, device="cpu", sampling_steps=sampling_steps, record_output=True,
-                  record_vars=[("v", False)])
+                  record_vars=[("v", False)], verbose=False)
 
     # results storage
     results["s"].append(obs["out"])
