@@ -91,9 +91,9 @@ for idx in range(n_reps):
 
     # initialize model
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", file_name=f"rs_{cond}",
-                            node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                            verbose=False)
+                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
+                            file_name=f"rs_{cond}_{idx}", node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset,
+                            spike_threshold=v_spike, dt=dt, verbose=False)
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
