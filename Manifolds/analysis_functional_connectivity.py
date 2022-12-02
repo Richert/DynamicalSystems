@@ -11,7 +11,7 @@ data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 # calculate cross-correlation between time series
 cutoff = 1000
 var = "s"
-cc = cross_corr(len(data["etas"]), signals=data[var].iloc[cutoff:, :].values.T, method="fft")
+cc = cross_corr(len(data["etas"]), signals=data[var].iloc[cutoff:, :].v1.T, method="fft")
 #cc = squareform(pdist(data[var].iloc[cutoff:, :].values.T, metric="euclidean"))
 
 # saving

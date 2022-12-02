@@ -58,7 +58,7 @@ if c1:
 
     # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
     i, j = 0, 0
-    for s in c1_sols.values():
+    for s in c1_sols.v1():
         if 'TR' in s['bifurcation']:
             i += 1
             p_tmp = f'TR{i}'
@@ -152,7 +152,7 @@ if c2:
 
     # step 3: codim 2 investigation of torus bifurcations found in step 1 and 2
     i, j = 0, 0
-    for s in c1_sols.values():
+    for s in c1_sols.v1():
         if 'TR' in s['bifurcation']:
             i += 1
             p_tmp = f'TR{i}'

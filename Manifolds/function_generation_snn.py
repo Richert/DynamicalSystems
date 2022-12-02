@@ -6,8 +6,8 @@ from scipy.optimize import minimize
 
 
 def get_dim(s: np.ndarray):
-    s -= np.mean(s)
-    s /= np.std(s)
+    s = s - np.mean(s)
+    s = s / np.std(s)
     cov = s.T @ s
     cov[np.eye(cov.shape[0]) > 0] = 0.0
     eigs = np.abs(np.linalg.eigvals(cov))
@@ -75,23 +75,22 @@ cutoff = 900
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
-    d = d.iloc[cutoff:, :].values
-    inp = data["I_ext"].iloc[cutoff:, 0].values
+    d = d.iloc[cutoff:, :].v1
+    inp = data["I_ext"].iloc[cutoff:, 0].v1
     peaks, _ = find_peaks(inp)
     isi = peaks[1] - peaks[0]
 
-    kernels_tmp, vars_tmp, diffs_tmp, dims_tmp = [], [], [], []
+    kernels_tmp, diffs_tmp, dims_tmp = [], [], []
     for idx in range(len(peaks)):
-        if peaks[idx]+isi < d.shape[0]:
+        if peaks[idx]+isi <= d.shape[0]:
             X = d[peaks[idx]:peaks[idx]+isi]
             K = get_kernel(X)
-            vars_tmp.append(get_kernel_var(K))
             dims_tmp.append(get_dim(X))
             diffs_tmp.append(get_kernel_diff(K))
             kernels_tmp.append(K)
 
     kernels.append(np.mean(kernels_tmp, axis=0))
-    vars.append(np.mean(vars_tmp))
+    vars.append(np.var(kernels_tmp, axis=0))
     diffs.append(np.mean(diffs_tmp))
     dims.append(np.mean(dims_tmp))
 
@@ -105,11 +104,13 @@ pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
 # plotting
 ##########
 
-for k in kernels:
+for k, v in zip(kernels, vars):
 
-    _, ax = plt.subplots(ncols=2, figsize=(10, 5))
+    _, ax = plt.subplots(ncols=3, figsize=(10, 5))
     ax[0].imshow(k, aspect=1.0, cmap='nipy_spectral')
     ax[0].set_title('K')
-    ax[1].plot(k[::-1, :][np.eye(k.shape[0]) > 0])
-    ax[1].set_title("off diag of K")
+    ax[1].imshow(v, aspect=1.0, cmap='nipy_spectral')
+    ax[1].set_title('var(K)')
+    ax[2].plot(k[::-1, :][np.eye(k.shape[0]) > 0])
+    ax[2].set_title("off diag of K")
     plt.show()

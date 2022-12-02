@@ -4,50 +4,59 @@
 # operator templates
 ####################
 
-# izhikevich operator with biophysiologically relevant parameters
-ik_op:
+# operator for regular-spiking IK neurons
+rs_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = a*(b*(v-v_r) - u) + d*r"
-    - "s' = -s/tau_s + r_in"
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + I_ext + eta + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
+    - "s' = -s/tau_s + spike"
   variables:
-    r: output(0.0)
+    s: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    s: variable(0.0)
-    Delta: 0.1
     C: 100.0
     k: 0.7
     v_r: -60.0
-    v_t: -40.0
+    v_theta: -40.0
     eta: 0.0
-    g: 15.0
-    E_r: 0.0
+    g_e: 1.0
+    E_e: 0.0
+    g_i: 1.0
+    E_i: -65.0
     b: -2.0
-    a: 0.03
-    d: 100.0
+    tau_u: 33.33
+    kappa: 10.0
     tau_s: 6.0
     I_ext: input(0.0)
-    r_in: input(0.0)
+    spike: input(0.0)
+    s_in: input(0.0)
+
+# parameters for fast-spiking neurons
+fs_op:
+  base: rs_op
+  variables:
+    Delta: 1.0
+    C: 20.0
+    k: 1.0
+    v_r: -55.0
+    v_t: -40.0
+    b: 0.025
+    a: 0.2
+    d: 0.0
+    tau_s: 8.0
 
 # node templates
 ################
 
-# population of biophysiologically informed izhikevich neurons with mono-exponential synapses
-ik_pop:
+# regular-spiking neuron population
+rs:
   base: NodeTemplate
   operators:
-    - ik_op
+    - rs_op
 
-# circuit templates
-###################
-
-# biophysiologically informed izhikevich population with mono-exponential synapses
-ik:
-  base: CircuitTemplate
-  nodes:
-    p: ik_pop
-  edges:
-    - [p/ik_op/r, p/ik_op/r_in, null, {weight: 1.0}]
+# fast-spiking neuron population
+fs:
+  base: NodeTemplate
+  operators:
+    - fs_op

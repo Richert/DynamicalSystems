@@ -114,7 +114,7 @@ if codim1:
                                      EPSU=1e-6, EPSS=1e-4, ILP=0, ISP=0, IPS=2, DS='-', get_period=True,
                                      origin=eta_alpha_lp3_cont)
                     eta_old = etas[0]
-                    for s_tmp2 in s_tmp.values():
+                    for s_tmp2 in s_tmp.v1():
                         if 'UZ' in s_tmp2['bifurcation'] and s_tmp2['PAR(1)'] >= eta_old:
                             idx_c = np.argwhere(np.round(s_tmp2['PAR(1)'], decimals=4) == etas)
                             idx_r = np.argwhere(np.round(s_tmp2['PAR(3)'], decimals=4) == alphas)

@@ -114,7 +114,7 @@ if codim1:
                     s_tmp, _ = a.run(starting_point=s, c='qif', ICP=[1, 11], UZR={1: etas}, STOP={}, EPSL=1e-6,
                                      EPSU=1e-6, EPSS=1e-4, ILP=0, ISP=0, IPS=2, get_period=True, DSMAX=0.0002,
                                      origin=eta_alpha_lp3_cont, NMX=40000, DS='-', THL={11: 0.0})
-                    for s2 in s_tmp.values():
+                    for s2 in s_tmp.v1():
                         if np.round(s2['PAR(1)'], decimals=4) in etas:
                             idx_c = np.argwhere(np.round(s2['PAR(1)'], decimals=4) == etas)
                             idx_r = np.argwhere(np.round(s2['PAR(3)'], decimals=5) == alphas)
