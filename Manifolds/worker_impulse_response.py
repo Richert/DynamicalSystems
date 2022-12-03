@@ -24,7 +24,7 @@ def sigmoid(x, kappa, t_on, omega):
 ##################
 
 # sweep condition
-cond = int(sys.argv[-1])
+cond = 20#int(sys.argv[-1])
 
 # file name for saving
 fname = "ir_rs_data"
@@ -55,7 +55,7 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
 # input definition
-T = 21000.0
+T = 2100.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
@@ -91,9 +91,9 @@ for idx in range(n_reps):
 
     # initialize model
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                            file_name=f"rs_{cond}_{idx}", node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset,
-                            spike_threshold=v_spike, dt=dt, verbose=False)
+                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                            node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
+                            verbose=False, clear=True)
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
