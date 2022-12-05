@@ -24,7 +24,7 @@ def sigmoid(x, kappa, t_on, omega):
 ##################
 
 # sweep condition
-cond = 20#int(sys.argv[-1])
+cond = int(sys.argv[-1])
 
 # file name for saving
 fname = "ir_rs_data"
