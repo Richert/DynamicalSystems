@@ -108,4 +108,6 @@ for idx in range(n_reps):
     print(f"Run {idx} done for condition {cond}.")
 
 # save results
-pickle.dump(results, open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb"))
+f = open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb")
+pickle.dump(results, f)
+f.close()
