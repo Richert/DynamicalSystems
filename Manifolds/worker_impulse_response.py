@@ -55,7 +55,7 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
 # input definition
-T = 2100.0
+T = 21000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
