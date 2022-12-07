@@ -1,13 +1,14 @@
 import pandas as pd
 from rectipy import readout
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
-from scipy.ndimage import gaussian_filter1d
+import sys
 
 # load data
-fname = "ir_rs_data_10"
-data = pickle.load(open(f"results/{fname}.pkl", "rb"))
+cond = int(sys.argv[-1])
+fname = f"ir_rs_data_{cond}"
+path = "/projects/p31302/richard/results"
+data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 I_ext = data["I_ext"][:, 0]
 
 print(f"Condition: {data['sweep']}")
@@ -28,19 +29,15 @@ steps = int(T/data["dt"])
 targets = []
 for phi in phis:
     I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=1e3, t_on=1.0, omega=1/freq)
-    # plt.plot(I_tmp[::100]*50.0)
-    # plt.plot(I_ext, color='black', linestyle='--')
-    # plt.show()
     targets.append(I_tmp[::data['sr']])
 
 # perform readout for each set of target data
 #############################################
 
-# create 2D dataframe
-#var, params = data["sweep"]
-var = "test"
-params = np.arange(0, 10)
-scores = pd.DataFrame(columns=phis, index=params, data=np.zeros((len(params), len(phis))))
+# create 2D dataframes
+scores = pd.DataFrame(columns=phis, data=np.zeros((len(data["s"]), len(phis))))
+weights = []
+intercepts = []
 
 # training procedure
 cutoff = 1000
@@ -49,78 +46,22 @@ for i, signal in enumerate(data["s"]):
 
     s = signal.iloc[cutoff:, :]
 
+    weights_tmp = []
+    intercepts_tmp = []
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=15000)
-        res2 = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01)
-        res3 = readout(s[:-cutoff], target[cutoff:-cutoff], alpha=10.0, solver='lbfgs', positive=True, tol=0.01)
-        weight_diff = res2["readout_weights"] - res3["readout_weights"]
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=16000)
         scores.iloc[i, j] = res['test_score']
+        weights_tmp.append(res["readout_weights"])
+        intercepts_tmp.append(res["readout_bias"])
 
-        # plotting
-        # plt.plot(res["target"][-plot_length:], color="black", linestyle="dashed")
-        # plt.plot(res["prediction"][-plot_length:], color="orange")
-        # plt.plot((s @ weight_diff + res["readout_bias"]).values[-plot_length:], color="purple")
-        # plt.legend(["target", "prediction", "new"])
-        # plt.title(f"tau = {tau}, score = {res['train_score']}")
-        # plt.show()
+    weights.append(weights_tmp)
+    intercepts.append(intercepts_tmp)
 
 # save data to file
-# data["taus"] = phis
-# data["scores"] = scores
-# pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
-
-# plotting
-##########
-
-fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(12, 6))
-
-# training scores
-ax = axes[0, 0]
-im = ax.imshow(scores)
-ax.set_ylabel(var)
-ax.set_yticks(np.arange(len(params)), labels=params)
-ax.set_xlabel("phi")
-ax.set_xticks(np.arange(len(phis)), labels=phis)
-ax.set_title("Training Scores")
-plt.colorbar(im, ax=ax)
-
-# average training scores vs. kernel peaks
-ax = axes[0, 1]
-k = data["K_diff"]
-ax.plot(k, color="blue")
-ax2 = ax.twinx()
-ax2.plot(np.mean(scores.values, axis=1), color="orange")
-ax.set_xlabel(var)
-ax.set_xticks(np.arange(len(params)), labels=params)
-ax.set_ylabel("diff", color="blue")
-ax2.set_ylabel("score", color="orange")
-ax.set_title("kernel diff vs. training score")
-
-# average training scores vs. kernel variance
-ax = axes[1, 0]
-k_vars = data["K_var"]
-ax.plot([np.mean(k) for k in k_vars], color="blue")
-ax2 = ax.twinx()
-ax2.plot(np.mean(scores.values, axis=1), color="orange")
-ax.set_xlabel(var)
-ax.set_xticks(np.arange(len(params)), labels=params)
-ax.set_ylabel("var", color="blue")
-ax2.set_ylabel("score", color="orange")
-ax.set_title("K variance vs. training score")
-
-# average training scores vs. kernel width
-ax = axes[1, 1]
-k = data["X_dim"]
-ax.plot(k, color="blue")
-ax2 = ax.twinx()
-ax2.plot(np.mean(scores.values, axis=1), color="orange")
-ax.set_xlabel(var)
-ax.set_xticks(np.arange(len(params)), labels=params)
-ax.set_ylabel("dims", color="blue")
-ax2.set_ylabel("score", color="orange")
-ax.set_title("dimensionality vs. training score")
-
-plt.tight_layout()
-plt.show()
+data["lags"] = phis
+data["scores"] = scores
+data["weights"] = weights
+data["intercepts"] = intercepts
+pickle.dump(data, open(f"{path}/{fname}.pkl", "wb"))

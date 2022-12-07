@@ -1,6 +1,5 @@
 from rectipy import Network, random_connectivity, input_connections
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
 import sys
