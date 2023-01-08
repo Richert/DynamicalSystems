@@ -1,6 +1,5 @@
 from rectipy import Network, random_connectivity, input_connections
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
 import sys
@@ -108,6 +107,6 @@ for idx in range(n_reps):
     print(f"Run {idx} done for condition {cond}.")
 
 # save results
-f = open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb")
-pickle.dump(results, f)
-f.close()
+with open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb") as f:
+    pickle.dump(results, f)
+    f.close()
