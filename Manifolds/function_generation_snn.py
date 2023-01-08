@@ -1,8 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import pickle
 from scipy.signal import find_peaks
 from scipy.optimize import minimize
+import sys
 
 
 def get_dim(s: np.ndarray):
@@ -65,8 +65,10 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 
 # load data
-fname = "ir_rs_data_10"
-data = pickle.load(open(f"results/{fname}.pkl", "rb"))
+cond = int(sys.argv[-1])
+fname = f"ir_rs_data_{cond}"
+path = "/projects/p31302/richard/results"
+data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 
 # get system dynamics kernel matrix
 ###################################
@@ -99,18 +101,4 @@ data["K"] = kernels
 data["K_var"] = vars
 data["X_dim"] = dims
 data["K_diff"] = diffs
-pickle.dump(data, open(f"results/{fname}.pkl", "wb"))
-
-# plotting
-##########
-
-for k, v in zip(kernels, vars):
-
-    _, ax = plt.subplots(ncols=3, figsize=(10, 5))
-    ax[0].imshow(k, aspect=1.0, cmap='nipy_spectral')
-    ax[0].set_title('K')
-    ax[1].imshow(v, aspect=1.0, cmap='nipy_spectral')
-    ax[1].set_title('var(K)')
-    ax[2].plot(k[::-1, :][np.eye(k.shape[0]) > 0])
-    ax[2].set_title("off diag of K")
-    plt.show()
+pickle.dump(data, open(f"{path}/{fname}.pkl", "wb"))
