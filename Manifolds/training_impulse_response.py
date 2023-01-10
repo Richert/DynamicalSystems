@@ -35,7 +35,8 @@ for phi in phis:
 #############################################
 
 # create 2D dataframes
-scores = pd.DataFrame(columns=phis, data=np.zeros((len(data["s"]), len(phis))))
+train_scores = pd.DataFrame(columns=phis, data=np.zeros((len(data["s"]), len(phis))))
+test_scores = pd.DataFrame(columns=phis, data=np.zeros((len(data["s"]), len(phis))))
 weights = []
 intercepts = []
 
@@ -52,7 +53,8 @@ for i, signal in enumerate(data["s"]):
 
         # readout training
         res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=16000)
-        scores.iloc[i, j] = res['test_score']
+        train_scores.iloc[i, j] = res['train_score']
+        test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])
         intercepts_tmp.append(res["readout_bias"])
 
@@ -61,7 +63,8 @@ for i, signal in enumerate(data["s"]):
 
 # save data to file
 data["lags"] = phis
-data["scores"] = scores
+data["train_scores"] = train_scores
+data["test_scores"] = test_scores
 data["weights"] = weights
 data["intercepts"] = intercepts
 pickle.dump(data, open(f"{path}/{fname}.pkl", "wb"))
