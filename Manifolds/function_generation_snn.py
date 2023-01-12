@@ -66,14 +66,14 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 # load data
 cond = int(sys.argv[-1])
-fname = f"ir_rs_data_{cond}"
+fname = f"impulse_response_rs_{cond}"
 path = "/projects/p31302/richard/results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 
 # get system dynamics kernel matrix
 ###################################
 
-cutoff = 900
+cutoff = 1000
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
