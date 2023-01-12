@@ -53,8 +53,8 @@ for i, signal in enumerate(data["s"]):
 
         # readout training
         res = readout(s, target[cutoff:], alpha=10.0, solver='lbfgs', positive=True, tol=0.01, train_split=16000)
-        test_scores.iloc[i, j] = res['test_score']
         train_scores.iloc[i, j] = res['train_score']
+        test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])
         intercepts_tmp.append(res["readout_bias"])
 
