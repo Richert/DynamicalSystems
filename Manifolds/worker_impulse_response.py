@@ -26,7 +26,7 @@ def sigmoid(x, kappa, t_on, omega):
 cond = int(sys.argv[-1])
 
 # file name for saving
-fname = "impulse_response_rs"
+fname = "impulse_response2_rs"
 
 # network parameters
 N = 1000
