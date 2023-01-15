@@ -6,7 +6,7 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = "ir_rs_data_0"
+fname = "ir_rs_data"
 data = pickle.load(open(f"results/{fname}.pkl", "rb"))
 I_ext = data["I_ext"]
 
