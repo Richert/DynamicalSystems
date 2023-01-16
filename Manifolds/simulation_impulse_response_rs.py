@@ -24,7 +24,7 @@ def sigmoid(x, kappa, t_on, omega):
 ##################
 
 # file name for saving
-fname = "ir_rs_data3"
+fname = "ir_rs_data2"
 
 # network parameters
 N = 1000
@@ -34,7 +34,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 50.0
+eta = 55.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -61,7 +61,7 @@ steps = int(T/dt)
 sampling_steps = 100
 freqs = [0.001]
 m = len(freqs)
-alpha = 200.0
+alpha = 300.0
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
     I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=1000, t_on=1.0, omega=1.0/f)
@@ -71,8 +71,8 @@ plt.plot(I_ext)
 plt.show()
 
 # parameter sweep definition
-params = ["alpha"]
-values = [[100.0], [200.0], [300.0]]
+params = ["p"]
+values = [[0.02], [0.08], [0.32]]
 
 # simulation
 ############

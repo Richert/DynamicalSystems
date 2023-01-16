@@ -36,7 +36,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 50.0
+eta = 55.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -96,8 +96,7 @@ for idx in range(n_reps):
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
-    obs = net.run(inputs=I_ext * alpha, device="cpu", sampling_steps=sampling_steps, record_output=True,
-                  record_vars=[("v", False)], verbose=False)
+    obs = net.run(inputs=I_ext * alpha, device="cpu", sampling_steps=sampling_steps, record_output=True, verbose=False)
 
     # results storage
     results["s"].append(obs["out"])
