@@ -34,7 +34,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 40.0
+eta = 50.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -71,8 +71,8 @@ plt.plot(I_ext)
 plt.show()
 
 # parameter sweep definition
-params = ["g", "alpha"]
-values = [[8.0, 40.0], [8.0, 80.0], [12.0, 40.0], [12.0, 80.0]]
+params = ["alpha"]
+values = [[100.0], [200.0], [300.0]]
 
 # simulation
 ############

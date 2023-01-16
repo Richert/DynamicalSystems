@@ -26,7 +26,7 @@ def sigmoid(x, kappa, t_on, omega):
 cond = int(sys.argv[-1])
 
 # file name for saving
-fname = "impulse_response2_rs"
+fname = "ir_delta"
 
 # network parameters
 N = 1000
@@ -35,12 +35,12 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 2.0
-eta = 40.0
+Delta = 1.0
+eta = 50.0
 a = 0.03
 b = -2.0
 d = 100.0
-g = 20.0
+g = 10.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -49,7 +49,7 @@ v_reset = -1000.0
 # parameter sweep definition
 p1, p2 = "Delta", "alpha"
 v1s = np.asarray([0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4])
-v2s = np.asarray([0.0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1200.0])
+v2s = np.asarray([50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0])
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
