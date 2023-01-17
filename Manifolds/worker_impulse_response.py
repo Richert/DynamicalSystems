@@ -46,7 +46,7 @@ v_reset = -1000.0
 # parameter sweep definition
 p1, p2 = "p", "alpha"
 v1s = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
-v2s = np.asarray([50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0])
+v2s = np.asarray([0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0])
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 

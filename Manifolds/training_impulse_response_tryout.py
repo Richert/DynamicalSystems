@@ -54,7 +54,7 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=16000)
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=8000)
         train_scores.iloc[i, j] = res['train_score']
         test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])

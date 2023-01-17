@@ -24,7 +24,7 @@ def sigmoid(x, kappa, t_on, omega):
 ##################
 
 # file name for saving
-fname = "ir_rs_data2"
+fname = "ir_rs_data"
 
 # network parameters
 N = 1000
@@ -49,22 +49,18 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": [], "eta": eta, "tau_u": 1/a
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 11000.0
+T = 21000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 freqs = [0.001]
 m = len(freqs)
 alpha = 350.0
-I_ext = np.zeros((steps, m))
-for i, f in enumerate(freqs):
-    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=1.0, omega=1.0/f)
-plt.plot(I_ext)
-plt.show()
+kappa = 2e3
 
 # parameter sweep definition
-params = ["p"]
-values = [[0.05], [0.05], [0.05]]
+params = ["kappa"]
+values = [[1000.0], [2000.0], [3000.0], [4000.0], [5000.0], [6000.0]]
 
 # simulation
 ############
@@ -76,11 +72,17 @@ W_ins = []
 Js = []
 for vs in values:
 
+    # change parameters
     for param, v in zip(params, vs):
         if param in node_vars:
             node_vars[param] = v
         else:
             exec(f"{param} = {v}")
+
+    # generate input
+    I_ext = np.zeros((steps, m))
+    for i, f in enumerate(freqs):
+        I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps) * 2.0 * np.pi * f), kappa=kappa, t_on=1.0, omega=1.0 / f)
 
     # draw random variables
     J = random_connectivity(N, N, p, normalize=True)
