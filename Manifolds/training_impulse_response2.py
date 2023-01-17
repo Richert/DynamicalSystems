@@ -6,7 +6,7 @@ import sys
 
 # load data
 cond = int(sys.argv[-1])
-fname = f"ir_p_{cond}"
+fname = f"ir_delta_{cond}"
 path = "/projects/p31302/richard/results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 I_ext = data["I_ext"]
