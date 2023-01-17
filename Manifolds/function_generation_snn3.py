@@ -66,7 +66,7 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 # load data
 cond = int(sys.argv[-1])
-fname = f"ir_p_{cond}"
+fname = f"ir_p_delta_{cond}"
 path = "/projects/p31302/richard/results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 
