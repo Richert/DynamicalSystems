@@ -25,9 +25,6 @@ def sigmoid(x, kappa, t_on, omega):
 # sweep condition
 cond = int(sys.argv[-1])
 
-# file name for saving
-fname = "ir_p_delta"
-
 # network parameters
 N = 1000
 p = 0.05
@@ -62,7 +59,7 @@ freqs = [0.001]
 m = len(freqs)
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
-    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=1.0, omega=1.0/f)
+    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=2e3, t_on=1.0, omega=1.0/f)
 alpha = 300.0
 
 # simulation
@@ -96,7 +93,7 @@ for idx in range(n_reps):
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
-    obs = net.run(inputs=I_ext * alpha, device="cpu", sampling_steps=sampling_steps, record_output=True, verbose=False)
+    obs = net.run(inputs=I_ext * alpha, sampling_steps=sampling_steps, record_output=True, verbose=False)
 
     # results storage
     results["s"].append(obs["out"])
@@ -106,6 +103,7 @@ for idx in range(n_reps):
     print(f"Run {idx} done for condition {cond}.")
 
 # save results
+fname = f"ir_{p1}_{p2}"
 with open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb") as f:
     pickle.dump(results, f)
     f.close()

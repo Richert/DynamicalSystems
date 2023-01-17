@@ -33,7 +33,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 2.0
+Delta = 1.6
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -44,18 +44,12 @@ tau_s = 6.0
 v_spike = 1000.0
 v_reset = -1000.0
 
-# create connectivity matrix
-J = random_connectivity(N, N, p, normalize=True)
-
-# create background current distribution
-thetas = lorentzian(N, v_t, Delta, v_r, 2*v_t-v_r)
-
 # collect remaining model parameters
-node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g,
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": [], "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g,
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 3000.0
+T = 11000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
@@ -64,8 +58,7 @@ m = len(freqs)
 alpha = 350.0
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
-    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=1000, t_on=1.0, omega=1.0/f)
-W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=True)
+    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=5000, t_on=1.0, omega=1.0/f)
 plt.plot(I_ext)
 plt.show()
 
@@ -78,19 +71,21 @@ values = [[0.05], [0.05], [0.05]]
 
 results = []
 correlations = []
+thetas = []
+W_ins = []
+Js = []
 for vs in values:
 
     for param, v in zip(params, vs):
-        if param == "v_theta":
-            node_vars["v_theta"] = v + Delta*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
-        elif param == "Delta":
-            node_vars["v_theta"] = v_t + v*np.tan((np.pi/2)*(2.*np.arange(1, N+1)-N-1)/(N+1))
-        elif param == "p":
-            J = random_connectivity(N, N, p, normalize=True)
-        elif param == "alpha":
-            alpha = v
-        else:
+        if param in node_vars:
             node_vars[param] = v
+        else:
+            exec(f"{param} = {v}")
+
+    # draw random variables
+    J = random_connectivity(N, N, p, normalize=True)
+    W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=True)
+    node_vars["v_theta"] = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
     # initialize model
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
@@ -100,17 +95,19 @@ for vs in values:
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation
-    obs = net.run(inputs=I_ext * alpha, sampling_steps=sampling_steps, record_output=True,
-                  record_vars=[("v", False)])
+    obs = net.run(inputs=I_ext * alpha, sampling_steps=sampling_steps, record_output=True)
     results.append(obs["out"])
 
-    # show correlation between input weight and network connections
+    # results storage
     projections = np.sum(J > 0, axis=0)
     correlations.append(np.corrcoef(W_in[:, 0], projections))
+    Js.append(J)
+    W_ins.append(W_in)
+    thetas.append(node_vars["v_theta"])
 
 # save results
 inp = pd.DataFrame(index=results[-1].index, data=I_ext[::sampling_steps, :], columns=np.arange(0, m))
-pickle.dump({"s": results, "J": J, "heterogeneity": thetas, "I_ext": inp, "W_in": W_in, "params": node_vars, "T": T,
+pickle.dump({"s": results, "J": Js, "heterogeneity": thetas, "I_ext": inp, "W_in": W_ins, "params": node_vars, "T": T,
              "dt": dt, "sr": sampling_steps, "v_reset": v_reset, "v_spike": v_spike, "sweep": (params, values)},
             open(f"results/{fname}.pkl", "wb"))
 

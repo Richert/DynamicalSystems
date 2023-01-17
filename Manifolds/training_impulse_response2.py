@@ -6,7 +6,7 @@ import sys
 
 # load data
 cond = int(sys.argv[-1])
-fname = f"ir_delta_{cond}"
+fname = f"ir_delta_alpha_{cond}"
 path = "/projects/p31302/richard/results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 I_ext = data["I_ext"]
@@ -28,7 +28,7 @@ T = data["T"]
 steps = int(T/data["dt"])
 targets = []
 for phi in phis:
-    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=1e3, t_on=1.0, omega=1/freq)
+    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=2e3, t_on=1.0, omega=1/freq)
     targets.append(I_tmp[::data['sr']])
 
 # perform readout for each set of target data
@@ -74,31 +74,3 @@ data["test_scores"] = test_scores
 data["weights"] = weights
 data["intercepts"] = intercepts
 pickle.dump(data, open(f"{path}/{fname}.pkl", "wb"))
-
-# plotting
-# import matplotlib.pyplot as plt
-#
-# #params, values = data["sweep"]
-# for trial in range(0, len(data["s"])):
-#
-#     # print(f"condition: \n")
-#     # vals = values[trial]
-#     # for p, v in zip(params, vals):
-#     #     print(f"{p} = {v}\n")
-#
-#     fig, axes = plt.subplots(nrows=5, figsize=(10, 8))
-#
-#     ax = axes[0]
-#     ax.plot(phis, test_scores.iloc[trial, :])
-#     ax.set_xlabel("phi")
-#     ax.set_ylabel("test score")
-#
-#     examples = [0, 2, 4, 6]
-#     for ax, ex in zip(axes[1:], examples):
-#         ax.plot(predictions_plotting[trial][ex], color="blue")
-#         ax.plot(targets_plotting[trial][ex], color="orange")
-#         ax.set_xlabel("time")
-#         ax.set_ylabel("s")
-#
-#     plt.tight_layout()
-#     plt.show()
