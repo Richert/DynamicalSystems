@@ -26,8 +26,8 @@ cmap = plt.get_cmap('plasma')
 # prepare data
 ##############
 
-path = "results/ir_results2"
-fn = "impulse_response2_rs_18"
+path = "results/ir_delta"
+fn = "ir_delta_46"
 data = pickle.load(open(f"{path}/{fn}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
 
@@ -39,8 +39,8 @@ fig = plt.figure(1)
 grid = gridspec.GridSpec(nrows=3, ncols=2, figure=fig)
 
 # timeseries
-trial = 7
-start, stop = 6000, 9000
+trial = 1
+start, stop = 0, 3000
 ax = fig.add_subplot(grid[0, :])
 ax.plot(np.mean(data["s"][trial].iloc[start:stop, :].values, axis=1), color="blue")
 ax2 = ax.twinx()
@@ -48,6 +48,12 @@ ax2.plot(data["I_ext"][::data["sr"], 0][start:stop], color="orange")
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("s")
 ax2.set_ylabel("I")
+
+ax = fig.add_subplot(grid[1, :])
+im = ax.imshow(np.sqrt(data["s"][trial].iloc[start:stop, :].values.T), aspect=0.4)
+ax.set_xlabel("time (ms)")
+ax.set_ylabel("s")
+plt.colorbar(im, ax=ax)
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)

@@ -33,7 +33,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 2.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -55,29 +55,29 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 11000.0
+T = 3000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 freqs = [0.001]
 m = len(freqs)
-alpha = 300.0
+alpha = 350.0
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
     I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=1000, t_on=1.0, omega=1.0/f)
 W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=True)
-#W_in = np.abs(W_in)
 plt.plot(I_ext)
 plt.show()
 
 # parameter sweep definition
 params = ["p"]
-values = [[0.02], [0.08], [0.32]]
+values = [[0.05], [0.05], [0.05]]
 
 # simulation
 ############
 
 results = []
+correlations = []
 for vs in values:
 
     for param, v in zip(params, vs):
@@ -104,6 +104,10 @@ for vs in values:
                   record_vars=[("v", False)])
     results.append(obs["out"])
 
+    # show correlation between input weight and network connections
+    projections = np.sum(J > 0, axis=0)
+    correlations.append(np.corrcoef(W_in[:, 0], projections))
+
 # save results
 inp = pd.DataFrame(index=results[-1].index, data=I_ext[::sampling_steps, :], columns=np.arange(0, m))
 pickle.dump({"s": results, "J": J, "heterogeneity": thetas, "I_ext": inp, "W_in": W_in, "params": node_vars, "T": T,
@@ -111,7 +115,7 @@ pickle.dump({"s": results, "J": J, "heterogeneity": thetas, "I_ext": inp, "W_in"
             open(f"results/{fname}.pkl", "wb"))
 
 # exemplary plotting
-for v, s in zip(values, results):
+for vs, s, c in zip(values, results, correlations):
     _, ax = plt.subplots()
     ax.plot(s.mean(axis=1), color="blue")
     ax2 = ax.twinx()
@@ -119,5 +123,6 @@ for v, s in zip(values, results):
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("s")
     ax2.set_ylabel("I")
-    plt.title(f"{param} = {v}")
+    condition = ", ".join([f"{param} = {v}" for param, v in zip(params, vs)])
+    plt.title(f"{condition} : corr = {c[0, 1]}")
     plt.show()
