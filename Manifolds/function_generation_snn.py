@@ -66,8 +66,8 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 # load data
 cond = int(sys.argv[-4])
-p1 = int(sys.argv[-3])
-p2 = int(sys.argv[-2])
+p1 = str(sys.argv[-3])
+p2 = str(sys.argv[-2])
 path = str(sys.argv[-1])
 fname = f"ir_{p1}_{p2}_{cond}"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
