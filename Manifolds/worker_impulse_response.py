@@ -23,7 +23,9 @@ def sigmoid(x, kappa, t_on, omega):
 ##################
 
 # sweep condition
-cond = int(sys.argv[-1])
+cond = int(sys.argv[-3])
+p1 = str(sys.argv[-2])
+p2 = str(sys.argv[-1])
 
 # network parameters
 N = 1000
@@ -44,9 +46,11 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # parameter sweep definition
-p1, p2 = "p", "alpha"
-v1s = np.asarray([0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64])
-v2s = np.asarray([0.0, 50.0, 100.0, 150.0, 200.0, 250.0, 300.0, 350.0, 400.0, 450.0, 500.0])
+with open("config/impulse_response_sweep.pkl", "rb") as f:
+    sweep = pickle.load(f)
+    v1s = sweep[p1]
+    v2s = sweep[p2]
+    f.close()
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
@@ -66,7 +70,7 @@ alpha = 1.0
 ############
 
 results = {"s": [], "J": [], "I_ext": I_ext, "thetas": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
-           "sr": sampling_steps}
+           "sr": sampling_steps, "W_in": []}
 n_reps = 10
 for idx in range(n_reps):
 
@@ -99,6 +103,7 @@ for idx in range(n_reps):
     results["s"].append(obs["out"])
     results["J"].append(J)
     results["thetas"].append(thetas)
+    results["W_in"].append(W_in)
 
     print(f"Run {idx} done for condition {cond}.")
 
