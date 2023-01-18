@@ -26,8 +26,8 @@ cmap = plt.get_cmap('plasma')
 # prepare data
 ##############
 
-path = "results/ir_delta"
-fn = "ir_delta_46"
+path = "results/ir_p_delta"
+fn = "ir_p_delta_46"
 data = pickle.load(open(f"{path}/{fn}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
 trial = 1

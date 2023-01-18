@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 
 # load data
-fname = f"ir_rs_data2"
+fname = f"ir_rs_data"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 I_ext = data["I_ext"]
@@ -54,7 +54,7 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=8000)
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=15000)
         train_scores.iloc[i, j] = res['train_score']
         test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])
@@ -76,13 +76,11 @@ pickle.dump(data, open(f"{path}/{fname}.pkl", "wb"))
 # plotting
 import matplotlib.pyplot as plt
 
-#params, values = data["sweep"]
+params, values = data["sweep"]
 for trial in range(0, len(data["s"])):
 
-    # print(f"condition: \n")
-    # vals = values[trial]
-    # for p, v in zip(params, vals):
-    #     print(f"{p} = {v}\n")
+    vals = values[trial]
+    title = ", ".join([f"{p} = {v}" for p, v in zip(params, vals)])
 
     fig, axes = plt.subplots(nrows=5, figsize=(10, 8))
 
@@ -90,6 +88,7 @@ for trial in range(0, len(data["s"])):
     ax.plot(phis, test_scores.iloc[trial, :])
     ax.set_xlabel("phi")
     ax.set_ylabel("test score")
+    ax.set_title(title)
 
     examples = [0, 2, 4, 6]
     for ax, ex in zip(axes[1:], examples):
