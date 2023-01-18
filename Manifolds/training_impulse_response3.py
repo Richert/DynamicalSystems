@@ -5,9 +5,9 @@ import pickle
 import sys
 
 # load data
-cond = int(sys.argv[-1])
+cond = int(sys.argv[-2])
 fname = f"ir_p_delta_{cond}"
-path = "/projects/p31302/richard/results"
+path = str(sys.argv[-1])
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 I_ext = data["I_ext"]
 
