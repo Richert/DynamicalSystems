@@ -26,13 +26,13 @@ cmap = plt.get_cmap('plasma')
 # prepare data
 ##############
 
-# parameters of interest
-p1 = "p"
-p2 = "Delta"
+# read in condition
+p1 = str(sys.argv[-3])
+p2 = str(sys.argv[-2])
+path = str(sys.argv[-1])
 
 # collect data of interest in dataframe
-path = "results/ir_p_delta"
-fn = "ir_p_delta"
+fn = f"ir_{p1}_{p2}"
 cols = ["trial", "train_score", "test_score", "dimensionality", "K_diff", "alpha", "p"]
 data = pd.DataFrame(columns=cols)
 for f in os.listdir(path):
