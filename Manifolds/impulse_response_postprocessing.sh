@@ -3,7 +3,7 @@
 # set condition
 p1="p"
 p2="alpha"
-path="/home/rgf3807/data/ir_${p1}_${p2}"
+path="/media/richard/data/ir_${p1}_${p2}"
 n=77
 batch_size=10
 range_end=$(($n-1))
