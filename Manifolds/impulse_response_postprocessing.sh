@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set condition
-p1="Delta"
+p1="p"
 p2="alpha"
 path="/home/rgf3807/data/ir_${p1}_${p2}"
 n=77

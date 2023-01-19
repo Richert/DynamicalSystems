@@ -28,12 +28,12 @@ fname = "ir_rs_data"
 
 # network parameters
 N = 1000
-p = 0.04
+p = 0.05
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.4
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -49,18 +49,18 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": [], "eta": eta, "tau_u": 1/a
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # input definition
-T = 5000.0
+T = 11000.0
 dt = 1e-2
 steps = int(T/dt)
 sampling_steps = 100
 freqs = [0.001]
 m = len(freqs)
-alpha = 300.0
+alpha = 400.0
 kappa = 2e3
 
 # parameter sweep definition
 params = ["kappa"]
-values = [[5000.0], [5000.0], [5000.0], [5000.0]]
+values = [[1000.0], [2000.0], [3000.0], [4000.0], [5000.0]]
 
 # simulation
 ############
