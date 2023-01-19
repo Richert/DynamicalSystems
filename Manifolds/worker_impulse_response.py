@@ -64,7 +64,7 @@ m = len(freqs)
 I_ext = np.zeros((steps, m))
 for i, f in enumerate(freqs):
     I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=2e3, t_on=1.0, omega=1.0/f)
-alpha = 1.0
+alpha = 500.0
 
 # simulation
 ############

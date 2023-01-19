@@ -26,7 +26,7 @@ T = data["T"]
 steps = int(T/data["dt"])
 targets = []
 for phi in phis:
-    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=1e3, t_on=1.0, omega=1/freq)
+    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=5e2, t_on=1.0, omega=1/freq)
     targets.append(I_tmp[::data['sr']])
 
 # perform readout for each set of target data
@@ -54,7 +54,7 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=15000)
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=8000)
         train_scores.iloc[i, j] = res['train_score']
         test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])

@@ -30,7 +30,7 @@ T = data["T"]
 steps = int(T/data["dt"])
 targets = []
 for phi in phis:
-    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=2e3, t_on=1.0, omega=1/freq)
+    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=5e2, t_on=1.0, omega=1/freq)
     targets.append(I_tmp[::data['sr']])
 
 # perform readout for each set of target data
