@@ -26,7 +26,7 @@ cmap = plt.get_cmap('plasma')
 # prepare data
 ##############
 
-# read in condition
+# choose condition/data to plot
 p1 = str(sys.argv[-3])
 p2 = str(sys.argv[-2])
 path = str(sys.argv[-1])

@@ -1,8 +1,6 @@
 import sys
-import os
 import pickle
 import numpy as np
-import pandas as pd
 from matplotlib import gridspec
 import matplotlib.pyplot as plt
 
@@ -23,14 +21,13 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 cmap = plt.get_cmap('plasma')
 
-# prepare data
-##############
-
-path = "results/ir_p_delta"
-fn = "ir_p_delta_16"
-data = pickle.load(open(f"{path}/{fn}.pkl", "rb"))
+# choose condition/data to plot
+p1 = str(sys.argv[-4])
+p2 = str(sys.argv[-3])
+path = str(sys.argv[-2])
+trial = int(sys.argv[-1])
+data = pickle.load(open(f"{path}/ir_{p1}_{p2}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
-trial = 3
 
 # plotting
 ##########
