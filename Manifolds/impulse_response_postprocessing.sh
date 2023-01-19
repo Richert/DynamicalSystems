@@ -21,7 +21,7 @@ for IDX in `seq 0 $range_end`; do
 
   # python calls
   (
-  echo "Starting job #${$IDX+1} of ${n} jobs..."
+  	echo "Starting job #$(($IDX+1)) of ${n} jobs..."
  	python function_generation_snn.py $IDX $p1 $p2 $path
  	python training_impulse_response.py $IDX $p1 $p2 $path
  	sleep 1
