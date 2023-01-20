@@ -5,7 +5,7 @@ import pickle
 from scipy.ndimage import gaussian_filter1d
 
 # load data
-fname = f"ir_rs_data"
+fname = f"ir_rs_data2"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
