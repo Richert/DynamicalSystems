@@ -84,7 +84,7 @@ for d in data["s"]:
 
     kernels_tmp, diffs_tmp, dims_tmp = [], [], []
     for sidx in stimuli:
-        X = d[stimuli[sidx]:stimuli[sidx]+min_isi]
+        X = d[sidx:sidx+min_isi]
         K = get_kernel(X)
         dims_tmp.append(get_dim(X))
         diffs_tmp.append(get_kernel_diff(K))
