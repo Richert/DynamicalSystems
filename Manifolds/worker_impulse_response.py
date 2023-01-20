@@ -43,7 +43,7 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # parameter sweep definition
-with open("config/impulse_response_sweep.pkl", "rb") as f:
+with open("/home/rgf3807/PycharmProjects/DynamicalSystems/Manifolds/config/impulse_response_sweep.pkl", "rb") as f:
     sweep = pickle.load(f)
     v1s = sweep[p1]
     v2s = sweep[p2]
