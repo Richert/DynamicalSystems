@@ -1,6 +1,5 @@
 import numpy as np
 import pickle
-from scipy.signal import find_peaks
 from scipy.optimize import minimize
 import sys
 
@@ -76,22 +75,20 @@ data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 ###################################
 
 cutoff = 1000
+margin = 50
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
     d = d.iloc[cutoff:, :].values
-    inp = data["I_ext"][::data['sr'], :][cutoff:, 0]
-    peaks, _ = find_peaks(inp)
-    isi = peaks[1] - peaks[0]
+    stimuli = data["stimuli"]
 
     kernels_tmp, diffs_tmp, dims_tmp = [], [], []
-    for idx in range(len(peaks)):
-        if peaks[idx]+isi <= d.shape[0]:
-            X = d[peaks[idx]:peaks[idx]+isi]
-            K = get_kernel(X)
-            dims_tmp.append(get_dim(X))
-            diffs_tmp.append(get_kernel_diff(K))
-            kernels_tmp.append(K)
+    for sidx in range(len(stimuli)):
+        X = d[stimuli[sidx]:stimuli[sidx+1-margin]]
+        K = get_kernel(X)
+        dims_tmp.append(get_dim(X))
+        diffs_tmp.append(get_kernel_diff(K))
+        kernels_tmp.append(K)
 
     kernels.append(np.mean(kernels_tmp, axis=0))
     vars.append(np.var(kernels_tmp, axis=0))

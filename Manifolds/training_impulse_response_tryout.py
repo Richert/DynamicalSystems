@@ -11,10 +11,6 @@ data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
 
 
-def sigmoid(x, kappa, t_on, omega):
-    return 1.0/(1.0 + np.exp(-kappa*(x-np.cos(t_on*np.pi/omega))))
-
-
 # create target data for different taus
 #######################################
 
