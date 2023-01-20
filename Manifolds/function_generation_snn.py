@@ -83,8 +83,11 @@ for d in data["s"]:
     stimuli = data["stimuli"]
 
     kernels_tmp, diffs_tmp, dims_tmp = [], [], []
-    for sidx in range(len(stimuli)):
-        X = d[stimuli[sidx]:stimuli[sidx+1-margin]]
+    for sidx in range(len(stimuli)-1):
+        try:
+            X = d[stimuli[sidx]:stimuli[sidx+1-margin]]
+        except IndexError:
+            X = d[stimuli[sidx]:]
         K = get_kernel(X)
         dims_tmp.append(get_dim(X))
         diffs_tmp.append(get_kernel_diff(K))
