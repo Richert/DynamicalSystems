@@ -84,11 +84,12 @@ for d in data["s"]:
 
     kernels_tmp, diffs_tmp, dims_tmp = [], [], []
     for sidx in stimuli:
-        X = d[sidx:sidx+min_isi]
-        K = get_kernel(X)
-        dims_tmp.append(get_dim(X))
-        diffs_tmp.append(get_kernel_diff(K))
-        kernels_tmp.append(K)
+        if d.shape[0] - sidx > min_isi:
+            X = d[sidx:sidx+min_isi]
+            K = get_kernel(X)
+            dims_tmp.append(get_dim(X))
+            diffs_tmp.append(get_kernel_diff(K))
+            kernels_tmp.append(K)
 
     kernels.append(np.mean(kernels_tmp, axis=0))
     vars.append(np.var(kernels_tmp, axis=0))
