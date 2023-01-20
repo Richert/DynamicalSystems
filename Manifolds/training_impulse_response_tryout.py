@@ -2,13 +2,12 @@ import pandas as pd
 from rectipy import readout
 import numpy as np
 import pickle
+from scipy.ndimage import gaussian_filter1d
 
 # load data
 fname = f"ir_rs_data"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
-I_ext = data["I_ext"]
-
 print(f"Condition: {data['sweep']}")
 
 
@@ -20,14 +19,19 @@ def sigmoid(x, kappa, t_on, omega):
 #######################################
 
 # create target data
-phis = np.linspace(0.1, 0.9, num=10)*2.0*np.pi
-freq = 0.001
-T = data["T"]
-steps = int(T/data["dt"])
+sigma = 20
+stimuli = np.asarray(data["stimuli"])
+min_isi = np.min(stimuli)
+phis = np.linspace(0.1, 0.6, num=10)*min_isi
+steps = int(data["T"]/(data["dt"]*data['sr']))
 targets = []
 for phi in phis:
-    I_tmp = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*freq - phi), kappa=5e2, t_on=1.0, omega=1/freq)
-    targets.append(I_tmp[::data['sr']])
+    indices = stimuli + int(phi)
+    if indices[-1] >= steps:
+        indices = indices[:-1]
+    I_tmp = np.zeros((steps,))
+    I_tmp[indices] = 1.0
+    targets.append(gaussian_filter1d(I_tmp, sigma=sigma))
 
 # perform readout for each set of target data
 #############################################
@@ -54,7 +58,7 @@ for i, signal in enumerate(data["s"]):
     for j, (tau, target) in enumerate(zip(phis, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=8000)
+        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.1, train_split=15000)
         train_scores.iloc[i, j] = res['train_score']
         test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])

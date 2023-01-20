@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
+from scipy.ndimage import gaussian_filter1d
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -48,19 +49,29 @@ v_reset = -1000.0
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": [], "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g,
              "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
-# input definition
-T = 11000.0
-dt = 1e-2
+# simulation settings
+T = 21000.0
+dt = 1e-1
 steps = int(T/dt)
-sampling_steps = 100
-freqs = [0.001]
-m = len(freqs)
-alpha = 400.0
-kappa = 2e3
+sampling_steps = 10
+
+# input definition
+alpha = 300.0
+kappa = 200
+sigma = 20
+mean_isi = 20000
+stimuli = np.zeros((steps, 1))
+idx = 0
+stim_times = []
+while idx < steps:
+    if idx > 0:
+        stim_times.append(int(idx/sampling_steps))
+        stimuli[idx, 0] = 1.0
+    idx += mean_isi + int(np.random.randn() * kappa)
 
 # parameter sweep definition
-params = ["kappa"]
-values = [[1000.0], [2000.0], [3000.0], [4000.0], [5000.0]]
+params = ["alpha"]
+values = [[5000.0], [10000.0], [15000.0], [20000.0], [25000.0]]
 
 # simulation
 ############
@@ -80,13 +91,12 @@ for vs in values:
             exec(f"{param} = {v}")
 
     # generate input
-    I_ext = np.zeros((steps, m))
-    for i, f in enumerate(freqs):
-        I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps) * 2.0 * np.pi * f), kappa=kappa, t_on=1.0, omega=1.0 / f)
+    I_ext = np.zeros_like(stimuli)
+    I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
 
     # draw random variables
     J = random_connectivity(N, N, p, normalize=True)
-    W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=True)
+    W_in = input_connections(N, stimuli.shape[1], 1.0, variance=1.0, zero_mean=True)
     node_vars["v_theta"] = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
     # initialize model
@@ -94,7 +104,7 @@ for vs in values:
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
                             node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
                             device="cuda:0")
-    net.add_input_layer(m, W_in, trainable=False)
+    net.add_input_layer(stimuli.shape[1], W_in, trainable=False)
 
     # simulation
     obs = net.run(inputs=I_ext * alpha, sampling_steps=sampling_steps, record_output=True)
@@ -108,9 +118,9 @@ for vs in values:
     thetas.append(node_vars["v_theta"])
 
 # save results
-inp = pd.DataFrame(index=results[-1].index, data=I_ext[::sampling_steps, :], columns=np.arange(0, m))
-pickle.dump({"s": results, "J": Js, "heterogeneity": thetas, "I_ext": inp, "W_in": W_ins, "params": node_vars, "T": T,
-             "dt": dt, "sr": sampling_steps, "v_reset": v_reset, "v_spike": v_spike, "sweep": (params, values)},
+inp = pd.DataFrame(index=results[-1].index, data=I_ext[::sampling_steps, :], columns=np.arange(0, stimuli.shape[1]))
+pickle.dump({"s": results, "J": Js, "heterogeneity": thetas, "stimuli": stim_times, "W_in": W_ins, "params": node_vars,
+             "T": T, "dt": dt, "sr": sampling_steps, "v_reset": v_reset, "v_spike": v_spike, "sweep": (params, values)},
             open(f"results/{fname}.pkl", "wb"))
 
 # exemplary plotting
