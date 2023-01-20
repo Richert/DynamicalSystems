@@ -74,22 +74,17 @@ data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 # get system dynamics kernel matrix
 ###################################
 
-margin = 50
+margin = 10
 stimuli = np.asarray(data["stimuli"])
-min_isi = np.min(np.abs(np.diff(stimuli)))
+min_isi = np.min(np.abs(np.diff(stimuli))) - margin
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
     d = d.values
 
     kernels_tmp, diffs_tmp, dims_tmp = [], [], []
-    for sidx in range(len(stimuli)-1):
-        try:
-            X = d[stimuli[sidx]:stimuli[sidx+1]-margin]
-        except IndexError:
-            if d.shape[0] - stimuli[sidx] < min_isi:
-                break
-            X = d[stimuli[sidx]:]
+    for sidx in stimuli:
+        X = d[stimuli[sidx]:stimuli[sidx]+min_isi]
         K = get_kernel(X)
         dims_tmp.append(get_dim(X))
         diffs_tmp.append(get_kernel_diff(K))
