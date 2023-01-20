@@ -75,8 +75,8 @@ data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 ###################################
 
 margin = 50
-stimuli = data["stimuli"]
-print(stimuli)
+stimuli = np.asarray(data["stimuli"])
+min_isi = np.min(np.abs(np.diff(stimuli)))
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
@@ -87,6 +87,8 @@ for d in data["s"]:
         try:
             X = d[stimuli[sidx]:stimuli[sidx+1]-margin]
         except IndexError:
+            if d.shape[0] - stimuli[sidx] < min_isi:
+                break
             X = d[stimuli[sidx]:]
         K = get_kernel(X)
         dims_tmp.append(get_dim(X))
