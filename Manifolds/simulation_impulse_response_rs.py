@@ -17,15 +17,11 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
-def sigmoid(x, kappa, t_on, omega):
-    return 1.0/(1.0 + np.exp(-kappa*(x-np.cos(t_on*np.pi/omega))))
-
-
 # model definition
 ##################
 
 # file name for saving
-fname = "ir_rs_data"
+fname = "ir_rs_data2"
 
 # network parameters
 N = 1000
@@ -71,7 +67,7 @@ while idx < steps:
 
 # parameter sweep definition
 params = ["alpha"]
-values = [[5000.0], [10000.0], [15000.0], [20000.0], [25000.0]]
+values = [[100.0], [200.0], [300.0], [400.0], [500.0]]
 
 # simulation
 ############
@@ -93,6 +89,7 @@ for vs in values:
     # generate input
     I_ext = np.zeros_like(stimuli)
     I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
+    I_ext[:, 0] /= np.max(I_ext[:, 0])
 
     # draw random variables
     J = random_connectivity(N, N, p, normalize=True)

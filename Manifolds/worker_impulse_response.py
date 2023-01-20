@@ -2,6 +2,7 @@ from rectipy import Network, random_connectivity, input_connections
 import numpy as np
 import pickle
 from scipy.stats import cauchy
+from scipy.ndimage import gaussian_filter1d
 import sys
 
 
@@ -13,10 +14,6 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
             s = cauchy.rvs(loc=eta, scale=delta)
         samples[i] = s
     return samples
-
-
-def sigmoid(x, kappa, t_on, omega):
-    return 1.0/(1.0 + np.exp(-kappa*(x-np.cos(t_on*np.pi/omega))))
 
 
 # model definition
@@ -54,22 +51,35 @@ with open("config/impulse_response_sweep.pkl", "rb") as f:
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
-# input definition
-T = 21000.0
-dt = 1e-2
+# simulation settings
+T = 51000.0
+dt = 1e-1
 steps = int(T/dt)
-sampling_steps = 100
-freqs = [0.001]
-m = len(freqs)
-I_ext = np.zeros((steps, m))
-for i, f in enumerate(freqs):
-    I_ext[:, i] = sigmoid(np.cos(np.linspace(0, T, steps)*2.0*np.pi*f), kappa=2e3, t_on=1.0, omega=1.0/f)
-alpha = 500.0
+sampling_steps = 10
+
+# input definition
+alpha = 300.0
+kappa = 200
+sigma = 20
+mean_isi = 20000
+stimuli = np.zeros((steps, 1))
+idx = 0
+stim_times = []
+while idx < steps:
+    if idx > 0:
+        stim_times.append(int(idx/sampling_steps))
+        stimuli[idx, 0] = 1.0
+    idx += mean_isi + int(np.random.randn() * kappa)
+
+# generate impulses
+I_ext = np.zeros_like(stimuli)
+I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
+I_ext[:, 0] /= np.max(I_ext[:, 0])
 
 # simulation
 ############
 
-results = {"s": [], "J": [], "I_ext": I_ext, "thetas": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
+results = {"s": [], "J": [], "stimuli": stim_times, "thetas": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
            "sr": sampling_steps, "W_in": []}
 n_reps = 10
 for idx in range(n_reps):
@@ -80,7 +90,7 @@ for idx in range(n_reps):
 
     # create connectivity matrices
     J = random_connectivity(N, N, p, normalize=True)
-    W_in = input_connections(N, m, 1.0, variance=1.0, zero_mean=True)
+    W_in = input_connections(N, stimuli.shape[1], 1.0, variance=1.0, zero_mean=True)
 
     # create background current distribution
     thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
@@ -94,7 +104,7 @@ for idx in range(n_reps):
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
                             verbose=False, clear=True)
-    net.add_input_layer(m, W_in, trainable=False)
+    net.add_input_layer(stimuli.shape[1], W_in, trainable=False)
 
     # simulation
     obs = net.run(inputs=I_ext * alpha, sampling_steps=sampling_steps, record_output=True, verbose=False)
