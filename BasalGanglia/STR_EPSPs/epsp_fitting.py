@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from pandas import DataFrame
 from typing import List
 
+
 def text_to_list(text: str, sep: str, remove: List[str] = None, convert_to_float: bool = False) -> list:
     """Function that converts text separated by some separation markers into a list.
     """

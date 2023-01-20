@@ -74,13 +74,13 @@ data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 # get system dynamics kernel matrix
 ###################################
 
-cutoff = 1000
 margin = 50
+stimuli = data["stimuli"]
+print(stimuli)
 kernels, vars, diffs, dims = [], [], [], []
 for d in data["s"]:
 
-    d = d.iloc[cutoff:, :].values
-    stimuli = data["stimuli"]
+    d = d.values
 
     kernels_tmp, diffs_tmp, dims_tmp = [], [], []
     for sidx in range(len(stimuli)-1):
