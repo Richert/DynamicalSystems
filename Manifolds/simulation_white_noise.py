@@ -21,16 +21,16 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "wn_data3"
+fname = "wn_delta_3"
 
 # network parameters
 N = 1000
-p = 0.5
+p = 0.05
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 2.0
+Delta = 3.2
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -52,7 +52,7 @@ steps = int(T/dt)
 sampling_steps = 10
 
 # input definition
-alpha = 60.0
+alpha = 80.0
 sigma = 40
 mean_isi = 20000
 stimuli = np.random.randn(steps, 1)
@@ -62,12 +62,9 @@ I_ext = np.zeros_like(stimuli)
 I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
 I_ext[:, 0] /= np.max(np.abs(I_ext[:, 0]))
 
-plt.plot(I_ext[:, 0])
-plt.show()
-
 # parameter sweep definition
 params = ["p"]
-values = [[0.03125], [0.0625], [0.125], [0.25], [0.5]]
+values = [[0.03125], [0.0625], [0.125], [0.25], [0.5], [1.0]]
 
 # simulation
 ############
@@ -95,7 +92,7 @@ for vs in values:
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
                             node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                            device="cuda:0")
+                            device="cpu")
     net.add_input_layer(stimuli.shape[1], W_in, trainable=False)
 
     # simulation

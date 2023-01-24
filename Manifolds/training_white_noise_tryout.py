@@ -6,7 +6,7 @@ from scipy.ndimage import gaussian_filter1d
 import sys
 
 # load data
-fname = sys.argv[-1]  #f"wn_data3"
+fname = f"wn_delta_3"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
@@ -83,13 +83,13 @@ for trial in range(0, len(data["s"])):
 
     ax = axes[0]
     ax.plot(sigmas, test_scores.iloc[trial, :])
-    ax.set_xlabel("phi")
+    ax.set_xlabel("sigma")
     ax.set_ylabel("test score")
     ax.set_title(title)
 
     ax = axes[1]
     ax.plot(sigmas, train_scores.iloc[trial, :])
-    ax.set_xlabel("phi")
+    ax.set_xlabel("sigma")
     ax.set_ylabel("train score")
 
     for ax, ex in zip(axes[2:], examples):

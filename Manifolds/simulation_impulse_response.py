@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "ir_rs_data2"
+fname = "ir_delta_4"
 
 # network parameters
 N = 1000
@@ -30,7 +30,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 0.8
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -52,6 +52,7 @@ steps = int(T/dt)
 sampling_steps = 10
 
 # input definition
+p_in = 0.2
 alpha = 300.0
 kappa = 200
 sigma = 20
@@ -65,9 +66,14 @@ while idx < steps:
         stimuli[idx, 0] = 1.0
     idx += mean_isi + int(np.random.randn() * kappa)
 
+# generate input
+I_ext = np.zeros_like(stimuli)
+I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
+I_ext[:, 0] /= np.max(I_ext[:, 0])
+
 # parameter sweep definition
-params = ["alpha"]
-values = [[100.0], [200.0], [300.0], [400.0], [500.0]]
+params = ["p"]
+values = [[0.03125], [0.25], [1.0]]
 
 # simulation
 ############
@@ -86,21 +92,16 @@ for vs in values:
         else:
             exec(f"{param} = {v}")
 
-    # generate input
-    I_ext = np.zeros_like(stimuli)
-    I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
-    I_ext[:, 0] /= np.max(I_ext[:, 0])
-
     # draw random variables
     J = random_connectivity(N, N, p, normalize=True)
-    W_in = input_connections(N, stimuli.shape[1], 1.0, variance=1.0, zero_mean=True)
+    W_in = input_connections(N, stimuli.shape[1], p_in, variance=np.sqrt(1/p_in), zero_mean=True)
     node_vars["v_theta"] = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
     # initialize model
     net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
                             node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                            device="cuda:0")
+                            device="cpu")
     net.add_input_layer(stimuli.shape[1], W_in, trainable=False)
 
     # simulation
