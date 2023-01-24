@@ -42,7 +42,7 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # parameter sweep definition
-with open("/home/rgf3807/PycharmProjects/DynamicalSystems/Manifolds/config/sweep_dynamic_regime.pkl", "rb") as f:
+with open("/home/rgf3807/PycharmProjects/DynamicalSystems/Manifolds/config/sweep_autonomous_dynamics.pkl", "rb") as f:
     sweep = pickle.load(f)
     v1s = sweep[p1]
     v2s = sweep[p2]
