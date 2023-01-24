@@ -2,10 +2,11 @@ import pandas as pd
 from rectipy import readout
 import numpy as np
 import pickle
-from scipy.ndimage import gaussian_filter1d
+import matplotlib.pyplot as plt
+import sys
 
 # load data
-fname = f"ir_rs_data3"
+fname = f"ct_data"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
@@ -15,26 +16,23 @@ print(f"Condition: {data['sweep']}")
 #######################################
 
 # create target data
-sigma = 20
-stimuli = np.asarray(data["stimuli"])
-min_isi = np.min(stimuli)
-phis = np.linspace(0.1, 0.6, num=10)*min_isi
-steps = int(data["T"]/(data["dt"]*data['sr']))
+combination_length = np.asarray([1, 2, 3])
+I_ext = data["I_ext"].values
 targets = []
-for phi in phis:
-    indices = stimuli + int(phi)
-    if indices[-1] >= steps:
-        indices = indices[:-1]
-    I_tmp = np.zeros((steps,))
-    I_tmp[indices] = 1.0
-    targets.append(gaussian_filter1d(I_tmp, sigma=sigma))
+for cl in combination_length:
+    t = np.ones((I_ext.shape[0],))
+    for idx in np.random.randint(low=0, high=I_ext.shape[1], size=cl):
+        t *= I_ext[:, idx]
+    t[t > 0.5] = 1.0
+    t[t <= 0.5] = 0.0
+    targets.append(t)
 
 # perform readout for each set of target data
 #############################################
 
 # create 2D dataframes
-train_scores = pd.DataFrame(columns=phis, data=np.zeros((len(data["s"]), len(phis))))
-test_scores = pd.DataFrame(columns=phis, data=np.zeros((len(data["s"]), len(phis))))
+train_scores = pd.DataFrame(columns=combination_length, data=np.zeros((len(data["s"]), len(combination_length))))
+test_scores = pd.DataFrame(columns=combination_length, data=np.zeros((len(data["s"]), len(combination_length))))
 weights = []
 intercepts = []
 predictions_plotting = []
@@ -43,18 +41,21 @@ targets_plotting = []
 # training procedure
 cutoff = 1000
 plot_length = 2000
+offset = 25
 for i, signal in enumerate(data["s"]):
 
-    s = signal.iloc[cutoff:, :]
+    s = signal.iloc[cutoff+offset:, :]
 
     weights_tmp = []
     intercepts_tmp = []
     predictions_plotting.append([])
     targets_plotting.append([])
-    for j, (tau, target) in enumerate(zip(phis, targets)):
+
+    for j, (tau, target) in enumerate(zip(combination_length, targets)):
 
         # readout training
-        res = readout(s, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=0.01, train_split=15000)
+        res = readout(s, target[cutoff:-offset], alpha=10.0, solver='lsqr', positive=False, tol=1e-4,
+                      train_split=15000)
         train_scores.iloc[i, j] = res['train_score']
         test_scores.iloc[i, j] = res['test_score']
         weights_tmp.append(res["readout_weights"])
@@ -66,7 +67,7 @@ for i, signal in enumerate(data["s"]):
     intercepts.append(intercepts_tmp)
 
 # save data to file
-data["lags"] = phis
+data["combinations"] = combination_length
 data["train_scores"] = train_scores
 data["test_scores"] = test_scores
 data["weights"] = weights
@@ -77,25 +78,31 @@ pickle.dump(data, open(f"{path}/{fname}.pkl", "wb"))
 import matplotlib.pyplot as plt
 
 params, values = data["sweep"]
+examples = [0, 1, 2]
 for trial in range(0, len(data["s"])):
 
     vals = values[trial]
     title = ", ".join([f"{p} = {v}" for p, v in zip(params, vals)])
 
-    fig, axes = plt.subplots(nrows=5, figsize=(10, 8))
+    fig, axes = plt.subplots(nrows=2+len(examples), figsize=(10, 8))
 
     ax = axes[0]
-    ax.plot(phis, test_scores.iloc[trial, :])
+    ax.plot(combination_length, test_scores.iloc[trial, :])
     ax.set_xlabel("phi")
     ax.set_ylabel("test score")
     ax.set_title(title)
 
-    examples = [0, 2, 4, 6]
-    for ax, ex in zip(axes[1:], examples):
+    ax = axes[1]
+    ax.plot(combination_length, train_scores.iloc[trial, :])
+    ax.set_xlabel("phi")
+    ax.set_ylabel("train score")
+
+    for ax, ex in zip(axes[2:], examples):
         ax.plot(predictions_plotting[trial][ex], color="blue")
         ax.plot(targets_plotting[trial][ex], color="orange")
         ax.set_xlabel("time")
         ax.set_ylabel("s")
+        ax.set_title(f"sigma = {combination_length[ex]}")
 
     plt.tight_layout()
     plt.show()
