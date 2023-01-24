@@ -64,12 +64,10 @@ def get_kernel_diff(K: np.ndarray, **kwargs):
 
 
 # load data
-cond = int(sys.argv[-4])
-p1 = str(sys.argv[-3])
-p2 = str(sys.argv[-2])
-path = str(sys.argv[-1])
-fname = f"ir_{p1}_{p2}_{cond}"
+fname = sys.argv[-1]  #f"wn_data3"
+path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
+print(f"Condition: {data['sweep']}")
 
 # get system dynamics kernel matrix
 ###################################
