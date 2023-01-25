@@ -54,7 +54,6 @@ sampling_steps = 10
 # input definition
 alpha = 80.0
 sigma = 40
-mean_isi = 20000
 stimuli = np.random.randn(steps, 1)
 
 # generate input

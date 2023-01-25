@@ -1,7 +1,8 @@
-from rectipy import Network, random_connectivity
+from rectipy import Network, random_connectivity, input_connections
 import numpy as np
 import pickle
 from scipy.stats import cauchy
+from scipy.ndimage import gaussian_filter1d
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -43,7 +44,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 35.0
+eta = 30.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -60,13 +61,22 @@ steps = int(T/dt)
 sampling_steps = 100
 
 # input definition
-I_ext = np.zeros((steps, 1))
+p_in = 0.2
+alpha = 200.0
+sigma = 30
+stimuli = np.random.randn(steps, 1)
+
+# generate input
+I_ext = np.zeros_like(stimuli)
+I_ext[:, 0] = gaussian_filter1d(input=stimuli[:, 0], sigma=sigma)
+I_ext[:, 0] /= np.max(np.abs(I_ext[:, 0]))
 
 # simulation
 ############
 
 # create connectivity matrices
 J = np.load("J.npy")  #random_connectivity(N, N, p, normalize=True)
+W_in = input_connections(N, stimuli.shape[1], p_in, variance=1.0, zero_mean=True)
 
 # create background current distribution
 thetas = np.load("thetas.npy")  #lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
@@ -80,13 +90,15 @@ net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                         node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
                         verbose=False, clear=True)
+net.add_input_layer(stimuli.shape[1], W_in, trainable=False)
 
 # simulation
-obs = net.run(inputs=I_ext, sampling_steps=sampling_steps, record_output=True, verbose=False)
+obs = net.run(inputs=I_ext * alpha, sampling_steps=sampling_steps, record_output=True, verbose=False)
 
 # results storage
-results = {"s": obs["out"], "J": J, "thetas": thetas, "T": T, "dt": dt, "sr": sampling_steps, "eta": eta, "g": g}
-pickle.dump(results, open("results/rs_autonomous.pkl", "wb"))
+results = {"s": obs["out"], "J": J, "thetas": thetas, "T": T, "dt": dt, "sr": sampling_steps, "eta": eta, "g": g,
+           "W_in": W_in}
+pickle.dump(results, open("results/rs_noise_driven.pkl", "wb"))
 
 # plotting
 ##########
@@ -129,5 +141,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/ad_eta_{int(eta)}_g_{int(g)}.pdf')
+plt.savefig(f'results/nd_eta_{int(eta)}_g_{int(g)}.pdf')
 plt.show()
