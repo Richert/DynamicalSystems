@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import sys
 
 # load data
-fname = f"ct_data"
+fname = f"ct_delta_1"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")

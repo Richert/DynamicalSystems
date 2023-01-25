@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "ct_data"
+fname = "ct_delta_3"
 
 # network parameters
 N = 1000
@@ -30,7 +30,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.2
+Delta = 3.2
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -62,7 +62,7 @@ for i, f in enumerate(freqs):
 
 # parameter sweep definition
 params = ["p"]
-values = [[0.03125], [0.0625], [0.125], [0.25], [0.5]]
+values = [[0.03125], [0.0625], [0.125], [0.25], [0.5], [1.0]]
 
 # simulation
 ############

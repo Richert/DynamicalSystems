@@ -70,11 +70,11 @@ a.run(starting_point='HB1', c='qif2', ICP=[19, 16], name='d/eta:hb1', origin=f'e
 
 # 2D continuation follow-up in g and eta
 a.run(starting_point='LP1', c='qif2', ICP=[4, 16], name='g/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=50.0, RL0=0.0, bidirectional=True)
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[4, 16], name='g/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=50.0, RL0=0.0, bidirectional=True)
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[4, 16], name='g/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=50.0, RL0=0.0, bidirectional=True)
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 
 # 2D continuation follow-up in g and k
 a.run(starting_point='LP1', c='qif2', ICP=[6, 16], name='delta/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.01,

@@ -44,7 +44,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 30.0
+eta = 35.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -62,8 +62,8 @@ sampling_steps = 100
 
 # input definition
 p_in = 0.2
-alpha = 200.0
-sigma = 30
+alpha = 100.0
+sigma = 40
 stimuli = np.random.randn(steps, 1)
 
 # generate input
@@ -75,11 +75,11 @@ I_ext[:, 0] /= np.max(np.abs(I_ext[:, 0]))
 ############
 
 # create connectivity matrices
-J = np.load("J.npy")  #random_connectivity(N, N, p, normalize=True)
+J = random_connectivity(N, N, p, normalize=True)
 W_in = input_connections(N, stimuli.shape[1], p_in, variance=1.0, zero_mean=True)
 
 # create background current distribution
-thetas = np.load("thetas.npy")  #lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
+thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
 # collect remaining model parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d, "g": g,
