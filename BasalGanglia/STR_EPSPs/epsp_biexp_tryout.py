@@ -1,9 +1,9 @@
 import numpy as np
-from scipy.optimize import curve_fit
-from kernels import exponential, alpha, biexponential, dualexponential
+from scipy.optimize import dual_annealing, Bounds
+from kernels import two_biexponential
 import matplotlib.pyplot as plt
 from pandas import DataFrame
-from typing import List
+from typing import List, Callable
 
 
 def text_to_list(text: str, sep: str, remove: List[str] = None, convert_to_float: bool = False) -> list:
@@ -16,6 +16,14 @@ def text_to_list(text: str, sep: str, remove: List[str] = None, convert_to_float
         return text.split(sep)
     return [float(t) for t in text.split(sep)]
 
+
+def res(x: np.ndarray, y: np.ndarray, f: Callable, t: np.ndarray):
+    return y - f(t, *tuple(x))
+
+
+def rmse(x: np.ndarray, y: np.ndarray, f: Callable, t: np.ndarray) -> float:
+    diff = y - f(t, *tuple(x))
+    return np.sqrt(diff @ diff)
 
 # prepare data
 ##############
@@ -56,17 +64,27 @@ plt.show()
 ################
 
 # choose form of synaptic response function
-func = alpha
+func = two_biexponential
 
 # choose initial guess of parameters
-tau = 0.005  # unit: s (depends on the unit of time in the data)
-a = 2.0  # unit: mV (depends on the unit of the EPSP in the data)
-p0 = [a, tau]
+tau_r1 = 0.01
+tau_d1 = 0.1
+tau_r2 = 0.1
+tau_d2 = 1.0
+g1 = 50.0
+g2 = 10.0
+
+p0 = np.asarray([g1, g2, tau_r1, tau_r2, tau_d1, tau_d2])
 
 # choose parameter boundaries
-a_min, a_max = 1e-6, 20.0
-tau_min, tau_max = 1e-6, 1.0
-bounds = ([a_min, tau_min], [a_max, tau_max])
+tau_r1_min, tau_r1_max = 1e-6, 1.0
+tau_r2_min, tau_r2_max = 1e-6, 1.0
+tau_d1_min, tau_d1_max = 0.01, 5.0
+tau_d2_min, tau_d2_max = 0.01, 5.0
+g1_min, g1_max = 0.0, 1e4
+g2_min, g2_max = 0.0, 1e4
+bounds = Bounds(lb=[g1_min, g2_min, tau_r1_min, tau_r2_min, tau_d1_min, tau_d2_min],
+                ub=[g1_max, g2_max, tau_r1_max, tau_r2_max, tau_d1_max, tau_d2_max])
 
 # extract data after stimulation time point
 time = df.iloc[stim_onset:, 0].values
@@ -77,16 +95,17 @@ target_epsp -= np.min(target_epsp)
 time -= np.min(time)
 
 # fit synaptic response function to EPSP shape
-params, _ = curve_fit(func, time, target_epsp, p0=p0, bounds=bounds, full_output=False)
+res = dual_annealing(rmse, x0=p0, args=(target_epsp, func, time), bounds=bounds, maxiter=1000, accept=-100)
+params = res["x"]
 
 # generate fitted EPSP shape
-fitted_epsp = func(time, params[0], params[1])
+fitted_epsp = func(time, *tuple(params))
 
 # results plotting
 ##################
 
 # provide names of fitted parameters
-param_names = ["a", "tau"]
+param_names = ["g1", "g2", "tau_r1", "tau_r2", "tau_d1", "tau_d2"]
 
 # plot fitted data against target data
 fig, ax = plt.subplots(figsize=(10, 4))
@@ -94,6 +113,6 @@ ax.plot(time, fitted_epsp, "blue", label="fitted")
 ax.plot(time, target_epsp, "orange", label="target")
 ax.set_xlabel("time (s)")
 ax.set_ylabel("EPSP (mv)")
-plt.title(f"Fitted parameters: {','.join([f'{p} = {v}' for p, v in zip(param_names, params)])}")
+plt.title(','.join([f'{p} = {np.round(v, decimals=3)}' for p, v in zip(param_names, params)]))
 plt.legend()
 plt.show()
