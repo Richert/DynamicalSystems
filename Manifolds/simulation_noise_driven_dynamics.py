@@ -44,11 +44,11 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 35.0
+eta = -40.0
 a = 0.03
 b = -2.0
 d = 100.0
-g = 20.0
+g = 40.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -62,7 +62,7 @@ sampling_steps = 100
 
 # input definition
 p_in = 0.2
-alpha = 100.0
+alpha = 400.0
 sigma = 40
 stimuli = np.random.randn(steps, 1)
 
@@ -89,7 +89,7 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
 net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                         node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                        verbose=False, clear=True)
+                        verbose=False, clear=True, device="cuda:0")
 net.add_input_layer(stimuli.shape[1], W_in, trainable=False)
 
 # simulation

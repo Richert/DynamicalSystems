@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "wn_delta_3"
+fname = "wn_delta_4"
 
 # network parameters
 N = 1000
@@ -30,12 +30,12 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 3.2
-eta = 55.0
+Delta = 0.8
+eta = -2.0
 a = 0.03
 b = -2.0
 d = 100.0
-g = 10.0
+g = 30.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -52,7 +52,7 @@ steps = int(T/dt)
 sampling_steps = 10
 
 # input definition
-alpha = 80.0
+alpha = 100.0
 sigma = 40
 stimuli = np.random.randn(steps, 1)
 

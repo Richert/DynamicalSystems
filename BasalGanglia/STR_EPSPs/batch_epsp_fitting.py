@@ -3,7 +3,7 @@ from scipy.optimize import least_squares
 from kernels import dualexponential
 import pickle
 from pandas import DataFrame, read_csv
-from typing import List, Callable
+from typing import Callable
 
 
 def residuals(x: np.ndarray, y: np.ndarray, f: Callable, t: np.ndarray):
@@ -18,15 +18,24 @@ def residuals(x: np.ndarray, y: np.ndarray, f: Callable, t: np.ndarray):
     return y - f(t, *tuple(x))
 
 
+def r_squared(target: np.ndarray, pred: np.ndarray) -> float:
+    y_mean = np.mean(target)
+    diff = pred - target
+    res = diff @ diff
+    diff = target - y_mean
+    var = diff @ diff
+    return 1.0 - res/var
+
+
 # prepare data
 ##############
 
 # load data
-fn = "dSPN_gabazine"
+fn = "iSPN_control"
 data = read_csv(f"{fn}.csv")
 
 # cut off irrelevant parts
-cutoff_idx = np.argwhere(np.isnan(data.sum(axis=0, skipna=False).values)).squeeze()[0]
+cutoff_idx = np.argwhere(np.isnan(data.sum(axis=0, skipna=False).values))[0, 0]
 data = data.iloc[:, :cutoff_idx]
 
 # bring data into desired format
@@ -93,14 +102,14 @@ for idx in range(data.shape[1]):
     # plt.show()
 
     # save results to lists
-    fitted_parameters.append(params)
+    fitted_parameters.append(params.tolist() + [r_squared(target_epsp, fitted_epsp)])
     fitted_epsps.append(fitted_epsp)
 
 # save results to file
 ######################
 
-epsps = DataFrame(index=data.index, data=np.asarray(fitted_epsps).T)
-params = DataFrame(index=param_names, data=np.asarray(fitted_parameters).T)
+epsps = DataFrame(index=data.index.values, data=np.asarray(fitted_epsps).T)
+params = DataFrame(index=param_names + ["R^2"], data=np.asarray(fitted_parameters).T)
 with open(f"{fn}.pkl", "wb") as f:
     pickle.dump({"fitted_epsps": epsps, "parameters": params, "target_epsps": data}, f)
     f.close()

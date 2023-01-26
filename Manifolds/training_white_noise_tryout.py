@@ -6,7 +6,7 @@ from scipy.ndimage import gaussian_filter1d
 import sys
 
 # load data
-fname = f"wn_delta_3"
+fname = f"wn_delta_4"
 path = "results"
 data = pickle.load(open(f"{path}/{fname}.pkl", "rb"))
 print(f"Condition: {data['sweep']}")

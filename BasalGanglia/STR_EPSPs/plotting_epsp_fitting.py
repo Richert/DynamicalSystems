@@ -19,8 +19,8 @@ plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 
 # load data
-data_control = pickle.load(open("dSPN_control.pkl", "rb"))
-data_gabazine = pickle.load(open("dSPN_gabazine.pkl", "rb"))
+data_control = pickle.load(open("iSPN_control.pkl", "rb"))
+data_gabazine = pickle.load(open("iSPN_gabazine.pkl", "rb"))
 
 # postprocessing
 ################
@@ -47,12 +47,13 @@ for idx, (p, t) in enumerate(zip(hist_params, titles)):
     plt.legend()
 
 # plot exemplary fits of control condition
-control_trials = np.random.randint(0, 9, size=3)
+control_trials = np.random.randint(0, 6, size=3)
 print_params = ["tau_s", "tau_f"]
 for idx, trial in enumerate(control_trials):
     ax = fig.add_subplot(grid[1, idx])
-    ax.plot(data_control["target_epsps"].iloc[:, trial].values, color="black", label="target")
-    ax.plot(data_control["fitted_epsps"].iloc[:, trial].values, color="blue", label="fit")
+    time = data_control["target_epsps"].index.values
+    ax.plot(time, data_control["target_epsps"].iloc[:, trial].values, color="black", label="target")
+    ax.plot(time, data_control["fitted_epsps"].iloc[:, trial].values, color="blue", label="fit")
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("EPSP (mV)")
     param_vals = [data_control["parameters"].loc[p, trial] for p in print_params]
@@ -61,15 +62,15 @@ for idx, trial in enumerate(control_trials):
     plt.legend()
 
 # plot exemplary fits of gabazine condition
-control_trials = np.random.randint(0, 9, size=3)
+control_trials = np.random.randint(0, 6, size=3)
 print_params = ["tau_s", "tau_f"]
 for idx, trial in enumerate(control_trials):
     ax = fig.add_subplot(grid[2, idx])
-    ax.plot(data_control["target_epsps"].iloc[:, trial].values, color="black", label="target")
-    ax.plot(data_control["fitted_epsps"].iloc[:, trial].values, color="orange", label="fit")
+    ax.plot(data_gabazine["target_epsps"].iloc[:, trial].values, color="black", label="target")
+    ax.plot(data_gabazine["fitted_epsps"].iloc[:, trial].values, color="orange", label="fit")
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("EPSP (mV)")
-    param_vals = [data_control["parameters"].loc[p, trial] for p in print_params]
+    param_vals = [data_gabazine["parameters"].loc[p, trial] for p in print_params]
     param_str = ', '.join([fr'${p} = {int(np.round(v, decimals=0))}$' for p, v in zip(print_params, param_vals)])
     ax.set_title(f"Gabazine: {param_str}")
     plt.legend()
