@@ -25,20 +25,20 @@ fname = "wn_delta_4"
 
 # network parameters
 N = 1000
-p = 0.05
+p = 0.1
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.8
+Delta = 1.0
 eta = 40.0
 a = 0.03
 b = -2.0
-d = 140.0
-g = 25.0
+d = 80.0
+g = 5.0
 E_r = 0.0
-tau_r = 4.0
-tau_d = 16.0
+tau_r = 2.0
+tau_d = 8.0
 v_spike = 1000.0
 v_reset = -1000.0
 
@@ -53,7 +53,8 @@ steps = int(T/dt)
 sampling_steps = 10
 
 # input definition
-alpha = 200.0
+p_in = 0.2
+alpha = 300.0
 sigma = 40
 stimuli = np.random.randn(steps, 1)
 
@@ -85,7 +86,7 @@ for vs in values:
 
     # draw random variables
     J = random_connectivity(N, N, p, normalize=True)
-    W_in = input_connections(N, stimuli.shape[1], 1.0, variance=1.0, zero_mean=True)
+    W_in = input_connections(N, stimuli.shape[1], p_in, variance=1.0, zero_mean=True)
     node_vars["v_theta"] = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
     # initialize model

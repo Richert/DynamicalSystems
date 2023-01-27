@@ -44,7 +44,7 @@ dy(2) = (-pi*C*r*(pi*C*r/k + Delta*sign(dble(1), v-v_r)) + I_ext &
      & + g*s*(E_r-v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
 dy(4) = s_in - s/tau_d
-dy(5) = r/(tau_r*tau_d) - s_in/tau_r
+dy(5) = r - s_in/tau_r
 
 end subroutine
 
@@ -86,8 +86,8 @@ args(8) = 0.0  ! I_ext
 args(9) = -2.0  ! b
 args(15) = 0.03  ! a
 args(16) = 10.0  ! d
-args(17) = 1.0  ! tau_r
-args(18) = 6.0 ! tau_d
+args(17) = 2.0  ! tau_r
+args(18) = 8.0 ! tau_d
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v
 y(3) = 0.0  ! u
