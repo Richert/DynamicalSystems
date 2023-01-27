@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "ct_delta_3"
+fname = "ct_delta_4"
 
 # network parameters
 N = 1000
@@ -30,20 +30,21 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 3.2
-eta = 55.0
+Delta = 1.0
+eta = 40.0
 a = 0.03
 b = -2.0
-d = 100.0
-g = 10.0
+d = 600.0
+g = 8.0
 E_r = 0.0
-tau_s = 6.0
+tau_r = 2.0
+tau_d = 8.0
 v_spike = 1000.0
 v_reset = -1000.0
 
 # collect remaining model parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": [], "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g,
-             "E_r": E_r, "tau_s": tau_s, "v": v_t}
+             "E_r": E_r, "tau_r": tau_r, "tau_d": tau_d, "v": v_t}
 
 # simulation settings
 T = 21000.0
@@ -52,8 +53,8 @@ steps = int(T/dt)
 sampling_steps = 10
 
 # input definition
-alpha = 80.0
-freqs = np.asarray([0.01, 0.005, 0.003])
+alpha = 20.0
+freqs = np.asarray([0.01, 0.005, 0.003, 0.008, 0.002])
 time = np.linspace(0, T, steps)
 m = len(freqs)
 I_ext = np.zeros((steps, m))
@@ -87,10 +88,10 @@ for vs in values:
     node_vars["v_theta"] = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
     # initialize model
-    net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                            node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                            device="cuda:0")
+    net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik_biexp", weights=J, source_var="s",
+                            target_var="s_in", input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
+                            node_vars=node_vars.copy(), op="ik_biexp_op", spike_reset=v_reset, spike_threshold=v_spike,
+                            dt=dt, device="cpu")
     net.add_input_layer(m, W_in, trainable=False)
 
     # simulation

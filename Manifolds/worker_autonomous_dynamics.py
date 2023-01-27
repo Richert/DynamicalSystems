@@ -37,7 +37,8 @@ b = -2.0
 d = 100.0
 g = 10.0
 E_r = 0.0
-tau_s = 6.0
+tau_r = 2.0
+tau_d = 8.0
 v_spike = 1000.0
 v_reset = -1000.0
 
@@ -78,13 +79,13 @@ for idx in range(n_reps):
 
     # collect remaining model parameters
     node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d, "g": g,
-                 "E_r": E_r, "tau_s": tau_s, "v": v_t}
+                 "E_r": E_r, "tau_r": tau_r, "tau_d": tau_d, "v": v_t}
 
     # initialize model
-    net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=J, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                            node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                            verbose=False, clear=True)
+    net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik_biexp", weights=J, source_var="s",
+                            target_var="s_in", input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
+                            to_file=False, node_vars=node_vars.copy(), op="ik_biexp_op", spike_reset=v_reset,
+                            spike_threshold=v_spike, dt=dt, verbose=False, clear=True)
 
     # simulation
     obs = net.run(inputs=I_ext, sampling_steps=sampling_steps, record_output=True, verbose=False)
