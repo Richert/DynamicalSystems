@@ -134,11 +134,6 @@ kernel /= np.max(kernel)
 for c in range(m):
     inp[:, c] = convolve1d(inp[:, c], weights=kernel)
 
-import matplotlib.pyplot as plt
-plt.imshow(inp.T, aspect='auto', interpolation='none')
-plt.colorbar()
-plt.show()
-
 # store data
 data = {}
 data['T'] = T
@@ -155,3 +150,23 @@ data['stim_channels'] = stim_channels
 data['node_vars'] = node_vars
 data['additional_params'] = {"v_reset": v_reset, "v_spike": v_spike}
 pickle.dump(data, open(f"config/{fname}_config.pkl", 'wb'))
+
+# plotting
+##########
+
+import matplotlib.pyplot as plt
+
+# input data
+plt.imshow(inp.T, aspect='auto', interpolation='none')
+plt.colorbar()
+plt.show()
+
+# weight matrix
+plt.imshow(W, aspect='auto', interpolation='none')
+plt.colorbar()
+plt.show()
+
+# input weights
+plt.imshow(W_in, aspect='auto', interpolation='none')
+plt.colorbar()
+plt.show()
