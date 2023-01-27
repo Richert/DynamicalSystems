@@ -34,8 +34,8 @@ Delta = 1.0
 eta = 40.0
 a = 0.03
 b = -2.0
-d = 80.0
-g = 5.0
+d = 200.0
+g = 8.0
 E_r = 0.0
 tau_r = 2.0
 tau_d = 8.0
@@ -54,7 +54,7 @@ sampling_steps = 10
 
 # input definition
 p_in = 0.2
-alpha = 300.0
+alpha = 200.0
 sigma = 40
 stimuli = np.random.randn(steps, 1)
 
