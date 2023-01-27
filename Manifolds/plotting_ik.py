@@ -36,8 +36,8 @@ grid = gridspec.GridSpec(nrows=3, ncols=3, figure=fig)
 #################
 
 # settings
-y_params = [("g", 4), ("d", 19), ("delta", 6)]
-x_params = [("eta", 16), ("eta", 16), ("eta", 16)]
+y_params = [("g", 4), ("d", 19), ("g", 4)]
+x_params = [("eta", 16), ("eta", 16), ("d", 19)]
 grid_locs = [grid[:2, 0], grid[:2, 1], grid[:2, 2]]
 bfs = ["lp1", "lp2", "hb1"]
 colors = ['#5D6D7E', '#5D6D7E', '#148F77']
