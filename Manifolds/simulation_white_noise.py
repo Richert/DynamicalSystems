@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "wn_delta_4"
+fname = "wn_delta_5"
 
 # network parameters
 N = 1000
@@ -34,7 +34,7 @@ Delta = 1.0
 eta = 40.0
 a = 0.03
 b = -2.0
-d = 200.0
+d = 300.0
 g = 8.0
 E_r = 0.0
 tau_r = 2.0

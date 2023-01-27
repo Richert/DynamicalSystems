@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for saving
-fname = "ir_delta_4"
+fname = "rs_ir_1"
 
 # network parameters
 N = 1000

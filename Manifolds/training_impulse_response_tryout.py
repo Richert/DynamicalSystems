@@ -15,7 +15,7 @@ print(f"Condition: {data['sweep']}")
 #######################################
 
 # create target data
-sigma = 20
+sigma = 10
 stimuli = np.asarray(data["stimuli"])
 min_isi = np.min(stimuli)
 phis = np.linspace(0.1, 0.6, num=10)*min_isi
