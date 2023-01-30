@@ -41,19 +41,19 @@ m = config["W_in"].shape[1]
 steps = data["I_ext"].shape[0]
 
 # choose lags at which network response should be read out
-lags = np.asarray([50.0, 100.0, 150.0, 200.0, 250.0])/(config["dt"]*config["sr"])
+lags = np.asarray([0.0, 50.0, 100.0, 150.0, 200.0, 250.0])/(config["dt"]*config["sr"])
 
 # choose functional relationship between input channels that should be picked up
-funcs = ["AND", "OR"]
-target_channels = [np.random.randint(0, m, size=2) for _ in range(len(funcs))]
+funcs = ["XOR", "XOR", "XOR", "XOR", "XOR", "XOR"]
+target_channels = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 4), (0, 2)]
 
 # create target signals
 targets = {}
 for func, channels in zip(funcs, target_channels):
-    targets[func] = {}
+    targets[(func, channels)] = {}
     for lag in lags:
         readout_times = stim_times + lag
-        targets[func][lag] = get_target(steps, readout_times, stim_channels, stim_dur, func, channels)
+        targets[(func, channels)][lag] = get_target(steps, readout_times, stim_channels, stim_dur, func, channels)
 
 # perform readout for each set of target data
 #############################################
@@ -70,7 +70,7 @@ targets_plotting = []
 cutoff = int(config["cutoff"]/(config["dt"]*config["sr"]))
 signal = data["s"].iloc[cutoff:, :].values
 train_split = int(0.8*(config["T"] - config["cutoff"])/(config["dt"]*config["sr"]))
-for j, func in enumerate(funcs):
+for j, (func, channels) in enumerate(zip(funcs, target_channels)):
 
     weights_tmp = []
     intercepts_tmp = []
@@ -79,7 +79,7 @@ for j, func in enumerate(funcs):
 
     for i, lag in enumerate(lags):
 
-        target = targets[func][lag]
+        target = targets[(func, channels)][lag]
 
         # readout training
         res = readout(signal, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=1e-4, train_split=train_split)
@@ -115,7 +115,7 @@ for i, (data, title) in enumerate(zip([train_scores, test_scores], ["train score
     ax.set_yticks(np.arange(0, len(lags), 2), data.index.values[::2])
     ax.set_title(title)
 
-examples = [(1, 0), (1, 2), (1, 4)]
+examples = [(0, 0), (1, 0), (2, 0)]
 for i, (func, lag) in enumerate(examples):
     ax = fig.add_subplot(grid[i+1, :])
     ax.plot(predictions_plotting[func][lag], color="black", label="prediction")

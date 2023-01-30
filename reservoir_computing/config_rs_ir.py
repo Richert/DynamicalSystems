@@ -54,7 +54,7 @@ cutoff = 1000.0
 
 N = 1000
 p = 0.1
-m = 3
+m = 5
 
 # setup connectivity matrix
 indices = np.arange(0, N, dtype=np.int32)
@@ -98,7 +98,7 @@ mean_isi = int(1000.0/dt)
 start = cutoff
 stim_dur = int(50.0/dt)
 stim_rate = 0.06
-def_rate = 0.003
+def_rate = 0.002
 isi_std = 50.0
 
 # define stimulation times
@@ -129,7 +129,7 @@ for idx in stim_times:
         stim_channels.append(channels)
 
 # convolve input spikes with synaptic alpha kernel
-kernel = alpha(np.arange(0, 200.0/dt), tau=5.0/dt)
+kernel = alpha(np.arange(0, 200.0/dt), tau=10.0/dt)
 kernel /= np.max(kernel)
 for c in range(m):
     inp[:, c] = convolve1d(inp[:, c], weights=kernel)

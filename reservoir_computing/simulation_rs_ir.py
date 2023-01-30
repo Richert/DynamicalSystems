@@ -35,7 +35,7 @@ dt = config["dt"]
 sr = config["sr"]
 
 # run-specific parameters (for sweeps)
-alpha = 80.0
+alpha = 10.0
 sweep = {"alpha": alpha}
 
 # simulation
