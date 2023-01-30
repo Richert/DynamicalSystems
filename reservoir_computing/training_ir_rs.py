@@ -2,32 +2,29 @@ import pandas as pd
 from rectipy import readout
 import numpy as np
 import pickle
-from scipy.ndimage import gaussian_filter1d
-import sys
-from typing import Tuple, List, Iterable
+from typing import List, Iterable
 
 # load data
-fname = f"rs_ir"
+fname = f"rs_ir2"
 data = pickle.load(open(f"results/{fname}_results.pkl", "rb"))
 config = pickle.load(open(f"config/{fname}_config.pkl", "rb"))
 print(f"Condition: {data['sweep']}")
 
 
-def get_target(steps: int, times: np.ndarray, channels: List[Iterable], dur: int, func: str, target_channels: Iterable[int]
+def get_target(steps: int, times: np.ndarray, channels: Iterable[int], dur: int, n_channels: int = 3
                ) -> np.ndarray:
-    target = np.zeros((steps,))
-    for c, t in zip(channels, times):
-        criterion = np.sum([tc in c for tc in target_channels])
-        if func == "AND":
-            response = 1 if criterion == 2 else 0
-        elif func == "OR":
-            response = 1 if criterion > 0 else 0
-        elif func == "XOR":
-            response = 1 if criterion == 1 else 0
-        else:
-            raise ValueError("Wrong target function.")
-        target[int(t):int(t)+dur] = response
+    target = np.zeros((steps, n_channels))
+    for t, c in zip(times, channels):
+        target[int(t):int(t)+dur, c] = 1.0
     return target
+
+
+def wta_score(targets: np.ndarray, predictions: np.ndarray) -> float:
+    correct_predictions = []
+    idxs = np.argwhere(np.sum(targets, axis=1) > 0).squeeze()
+    for idx in idxs:
+        correct_predictions.append(np.argmax(targets[idx, :]) == np.argmax(predictions[idx, :]))
+    return np.mean(np.asarray(correct_predictions)).squeeze()
 
 
 # create target data for different taus
@@ -36,31 +33,23 @@ def get_target(steps: int, times: np.ndarray, channels: List[Iterable], dur: int
 # get input data
 stim_times = np.asarray([t/config["sr"] for t in config["stim_times"]])
 stim_channels = config["stim_channels"]
-stim_dur = config["stim_dur"]
 m = config["W_in"].shape[1]
 steps = data["I_ext"].shape[0]
 
 # choose lags at which network response should be read out
 lags = np.asarray([0.0, 50.0, 100.0, 150.0, 200.0, 250.0])/(config["dt"]*config["sr"])
 
-# choose functional relationship between input channels that should be picked up
-funcs = ["XOR", "XOR", "XOR", "XOR", "XOR", "XOR"]
-target_channels = [(0, 1), (1, 2), (2, 3), (3, 4), (0, 4), (0, 2)]
-
 # create target signals
 targets = {}
-for func, channels in zip(funcs, target_channels):
-    targets[(func, channels)] = {}
-    for lag in lags:
-        readout_times = stim_times + lag
-        targets[(func, channels)][lag] = get_target(steps, readout_times, stim_channels, stim_dur, func, channels)
+for lag in lags:
+    readout_times = stim_times + lag
+    targets[lag] = get_target(steps, readout_times, stim_channels, 50, m)
 
 # perform readout for each set of target data
 #############################################
 
 # create 2D dataframes
-train_scores = pd.DataFrame(columns=funcs, data=np.zeros((len(lags), len(funcs))), index=lags)
-test_scores = pd.DataFrame(columns=funcs, data=np.zeros((len(lags), len(funcs))), index=lags)
+scores = pd.DataFrame(columns=["train", "test", "wta"], data=np.zeros((len(lags), 3)), index=lags)
 weights = []
 intercepts = []
 predictions_plotting = []
@@ -70,32 +59,24 @@ targets_plotting = []
 cutoff = int(config["cutoff"]/(config["dt"]*config["sr"]))
 signal = data["s"].iloc[cutoff:, :].values
 train_split = int(0.8*(config["T"] - config["cutoff"])/(config["dt"]*config["sr"]))
-for j, (func, channels) in enumerate(zip(funcs, target_channels)):
 
-    weights_tmp = []
-    intercepts_tmp = []
-    predictions_plotting.append([])
-    targets_plotting.append([])
+for lag in lags:
 
-    for i, lag in enumerate(lags):
+    target = targets[lag]
 
-        target = targets[(func, channels)][lag]
-
-        # readout training
-        res = readout(signal, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=1e-4, train_split=train_split)
-        train_scores.iloc[i, j] = res['train_score']
-        test_scores.iloc[i, j] = res['test_score']
-        weights_tmp.append(res["readout_weights"])
-        intercepts_tmp.append(res["readout_bias"])
-        predictions_plotting[-1].append(res["prediction"])
-        targets_plotting[-1].append(res["target"])
-
-    weights.append(weights_tmp)
-    intercepts.append(intercepts_tmp)
+    # readout training
+    res = readout(signal, target[cutoff:], alpha=10.0, solver='lsqr', positive=False, tol=1e-4,
+                  train_split=train_split)
+    scores.loc[lag, "train"] = res['train_score']
+    scores.loc[lag, "test"] = res['test_score']
+    scores.loc[lag, "wta"] = wta_score(res["target"], res["prediction"])
+    weights.append(res["readout_weights"])
+    intercepts.append(res["readout_bias"])
+    predictions_plotting.append(res["prediction"])
+    targets_plotting.append(res["target"])
 
 # save data to file
-data["train_scores"] = train_scores
-data["test_scores"] = test_scores
+data["scores"] = scores
 data["weights"] = weights
 data["intercepts"] = intercepts
 pickle.dump(data, open(f"results/{fname}_readouts.pkl", "wb"))
@@ -106,23 +87,24 @@ from matplotlib.gridspec import GridSpec
 
 fig = plt.figure(figsize=(10, 8))
 grid = GridSpec(nrows=4, ncols=2)
-for i, (data, title) in enumerate(zip([train_scores, test_scores], ["train scores", "test_scores"])):
+plot_scores = ["test", "wta"]
+for i, score in enumerate(plot_scores):
     ax = fig.add_subplot(grid[0, i])
-    ax.imshow(data.values, aspect="auto", interpolation="none")
-    ax.set_xlabel("funcs")
-    ax.set_ylabel("lags")
-    ax.set_xticks(np.arange(0, len(funcs), 1), data.columns.values)
-    ax.set_yticks(np.arange(0, len(lags), 2), data.index.values[::2])
-    ax.set_title(title)
+    ax.plot(scores[score].values)
+    ax.set_xlabel("lags")
+    ax.set_ylabel("score")
+    ax.set_xticks(np.arange(0, len(lags), 1), scores.index.values)
+    ax.set_title(score)
 
-examples = [(0, 0), (1, 0), (2, 0)]
-for i, (func, lag) in enumerate(examples):
+target_lag = 0
+for i in range(m):
     ax = fig.add_subplot(grid[i+1, :])
-    ax.plot(predictions_plotting[func][lag], color="black", label="prediction")
-    ax.plot(targets_plotting[func][lag], color="red", label="target")
+    ax.plot(predictions_plotting[target_lag][:, i], color="black", label="prediction")
+    ax.plot(targets_plotting[target_lag][:, i], color="red", label="target")
     ax.set_xlabel("time (ms)")
-    ax.set_ylabel("s")
-    ax.set_title(f"Func = {funcs[func]}, lag = {lags[lag]}")
+    ax.set_ylabel(f"Activation of channel #{i+1}")
+    if i == 0:
+        ax.set_title(f"Lag = {lags[target_lag]}")
     plt.legend()
 
 plt.tight_layout()

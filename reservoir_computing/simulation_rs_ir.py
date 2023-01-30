@@ -20,7 +20,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for loading/saving
-fname = "rs_ir"
+fname = "rs_ir2"
 
 # load config
 config = pickle.load(open(f"config/{fname}_config.pkl", "rb"))

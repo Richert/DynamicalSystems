@@ -39,7 +39,7 @@ def alpha(t: np.ndarray, tau: float):
 # file name
 ###########
 
-fname = 'rs_ir'
+fname = 'rs_ir2'
 
 # simulation parameters
 #######################
@@ -53,8 +53,8 @@ cutoff = 1000.0
 ##################################
 
 N = 1000
-p = 0.1
-m = 5
+p = 1.0
+m = 3
 
 # setup connectivity matrix
 indices = np.arange(0, N, dtype=np.int32)
@@ -63,7 +63,7 @@ pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
 
 # setup input matrix
-p_in = 0.1
+p_in = 0.2
 W_in = input_connections(N, m, p_in)
 print(np.sum(W_in, axis=0))
 
@@ -96,9 +96,9 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": lorentzian(N, v_t, Delta, v_
 steps = int(T/dt)
 mean_isi = int(1000.0/dt)
 start = cutoff
-stim_dur = int(50.0/dt)
-stim_rate = 0.06
-def_rate = 0.002
+stim_dur = int(100.0/dt)
+stim_rate = 0.08
+def_rate = 0.004
 isi_std = 50.0
 
 # define stimulation times
@@ -121,7 +121,7 @@ for idx in stim_times:
     # add poisson spike trains to input array at defined stimulation times
     if idx+stim_dur < steps:
         idx_time = np.arange(idx, idx+stim_dur, dtype=np.int32)
-        n_inputs = np.random.randint(1, m+1)
+        n_inputs = 1  #np.random.randint(1, m+1)
         channels = np.random.randint(0, m, size=n_inputs)
         for c in channels:
             spike_train = np.random.poisson(stim_rate, (stim_dur,))
