@@ -44,7 +44,7 @@ fname = 'rs_ir'
 # simulation parameters
 #######################
 
-T = 21000.0
+T = 101000.0
 dt = 1e-1
 sr = 10
 cutoff = 1000.0
@@ -54,7 +54,7 @@ cutoff = 1000.0
 
 N = 1000
 p = 0.1
-m = 5
+m = 3
 
 # setup connectivity matrix
 indices = np.arange(0, N, dtype=np.int32)
@@ -121,7 +121,7 @@ for idx in stim_times:
     # add poisson spike trains to input array at defined stimulation times
     if idx+stim_dur < steps:
         idx_time = np.arange(idx, idx+stim_dur, dtype=np.int32)
-        n_inputs = np.random.randint(1, m-1)
+        n_inputs = np.random.randint(1, m+1)
         channels = np.random.randint(0, m, size=n_inputs)
         for c in channels:
             spike_train = np.random.poisson(stim_rate, (stim_dur,))
@@ -147,6 +147,7 @@ data['W_in'] = W_in
 data['inp'] = inp
 data['stim_times'] = stim_times
 data['stim_channels'] = stim_channels
+data['stim_dur'] = int(stim_dur/sr)
 data['node_vars'] = node_vars
 data['additional_params'] = {"v_reset": v_reset, "v_spike": v_spike}
 pickle.dump(data, open(f"config/{fname}_config.pkl", 'wb'))

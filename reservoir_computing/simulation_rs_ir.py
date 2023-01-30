@@ -1,10 +1,9 @@
 import pandas as pd
-from rectipy import Network, random_connectivity, input_connections
+from rectipy import Network
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
-from scipy.ndimage import gaussian_filter1d
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -36,7 +35,8 @@ dt = config["dt"]
 sr = config["sr"]
 
 # run-specific parameters (for sweeps)
-alpha = 10.0
+alpha = 80.0
+sweep = {"alpha": alpha}
 
 # simulation
 ############
@@ -45,7 +45,7 @@ alpha = 10.0
 net = Network.from_yaml("neuron_model_templates.spiking_neurons.ik.ik", weights=W, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
                         node_vars=node_vars.copy(), op="ik_op", spike_reset=params["v_reset"],
-                        spike_threshold=params["v_spike"], dt=dt, device="cpu")
+                        spike_threshold=params["v_spike"], dt=dt, device="cuda:0")
 net.add_input_layer(W_in.shape[1], W_in, trainable=False)
 
 # simulation
@@ -54,7 +54,7 @@ obs = net.run(inputs=I_ext * alpha, sampling_steps=sr, record_output=True)
 # save results
 res = obs["out"]
 inp = pd.DataFrame(index=res.index, data=I_ext[::sr, :], columns=np.arange(0, W_in.shape[1]))
-pickle.dump({"s": res, "I_ext": inp, "alpha": alpha},
+pickle.dump({"s": res, "I_ext": inp, "sweep": sweep},
             open(f"results/{fname}_results.pkl", "wb"))
 
 # exemplary plotting
