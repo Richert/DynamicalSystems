@@ -3,7 +3,6 @@ from rectipy import readout
 import numpy as np
 import pickle
 from typing import Iterable
-from sklearn.preprocessing import label_binarize
 import sys
 
 # load data
@@ -80,13 +79,12 @@ for lag in lags:
     # readout training
     res = readout(signal, np.argmax(target, axis=1), method="LogisticRegression", penalty="l2", l1_ratio=None,
                   class_weight="balanced", solver="lbfgs", n_jobs=8)
-    pred = label_binarize(res["prediction"], classes=[i for i in range(m+1)])
     scores.loc[lag, "train"] = res['train_score']
     scores.loc[lag, "test"] = res['test_score']
-    scores.loc[lag, "wta"] = wta_score(target[:, 1:], pred)
+    scores.loc[lag, "wta"] = wta_score(target[:, 1:], res["prediction"])
     weights.append(res["readout_weights"])
     intercepts.append(res["readout_bias"])
-    predictions_plotting.append(pred)
+    predictions_plotting.append(res["prediction"])
     targets_plotting.append(target[:, 1:])
 
 # save data to file
