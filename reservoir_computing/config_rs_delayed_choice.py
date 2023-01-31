@@ -3,6 +3,7 @@ import pickle
 from rectipy.utility import input_connections, random_connectivity, circular_connectivity
 from scipy.stats import rv_discrete, cauchy
 from scipy.ndimage import convolve1d
+import sys
 
 
 def dist(x: int, method: str = "inverse") -> float:
@@ -26,7 +27,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
-def alpha(t: np.ndarray, tau: float):
+def alpha_kernel(t: np.ndarray, tau: float):
     """Alpha kernel function.
 
     :param t: time in arbitrary units. Can be a vector or a single scalar.
@@ -39,37 +40,32 @@ def alpha(t: np.ndarray, tau: float):
 # file name
 ###########
 
-fname = 'rs_ir2'
+fname = f'rs_dc_{sys.argv[1]}'
 
 # simulation parameters
 #######################
 
+# simulation time
 T = 101000.0
 dt = 1e-1
 sr = 10
 cutoff = 1000.0
 
-# network configuration parameters
-##################################
-
-N = 1000
-p = 1.0
-m = 3
-
-# setup connectivity matrix
-indices = np.arange(0, N, dtype=np.int32)
-pdfs = np.asarray([dist(idx, method="inverse") for idx in indices])
-pdfs /= np.sum(pdfs)
-W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
-
-# setup input matrix
-p_in = 0.2
-W_in = input_connections(N, m, p_in)
-print(np.sum(W_in, axis=0))
+# extrinsic input default
+alpha = 10.0
+stim_rate = 0.08
+def_rate = 0.004
+isi_std = 50.0
 
 # Default model parameters
 ##########################
 
+# network default
+N = 1000
+p = 0.1
+m = 3
+
+# node default
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -78,30 +74,47 @@ Delta = 1.0
 eta = 40.0
 a = 0.03
 b = -2.0
-d = 130.0
-g = 8.0
+d = 100.0
+g = 5.0
 E_r = 0.0
-tau_s = 6.0
+tau_s = 20.0
 v_spike = 1000.0
 v_reset = -1000.0
 
+# overwrite any default parameters with sweep condition
+#######################################################
+
+sweep = {}
+for idx in range(2, len(sys.argv), 2):
+    exec(f"{sys.argv[idx]} = {sys.argv[idx+1]}")
+    sweep[sys.argv[idx]] = sys.argv[idx+1]
+
+# set up final network variables
+################################
+
+# setup connectivity matrix
+indices = np.arange(0, N, dtype=np.int32)
+pdfs = np.asarray([dist(idx, method="inverse") for idx in indices])
+pdfs /= np.sum(pdfs)
+if "connectivity" in sweep and sweep["connectivity"] == "circcular":
+    W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
+else:
+    W = random_connectivity(N, N, p, normalize=True)
+
+# setup input matrix
+p_in = 0.2
+W_in = input_connections(N, m, p_in)
+print(np.sum(W_in, axis=0))
+
 # collect remaining model parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r),
-             "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+             "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g_e": g, "E_e": E_r, "tau_s": tau_s, "v": v_t}
 
-# define network input
-######################
-
-# input parameters
+# define stimulation times
 steps = int(T/dt)
 mean_isi = int(1000.0/dt)
 start = cutoff
 stim_dur = int(100.0/dt)
-stim_rate = 0.08
-def_rate = 0.004
-isi_std = 50.0
-
-# define stimulation times
 stim_times = []
 idx = start
 while idx < steps:
@@ -129,7 +142,7 @@ for idx in stim_times:
         stim_channels.append(channels)
 
 # convolve input spikes with synaptic alpha kernel
-kernel = alpha(np.arange(0, 200.0/dt), tau=10.0/dt)
+kernel = alpha_kernel(np.arange(0, 200.0/dt), tau=tau_s/dt)
 kernel /= np.max(kernel)
 for c in range(m):
     inp[:, c] = convolve1d(inp[:, c], weights=kernel)
@@ -144,11 +157,12 @@ data['N'] = N
 data['p'] = p
 data['W'] = W
 data['W_in'] = W_in
-data['inp'] = inp
+data['inp'] = inp * alpha
 data['stim_times'] = stim_times
 data['stim_channels'] = stim_channels
 data['stim_dur'] = int(stim_dur/sr)
 data['node_vars'] = node_vars
+data['sweep'] = sweep
 data['additional_params'] = {"v_reset": v_reset, "v_spike": v_spike}
 pickle.dump(data, open(f"config/{fname}_config.pkl", 'wb'))
 

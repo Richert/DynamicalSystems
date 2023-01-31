@@ -10,13 +10,12 @@ subroutine ik_run(t,y,dy,v_t,v_r,k,g,Delta,C,E_r,I_ext,b,a,d,tau_s)
 implicit none
 
 double precision, intent(in) :: t
-double precision, intent(in) :: y(5)
+double precision, intent(in) :: y(4)
 double precision :: r
 double precision :: v
 double precision :: u
 double precision :: s
-double precision :: s_in
-double precision, intent(inout) :: dy(5)
+double precision, intent(inout) :: dy(4)
 double precision, intent(in) :: v_t
 double precision, intent(in) :: v_r
 double precision, intent(in) :: k
@@ -34,7 +33,6 @@ r = y(1)
 v = y(2)
 u = y(3)
 s = y(4)
-s_in = y(5)
 
 dy(1) = (r*(-g*s + k*(2.0*v - v_r - v_t)) + Delta*k**2*abs(v-v_r)&
      & /(pi*C))/C
@@ -42,7 +40,6 @@ dy(2) = (-pi*C*r*(pi*C*r/k + Delta*sign(dble(1), v-v_r)) + I_ext &
      & + g*s*(E_r-v) + k*v*(v - v_r - v_t) + k*v_r*v_t - u)/C
 dy(3) = a*(b*(v - v_r) - u) + d*r
 dy(4) = r - s/tau_s
-dy(5) = r - s_in/(tau_s*0.5)
 
 end subroutine
 
@@ -89,7 +86,6 @@ y(1) = 0.0  ! r
 y(2) = -60.0  ! v
 y(3) = 0.0  ! u
 y(4) = 0.0  ! s
-y(5) = 0.0
 
 end subroutine stpnt
 

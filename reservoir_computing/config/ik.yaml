@@ -9,7 +9,7 @@ rs_op:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + I_ext + eta + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*mean(spike)"
     - "s' = -s/tau_s + spike"
   variables:
     s: output(0.0)
@@ -30,7 +30,8 @@ rs_op:
     tau_s: 6.0
     I_ext: input(0.0)
     spike: input(0.0)
-    s_in: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
 
 # parameters for fast-spiking neurons
 fs_op:

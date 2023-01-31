@@ -3,13 +3,11 @@ import matplotlib.pyplot as plt
 from pycobi import ODESystem
 import sys
 sys.path.append('../')
-import pickle
-import numpy as np
 
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = ODESystem.from_file(f"results/ik_bifs.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/rs_bifs.pkl", auto_dir=auto_dir)
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -36,14 +34,16 @@ grid = gridspec.GridSpec(nrows=3, ncols=3, figure=fig)
 #################
 
 # settings
-y_params = [("g", 4), ("d", 16), ("g", 4)]
-x_params = [("eta", 8), ("eta", 8), ("d", 16)]
+x_params = [("eta", 8), ("tau_s", 17), ("d", 16)]
+y_params = [("g", 4), ("g", 4), ("g", 4)]
+x_lims = [(0.0, 100.0), (0.0, 50.0), (0.0, 200.0)]
+y_lims = [(0.0, 50.0), (0.0, 50.0), (0.0, 50.0)]
 grid_locs = [grid[:2, 0], grid[:2, 1], grid[:2, 2]]
-bfs = ["lp1", "lp2", "hb1"]
-colors = ['#5D6D7E', '#5D6D7E', '#148F77']
+bfs = ["lp1", "lp2", "hb1", "hb2"]
+colors = ['#5D6D7E', '#5D6D7E', '#148F77', '#148F77']
 
 # plotting
-for (x_key, x_idx), (y_key, y_idx), loc in zip(x_params, y_params, grid_locs):
+for (x_key, x_idx), (y_key, y_idx), loc, xl, yl in zip(x_params, y_params, grid_locs, x_lims, y_lims):
 
     ax = fig.add_subplot(loc)
     for bf, c in zip(bfs, colors):
@@ -54,25 +54,30 @@ for (x_key, x_idx), (y_key, y_idx), loc in zip(x_params, y_params, grid_locs):
             pass
     ax.set_xlabel(x_key)
     ax.set_ylabel(y_key)
+    ax.set_xlim(xl)
+    ax.set_ylim(yl)
 
 # 1D continuations
 ##################
 
 # settings
-params = [("eta", 8, 2), ("g", 4, 1), ("d", 16, 1)]
-var = "U(4)"
+params = [("g", 4, 2), ("g", 4, 3), ("g", 4, 4)]
+dv = "U(4)"
 grid_locs = [grid[2, 0], grid[2, 1], grid[2, 2]]
+iv = "tau_s"
+vals = a.additional_attributes["tau_s"]
 
 # plotting
-for (param, idx, cont), loc in zip(params, grid_locs):
+for (param, idx, cont), loc, v in zip(params, grid_locs, vals):
 
     ax = fig.add_subplot(loc)
     try:
-        a.plot_continuation(f'PAR({idx})', var, cont=f'{param}:{cont}', ax=ax)
+        a.plot_continuation(f'PAR({idx})', dv, cont=f'{param}:{cont}', ax=ax)
     except KeyError:
         pass
     ax.set_xlabel(param)
-    ax.set_ylabel(var)
+    ax.set_ylabel(dv)
+    ax.set_title(f"{iv} = {v}")
 
 # finishing touches
 ###################
@@ -82,5 +87,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/ik_bifs.pdf')
+plt.savefig(f'results/rs_bifs.pdf')
 plt.show()
