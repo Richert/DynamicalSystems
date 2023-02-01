@@ -69,9 +69,9 @@ for lag in lags:
     target = np.argmax(targets[lag][cutoff:], axis=1)
 
     # readout training
-    res = readout(signal, target, loss="modified_huber", penalty="elasticnet", l1_ratio=0.5, alpha=1e-3, tol=1e-6,
+    res = readout(signal, target, loss="log_loss", penalty="elasticnet", l1_ratio=0.5, alpha=1e-4, tol=1e-6,
                   n_jobs=12, class_weight="balanced", learning_rate="adaptive", eta0=1e-3, test_size=0.2,
-                  normalize="minmax")
+                  normalize="standard", shuffle=False)
     scores.loc[lag, "train"] = res['train_score']
     scores.loc[lag, "test"] = res['test_score']
     scores.loc[lag, "wta"] = wta_score(res["target"], res["prediction"])
@@ -101,8 +101,8 @@ for i, score in enumerate(plot_scores):
     ax.set_xticks(np.arange(0, len(lags), 1), scores.index.values)
     ax.set_title(score)
 
-target_lag = 1
-for i in range(1, m+1):
+target_lag = 2
+for i in range(m+1):
     ax = fig.add_subplot(grid[i+1, :])
     ax.plot(predictions_plotting[target_lag][:, i], color="black", label="prediction")
     ax.plot(targets_plotting[target_lag][:, i], color="orange", label="target", linestyle="--")
