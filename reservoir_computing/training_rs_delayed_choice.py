@@ -4,9 +4,10 @@ import numpy as np
 import pickle
 from typing import Iterable
 import sys
+from sklearn.preprocessing import label_binarize
 
 # load data
-cond = 1 #sys.argv[-1]
+cond = sys.argv[-1]
 fname = f"rs_dc_{cond}"
 data = pickle.load(open(f"results/{fname}_results.pkl", "rb"))
 config = pickle.load(open(f"config/{fname}_config.pkl", "rb"))
@@ -23,20 +24,12 @@ def get_target(steps: int, times: np.ndarray, channels: Iterable[int], dur: int,
 
 
 def wta_score(targets: np.ndarray, predictions: np.ndarray) -> float:
-    correct_predictions = []
-    idxs = np.argwhere(np.sum(targets, axis=1) > 0).squeeze()
-    for idx in idxs:
-        correct_predictions.append(np.argmax(targets[idx, :]) == np.argmax(predictions[idx, :]))
-    return np.mean(np.asarray(correct_predictions)).squeeze()
-
-
-def wta_predictions(targets: np.ndarray, predictions: np.ndarray) -> np.ndarray:
-    wta_preds = np.zeros_like(targets)
-    idxs = np.argwhere(np.sum(targets, axis=1) > 0).squeeze()
-    for row in idxs:
-        col = np.argmax(predictions[row, :]).squeeze()
-        wta_preds[row, col] = 1.0
-    return wta_preds
+    wta = 0.0
+    classes = np.unique(targets)
+    for c in classes:
+        samples = targets == c
+        wta += np.mean([targets[idx] == predictions[idx] for idx in np.argwhere(samples)])
+    return wta/len(classes)
 
 
 # create target data for different taus
@@ -70,22 +63,22 @@ targets_plotting = []
 # training procedure
 cutoff = int(config["cutoff"]/(config["dt"]*config["sr"]))
 signal = data["s"].iloc[cutoff:, :].values
-train_split = int(0.8*(config["T"] - config["cutoff"])/(config["dt"]*config["sr"]))
-
+classes = [i for i in range(m+1)]
 for lag in lags:
 
-    target = targets[lag][cutoff:]
+    target = np.argmax(targets[lag][cutoff:], axis=1)
 
     # readout training
-    res = readout(signal, np.argmax(target, axis=1), method="LogisticRegression", penalty="l2", l1_ratio=None,
-                  class_weight="balanced", solver="lbfgs", n_jobs=8)
+    res = readout(signal, target, loss="modified_huber", penalty="elasticnet", l1_ratio=0.5, alpha=1e-3, tol=1e-6,
+                  n_jobs=12, class_weight="balanced", learning_rate="adaptive", eta0=1e-3, test_size=0.2,
+                  normalize="minmax")
     scores.loc[lag, "train"] = res['train_score']
     scores.loc[lag, "test"] = res['test_score']
-    scores.loc[lag, "wta"] = wta_score(target[:, 1:], res["prediction"])
+    scores.loc[lag, "wta"] = wta_score(res["target"], res["prediction"])
     weights.append(res["readout_weights"])
     intercepts.append(res["readout_bias"])
-    predictions_plotting.append(res["prediction"])
-    targets_plotting.append(target[:, 1:])
+    predictions_plotting.append(label_binarize(res["prediction"], classes=classes))
+    targets_plotting.append(label_binarize(res["target"], classes=classes))
 
 # save data to file
 data["scores"] = scores
@@ -98,8 +91,8 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 fig = plt.figure(figsize=(10, 8))
-grid = GridSpec(nrows=4, ncols=2)
-plot_scores = ["test", "wta"]
+grid = GridSpec(nrows=5, ncols=2)
+plot_scores = ["train", "wta"]
 for i, score in enumerate(plot_scores):
     ax = fig.add_subplot(grid[0, i])
     ax.plot(scores[score].values)
@@ -108,13 +101,11 @@ for i, score in enumerate(plot_scores):
     ax.set_xticks(np.arange(0, len(lags), 1), scores.index.values)
     ax.set_title(score)
 
-target_lag = 0
-wta_preds = wta_predictions(targets_plotting[target_lag], predictions_plotting[target_lag])
-for i in range(m):
+target_lag = 1
+for i in range(1, m+1):
     ax = fig.add_subplot(grid[i+1, :])
-    ax.plot(predictions_plotting[target_lag][:, i], color="black", label="channel activity")
-    ax.plot(targets_plotting[target_lag][:, i], color="orange", label="target")
-    ax.plot(wta_preds[:, i], color="blue", label="prediction", linestyle="--")
+    ax.plot(predictions_plotting[target_lag][:, i], color="black", label="prediction")
+    ax.plot(targets_plotting[target_lag][:, i], color="orange", label="target", linestyle="--")
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(f"channel # {i}")
     if i == 0:
