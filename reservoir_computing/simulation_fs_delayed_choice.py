@@ -21,7 +21,8 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for loading/saving
-fname = f"fs_dc_{sys.argv[-1]}"
+cond = 1 #ys.argv[-1]
+fname = f"fs_dc_{cond}"
 
 # load config
 config = pickle.load(open(f"config/{fname}_config.pkl", "rb"))
@@ -42,7 +43,7 @@ sr = config["sr"]
 # initialize model
 net = Network.from_yaml("config/ik/fs", weights=W, source_var="s", target_var="s_i",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                        node_vars=node_vars.copy(), op="fs_op", spike_reset=params["v_reset"],
+                        op="fs_op", spike_reset=params["v_reset"], node_vars=node_vars.copy(),
                         spike_threshold=params["v_spike"], dt=dt, device="cuda:0")
 net.add_input_layer(W_in.shape[1], W_in, trainable=False)
 

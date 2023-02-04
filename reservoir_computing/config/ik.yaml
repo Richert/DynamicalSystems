@@ -46,6 +46,8 @@ fs_op:
     a: 0.2
     d: 0.0
     tau_s: 8.0
+    g_i: 5.0
+    eta: 2.0
 
 # node templates
 ################

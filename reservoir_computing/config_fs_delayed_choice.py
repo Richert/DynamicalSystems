@@ -40,15 +40,16 @@ def alpha_kernel(t: np.ndarray, tau: float):
 # file name
 ###########
 
-fname = f'fs_dc_{sys.argv[1]}'
+cond = 1 #sys.argv[1]
+fname = f'fs_dc_{cond}'
 
 # simulation parameters
 #######################
 
 # simulation time
-T = 101000.0
-dt = 1e-1
-sr = 10
+T = 10100.0
+dt = 1e-2
+sr = 100
 cutoff = 1000.0
 
 # extrinsic input default
