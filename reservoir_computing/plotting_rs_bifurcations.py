@@ -61,11 +61,11 @@ for (x_key, x_idx), (y_key, y_idx), loc, xl, yl in zip(x_params, y_params, grid_
 ##################
 
 # settings
-params = [("g", 4, 2), ("g", 4, 3), ("g", 4, 4)]
-dv = "U(4)"
+params = [("eta", 8, 3), ("eta", 8, 4), ("eta", 8, 5)]
+dv = "U(1)"
 grid_locs = [grid[2, 0], grid[2, 1], grid[2, 2]]
-iv = "tau_s"
-vals = a.additional_attributes["tau_s"]
+iv = "gs"
+vals = a.additional_attributes[iv]
 
 # plotting
 for (param, idx, cont), loc, v in zip(params, grid_locs, vals):

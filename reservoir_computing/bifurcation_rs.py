@@ -76,12 +76,17 @@ a.run(starting_point='HB1', c='qif2', ICP=[16, 8], name='d/eta:hb1', origin=f'et
       NPR=NPR, RL1=200.0, RL0=0.0, bidirectional=True)
 
 # 2D continuation follow-up in g and eta
+gs = [12.0, 15.0, 18.0]
 a.run(starting_point='LP1', c='qif2', ICP=[4, 8], name='g/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[4, 8], name='g/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[4, 8], name='g/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True, UZR={4: gs})
+for i in range(len(gs)):
+    a.run(starting_point=f'UZ{i+1}', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name=f'eta:{i+3}',
+          origin='g/eta:hb1', NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=NPR, RL1=100.0, RL0=0.0,
+          bidirectional=True)
 
 # 2D continuation follow-up in g and k
 a.run(starting_point='LP1', c='qif2', ICP=[4, 16], name='g/d:lp1', origin=f'g:2', NMX=8000, DSMAX=0.1,
@@ -105,5 +110,5 @@ a.run(starting_point='HB2', c='qif2', ICP=[4, 17], name='g/tau_s:hb2', origin=f'
 
 # save results
 fname = '../results/rs_bifs.pkl'
-kwargs = {"tau_s": taus}
+kwargs = {"tau_s": taus, "gs": gs}
 a.to_file(fname, **kwargs)
