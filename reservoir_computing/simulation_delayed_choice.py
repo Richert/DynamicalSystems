@@ -20,11 +20,12 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 # model definition
 ##################
 
-# file name for loading/saving
-cond = sys.argv[-1]
-fname = f"fs_dc_{cond}"
-
-# load config
+# load data
+cond = sys.argv[-4]
+task = sys.argv[-3]
+pop_type = sys.argv[-2]
+res_dir = sys.argv[-1]
+fname = f"{pop_type}_{task}_{cond}"
 config = pickle.load(open(f"config/{fname}_config.pkl", "rb"))
 print(f"Condition: {config['sweep']}")
 
@@ -41,9 +42,9 @@ sr = config["sr"]
 ############
 
 # initialize model
-net = Network.from_yaml("config/ik/fs", weights=W, source_var="s", target_var="s_i",
+net = Network.from_yaml(f"config/ik/{pop_type}", weights=W, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                        op="fs_op", spike_reset=params["v_reset"], node_vars=node_vars.copy(),
+                        op=f"{pop_type}_op", spike_reset=params["v_reset"], node_vars=node_vars.copy(),
                         spike_threshold=params["v_spike"], dt=dt, device="cuda:0")
 net.add_input_layer(W_in.shape[1], W_in, trainable=False)
 
@@ -54,7 +55,7 @@ obs = net.run(inputs=I_ext, sampling_steps=sr, record_output=True)
 res = obs["out"]
 inp = pd.DataFrame(index=res.index, data=I_ext[::sr, :], columns=np.arange(0, W_in.shape[1]))
 pickle.dump({"s": res, "I_ext": inp},
-            open(f"/media/richard/data/{fname}_results.pkl", "wb"))
+            open(f"{res_dir}/{fname}_results.pkl", "wb"))
 
 # exemplary plotting
 _, axes = plt.subplots(nrows=2)

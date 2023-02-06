@@ -108,7 +108,7 @@ print(np.sum(W_in, axis=0))
 
 # collect remaining model parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r),
-             "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g_e": g, "E_e": E_r, "tau_s": tau_s, "v": v_t}
+             "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # define stimulation times
 steps = int(T/dt)

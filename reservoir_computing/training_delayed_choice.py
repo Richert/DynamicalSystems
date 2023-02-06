@@ -7,11 +7,12 @@ import sys
 from sklearn.preprocessing import label_binarize
 
 # load data
-cond = sys.argv[-3]
-task = sys.argv[-2]
-pop_type = sys.argv[-1]
+cond = sys.argv[-4]
+task = sys.argv[-3]
+pop_type = sys.argv[-2]
+res_dir = sys.argv[-1]
 fname = f"{pop_type}_{task}_{cond}"
-data = pickle.load(open(f"results/{fname}_results.pkl", "rb"))
+data = pickle.load(open(f"{res_dir}/{fname}_results.pkl", "rb"))
 config = pickle.load(open(f"config/{fname}_config.pkl", "rb"))
 print(f"Condition: {config['sweep']}")
 
