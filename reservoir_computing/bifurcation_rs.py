@@ -36,24 +36,24 @@ NPR = 20
 a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:1',
       origin='t', NMX=8000, DSMAX=0.02, UZR={8: [40.0]}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0)
 
+# continuation in SFA strength
+a.run(starting_point='UZ1', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name='d:1',
+      origin='eta:1', NMX=8000, DSMAX=0.05, UZR={16: [100.0]}, STOP=[], NPR=NPR, RL1=210.0, RL0=0.0,
+      bidirectional=True, EPSS=1e-6)
+
 # continuation in global coupling strength
 a.run(starting_point='UZ1', c='qif', ICP=4, NPAR=n_params, NDIM=n_dim, name='g:1',
-      origin='eta:1', NMX=8000, DSMAX=0.02, UZR={4: [10.0, 20.0]}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0,
+      origin='d:1', NMX=8000, DSMAX=0.02, UZR={4: [15.0, 20.0]}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0,
       bidirectional=True)
-
-# continuation in SFA strength
-a.run(starting_point='UZ2', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name='d:1',
-      origin='g:1', NMX=8000, DSMAX=0.05, UZR={16: [100.0]}, STOP=[], NPR=NPR, RL1=210.0, RL0=0.0,
-      bidirectional=True, EPSS=1e-6)
 
 # continuation in synaptic time constant
 taus = [10.0, 20.0, 40.0]
 a.run(starting_point='UZ1', c='qif', ICP=17, NPAR=n_params, NDIM=n_dim, name='tau_s:1',
-      origin='d:1', NMX=8000, DSMAX=0.1, UZR={17: taus}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0)
+      origin='g:1', NMX=8000, DSMAX=0.1, UZR={17: taus}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0)
 
 # continuation in background input
 a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:2',
-      origin='d:1', NMX=8000, DSMAX=0.02, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0,
+      origin='g:1', NMX=8000, DSMAX=0.02, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0,
       bidirectional=True)
 
 # continuations in coupling strength
@@ -67,28 +67,23 @@ for i in range(len(taus)):
 
 NPR = 20
 
-# 2D continuation follow-up in d and g
-a.run(starting_point='LP1', c='qif2', ICP=[16, 8], name='d/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=200.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[16, 8], name='d/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=200.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[16, 8], name='d/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=200.0, RL0=0.0, bidirectional=True)
+# 2D continuation follow-up in Delta and eta
+a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='Delta/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='Delta/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='HB1', c='qif2', ICP=[5, 8], name='Delta/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
 
 # 2D continuation follow-up in g and eta
-gs = [12.0, 15.0, 18.0]
 a.run(starting_point='LP1', c='qif2', ICP=[4, 8], name='g/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[4, 8], name='g/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[4, 8], name='g/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True, UZR={4: gs})
-for i in range(len(gs)):
-    a.run(starting_point=f'UZ{i+1}', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name=f'eta:{i+3}',
-          origin='g/eta:hb1', NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=NPR, RL1=100.0, RL0=0.0,
-          bidirectional=True)
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 
-# 2D continuation follow-up in g and k
+# 2D continuation follow-up in g and d
 a.run(starting_point='LP1', c='qif2', ICP=[4, 16], name='g/d:lp1', origin=f'g:2', NMX=8000, DSMAX=0.1,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='LP2', c='qif2', ICP=[4, 16], name='g/d:lp2', origin=f'g:2', NMX=8000, DSMAX=0.1,
@@ -110,5 +105,5 @@ a.run(starting_point='HB2', c='qif2', ICP=[4, 17], name='g/tau_s:hb2', origin=f'
 
 # save results
 fname = '../results/rs_bifs.pkl'
-kwargs = {"tau_s": taus, "gs": gs}
+kwargs = {"tau_s": taus}
 a.to_file(fname, **kwargs)

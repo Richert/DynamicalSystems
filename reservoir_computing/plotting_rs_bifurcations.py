@@ -34,8 +34,8 @@ grid = gridspec.GridSpec(nrows=3, ncols=3, figure=fig)
 #################
 
 # settings
-x_params = [("eta", 8), ("tau_s", 17), ("d", 16)]
-y_params = [("g", 4), ("g", 4), ("g", 4)]
+x_params = [("eta", 8), ("eta", 8), ("d", 16)]
+y_params = [("g", 4), ("Delta", 5), ("g", 4)]
 x_lims = [(0.0, 100.0), (0.0, 50.0), (0.0, 200.0)]
 y_lims = [(0.0, 50.0), (0.0, 50.0), (0.0, 50.0)]
 grid_locs = [grid[:2, 0], grid[:2, 1], grid[:2, 2]]
@@ -54,17 +54,17 @@ for (x_key, x_idx), (y_key, y_idx), loc, xl, yl in zip(x_params, y_params, grid_
             pass
     ax.set_xlabel(x_key)
     ax.set_ylabel(y_key)
-    ax.set_xlim(xl)
-    ax.set_ylim(yl)
+    # ax.set_xlim(xl)
+    # ax.set_ylim(yl)
 
 # 1D continuations
 ##################
 
 # settings
-params = [("eta", 8, 3), ("eta", 8, 4), ("eta", 8, 5)]
+params = [("g", 4, 2), ("g", 4, 3), ("g", 4, 4)]
 dv = "U(1)"
 grid_locs = [grid[2, 0], grid[2, 1], grid[2, 2]]
-iv = "gs"
+iv = "tau_s"
 vals = a.additional_attributes[iv]
 
 # plotting
