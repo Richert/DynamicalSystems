@@ -1,61 +1,110 @@
-from pyrates import CircuitTemplate, grid_search
-import numpy as np
 import matplotlib.pyplot as plt
-import pickle
-plt.rcParams['backend'] = 'TkAgg'
-import numba as nb
+import numpy as np
+from pyrates import CircuitTemplate, NodeTemplate, grid_search
+# extract phases from signals
+from scipy.signal import hilbert, butter, sosfilt, coherence
 
-# define parameters
-###################
 
-# model parameters
-C = 100.0   # unit: pF
-k = 0.7  # unit: None
-v_r = -60.0  # unit: mV
-v_t = -40.0  # unit: mV
-v_spike = 40.0  # unit: mV
-v_reset = 60.0  # unit: mV
-Delta = 1.0  # unit: mV
-d = 100.0
-a = 0.03
-b = -2.0
-tau_s = 6.0
-g = 15.0
-E_r = 0.0
+def get_phase(signal, N, freqs, fs):
+    filt = butter(N, freqs, output="sos", btype='bandpass', fs=fs)
+    s_filtered = sosfilt(filt, signal)
+    return np.unwrap(np.angle(hilbert(s_filtered)))
 
-# define inputs
-T = 2500.0
-cutoff = 500.0
+
+# network definition
+####################
+
+# define network nodes
+ko = NodeTemplate.from_yaml("model_templates.oscillators.kuramoto.sin_pop")
+ik = NodeTemplate.from_yaml("model_templates.neural_mass_models.ik.ik_theta_pop")
+nodes = {'ik': ik, 'ko': ko}
+
+# define network edges
+edges = [
+    ('ko/sin_op/s', 'ik/ik_theta_op/r_in', None, {'weight': 0.001}),
+    ('ik/ik_theta_op/r', 'ik/ik_theta_op/r_in', None, {'weight': 1.0})
+]
+
+# initialize network
+net = CircuitTemplate(name="ik_forced", nodes=nodes, edges=edges)
+
+# update izhikevich parameters
+node_vars = {
+    "C": 100.0,
+    "k": 0.7,
+    "v_r": -60.0,
+    "v_t": -40.0,
+    #"eta": 55.0,
+    "Delta": 1.0,
+    "g": 15.0,
+    "E_r": 0.0,
+    "b": -2.0,
+    "a": 0.03,
+    "d": 100.0,
+    "tau_s": 6.0,
+}
+node, op = "ik", "ik_theta_op"
+net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.items()})
+
+# perform parameter sweep
+#########################
+
+# define sweep
+alphas = np.asarray([0.0, 0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064])
+omegas = np.linspace(-0.003, 0.003, 7) + 0.004
+sweep = {"alpha": alphas, "omega": omegas}
+param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_theta_op/r_in')]},
+             "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
+
+# simulation parameters
+T = 3000.0
 dt = 1e-3
-dts = 1e-1
+dts = 1e-2
 inp = np.zeros((int(T/dt),)) + 55.0
-inp[int(1000/dt):int(2000/dt)] += 20.0
 
-# run the model
-###############
+# perform sweep
+res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulation_time=T, step_size=dt,
+                           solver="scipy", method="RK45", atol=1e-8, rtol=1e-6, sampling_step_size=dts,
+                           inputs={"ik/ik_theta_op/I_ext": inp}, outputs={"r": "ik/ik_theta_op/r"}, permute_grid=True)
 
-# initialize model
-ik = CircuitTemplate.from_yaml("config/ik/ik")
+# coherence calculation
+#######################
 
-# update parameters
-ik.update_var(node_vars={'p/ik_op/C': C, 'p/ik_op/k': k, 'p/ik_op/v_r': v_r, 'p/ik_op/v_t': v_t, 'p/ik_op/v_p': v_spike,
-                         'p/ik_op/v_z': v_reset, 'p/ik_op/Delta': Delta, 'p/ik_op/d': d, 'p/ik_op/a': a,
-                         'p/ik_op/b': b, 'p/ik_op/tau_s': tau_s, 'p/ik_op/g': g, 'p/ik_op/E_r': E_r})
+# calculate and store coherences
+coherences = np.zeros((len(alphas), len(omegas)))
+nps = 1024
+window = 'hamming'
+for key in res_map.index:
 
-# run simulation
-res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/ik_op/s', 'u': 'p/ik_op/u'}, inputs={'p/ik_op/I_ext': inp},
-             decorator=nb.njit, fastmath=True)
+    # extract parameter set
+    omega = res_map.at[key, 'omega']
+    alpha = res_map.at[key, 'J']
 
-# plot results
-fig, ax = plt.subplots(nrows=2, figsize=(12, 4))
-ax[0].plot(res["s"])
-ax[0].set_ylabel(r'$s(t)$')
-ax[1].plot(res["u"])
-ax[1].set_ylabel(r'$u(t)$')
-ax[1].set_xlabel("time (ms)")
-plt.tight_layout()
+    # collect phases
+    p1 = np.sin(get_phase(res['ik'][key].squeeze(), N=10,
+                          freqs=(omega-0.3*omega, omega+0.3*omega), fs=1/dts))
+    p2 = np.sin(2 * np.pi * res['ko'][key].squeeze())
+
+    # calculate coherence
+    freq, coh = coherence(p1, p2, fs=1/dts, nperseg=nps, window=window)
+
+    # find coherence matrix position that corresponds to these parameters
+    idx_r = np.argmin(np.abs(alphas - alpha))
+    idx_c = np.argmin(np.abs(omegas - omega))
+
+    # store coherence value at driving frequency
+    tf = freq[np.argmin(np.abs(freq - omega))]
+    coherences[idx_r, idx_c] = np.max(coh[(freq >= tf-0.3*tf) * (freq <= tf+0.3*tf)])
+
+# plot the coherence at the driving frequency for each pair of omega and J
+fix, ax = plt.subplots(figsize=(12, 8))
+cax = ax.imshow(coherences[::-1, :], aspect='equal')
+ax.set_xlabel(r'$\omega$')
+ax.set_ylabel(r'$J$')
+ax.set_xticks(np.arange(0, len(alphas), 3))
+ax.set_yticks(np.arange(0, len(omegas), 3))
+ax.set_xticklabels(np.round(omegas[::3], decimals=2))
+ax.set_yticklabels(np.round(alphas[::-3], decimals=2))
+plt.title("Coherence between IK population and KO")
+plt.colorbar(cax)
 plt.show()
-
-# save results
-pickle.dump({'results': res}, open("results/rs_fre_het.p", "wb"))
