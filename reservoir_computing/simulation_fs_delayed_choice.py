@@ -54,7 +54,7 @@ obs = net.run(inputs=I_ext, sampling_steps=sr, record_output=True)
 res = obs["out"]
 inp = pd.DataFrame(index=res.index, data=I_ext[::sr, :], columns=np.arange(0, W_in.shape[1]))
 pickle.dump({"s": res, "I_ext": inp},
-            open(f"results/{fname}_results.pkl", "wb"))
+            open(f"/media/richard/data/{fname}_results.pkl", "wb"))
 
 # exemplary plotting
 _, axes = plt.subplots(nrows=2)
