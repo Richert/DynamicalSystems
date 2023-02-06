@@ -21,7 +21,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ##################
 
 # file name for loading/saving
-cond = 1 #ys.argv[-1]
+cond = sys.argv[-1]
 fname = f"fs_dc_{cond}"
 
 # load config
