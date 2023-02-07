@@ -40,7 +40,8 @@ def alpha_kernel(t: np.ndarray, tau: float):
 # file name
 ###########
 
-fname = f'rs_dc_{sys.argv[1]}'
+cond = 1 #sys.argv[1]
+fname = f'rs_dc_{cond}'
 
 # simulation parameters
 #######################
@@ -96,7 +97,7 @@ for idx in range(2, len(sys.argv), 2):
 indices = np.arange(0, N, dtype=np.int32)
 pdfs = np.asarray([dist(idx, method="inverse") for idx in indices])
 pdfs /= np.sum(pdfs)
-if "connectivity" in sweep and sweep["connectivity"] == "circcular":
+if "connectivity" in sweep and sweep["connectivity"] == "circular":
     W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
 else:
     W = random_connectivity(N, N, p, normalize=True)

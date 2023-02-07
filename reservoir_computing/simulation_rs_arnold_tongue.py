@@ -58,16 +58,17 @@ param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_thet
              "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
 
 # simulation parameters
-T = 10000.0
+T = 11000.0
 dt = 1e-3
 dts = 1e-2
 inp = np.zeros((int(T/dt),)) + 55.0
+cutoff = 1000.0
 
 # perform sweep
 res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulation_time=T, step_size=dt,
-                           solver="scipy", method="DOP853", atol=1e-5, rtol=1e-4, sampling_step_size=dts,
+                           solver="scipy", method="RK23", atol=1e-5, rtol=1e-4, sampling_step_size=dts,
                            permute_grid=True, vectorize=True, inputs={"ik/ik_theta_op/I_ext": inp},
-                           outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"}, decorator=njit
+                           outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"}, cutoff=cutoff
                            )
 
 # coherence calculation
