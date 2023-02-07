@@ -4,12 +4,6 @@ import pickle
 import numpy as np
 
 
-def get_phase(signal, N, freqs, fs):
-    filt = butter(N, freqs, output="sos", btype='bandpass', fs=fs)
-    s_filtered = sosfilt(filt, signal)
-    return np.unwrap(np.angle(hilbert(s_filtered)))
-
-
 # load data
 ###########
 
@@ -34,11 +28,6 @@ for key in res_map.index:
     # extract parameter set
     omega = res_map.at[key, 'omega']
     alpha = res_map.at[key, 'alpha']
-
-    # collect phases
-    p1 = np.sin(get_phase(res['ik'][key].squeeze().values, N=10,
-                          freqs=(omega-width*omega, omega+width*omega), fs=1/dts))
-    p2 = np.sin(2 * np.pi * res['ko'][key].squeeze().values)
 
     # calculate coherence
     freq, coh = coherence(res['ik'][key].squeeze().values, np.sin(2 * np.pi * res['ko'][key].squeeze().values), fs=1/dts, nperseg=nps, window=window)
