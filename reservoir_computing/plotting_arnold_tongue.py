@@ -19,10 +19,10 @@ dts = res.index[1] - res.index[0]
 
 # calculate and store coherences
 coherences = np.zeros((len(alphas), len(omegas)))
-nps = 16000
+nps = 24000
 window = 'hamming'
 width = 0.3
-cutoff = 100000
+cutoff = 0
 for key in res_map.index:
 
     # extract parameter set
@@ -30,7 +30,8 @@ for key in res_map.index:
     alpha = res_map.at[key, 'alpha']
 
     # calculate coherence
-    freq, coh = coherence(res['ik'][key].squeeze().values, np.sin(2 * np.pi * res['ko'][key].squeeze().values), fs=1/dts, nperseg=nps, window=window)
+    freq, coh = coherence(res['ik'][key].squeeze().values, np.sin(2 * np.pi * res['ko'][key].squeeze().values),
+                          fs=1000/dts, nperseg=nps, window=window)
 
     # find coherence matrix position that corresponds to these parameters
     idx_r = np.argmin(np.abs(alphas - alpha))

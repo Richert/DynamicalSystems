@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from pyrates import CircuitTemplate, NodeTemplate
+from scipy.signal import coherence
 
 # network definition
 ####################
@@ -38,35 +39,48 @@ node, op = "ik", "ik_theta_op"
 net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.items()})
 
 # update kuramoto parameters
-net.update_var(node_vars={"ko/phase_op/omega": 0.004})
+omega = 0.006
+net.update_var(node_vars={"ko/phase_op/omega": omega})
 
 # perform simulation
 ####################
 
 # simulation parameters
-T = 2000.0
+cutoff = 1000.0
+T = 20000.0 + cutoff
 dt = 1e-3
+dts = 1e-2
 inp = np.zeros((int(T/dt),)) + 55.0
 
 # perform simulation
-from numba import njit
-res = net.run(T, dt, inputs={"ik/ik_theta_op/I_ext": inp},
-              outputs={"inp": "ko/phase_op/theta", "r": "ik/ik_theta_op/r"},
+res = net.run(T, dt, sampling_step_size=dts, cutoff=cutoff,
+              inputs={"ik/ik_theta_op/I_ext": inp},
+              outputs={"ko": "ko/phase_op/theta", "ik": "ik/ik_theta_op/r"},
               solver="scipy", method="RK23", atol=1e-5, rtol=1e-4)
 
 # save results
 res.to_csv("results/rs_driven_hom.csv")
 
+# calculate coherence
+freq, coh = coherence(res['ik'].squeeze().values, np.sin(2 * np.pi * res['ko'].squeeze().values), fs=1000/dts,
+                      nperseg=8096, window="hamming")
+max_coh = np.max(coh[(freq >= omega-0.2*omega) * (freq <= omega+0.2*omega)])
+
 # plot results
-fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
 ax = axes[0]
-ax.plot(res.index, res["r"]*1e3)
+ax.plot(res.index, res["ik"]*1e3)
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("r (Hz)")
 ax = axes[1]
-ax.plot(res.index, np.sin(2.0*np.pi*res["inp"]))
+ax.plot(res.index, np.sin(2.0*np.pi*res["ko"]))
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("input")
+ax = axes[2]
+ax.plot(freq*1e3, coh)
+ax.set_xlabel("f (Hz)")
+ax.set_ylabel("coherence")
+ax.set_title(f"coh = {max_coh} at omega = {omega}")
 
 plt.tight_layout()
 plt.show()
