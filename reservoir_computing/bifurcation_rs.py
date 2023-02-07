@@ -55,6 +55,9 @@ a.run(starting_point='UZ1', c='qif', ICP=17, NPAR=n_params, NDIM=n_dim, name='ta
 a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:2',
       origin='g:1', NMX=8000, DSMAX=0.02, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0,
       bidirectional=True)
+a.run(starting_point='UZ2', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:3',
+      origin='g:1', NMX=8000, DSMAX=0.02, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0,
+      bidirectional=True)
 
 # continuations in coupling strength
 for i in range(len(taus)):
@@ -68,17 +71,17 @@ for i in range(len(taus)):
 NPR = 20
 
 # 2D continuation follow-up in Delta and eta
-a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='Delta/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='Delta/eta:lp1', origin=f'eta:3', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='Delta/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='Delta/eta:lp2', origin=f'eta:3', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[5, 8], name='Delta/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
 
 # 2D continuation follow-up in g and eta
-a.run(starting_point='LP1', c='qif2', ICP=[4, 8], name='g/eta:lp1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP1', c='qif2', ICP=[4, 8], name='g/eta:lp1', origin=f'eta:3', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[4, 8], name='g/eta:lp2', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP2', c='qif2', ICP=[4, 8], name='g/eta:lp2', origin=f'eta:3', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[4, 8], name='g/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)

@@ -12,7 +12,7 @@ nodes = {'ik': ik, 'ko': ko}
 
 # define network edges
 edges = [
-    ('ko/sin_op/s', 'ik/ik_theta_op/r_in', None, {'weight': 0.001}),
+    ('ko/sin_op/s', 'ik/ik_theta_op/r_in', None, {'weight': 0.002}),
     ('ik/ik_theta_op/r', 'ik/ik_theta_op/r_in', None, {'weight': 1.0})
 ]
 
@@ -38,20 +38,24 @@ node, op = "ik", "ik_theta_op"
 net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.items()})
 
 # update kuramoto parameters
-net.update_var(node_vars={"ko/phase_op/omega": 0.006})
+net.update_var(node_vars={"ko/phase_op/omega": 0.004})
 
 # perform simulation
 ####################
 
 # simulation parameters
-T = 3000.0
+T = 2000.0
 dt = 1e-3
 inp = np.zeros((int(T/dt),)) + 55.0
 
 # perform simulation
+from numba import njit
 res = net.run(T, dt, inputs={"ik/ik_theta_op/I_ext": inp},
               outputs={"inp": "ko/phase_op/theta", "r": "ik/ik_theta_op/r"},
-              solver="scipy", atol=1e-8, rtol=1e-6)
+              solver="scipy", method="RK23", atol=1e-5, rtol=1e-4)
+
+# save results
+res.to_csv("results/rs_driven_hom.csv")
 
 # plot results
 fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
