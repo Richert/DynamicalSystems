@@ -2,6 +2,7 @@ import numpy as np
 from pyrates import CircuitTemplate, NodeTemplate, grid_search
 from numba import njit
 import pickle
+import sys
 
 
 # network definition
@@ -44,7 +45,7 @@ net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.it
 
 # define sweep
 alphas = np.asarray([0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064])
-omegas = np.linspace(-0.003, 0.003, 11) + 0.004
+omegas = np.linspace(1, 12, num=20)
 sweep = {"alpha": alphas, "omega": omegas}
 param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_theta_op/r_in')]},
              "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
@@ -63,5 +64,6 @@ res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulatio
                            outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"})
 
 # save data
+fn = sys.argv[-1]
 pickle.dump({"res": res, "map": res_map, "alphas": alphas, "omegas": omegas},
-            open("results/rs_arnold_tongue.pkl", "wb"))
+            open(f"{fn}.pkl", "wb"))
