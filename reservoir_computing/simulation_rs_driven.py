@@ -13,7 +13,7 @@ nodes = {'ik': ik, 'ko': ko}
 
 # define network edges
 edges = [
-    ('ko/sin_op/s', 'ik/ik_theta_op/r_in', None, {'weight': 0.002}),
+    ('ko/sin_op/s', 'ik/ik_theta_op/r_in', None, {'weight': 0.001}),
     ('ik/ik_theta_op/r', 'ik/ik_theta_op/r_in', None, {'weight': 1.0})
 ]
 
@@ -47,9 +47,9 @@ net.update_var(node_vars={"ko/phase_op/omega": omega})
 
 # simulation parameters
 cutoff = 1000.0
-T = 20000.0 + cutoff
-dt = 1e-3
-dts = 1e-2
+T = 60000.0 + cutoff
+dt = 1e-2
+dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 55.0
 
 # perform simulation
@@ -62,9 +62,9 @@ res = net.run(T, dt, sampling_step_size=dts, cutoff=cutoff,
 res.to_csv("results/rs_driven_hom.csv")
 
 # calculate coherence
-freq, coh = coherence(res['ik'].squeeze().values, np.sin(2 * np.pi * res['ko'].squeeze().values), fs=1000/dts,
-                      nperseg=8096, window="hamming")
-max_coh = np.max(coh[(freq >= omega-0.2*omega) * (freq <= omega+0.2*omega)])
+freq, coh = coherence(res['ik'].squeeze().values, np.sin(2 * np.pi * res['ko'].squeeze().values), fs=1/dts,
+                      nperseg=24000, window="hamming")
+max_coh = np.max(coh[(freq >= omega-0.3*omega) * (freq <= omega+0.3*omega)])
 
 # plot results
 fig, axes = plt.subplots(nrows=3, figsize=(12, 8))

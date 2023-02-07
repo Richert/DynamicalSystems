@@ -45,23 +45,24 @@ net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.it
 
 # define sweep
 alphas = np.asarray([0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064])
-omegas = np.linspace(1, 12, num=20)
+omegas = np.linspace(1, 7, num=20)
 sweep = {"alpha": alphas, "omega": omegas}
 param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_theta_op/r_in')]},
              "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
 
 # simulation parameters
-T = 11000.0
-dt = 1e-3
-dts = 1e-2
+cutoff = 10000.0
+T = 60000.0 + cutoff
+dt = 1e-2
+dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 55.0
-cutoff = 1000.0
 
 # perform sweep
 res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulation_time=T, step_size=dt,
-                           solver="scipy", method="RK23", atol=1e-5, rtol=1e-4, sampling_step_size=dts,
-                           permute_grid=True, vectorize=True, inputs={"ik/ik_theta_op/I_ext": inp},
-                           outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"})
+                           sampling_step_size=dts, cutoff=cutoff, permute_grid=True, vectorize=True,
+                           inputs={"ik/ik_theta_op/I_ext": inp},
+                           outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"},
+                           )
 
 # save data
 fn = sys.argv[-1]
