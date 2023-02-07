@@ -3,6 +3,7 @@ import numpy as np
 from pyrates import CircuitTemplate, NodeTemplate, grid_search
 # extract phases from signals
 from scipy.signal import hilbert, butter, sosfilt, coherence
+from numba import njit
 
 
 def get_phase(signal, N, freqs, fs):
@@ -57,15 +58,17 @@ param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_thet
              "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
 
 # simulation parameters
-T = 3000.0
+T = 10000.0
 dt = 1e-3
 dts = 1e-2
 inp = np.zeros((int(T/dt),)) + 55.0
 
 # perform sweep
 res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulation_time=T, step_size=dt,
-                           solver="scipy", method="RK45", atol=1e-8, rtol=1e-6, sampling_step_size=dts,
-                           inputs={"ik/ik_theta_op/I_ext": inp}, outputs={"r": "ik/ik_theta_op/r"}, permute_grid=True)
+                           solver="scipy", method="DOP853", atol=1e-5, rtol=1e-4, sampling_step_size=dts,
+                           permute_grid=True, vectorize=True, inputs={"ik/ik_theta_op/I_ext": inp},
+                           outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"}, decorator=njit
+                           )
 
 # coherence calculation
 #######################
@@ -78,7 +81,7 @@ for key in res_map.index:
 
     # extract parameter set
     omega = res_map.at[key, 'omega']
-    alpha = res_map.at[key, 'J']
+    alpha = res_map.at[key, 'alpha']
 
     # collect phases
     p1 = np.sin(get_phase(res['ik'][key].squeeze(), N=10,
@@ -99,12 +102,12 @@ for key in res_map.index:
 # plot the coherence at the driving frequency for each pair of omega and J
 fix, ax = plt.subplots(figsize=(12, 8))
 cax = ax.imshow(coherences[::-1, :], aspect='equal')
-ax.set_xlabel(r'$\omega$')
-ax.set_ylabel(r'$J$')
+ax.set_xlabel(r'$\omega$ (Hz)')
+ax.set_ylabel(r'$J\alpha$ (Hz)')
 ax.set_xticks(np.arange(0, len(alphas), 3))
 ax.set_yticks(np.arange(0, len(omegas), 3))
-ax.set_xticklabels(np.round(omegas[::3], decimals=2))
-ax.set_yticklabels(np.round(alphas[::-3], decimals=2))
+ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=0))
+ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=0))
 plt.title("Coherence between IK population and KO")
 plt.colorbar(cax)
 plt.show()
