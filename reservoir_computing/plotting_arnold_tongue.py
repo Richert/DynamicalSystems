@@ -1,55 +1,108 @@
 import matplotlib.pyplot as plt
-from scipy.signal import hilbert, butter, sosfilt, coherence
+from matplotlib.gridspec import GridSpec
+from scipy.signal import welch, coherence
 import pickle
 import numpy as np
 
+# plot settings
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.dpi'] = 200
+plt.rcParams['font.size'] = 10.0
+plt.rcParams['axes.titlesize'] = 10
+plt.rcParams['axes.labelsize'] = 10
+plt.rcParams['lines.linewidth'] = 1.0
+markersize = 6
 
-# load data
-###########
+# conditions to loop over
+#########################
 
-data = pickle.load(open("results/rs_arnold_tongue.pkl", "rb"))
-alphas = data["alphas"]
-omegas = data["omegas"]
-res = data["res"]
-res_map = data["map"]
-dts = res.index[1] - res.index[0]
+# define conditions
+fn = "rs_arnold_tongue"
+conditions = ["het", "hom"]
+titles = [r"$\Delta = 1.0$", r"$\Delta = 0.1$"]
+base_len = 6
+fig = plt.figure(1, figsize=(int(len(conditions)*base_len), base_len))
+grid = GridSpec(ncols=len(conditions), nrows=1, figure=fig)
 
-# coherence calculation
-#######################
-
-# calculate and store coherences
-coherences = np.zeros((len(alphas), len(omegas)))
-nps = 24000
+# analysis meta parameters
+nps = 16000
 window = 'hamming'
-width = 0.3
-cutoff = 0
-for key in res_map.index:
+epsilon = 1e-1
 
-    # extract parameter set
-    omega = res_map.at[key, 'omega']
-    alpha = res_map.at[key, 'alpha']
+for idx, (cond, title) in enumerate(zip(conditions, titles)):
 
-    # calculate coherence
-    freq, coh = coherence(res['ik'][key].squeeze().values, np.sin(2 * np.pi * res['ko'][key].squeeze().values),
-                          fs=1000/dts, nperseg=nps, window=window)
+    # load data
+    ###########
 
-    # find coherence matrix position that corresponds to these parameters
-    idx_r = np.argmin(np.abs(alphas - alpha))
-    idx_c = np.argmin(np.abs(omegas - omega))
+    data = pickle.load(open(f"results/{fn}_{cond}.pkl", "rb"))
+    alphas = data["alphas"]
+    omegas = data["omegas"]
+    res = data["res"]
+    res_map = data["map"]
+    dts = res.index[1] - res.index[0]
 
-    # store coherence value at driving frequency
-    tf = freq[np.argmin(np.abs(freq - omega))]
-    coherences[idx_r, idx_c] = np.max(coh[(freq >= tf-width*tf) * (freq <= tf+width*tf)])
+    # calculate entrainment
+    #######################
 
-# plot the coherence at the driving frequency for each pair of omega and J
-fix, ax = plt.subplots(figsize=(12, 8))
-cax = ax.imshow(coherences[::-1, :], aspect='equal', interpolation="none")
-ax.set_xlabel(r'$\omega$ (Hz)')
-ax.set_ylabel(r'$\alpha$ (Hz)')
-ax.set_xticks(np.arange(0, len(omegas), 3))
-ax.set_yticks(np.arange(0, len(alphas), 3))
-ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=0))
-ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=0))
-plt.title("Coherence between IK population and KO")
-plt.colorbar(cax)
+    # calculate and store entrainment
+    entrainment = np.zeros((len(alphas), len(omegas)))
+    for key in res_map.index:
+
+        # extract parameter set
+        omega = res_map.at[key, 'omega']
+        alpha = res_map.at[key, 'alpha']
+
+        # calculate psd of firing rate dynamics
+        # freqs, pows = welch(data["res"]["ik"][key].values.squeeze(), fs=1/dts, window=window, nperseg=nps)
+        freqs, coh = coherence(data["res"]["ik"][key].values.squeeze(), data["res"]["ko"][key].values.squeeze(),
+                               fs=1/dts, window=window, nperseg=nps, axis=0)
+
+        # fig, axes = plt.subplots(nrows=3, figsize=(12, 6))
+        # ax = axes[0]
+        # ax.plot(data["res"]["ik"][key]*1e3)
+        # ax.set_xlabel("time (ms)")
+        # ax.set_ylabel("r (Hz)")
+        # ax = axes[1]
+        # ax.plot(np.sin(2*np.pi*data["res"]["ko"][key]))
+        # ax.set_xlabel("time (ms)")
+        # ax.set_ylabel("inp")
+        # ax = axes[2]
+        # ax.plot(freqs[freqs < 0.1]*1e3, pows[freqs < 0.1])
+        # ax.set_xlabel("f (Hz)")
+        # ax.set_ylabel("PSD")
+        # plt.show()
+
+        # find coherence matrix position that corresponds to these parameters
+        idx_r = np.argmin(np.abs(alphas - alpha))
+        idx_c = np.argmin(np.abs(omegas - omega))
+
+        # store coherence value at driving frequency
+        entrainment[idx_r, idx_c] = np.max(coh)
+
+    # plot entrainment
+    ##################
+
+    ax = fig.add_subplot(grid[0, idx])
+    cax = ax.imshow(entrainment[::-1, :], aspect='equal', interpolation="none")
+    ax.set_xlabel(r'$\omega$ (Hz)')
+    ax.set_ylabel(r'$\alpha$ (Hz)')
+    ax.set_xticks(np.arange(0, len(omegas), 3))
+    ax.set_yticks(np.arange(0, len(alphas), 3))
+    ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=0))
+    ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=0))
+    plt.title(f"Entrainment for {title}")
+    plt.colorbar(cax)
+
+# finishing touches
+###################
+
+# padding
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+
+# saving/plotting
+fig.canvas.draw()
+plt.savefig(f'results/rs_arnold_tongue.pdf')
 plt.show()

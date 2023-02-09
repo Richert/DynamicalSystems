@@ -1,6 +1,5 @@
 import numpy as np
 from pyrates import CircuitTemplate, NodeTemplate, grid_search
-from numba import njit
 import pickle
 import sys
 
@@ -29,7 +28,7 @@ node_vars = {
     "v_r": -60.0,
     "v_t": -40.0,
     #"eta": 55.0,
-    "Delta": 1.0,
+    "Delta": 0.1,
     "g": 15.0,
     "E_r": 0.0,
     "b": -2.0,
@@ -44,15 +43,15 @@ net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.it
 #########################
 
 # define sweep
-alphas = np.asarray([0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064])
-omegas = np.linspace(1, 7, num=20)
+alphas = np.linspace(1, 10, num=10)*1e-4
+omegas = np.linspace(1, 6, num=10)*1e-3
 sweep = {"alpha": alphas, "omega": omegas}
 param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_theta_op/r_in')]},
              "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
 
 # simulation parameters
-cutoff = 10000.0
-T = 60000.0 + cutoff
+cutoff = 30000.0
+T = 300000.0 + cutoff
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 55.0
@@ -62,9 +61,10 @@ res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulatio
                            sampling_step_size=dts, cutoff=cutoff, permute_grid=True, vectorize=True,
                            inputs={"ik/ik_theta_op/I_ext": inp},
                            outputs={"ik": "ik/ik_theta_op/r", "ko": "ko/phase_op/theta"},
+                           solver="euler", float_precision="float64"
                            )
 
 # save data
 fn = sys.argv[-1]
 pickle.dump({"res": res, "map": res_map, "alphas": alphas, "omegas": omegas},
-            open(f"{fn}.pkl", "wb"))
+            open(f"{fn}_hom.pkl", "wb"))
