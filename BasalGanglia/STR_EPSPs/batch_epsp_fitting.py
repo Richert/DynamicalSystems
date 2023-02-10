@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import least_squares
 from kernels import dualexponential
 import pickle
-from pandas import DataFrame, read_csv
+from pandas import DataFrame, read_csv, read_excel
 from typing import Callable
 
 
@@ -33,6 +33,7 @@ def r_squared(target: np.ndarray, pred: np.ndarray) -> float:
 # load data
 fn = "iSPN_control"
 data = read_csv(f"{fn}.csv")
+#data = read_excel(f"{fn}.xlsx")
 
 # cut off irrelevant parts
 cutoff_idx = np.argwhere(np.isnan(data.sum(axis=0, skipna=False).values))[0, 0]
@@ -46,6 +47,7 @@ data = DataFrame(index=data["time"].values, data=data.iloc[:, 1:].values)
 
 # choose form of synaptic response function
 func = dualexponential
+#test
 
 # parameter names
 param_names = ["d", "g", "a", "tau_r", "tau_s", "tau_f"]
@@ -110,6 +112,8 @@ for idx in range(data.shape[1]):
 
 epsps = DataFrame(index=data.index.values, data=np.asarray(fitted_epsps).T)
 params = DataFrame(index=param_names + ["R^2"], data=np.asarray(fitted_parameters).T)
-with open(f"{fn}.pkl", "wb") as f:
-    pickle.dump({"fitted_epsps": epsps, "parameters": params, "target_epsps": data}, f)
-    f.close()
+epsps.to_csv(f"epsps_{fn}.csv")
+params.to_csv(f"params_{fn}.csv")
+# with open(f"{fn}.pkl", "wb") as f:
+#     pickle.dump({"fitted_epsps": epsps, "parameters": params, "target_epsps": data}, f)
+#     f.close()
