@@ -2,7 +2,7 @@ import numpy as np
 from scipy.optimize import least_squares
 from kernels import dualexponential
 import pickle
-from pandas import DataFrame, read_csv
+from pandas import DataFrame, read_csv, read_excel
 from typing import Callable
 
 
@@ -33,6 +33,7 @@ def r_squared(target: np.ndarray, pred: np.ndarray) -> float:
 # load data
 fn = "iSPN_control"
 data = read_csv(f"{fn}.csv")
+#data = read_excel(f"{fn}.xlsx")
 
 # cut off irrelevant parts
 cutoff_idx = np.argwhere(np.isnan(data.sum(axis=0, skipna=False).values))[0, 0]
