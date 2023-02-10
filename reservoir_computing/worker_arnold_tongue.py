@@ -65,7 +65,7 @@ v1, v2 = vals[cond]
 cutoff = 30000.0
 T = 300000.0 + cutoff
 dt = 1e-2
-sr = 100.0
+sr = 100
 steps = int(np.round(T/dt))
 time = np.linspace(0.0, T, num=steps)
 

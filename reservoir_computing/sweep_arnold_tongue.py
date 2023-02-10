@@ -3,7 +3,7 @@ import pickle
 
 # parameter sweep definition
 sweep = dict()
-sweep["alpha"] = np.linspace(0.0, 0.001, num=20)
+sweep["alpha"] = np.linspace(0.0, 0.001, num=10)
 sweep["p_in"] = np.linspace(0.0, 1.0, num=10)
 
 # save sweep to file
