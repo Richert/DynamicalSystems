@@ -81,7 +81,7 @@ I_ext[:, 0] = np.sin(2.0*np.pi*omega*time)
 
 results = {"s": [], "J": [], "thetas": [], "W_in": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
            "sr": sr}
-n_reps = 10
+n_reps = 1
 for idx in range(n_reps):
 
     # adjust parameters according to sweep condition
