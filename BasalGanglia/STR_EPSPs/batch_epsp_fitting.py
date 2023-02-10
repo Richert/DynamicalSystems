@@ -4,6 +4,7 @@ from kernels import dualexponential
 import pickle
 from pandas import DataFrame, read_csv, read_excel
 from typing import Callable
+import sys
 
 
 def residuals(x: np.ndarray, y: np.ndarray, f: Callable, t: np.ndarray):
@@ -31,7 +32,10 @@ def r_squared(target: np.ndarray, pred: np.ndarray) -> float:
 ##############
 
 # load data
-fn = "iSPN_control"
+if len(sys.argv) > 1:
+    fn = sys.argv[-1]  # EITHER: provide path via the command line, i.e. "python batch_epsp_fittting.py /path/to/file"
+else:
+    fn = "dSPN_control"  # OR: adjust this to the desired file path, i.e. "path/to/file"
 data = read_csv(f"{fn}.csv")
 #data = read_excel(f"{fn}.xlsx")
 
@@ -47,7 +51,6 @@ data = DataFrame(index=data["time"].values, data=data.iloc[:, 1:].values)
 
 # choose form of synaptic response function
 func = dualexponential
-#test
 
 # parameter names
 param_names = ["d", "g", "a", "tau_r", "tau_s", "tau_f"]
@@ -110,10 +113,20 @@ for idx in range(data.shape[1]):
 # save results to file
 ######################
 
+# create dataframes
 epsps = DataFrame(index=data.index.values, data=np.asarray(fitted_epsps).T)
 params = DataFrame(index=param_names + ["R^2"], data=np.asarray(fitted_parameters).T)
-epsps.to_csv(f"epsps_{fn}.csv")
-params.to_csv(f"params_{fn}.csv")
+
+# save dataframes to results folder (if file path is given, the results folder should be where the data are)
+if "/" in fn:
+    fn_split = fn.split('/')
+    path = "/".join(fn_split[:-1])
+    path = f"/{path}/"
+else:
+    path = ""
+    fn_split = [fn]
+epsps.to_csv(f"{path}results/{fn_split[-1]}_epsps.csv")
+params.to_csv(f"{path}results/{fn_split[-1]}_params.csv")
 # with open(f"{fn}.pkl", "wb") as f:
 #     pickle.dump({"fitted_epsps": epsps, "parameters": params, "target_epsps": data}, f)
 #     f.close()
