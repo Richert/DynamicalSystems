@@ -112,6 +112,8 @@ for idx in range(data.shape[1]):
 
 epsps = DataFrame(index=data.index.values, data=np.asarray(fitted_epsps).T)
 params = DataFrame(index=param_names + ["R^2"], data=np.asarray(fitted_parameters).T)
-with open(f"{fn}.pkl", "wb") as f:
-    pickle.dump({"fitted_epsps": epsps, "parameters": params, "target_epsps": data}, f)
-    f.close()
+epsps.to_csv(f"epsps_{fn}.csv")
+params.to_csv(f"params_{fn}.csv")
+# with open(f"{fn}.pkl", "wb") as f:
+#     pickle.dump({"fitted_epsps": epsps, "parameters": params, "target_epsps": data}, f)
+#     f.close()
