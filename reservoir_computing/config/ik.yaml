@@ -9,7 +9,7 @@ rs_op:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + I_ext + eta + g*s_in*(E_r - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*mean(spike)"
+    - "u' = (b*(mean(v)-v_r) - u) / tau_u + kappa*mean(spike)"
     - "s' = -s/tau_s + spike"
   variables:
     s: output(0.0)
