@@ -47,6 +47,7 @@ data = DataFrame(index=data["time"].values, data=data.iloc[:, 1:].values)
 
 # choose form of synaptic response function
 func = dualexponential
+#test
 
 # parameter names
 param_names = ["d", "g", "a", "tau_r", "tau_s", "tau_f"]
