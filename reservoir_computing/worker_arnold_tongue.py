@@ -29,8 +29,12 @@ def dist(x: int, method: str = "inverse") -> float:
 # model definition
 ##################
 
+# working directory
+wdir = sys.argv[-1]
+tdir = sys.argv[-2]
+
 # sweep condition
-cond = int(sys.argv[-1])
+cond = int(sys.argv[-3])
 p1 = "p_in"
 p2 = "alpha"
 
@@ -53,7 +57,7 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # parameter sweep definition
-with open("/home/rgf3807/PycharmProjects/DynamicalSystems/reservoir_computing/config/arnold_tongue_sweep.pkl", "rb") as f:
+with open(f"{wdir}/config/arnold_tongue_sweep.pkl", "rb") as f:
     sweep = pickle.load(f)
     v1s = sweep[p1]
     v2s = sweep[p2]
@@ -111,7 +115,7 @@ for idx in range(n_reps):
                  "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
     # initialize model
-    net = Network.from_yaml("config/ik/rs", weights=W, source_var="s", target_var="s_in",
+    net = Network.from_yaml(f"{wdir}/config/ik/rs", weights=W, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
                             verbose=False, clear=True)
@@ -130,6 +134,6 @@ for idx in range(n_reps):
 
 # save results
 fname = f"rs_arnold_tongue"
-with open(f"/projects/p31302/richard/results/{fname}_{cond}.pkl", "wb") as f:
+with open(f"{tdir}/{fname}_{cond}.pkl", "wb") as f:
     pickle.dump(results, f)
     f.close()
