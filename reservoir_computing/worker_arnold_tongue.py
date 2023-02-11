@@ -30,8 +30,8 @@ def dist(x: int, method: str = "inverse") -> float:
 ##################
 
 # working directory
-wdir = sys.argv[-1]
-tdir = sys.argv[-2]
+wdir = sys.argv[-2]
+tdir = sys.argv[-1]
 
 # sweep condition
 cond = int(sys.argv[-3])
@@ -57,7 +57,7 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # parameter sweep definition
-with open(f"{wdir}/config/arnold_tongue_sweep.pkl", "rb") as f:
+with open(f"{wdir}/arnold_tongue_sweep.pkl", "rb") as f:
     sweep = pickle.load(f)
     v1s = sweep[p1]
     v2s = sweep[p2]
