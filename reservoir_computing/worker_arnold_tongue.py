@@ -30,11 +30,11 @@ def dist(x: int, method: str = "inverse") -> float:
 ##################
 
 # working directory
-wdir = 'config' #sys.argv[-2]
-tdir = 'results' # sys.argv[-1]
+wdir = sys.argv[-2]
+tdir = sys.argv[-1]
 
 # sweep condition
-cond = 1 #int(sys.argv[-3])
+cond = int(sys.argv[-3])
 p1 = "p_in"
 p2 = "alpha"
 
@@ -85,7 +85,7 @@ I_ext[:, 0] = np.sin(2.0*np.pi*omega*time)
 
 results = {"s": [], "J": [], "thetas": [], "W_in": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
            "sr": sr}
-n_reps = 1
+n_reps = 5
 for idx in range(n_reps):
 
     # adjust parameters according to sweep condition
