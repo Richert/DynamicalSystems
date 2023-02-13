@@ -30,11 +30,11 @@ def dist(x: int, method: str = "inverse") -> float:
 ##################
 
 # working directory
-wdir = sys.argv[-2]
-tdir = sys.argv[-1]
+wdir = 'config' #sys.argv[-2]
+tdir = 'results' # sys.argv[-1]
 
 # sweep condition
-cond = int(sys.argv[-3])
+cond = 1 #int(sys.argv[-3])
 p1 = "p_in"
 p2 = "alpha"
 
