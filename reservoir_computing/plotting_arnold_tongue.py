@@ -3,6 +3,8 @@ from matplotlib.gridspec import GridSpec
 from scipy.signal import welch, coherence
 import pickle
 import numpy as np
+import sys
+
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -20,7 +22,7 @@ markersize = 6
 #########################
 
 # define conditions
-fn = "rs_arnold_tongue"
+fn = sys.argv[-1]  #"rs_arnold_tongue"
 conditions = ["het", "hom"]
 titles = [r"$\Delta = 1.0$", r"$\Delta = 0.1$"]
 base_len = 6
