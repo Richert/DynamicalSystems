@@ -39,7 +39,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     # load data
     ###########
 
-    data = pickle.load(open(f"results/{fn}_{cond}.pkl", "rb"))
+    data = pickle.load(open(f"{fn}_{cond}.pkl", "rb"))
     alphas = data["alphas"]
     omegas = data["omegas"]
     res = data["res"]
