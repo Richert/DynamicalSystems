@@ -118,7 +118,7 @@ for idx in range(n_reps):
     net = Network.from_yaml(f"{wdir}/ik/rs", weights=W, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                            verbose=False, clear=True)
+                            verbose=False, clear=True, device="cuda:0")
     net.add_input_layer(1, weights=W_in)
 
     # simulation

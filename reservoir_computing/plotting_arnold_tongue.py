@@ -93,8 +93,8 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     ax.set_ylabel(r'$\alpha$ (Hz)')
     ax.set_xticks(np.arange(0, len(omegas), 3))
     ax.set_yticks(np.arange(0, len(alphas), 3))
-    ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=0))
-    ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=0))
+    ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=1))
+    ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=1))
     plt.title(f"Entrainment for {title}")
     plt.colorbar(cax)
 
