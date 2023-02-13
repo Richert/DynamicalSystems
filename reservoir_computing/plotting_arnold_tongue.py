@@ -96,7 +96,8 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=1))
     ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=1))
     plt.title(f"Entrainment for {title}")
-    plt.colorbar(cax)
+
+plt.colorbar(cax, ax=ax, shrink=0.5)
 
 # finishing touches
 ###################
