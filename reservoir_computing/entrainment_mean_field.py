@@ -46,7 +46,7 @@ f_cutoff = 250000
 
 # Plot the frequency response for a few different orders.
 plt.figure(1)
-for q, omega in zip([0.2, 0.4, 0.2, 0.4], [2.0, 2.0, 4.0, 4.0]):
+for q, omega in zip([10.0, 20.0, 10.0, 20.0], [2.0, 2.0, 4.0, 4.0]):
     b, a = iirpeak(omega, q, fs=fs)
     w, h = freqz(b, a, worN=12000)
     plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"Q = {q}, omega = {omega}")
@@ -73,7 +73,7 @@ for key in res_map.index:
     ko = np.sin(2.0*np.pi*ko)
 
     # filter data around driving frequency
-    ik_filtered = butter_bandpass_filter(ik, omega-f_margin*omega, omega+f_margin*omega, fs=fs, order=f_order)
+    ik_filtered = butter_bandpass_filter(ik, omega, f_quality, fs=fs)
 
     # get analytic signals
     ik_phase, ik_env = analytic_signal(ik_filtered)
