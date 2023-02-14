@@ -18,6 +18,13 @@ plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
+
+def minmax(x: np.ndarray) -> np.ndarray:
+    x -= np.min(x)
+    x /= np.max(x)
+    return x
+
+
 # conditions to loop over
 #########################
 
@@ -59,8 +66,9 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
 
         # calculate psd of firing rate dynamics
         # freqs, pows = welch(data["res"]["ik"][key].values.squeeze(), fs=1/dts, window=window, nperseg=nps)
-        freqs, coh = coherence(data["res"]["ik"][key].values.squeeze(), data["res"]["ko"][key].values.squeeze(),
-                               fs=1/dts, window=window, nperseg=nps, axis=0)
+        sig = minmax(data["res"]["ik"][key].values.squeeze())
+        driver = minmax(data["res"]["ko"][key].values.squeeze())
+        freqs, coh = coherence(sig, driver, fs=1/dts, window=window, nperseg=nps, axis=0)
 
         # fig, axes = plt.subplots(nrows=3, figsize=(12, 6))
         # ax = axes[0]
