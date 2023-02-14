@@ -18,12 +18,12 @@ def analytic_signal(sig: np.ndarray) -> tuple:
 
 
 def phase_locking(x: np.ndarray, y: np.ndarray) -> float:
-    return np.abs(np.sum(np.exp(0.0+1.0j*(x-y)))) / len(x)
+    return np.abs(np.mean(np.exp(1.0j*(x-y))))
 
 
 def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env: np.ndarray) -> float:
-    coh = np.sum(x_env * y_env * np.exp(0.0+1.0j*(x_phase - y_phase)))
-    return np.abs(coh / np.sqrt(np.sum(x_env**2) + np.sum(y_env**2)))
+    coh = np.abs(np.sum(x_env * y_env * np.exp(1.0j*(x_phase - y_phase))))
+    return coh / np.sqrt(np.sum(x_env**2) * np.sum(y_env**2))
 
 
 # load data
@@ -39,15 +39,15 @@ fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 
 # filtering options
 print(f"Sampling frequency: {fs}")
-f_margin = 0.2
+f_margin = 0.5
 print(f"Frequency band width (Hz): {2*f_margin}")
 f_order = 32
 f_cutoff = 10000
 
 # Plot the frequency response for a few different orders.
 plt.figure(1)
-for order, omega in zip([16, 64, 16, 64], [2.0, 2.0, 4.0, 4.0]):
-    sos = butter(order, [omega-f_margin*omega, omega+f_margin*omega], fs=fs, btype='band', output='sos')
+for order, omega in zip([32, 64, 32, 64], [2.0, 2.0, 4.0, 4.0]):
+    sos = butter(order, [omega-f_margin, omega+f_margin], fs=fs, btype='band', output='sos')
     w, h = sosfreqz(sos, worN=12000)
     plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"order = {order}, omega = {omega}")
 plt.xlabel('Frequency (Hz)')
