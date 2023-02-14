@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from scipy.signal import welch, coherence
 import pickle
 import numpy as np
 import sys
@@ -44,7 +43,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
 
     # plot coherence
     ax = fig1.add_subplot(grid1[0, idx])
-    cax = ax.imshow(coherence[::-1, :], aspect='equal', interpolation="none")
+    cax = ax.imshow(coh[::-1, :], aspect='equal', interpolation="none")
     ax.set_xlabel(r'$\omega$ (Hz)')
     ax.set_ylabel(r'$\alpha$ (Hz)')
     ax.set_xticks(np.arange(0, len(omegas), 3))
