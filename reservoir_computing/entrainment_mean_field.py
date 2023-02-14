@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import sys
 from scipy.signal import butter, lfilter, hilbert
+import matplotlib.pyplot as plt
 
 
 def butter_bandpass(lowcut: float, highcut: float, fs: int, order: int = 5) -> tuple:
@@ -68,6 +69,11 @@ for key in res_map.index:
     ik = res["ik"][key].values.squeeze()
     ko = res["ko"][key].values.squeeze()
 
+    plt.plot(ik, label="ik")
+    plt.plot(ko, label="ko")
+    plt.legend()
+    plt.show()
+
     # filter data around driving frequency
     ik_filtered = butter_bandpass_filter(ik, omega-f_margin, omega+f_margin, fs=fs, order=f_order)
 
@@ -80,7 +86,6 @@ for key in res_map.index:
     coh = coherence(ik_phase, ko_phase, ik_env, ko_env)
 
     # test plotting
-    import matplotlib.pyplot as plt
     plt.plot(ik_filtered, label="ik_f")
     plt.plot(ko, label="ko")
     plt.title(f"Coh = {coh}, PLV = {plv}")

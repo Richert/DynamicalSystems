@@ -50,7 +50,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     ax.set_yticks(np.arange(0, len(alphas), 3))
     ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=1))
     ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=1))
-    plt.title(f"Coh for {title}")
+    ax.set_title(f"Coh for {title}")
     if idx == len(conditions)-1:
         plt.colorbar(cax, ax=ax, shrink=0.5)
 
@@ -63,7 +63,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     ax.set_yticks(np.arange(0, len(alphas), 3))
     ax.set_xticklabels(np.round(omegas[::3] * 1e3, decimals=1))
     ax.set_yticklabels(np.round(alphas[::-3] * 1e3, decimals=1))
-    plt.title(f"PLV for {title}")
+    ax.set_title(f"PLV for {title}")
     if idx == len(conditions) - 1:
         plt.colorbar(cax, ax=ax, shrink=0.5)
 
