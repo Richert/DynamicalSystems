@@ -55,7 +55,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
         plt.colorbar(cax, ax=ax, shrink=0.5)
 
     # plot PLV
-    ax = fig2.add_subplot(grid1[0, idx])
+    ax = fig2.add_subplot(grid2[0, idx])
     cax = ax.imshow(plv[::-1, :], aspect='equal', interpolation="none")
     ax.set_xlabel(r'$\omega$ (Hz)')
     ax.set_ylabel(r'$\alpha$ (Hz)')
