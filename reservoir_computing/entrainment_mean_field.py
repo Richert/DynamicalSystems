@@ -42,7 +42,7 @@ print(f"Sampling frequency: {fs}")
 f_margin = 0.5
 print(f"Frequency band width (Hz): {2*f_margin}")
 f_order = 32
-f_cutoff = 10000
+f_cutoff = 250000
 
 # Plot the frequency response for a few different orders.
 plt.figure(1)
