@@ -70,6 +70,8 @@ for key in res_map.index:
 
     # filter data around driving frequency
     ik_filtered = butter_bandpass_filter(ik, omega-f_margin, omega+f_margin, fs=fs, order=f_order)
+    import matplotlib.pyplot as plt
+    plt.plot(ik_filtered)
 
     # get analytic signals
     ik_phase, ik_env = analytic_signal(ik_filtered)

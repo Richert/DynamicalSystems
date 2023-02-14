@@ -28,7 +28,7 @@ titles = [r"$\Delta = 1.0$", r"$\Delta = 0.1$"]
 base_len = 6
 fig1 = plt.figure(1, figsize=(int(len(conditions)*base_len), base_len))
 grid1 = GridSpec(ncols=len(conditions), nrows=1, figure=fig1)
-fig2 = plt.figure(1, figsize=(int(len(conditions)*base_len), base_len))
+fig2 = plt.figure(2, figsize=(int(len(conditions)*base_len), base_len))
 grid2 = GridSpec(ncols=len(conditions), nrows=1, figure=fig2)
 
 for idx, (cond, title) in enumerate(zip(conditions, titles)):
