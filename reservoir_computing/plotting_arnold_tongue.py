@@ -35,8 +35,8 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
 
     # load data
     data = pickle.load(open(f"{fn}_{cond}.pkl", "rb"))
-    alphas = data["alphas"]
-    omegas = data["omegas"]
+    alphas = data["alphas"]*1e3
+    omegas = data["omegas"]*1e3
     coh = data["coherence"]
     plv = data["plv"]
     res_map = data["map"]
@@ -48,8 +48,8 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     ax.set_ylabel(r'$\alpha$ (Hz)')
     ax.set_xticks(np.arange(0, len(omegas), 3))
     ax.set_yticks(np.arange(0, len(alphas), 3))
-    ax.set_xticklabels(np.round(omegas[::3]*1e3, decimals=1))
-    ax.set_yticklabels(np.round(alphas[::-3]*1e3, decimals=1))
+    ax.set_xticklabels(np.round(omegas[::3], decimals=1))
+    ax.set_yticklabels(np.round(alphas[::-3], decimals=1))
     ax.set_title(f"Coh for {title}")
     if idx == len(conditions)-1:
         plt.colorbar(cax, ax=ax, shrink=0.5)
@@ -61,8 +61,8 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     ax.set_ylabel(r'$\alpha$ (Hz)')
     ax.set_xticks(np.arange(0, len(omegas), 3))
     ax.set_yticks(np.arange(0, len(alphas), 3))
-    ax.set_xticklabels(np.round(omegas[::3] * 1e3, decimals=1))
-    ax.set_yticklabels(np.round(alphas[::-3] * 1e3, decimals=1))
+    ax.set_xticklabels(np.round(omegas[::3], decimals=1))
+    ax.set_yticklabels(np.round(alphas[::-3], decimals=1))
     ax.set_title(f"PLV for {title}")
     if idx == len(conditions) - 1:
         plt.colorbar(cax, ax=ax, shrink=0.5)
