@@ -9,14 +9,12 @@ def butter_bandpass(lowcut: float, highcut: float, fs: int, order: int = 5) -> t
     nyq = 0.5 * fs
     low = lowcut / nyq
     high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band', output='ba')
-    return b, a
+    return butter(order, [low, high], btype='band', output='ba')
 
 
 def butter_bandpass_filter(data: np.ndarray, lowcut: float, highcut: float, fs: int, order: int = 5) -> np.ndarray:
     b, a = butter_bandpass(lowcut, highcut, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
+    return lfilter(b, a, data)
 
 
 def ztransform(x: np.ndarray) -> np.ndarray:
@@ -46,17 +44,17 @@ fn = sys.argv[-1]
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
-alphas = data["alphas"]
-omegas = data["omegas"]
+alphas = data["alphas"]*1e3
+omegas = data["omegas"]*1e3
 res = data["res"]
 res_map = data["map"]
-fs = int(1/(res.index[1] - res.index[0]))
+fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 
 # filtering options
 print(f"Sampling frequency: {fs}")
-f_margin = 0.75*np.min(np.diff(omegas))
+f_margin = 0.5*np.min(np.diff(omegas))
 print(f"Frequency band width: {2*f_margin}")
-f_order = 9
+f_order = 16
 
 # compute phase locking values and coherences
 coherences = np.zeros((len(alphas), len(omegas)))
@@ -64,8 +62,8 @@ plvs = np.zeros_like(coherences)
 for key in res_map.index:
 
     # extract and normalize data
-    omega = res_map.at[key, 'omega']
-    alpha = res_map.at[key, 'alpha']
+    omega = res_map.at[key, 'omega'] * 1e3
+    alpha = res_map.at[key, 'alpha'] * 1e3
     ik = ztransform(res["ik"][key].values.squeeze())
     ko = ztransform(np.sin(2.0*np.pi*res["ko"][key].values.squeeze()))
 
