@@ -70,8 +70,6 @@ for key in res_map.index:
 
     # filter data around driving frequency
     ik_filtered = butter_bandpass_filter(ik, omega-f_margin, omega+f_margin, fs=fs, order=f_order)
-    import matplotlib.pyplot as plt
-    plt.plot(ik_filtered)
 
     # get analytic signals
     ik_phase, ik_env = analytic_signal(ik_filtered)
@@ -80,6 +78,14 @@ for key in res_map.index:
     # calculate plv and coherence
     plv = phase_locking(ik_phase, ko_phase)
     coh = coherence(ik_phase, ko_phase, ik_env, ko_env)
+
+    # test plotting
+    import matplotlib.pyplot as plt
+    plt.plot(ik_filtered, label="ik_f")
+    plt.plot(ko, label="ko")
+    plt.title(f"Coh = {coh}, PLV = {plv}")
+    plt.legend()
+    plt.show()
 
     # find matrix position that corresponds to these parameters
     idx_r = np.argmin(np.abs(alphas - alpha))
