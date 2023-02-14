@@ -27,7 +27,7 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
 
 
 # load data
-fn = "results/rs_arnold_tongue_hom.pkl" #sys.argv[-1]
+fn = sys.argv[-1] #"results/rs_arnold_tongue_hom.pkl"
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
