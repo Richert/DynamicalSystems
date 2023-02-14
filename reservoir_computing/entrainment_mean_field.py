@@ -53,7 +53,7 @@ fs = int(1/(res.index[1] - res.index[0]))
 
 # filtering options
 print(f"Sampling frequency: {fs}")
-f_margin = 0.5*np.min(np.diff(omegas))
+f_margin = 0.75*np.min(np.diff(omegas))
 print(f"Frequency band width: {2*f_margin}")
 f_order = 9
 
