@@ -1,13 +1,13 @@
 import pickle
 import numpy as np
 import sys
-from scipy.signal import butter, sosfilt, hilbert, sosfreqz
+from scipy.signal import iirpeak, lfilter, hilbert, freqz
 import matplotlib.pyplot as plt
 
 
-def butter_bandpass_filter(data: np.ndarray, low: float, high: float, fs: int, order: int = 5) -> np.ndarray:
-    sos = butter(order, [low, high], btype='band', output='sos', fs=fs)
-    return sosfilt(sos, data)
+def butter_bandpass_filter(data: np.ndarray, freq: float, q: float, fs: int) -> np.ndarray:
+    b, a = iirpeak(freq, q, fs=fs)
+    return lfilter(b, a, data)
 
 
 def analytic_signal(sig: np.ndarray) -> tuple:
@@ -41,15 +41,15 @@ fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 print(f"Sampling frequency: {fs}")
 f_margin = 1.0
 print(f"Frequency band width (Hz): {2*f_margin}")
-f_order = 32
+f_quality = 32
 f_cutoff = 250000
 
 # Plot the frequency response for a few different orders.
 plt.figure(1)
-for order, omega in zip([16, 32, 16, 32], [2.0, 2.0, 4.0, 4.0]):
-    sos = butter(order, [omega-f_margin, omega+f_margin], fs=fs, btype='band', output='sos')
-    w, h = sosfreqz(sos, worN=12000)
-    plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"order = {order}, omega = {omega}")
+for q, omega in zip([0.2, 0.4, 0.2, 0.4], [2.0, 2.0, 4.0, 4.0]):
+    b, a = iirpeak(omega, q, fs=fs)
+    w, h = freqz(b, a, worN=12000)
+    plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"Q = {q}, omega = {omega}")
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Gain')
 plt.grid(True)
