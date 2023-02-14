@@ -63,11 +63,11 @@ coherences = np.zeros((len(alphas), len(omegas)))
 plvs = np.zeros_like(coherences)
 for key in res_map.index:
 
-    # extract data
+    # extract and normalize data
     omega = res_map.at[key, 'omega']
     alpha = res_map.at[key, 'alpha']
-    ik = res["ik"][key].values.squeeze()
-    ko = res["ko"][key].values.squeeze()
+    ik = ztransform(res["ik"][key].values.squeeze())
+    ko = ztransform(np.sin(2.0*np.pi*res["ko"][key].values.squeeze()))
 
     plt.plot(ik, label="ik")
     plt.plot(ko, label="ko")
