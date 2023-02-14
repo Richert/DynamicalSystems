@@ -22,7 +22,7 @@ markersize = 6
 #########################
 
 # define conditions
-fn = sys.argv[-1]  #"rs_arnold_tongue"
+fn = sys.argv[-1]
 conditions = ["het", "hom"]
 titles = [r"$\Delta = 1.0$", r"$\Delta = 0.1$"]
 base_len = 6

@@ -1,26 +1,13 @@
 import pickle
 import numpy as np
 import sys
-from scipy.signal import butter, lfilter, hilbert
+from scipy.signal import butter, sosfilt, hilbert, sosfreqz
 import matplotlib.pyplot as plt
 
 
-def butter_bandpass(lowcut: float, highcut: float, fs: int, order: int = 5) -> tuple:
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    return butter(order, [low, high], btype='band', output='ba')
-
-
-def butter_bandpass_filter(data: np.ndarray, lowcut: float, highcut: float, fs: int, order: int = 5) -> np.ndarray:
-    b, a = butter_bandpass(lowcut, highcut, fs, order=order)
-    return lfilter(b, a, data)
-
-
-def ztransform(x: np.ndarray) -> np.ndarray:
-    x -= np.mean(x)
-    x /= np.std(x)
-    return x
+def butter_bandpass_filter(data: np.ndarray, low: float, high: float, fs: int, order: int = 5) -> np.ndarray:
+    sos = butter(order, [low, high], btype='band', output='sos', fs=fs)
+    return sosfilt(sos, data)
 
 
 def analytic_signal(sig: np.ndarray) -> tuple:
@@ -36,11 +23,11 @@ def phase_locking(x: np.ndarray, y: np.ndarray) -> float:
 
 def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env: np.ndarray) -> float:
     coh = np.sum(x_env * y_env * np.exp(0.0+1.0j*(x_phase - y_phase)))
-    return coh / np.sqrt(np.sum(x_env**2) + np.sum(y_env**2))
+    return np.abs(coh / np.sqrt(np.sum(x_env**2) + np.sum(y_env**2)))
 
 
 # load data
-fn = sys.argv[-1]
+fn = "results/rs_arnold_tongue_hom.pkl" #sys.argv[-1]
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
@@ -52,28 +39,42 @@ fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 
 # filtering options
 print(f"Sampling frequency: {fs}")
-f_margin = 0.5*np.min(np.diff(omegas))
-print(f"Frequency band width: {2*f_margin}")
-f_order = 16
+f_margin = 0.2
+print(f"Frequency band width (Hz): {2*f_margin}")
+f_order = 32
+f_cutoff = 10000
+
+# Plot the frequency response for a few different orders.
+plt.figure(1)
+for order, omega in zip([16, 64, 16, 64], [2.0, 2.0, 4.0, 4.0]):
+    sos = butter(order, [omega-f_margin*omega, omega+f_margin*omega], fs=fs, btype='band', output='sos')
+    w, h = sosfreqz(sos, worN=12000)
+    plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"order = {order}, omega = {omega}")
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Gain')
+plt.grid(True)
+plt.legend(loc='best')
+plt.show()
 
 # compute phase locking values and coherences
 coherences = np.zeros((len(alphas), len(omegas)))
 plvs = np.zeros_like(coherences)
 for key in res_map.index:
 
-    # extract and normalize data
+    # extract and scale data
     omega = res_map.at[key, 'omega'] * 1e3
     alpha = res_map.at[key, 'alpha'] * 1e3
-    ik = ztransform(res["ik"][key].values.squeeze())
-    ko = ztransform(np.sin(2.0*np.pi*res["ko"][key].values.squeeze()))
-
-    plt.plot(ik, label="ik")
-    plt.plot(ko, label="ko")
-    plt.legend()
-    plt.show()
+    ik = res["ik"][key].values.squeeze()
+    ik = ik[f_cutoff:-f_cutoff]
+    ik -= np.min(ik)
+    ik /= np.max(ik)
+    ko = res["ko"][key].values.squeeze()
+    ko = ko[f_cutoff:-f_cutoff]
+    ko = np.sin(2.0*np.pi*ko)
 
     # filter data around driving frequency
-    ik_filtered = butter_bandpass_filter(ik, omega-f_margin, omega+f_margin, fs=fs, order=f_order)
+    ik_filtered = butter_bandpass_filter(ik, omega-f_margin*omega, omega+f_margin*omega, fs=fs, order=f_order)
+    ik_filtered /= np.max(ik_filtered)
 
     # get analytic signals
     ik_phase, ik_env = analytic_signal(ik_filtered)
@@ -84,6 +85,7 @@ for key in res_map.index:
     coh = coherence(ik_phase, ko_phase, ik_env, ko_env)
 
     # test plotting
+    plt.figure(2)
     plt.plot(ik_filtered, label="ik_f")
     plt.plot(ko, label="ko")
     plt.title(f"Coh = {coh}, PLV = {plv}")
