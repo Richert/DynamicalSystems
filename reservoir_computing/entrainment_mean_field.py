@@ -49,10 +49,12 @@ alphas = data["alphas"]
 omegas = data["omegas"]
 res = data["res"]
 res_map = data["map"]
-fs = int(1/res.index[1] - res.index[0])
+fs = int(1/(res.index[1] - res.index[0]))
 
 # filtering options
+print(f"Sampling frequency: {fs}")
 f_margin = 0.5*np.min(np.diff(omegas))
+print(f"Frequency band width: {2*f_margin}")
 f_order = 9
 
 # compute phase locking values and coherences
