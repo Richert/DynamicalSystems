@@ -41,7 +41,7 @@ fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 print(f"Sampling frequency: {fs}")
 f_margin = 0.5
 print(f"Frequency band width (Hz): {2*f_margin}")
-f_order = 8
+f_order = 6
 f_cutoff = 100000
 
 # Plot the frequency response for a few different orders.
