@@ -44,16 +44,16 @@ net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.it
 
 # define sweep
 alphas = np.linspace(1, 10, num=20)*1e-4
-omegas = np.linspace(2, 7, num=20)*1e-3
+omegas = np.linspace(2.1, 5.9, num=20)*1e-3
 sweep = {"alpha": alphas, "omega": omegas}
 param_map = {"alpha": {"vars": ["weight"], "edges": [('ko/sin_op/s', 'ik/ik_theta_op/r_in')]},
              "omega": {"vars": ["phase_op/omega"], "nodes": ["ko"]}}
 
 # simulation parameters
-cutoff = 30000.0
-T = 300000.0 + cutoff
+cutoff = 20000.0
+T = 200000.0 + cutoff
 dt = 1e-2
-dts = 1e-1
+dts = 1.0
 inp = np.zeros((int(T/dt),)) + 55.0
 
 # perform sweep
@@ -67,4 +67,4 @@ res, res_map = grid_search(net, param_grid=sweep, param_map=param_map, simulatio
 # save data
 fn = sys.argv[-1]
 pickle.dump({"res": res, "map": res_map, "alphas": alphas, "omegas": omegas},
-            open(f"{fn}_het.pkl", "wb"))
+            open(fn, "wb"))
