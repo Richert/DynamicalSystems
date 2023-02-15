@@ -41,12 +41,12 @@ fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 print(f"Sampling frequency: {fs}")
 f_margin = 1.0
 print(f"Frequency band width (Hz): {2*f_margin}")
-f_quality = 32
-f_cutoff = 250000
+f_quality = 20
+f_cutoff = 100000
 
 # Plot the frequency response for a few different orders.
 plt.figure(1)
-for q, omega in zip([10.0, 20.0, 10.0, 20.0], [2.0, 2.0, 4.0, 4.0]):
+for q, omega in zip([20.0, 40.0, 20.0, 40.0], [2.0, 2.0, 4.0, 4.0]):
     b, a = iirpeak(omega, q, fs=fs)
     w, h = freqz(b, a, worN=12000)
     plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"Q = {q}, omega = {omega}")
@@ -65,19 +65,18 @@ for key in res_map.index:
     omega = res_map.at[key, 'omega'] * 1e3
     alpha = res_map.at[key, 'alpha'] * 1e3
     ik = res["ik"][key].values.squeeze()
-    ik = ik[f_cutoff:-f_cutoff]
     ik -= np.min(ik)
     ik /= np.max(ik)
     ko = res["ko"][key].values.squeeze()
-    ko = ko[f_cutoff:-f_cutoff]
     ko = np.sin(2.0*np.pi*ko)
 
     # filter data around driving frequency
     ik_filtered = butter_bandpass_filter(ik, omega, f_quality, fs=fs)
+    ik_filtered /= np.max(ik_filtered)
 
     # get analytic signals
-    ik_phase, ik_env = analytic_signal(ik_filtered)
-    ko_phase, ko_env = analytic_signal(ko)
+    ik_phase, ik_env = analytic_signal(ik_filtered[f_cutoff:-f_cutoff])
+    ko_phase, ko_env = analytic_signal(ko[f_cutoff:-f_cutoff])
 
     # calculate plv and coherence
     plv = phase_locking(ik_phase, ko_phase)
@@ -87,6 +86,7 @@ for key in res_map.index:
     plt.figure(2)
     plt.plot(ik_filtered, label="ik_f")
     plt.plot(ko, label="ko")
+    plt.plot(ik, label="ik")
     plt.title(f"Coh = {coh}, PLV = {plv}")
     plt.legend()
     plt.show()
