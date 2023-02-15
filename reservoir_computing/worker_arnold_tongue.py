@@ -66,8 +66,8 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
 # simulation parameters
-cutoff = 30000.0
-T = 300000.0 + cutoff
+cutoff = 20000.0
+T = 200000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(np.round(T/dt))
