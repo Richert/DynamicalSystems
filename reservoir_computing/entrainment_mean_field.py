@@ -45,16 +45,16 @@ f_order = 8
 f_cutoff = 100000
 
 # Plot the frequency response for a few different orders.
-plt.figure(1)
-for order, omega in zip([4, 8, 4, 8], [2.0, 2.0, 4.0, 4.0]):
-    sos = butter(order, (omega-f_margin*omega, omega+f_margin*omega), fs=fs, output="sos", btype="bandpass")
-    w, h = sosfreqz(sos, worN=12000)
-    plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"Order = {order}, omega = {omega}")
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Gain')
-plt.grid(True)
-plt.legend(loc='best')
-plt.show()
+# plt.figure(1)
+# for order, omega in zip([4, 8, 4, 8], [2.0, 2.0, 4.0, 4.0]):
+#     sos = butter(order, (omega-f_margin*omega, omega+f_margin*omega), fs=fs, output="sos", btype="bandpass")
+#     w, h = sosfreqz(sos, worN=12000)
+#     plt.plot((fs * 0.5 / np.pi) * w, abs(h), label=f"Order = {order}, omega = {omega}")
+# plt.xlabel('Frequency (Hz)')
+# plt.ylabel('Gain')
+# plt.grid(True)
+# plt.legend(loc='best')
+# plt.show()
 
 # compute phase locking values and coherences
 coherences = np.zeros((len(alphas), len(omegas)))
@@ -71,7 +71,7 @@ for key in res_map.index:
     ko = np.sin(2.0*np.pi*ko)
 
     # filter data around driving frequency
-    ik_filtered = butter_bandpass_filter(ik, omega, fs=fs, order=f_order)
+    ik_filtered = butter_bandpass_filter(ik, (omega-f_margin*omega, omega+f_margin*omega), fs=fs, order=f_order)
     ik_filtered /= np.max(ik_filtered)
 
     # get analytic signals
