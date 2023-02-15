@@ -28,7 +28,7 @@ node_vars = {
     "v_r": -60.0,
     "v_t": -40.0,
     #"eta": 55.0,
-    "Delta": sys.argv[-2] if sys.argv[-3] == "Delta" else 1.0,
+    "Delta": float(sys.argv[-2]) if str(sys.argv[-3]) == "Delta" else 1.0,
     "g": 15.0,
     "E_r": 0.0,
     "b": -2.0,
