@@ -66,8 +66,8 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
 # simulation parameters
-cutoff = 30000.0
-T = 300000.0 + cutoff
+cutoff = 20000.0
+T = 200000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(np.round(T/dt))
@@ -93,11 +93,11 @@ for idx in range(n_reps):
         exec(f"{param} = {v}")
 
     # create connectivity matrix
-    connectivity = "exponential"
-    indices = np.arange(0, N, dtype=np.int32)
-    pdfs = np.asarray([dist(idx, method="inverse_squared") for idx in indices])
-    pdfs /= np.sum(pdfs)
+    connectivity = "random"
     if connectivity == "circular":
+        indices = np.arange(0, N, dtype=np.int32)
+        pdfs = np.asarray([dist(idx, method="inverse_squared") for idx in indices])
+        pdfs /= np.sum(pdfs)
         W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
     else:
         W = random_connectivity(N, N, p, normalize=True)
