@@ -93,11 +93,11 @@ for idx in range(n_reps):
         exec(f"{param} = {v}")
 
     # create connectivity matrix
-    connectivity = "exponential"
-    indices = np.arange(0, N, dtype=np.int32)
-    pdfs = np.asarray([dist(idx, method="inverse_squared") for idx in indices])
-    pdfs /= np.sum(pdfs)
+    connectivity = "random"
     if connectivity == "circular":
+        indices = np.arange(0, N, dtype=np.int32)
+        pdfs = np.asarray([dist(idx, method="inverse_squared") for idx in indices])
+        pdfs /= np.sum(pdfs)
         W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
     else:
         W = random_connectivity(N, N, p, normalize=True)

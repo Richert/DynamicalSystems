@@ -65,10 +65,10 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
         alpha = res_map.at[key, 'alpha']
 
         # calculate psd of firing rate dynamics
-        # freqs, pows = welch(data["res"]["ik"][key].values.squeeze(), fs=1/dts, window=window, nperseg=nps)
-        sig = minmax(data["res"]["ik"][key].values.squeeze())
-        driver = minmax(data["res"]["ko"][key].values.squeeze())
-        freqs, coh = coherence(sig, driver, fs=1/dts, window=window, nperseg=nps, axis=0)
+        freqs, pows = welch(data["res"]["ik"][key].values.squeeze(), fs=1/dts, window=window, nperseg=nps)
+        # sig = minmax(data["res"]["ik"][key].values.squeeze())
+        # driver = minmax(data["res"]["ko"][key].values.squeeze())
+        # freqs, coh = coherence(sig, driver, fs=1/dts, window=window, nperseg=nps, axis=0)
 
         # fig, axes = plt.subplots(nrows=3, figsize=(12, 6))
         # ax = axes[0]
@@ -90,7 +90,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
         idx_c = np.argmin(np.abs(omegas - omega))
 
         # store coherence value at driving frequency
-        entrainment[idx_r, idx_c] = coh[np.argmin(np.abs(freqs-omega))]  #pows[np.argmin(np.abs(freqs-omega))]/np.max(pows)
+        entrainment[idx_r, idx_c] = pows[np.argmin(np.abs(freqs-omega))]/np.max(pows)  # coh[np.argmin(np.abs(freqs-omega))]
 
     # plot entrainment
     ##################
