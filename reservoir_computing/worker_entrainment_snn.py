@@ -95,13 +95,13 @@ for i, ik_net in enumerate(res):
         coh = coherence(ik_phase, ko_phase, ik_env, ko_env)
 
         # test plotting
-        # plt.figure(2)
-        # plt.plot(ik_filtered, label="ik_f")
-        # plt.plot(ko, label="ko")
-        # plt.plot(ik, label="ik")
-        # plt.title(f"Coh = {coh}, PLV = {plv}")
-        # plt.legend()
-        # plt.show()
+        plt.figure(2)
+        plt.plot(ik_filtered, label="ik_f")
+        plt.plot(ko, label="ko")
+        plt.plot(ik, label="ik")
+        plt.title(f"Coh = {coh}, PLV = {plv}")
+        plt.legend()
+        plt.show()
 
         # store results
         results.loc[(i+1)*j, "trial"] = i
