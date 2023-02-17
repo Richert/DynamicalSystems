@@ -80,13 +80,15 @@ for i, ik_net in enumerate(res):
         # extract and scale data
         ik = ik_net.loc[:, neuron].values.squeeze()
         ik -= np.min(ik)
-        s_max = np.max(ik)
-        if s_max > 0.0:
-            ik /= s_max
+        ik_max = np.max(ik)
+        if ik_max > 0.0:
+            ik /= ik_max
 
         # filter data around driving frequency
         ik_filtered = butter_bandpass_filter(ik, (omega-f_margin*omega, omega+f_margin*omega), fs=fs, order=f_order)
-        ik_filtered /= np.max(ik_filtered)
+        ik_max = np.max(ik_filtered)
+        if ik_max > 0:
+            ik_filtered /= ik_max
 
         # get analytic signals
         ik_phase, ik_env = analytic_signal(ik_filtered[f_cutoff:-f_cutoff])
@@ -117,7 +119,7 @@ for i, ik_net in enumerate(res):
     covariances.append(cov)
 
 # save results
-data_new = {"Delta": data["delta"], "omega": omega, "p": data["p"]}
+data_new = {"Delta": data["Delta"], "omega": omega, "p": data["p"]}
 data_new["entrainment"] = results
 data_new["dim"] = dimensionality
 data_new["cov"] = covariances
