@@ -77,7 +77,7 @@ for i, ik_net in enumerate(res):
     for neuron in range(ik_net.shape[1]):
 
         # extract and scale data
-        ik = ik_net[:, neuron]
+        ik = ik_net.loc[:, neuron]
         ik -= np.min(ik)
         ik /= np.max(ik)
         ko = np.sin(2.0*np.pi*ko)
@@ -110,7 +110,7 @@ for i, ik_net in enumerate(res):
         results.loc[(i + 1) * neuron, "plv"] = plv
 
     # calculate dimensionality of network dynamics
-    dim, cov = get_dim(ik_net)
+    dim, cov = get_dim(ik_net.values)
     dimensionality.append(dim)
     covariances.append(cov)
 
