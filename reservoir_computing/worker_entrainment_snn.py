@@ -48,7 +48,7 @@ res = data["s"]
 ko = data["I_ext"].squeeze()
 omega = data["omega"] * 1e3
 print(res[0].index[1], res[0].index[0])
-fs = int(np.round(1e3/(data["sr"]/data["dt"]), decimals=0))
+fs = int(np.round(1e3/(data["sr"]*data["dt"]), decimals=0))
 
 # filtering options
 print(f"Sampling frequency: {fs}")
