@@ -14,8 +14,7 @@ sr = 100
 steps = int(np.round(T/dt))
 time = np.linspace(0.0, T, num=steps)
 omega = 0.005
-I_ext = np.zeros((steps, 1))
-I_ext[:, 0] = np.sin(2.0*np.pi*omega*time)
+I_ext = np.sin(2.0*np.pi*omega*time)
 
 # check whether crucial info exists in results file. if not, add it to the file.
 check_keys = ["omega", "p", "Delta", "I_ext"]
