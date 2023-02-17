@@ -74,7 +74,7 @@ dimensionality, covariances = [], []
 for i, ik_net in enumerate(res):
 
     # calculate coherence and PLV
-    for neuron in ik_net.shape[1]:
+    for neuron in range(ik_net.shape[1]):
 
         # extract and scale data
         ik = ik_net[:, neuron]
