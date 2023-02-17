@@ -37,7 +37,8 @@ def get_dim(s: np.ndarray):
 
 
 # load data
-fn = sys.argv[-1] #"results/rs_arnold_tongue_hom.pkl"
+tdir = sys.argv[-1]
+fn = sys.argv[-2] #"results/rs_arnold_tongue_hom.pkl"
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
@@ -114,7 +115,9 @@ for i, ik_net in enumerate(res):
     covariances.append(cov)
 
 # save results
-data["entrainment"] = results
-data["dim"] = dimensionality
-data["cov"] = covariances
-pickle.dump(data, open(fn, "wb"))
+data_new = {"Delta": data["delta"], "omega": omega, "p": data["p"]}
+data_new["entrainment"] = results
+data_new["dim"] = dimensionality
+data_new["cov"] = covariances
+data_new["sweep"] = sweep
+pickle.dump(data_new, open(tdir, "wb"))
