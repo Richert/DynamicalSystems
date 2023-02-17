@@ -28,8 +28,8 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
 
 
 def get_dim(s: np.ndarray):
-    s = s - np.mean(s)
-    s = s / np.std(s)
+    s -= np.mean(s)
+    s /= np.std(s)
     cov = s.T @ s
     cov[np.eye(cov.shape[0]) > 0] = 0.0
     eigs = np.abs(np.linalg.eigvals(cov))
@@ -80,7 +80,9 @@ for i, ik_net in enumerate(res):
         # extract and scale data
         ik = ik_net.loc[:, neuron].values.squeeze()
         ik -= np.min(ik)
-        ik /= np.max(ik)
+        s_max = np.max(ik)
+        if s_max > 0.0:
+            ik /= s_max
 
         # filter data around driving frequency
         ik_filtered = butter_bandpass_filter(ik, (omega-f_margin*omega, omega+f_margin*omega), fs=fs, order=f_order)
