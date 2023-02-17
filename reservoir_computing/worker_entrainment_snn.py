@@ -47,7 +47,7 @@ W_in = data["W_in"]
 res = data["s"]
 ko = data["I_ext"]
 omega = data["omega"]
-fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
+fs = int(np.round(1000.0/(res[0].index[1] - res[0].index[0]), decimals=0))
 
 # filtering options
 print(f"Sampling frequency: {fs}")
