@@ -46,7 +46,7 @@ sweep = data["sweep"]
 W_in = data["W_in"]
 res = data["s"]
 ko = data["I_ext"].squeeze()
-omega = data["omega"]
+omega = data["omega"] * 1e3
 fs = int(np.round(1000.0/(res[0].index[1] - res[0].index[0]), decimals=0))
 
 # filtering options
