@@ -81,7 +81,6 @@ for i, ik_net in enumerate(res):
         ik = ik_net.loc[:, neuron].values.squeeze()
         ik -= np.min(ik)
         ik /= np.max(ik)
-        ko = np.sin(2.0*np.pi*ko)
 
         # filter data around driving frequency
         ik_filtered = butter_bandpass_filter(ik, (omega-f_margin*omega, omega+f_margin*omega), fs=fs, order=f_order)
