@@ -69,12 +69,12 @@ f_cutoff = 10000
 # plt.show()
 
 # compute phase locking values and coherences
-results = DataFrame(np.zeros((W_in.shape[0], 4)), columns=["trial", "input_neuron", "coh", "plv"])
+results = DataFrame(np.zeros((W_in[0].shape[0], 4)), columns=["trial", "input_neuron", "coh", "plv"])
 dimensionality, covariances = [], []
 for i, ik_net in enumerate(res):
 
     # calculate coherence and PLV
-    for j, neuron in enumerate(ik_net.shape[1]):
+    for neuron in ik_net.shape[1]:
 
         # extract and scale data
         ik = ik_net[:, neuron]
@@ -104,10 +104,10 @@ for i, ik_net in enumerate(res):
         plt.show()
 
         # store results
-        results.loc[(i+1)*j, "trial"] = i
-        results.loc[(i + 1) * j, "input_neuron"] = W_in[neuron] > 0
-        results.loc[(i + 1) * j, "coh"] = coh
-        results.loc[(i + 1) * j, "plv"] = plv
+        results.loc[(i+1)*neuron, "trial"] = i
+        results.loc[(i + 1) * neuron, "input_neuron"] = W_in[i][neuron] > 0
+        results.loc[(i + 1) * neuron, "coh"] = coh
+        results.loc[(i + 1) * neuron, "plv"] = plv
 
     # calculate dimensionality of network dynamics
     dim, cov = get_dim(ik_net)
