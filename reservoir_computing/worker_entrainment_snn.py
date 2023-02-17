@@ -45,7 +45,7 @@ data = pickle.load(open(fn, "rb"))
 sweep = data["sweep"]
 W_in = data["W_in"]
 res = data["s"]
-ko = data["I_ext"]
+ko = data["I_ext"].squeeze()
 omega = data["omega"]
 fs = int(np.round(1000.0/(res[0].index[1] - res[0].index[0]), decimals=0))
 
@@ -77,7 +77,7 @@ for i, ik_net in enumerate(res):
     for neuron in range(ik_net.shape[1]):
 
         # extract and scale data
-        ik = ik_net.loc[:, neuron]
+        ik = ik_net.loc[:, neuron].values.squeeze()
         ik -= np.min(ik)
         ik /= np.max(ik)
         ko = np.sin(2.0*np.pi*ko)
