@@ -84,9 +84,9 @@ I_ext[:, 0] = np.sin(2.0*np.pi*omega*time)
 ############
 
 results = {"s": [], "J": [], "thetas": [], "W_in": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
-           "sr": sr}
+           "sr": sr, "Delta": Delta, "omega": omega, "p": p, "I_ext": I_ext}
 n_reps = 3
-for idx in range(n_reps):
+for i in range(n_reps):
 
     # adjust parameters according to sweep condition
     for param, v in zip([p1, p2], [v1, v2]):
@@ -130,7 +130,7 @@ for idx in range(n_reps):
     results["thetas"].append(thetas)
     results["W_in"].append(W_in)
 
-    print(f"Run {idx} done for condition {cond}.")
+    print(f"Run {i} done for condition {cond}.")
 
 # save results
 fname = f"rs_arnold_tongue"
