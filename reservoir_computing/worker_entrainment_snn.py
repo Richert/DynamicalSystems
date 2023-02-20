@@ -74,8 +74,10 @@ results = DataFrame(np.zeros((W_in[0].shape[0], 4)), columns=["trial", "input_ne
 dimensionality, covariances = [], []
 for i, ik_net in enumerate(res):
 
+    n_neurons = ik_net.shape[1]
+
     # calculate coherence and PLV
-    for neuron in range(ik_net.shape[1]):
+    for neuron in range(n_neurons):
 
         # extract and scale data
         ik = ik_net.loc[:, neuron].values.squeeze()
@@ -108,10 +110,10 @@ for i, ik_net in enumerate(res):
         # plt.show()
 
         # store results
-        results.loc[(i+1)*neuron, "trial"] = i
-        results.loc[(i + 1) * neuron, "input_neuron"] = W_in[i][neuron] > 0
-        results.loc[(i + 1) * neuron, "coh"] = coh
-        results.loc[(i + 1) * neuron, "plv"] = plv
+        results.loc[i*n_neurons + neuron, "trial"] = i
+        results.loc[i*n_neurons + neuron, "input_neuron"] = W_in[i][neuron] > 0
+        results.loc[i*n_neurons + neuron, "coh"] = coh
+        results.loc[i*n_neurons + neuron, "plv"] = plv
 
     # calculate dimensionality of network dynamics
     dim, cov = get_dim(ik_net.values)
