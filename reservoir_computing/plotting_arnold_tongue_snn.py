@@ -35,6 +35,7 @@ for id, file in enumerate(os.listdir(path)):
                 meta_data[key] = f[key]
         row = list()
         driven = 1.0 * f["entrainment"].loc[:, "input_neuron"].values
+        print(np.sum(driven)/np.sum(driven))
         row.append(np.mean(f["entrainment"].loc[driven > 0, "coh"].values))
         row.append(np.mean(f["entrainment"].loc[driven < 1, "coh"].values))
         row.append(np.mean(f["dim"]))
