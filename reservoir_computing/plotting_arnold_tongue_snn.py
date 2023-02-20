@@ -29,7 +29,7 @@ columns = ["coh_driven", "coh_auto", "dim", "p_in", "alpha"]
 meta_data = {"Delta": 0.0, "p": 1.0, "omega": 1.0}
 for id, file in enumerate(os.listdir(path)):
     if file_id in file:
-        f = pickle.load(open(file, "rb"))
+        f = pickle.load(open(f"{path}/{file}", "rb"))
         if id == 0:
             for key in meta_data:
                 meta_data[key] = f[key]
