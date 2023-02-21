@@ -28,8 +28,9 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
     y_env_denom = np.sum(y_env**2)
     denom = np.sqrt(x_env_denom*y_env_denom)
     if denom > 0:
-        coh /= denom
-    return coh
+        return coh / denom
+    else:
+        return 0.0
 
 
 def get_dim(s: np.ndarray):

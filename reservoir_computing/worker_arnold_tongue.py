@@ -84,7 +84,7 @@ I_ext[:, 0] = np.sin(2.0*np.pi*omega*time)
 ############
 
 results = {"s": [], "J": [], "thetas": [], "W_in": [], "sweep": {p1: v1, p2: v2}, "T": T, "dt": dt,
-           "sr": sr, "Delta": Delta, "omega": omega, "p": p, "I_ext": I_ext}
+           "sr": sr, "Delta": Delta, "omega": omega, "p": p, "I_ext": I_ext[::sr, 0]}
 n_reps = 3
 for i in range(n_reps):
 
@@ -116,7 +116,7 @@ for i in range(n_reps):
 
     # initialize model
     net = Network.from_yaml(f"{wdir}/ik/rs", weights=W, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                            input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
                             verbose=False, clear=True, device="cuda:0")
     net.add_input_layer(1, weights=W_in)
