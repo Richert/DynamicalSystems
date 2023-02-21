@@ -61,7 +61,7 @@ sb.heatmap(data.pivot(index="alpha", columns="p_in", values="coh_auto"), ax=ax)
 
 # plot dimensionality of the network dynamics for the 2D parameter sweep
 ax = fig.add_subplot(grid[0, 2])
-sb.heatmap(data.pivot(index="alpha", columns="p_in", vaues="dim"))
+sb.heatmap(data.pivot(index="alpha", columns="p_in", values="dim"))
 
 # finishing touches
 ###################
