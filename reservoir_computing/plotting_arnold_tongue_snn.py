@@ -49,19 +49,19 @@ data = pd.DataFrame(data=data, columns=columns)
 ##########
 
 fig = plt.figure(1, figsize=(12, 4))
-grid = GridSpec(ncols=2, nrows=1, figure=fig)
+grid = GridSpec(ncols=3, nrows=1, figure=fig)
 
 # plot average coherence between driven neurons and driving signal for the 2D parameter sweep
 ax = fig.add_subplot(grid[0, 0])
-sb.heatmap(data.pivot("alpha", "p_in", "coh_driven"), ax=ax)
+sb.heatmap(data.pivot(index="alpha", columns="p_in", values="coh_driven"), ax=ax)
 
 # plot average coherence between undriven neurons and driving signal for the 2D parameter sweep
 ax = fig.add_subplot(grid[0, 1])
-sb.heatmap(data.pivot("alpha", "p_in", "coh_auto"), ax=ax)
+sb.heatmap(data.pivot(index="alpha", columns="p_in", values="coh_auto"), ax=ax)
 
 # plot dimensionality of the network dynamics for the 2D parameter sweep
 ax = fig.add_subplot(grid[0, 2])
-sb.heatmap(data.pivot("alpha", "p_in", "dim"))
+sb.heatmap(data.pivot(index="alpha", columns="p_in", vaues="dim"))
 
 # finishing touches
 ###################

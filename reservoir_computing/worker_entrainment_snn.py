@@ -111,7 +111,7 @@ for i, ik_net in enumerate(res):
 
         # store results
         results.loc[i*n_neurons + neuron, "trial"] = i
-        results.loc[i*n_neurons + neuron, "input_neuron"] = W_in[i][neuron] > 0
+        results.loc[i*n_neurons + neuron, "input_neuron"] = np.abs(W_in[i][neuron]) > 0
         results.loc[i*n_neurons + neuron, "coh"] = coh
         results.loc[i*n_neurons + neuron, "plv"] = plv
 
