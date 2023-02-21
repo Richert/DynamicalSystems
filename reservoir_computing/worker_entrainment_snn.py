@@ -24,7 +24,12 @@ def phase_locking(x: np.ndarray, y: np.ndarray) -> float:
 
 def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env: np.ndarray) -> float:
     coh = np.abs(np.sum(x_env * y_env * np.exp(1.0j*(x_phase - y_phase))))
-    return coh / np.sqrt(np.sum(x_env**2) * np.sum(y_env**2))
+    x_env_denom = np.sum(x_env**2)
+    y_env_denom = np.sum(y_env**2)
+    denom = np.sqrt(x_env_denom*y_env_denom)
+    if denom > 0:
+        coh /= denom
+    return coh
 
 
 def get_dim(s: np.ndarray):
