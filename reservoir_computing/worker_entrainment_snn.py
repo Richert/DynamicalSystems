@@ -43,7 +43,7 @@ def get_dim(s: np.ndarray):
 
 # load data
 tdir = sys.argv[-1]
-fn = sys.argv[-2] #"results/rs_arnold_tongue_hom.pkl"
+fn = sys.argv[-2]
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
@@ -52,7 +52,6 @@ W_in = data["W_in"]
 res = data["s"]
 ko = data["I_ext"].squeeze()
 omega = data["omega"] * 1e3
-print(res[0].index[1], res[0].index[0])
 fs = int(np.round(1e3/(data["sr"]*data["dt"]), decimals=0))
 
 # filtering options
@@ -75,17 +74,18 @@ f_cutoff = 10000
 # plt.show()
 
 # compute phase locking values and coherences
-results = DataFrame(np.zeros((W_in[0].shape[0], 4)), columns=["trial", "input_neuron", "coh", "plv"])
+results = DataFrame(np.zeros((W_in[0].shape[0], 4)), columns=["coh_inp", "plv_inp", "coh_noinp", "plv_noinp"])
 dimensionality, covariances = [], []
 for i, ik_net in enumerate(res):
 
-    n_neurons = ik_net.shape[1]
+    input_neurons = W_in[i][:, 0] > 0
+    ik_inp = np.mean(ik_net.loc[:, input_neurons == True].values, axis=-1)
+    ik_noinp = np.mean(ik_net.loc[:, input_neurons == False].values, axis=-1)
 
     # calculate coherence and PLV
-    for neuron in range(n_neurons):
+    for ik, cond in zip([ik_inp, ik_noinp], ["inp", "noinp"]):
 
-        # extract and scale data
-        ik = ik_net.loc[:, neuron].values.squeeze()
+        # scale data
         ik -= np.min(ik)
         ik_max = np.max(ik)
         if ik_max > 0.0:
@@ -115,10 +115,8 @@ for i, ik_net in enumerate(res):
         # plt.show()
 
         # store results
-        results.loc[i*n_neurons + neuron, "trial"] = i
-        results.loc[i*n_neurons + neuron, "input_neuron"] = 1.0*(W_in[i][neuron, 0] > 0)
-        results.loc[i*n_neurons + neuron, "coh"] = coh
-        results.loc[i*n_neurons + neuron, "plv"] = plv
+        results.loc[i, f"coh_{cond}"] = coh
+        results.loc[i, f"plv_{cond}"] = plv
 
     # calculate dimensionality of network dynamics
     dim, cov = get_dim(ik_net.values)
