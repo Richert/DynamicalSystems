@@ -74,7 +74,7 @@ f_cutoff = 10000
 # plt.show()
 
 # compute phase locking values and coherences
-results = DataFrame(np.zeros((W_in[0].shape[0], 4)), columns=["coh_inp", "plv_inp", "coh_noinp", "plv_noinp"])
+results = DataFrame(np.zeros((len(res), 4)), columns=["coh_inp", "plv_inp", "coh_noinp", "plv_noinp"])
 dimensionality, covariances = [], []
 for i, ik_net in enumerate(res):
 
