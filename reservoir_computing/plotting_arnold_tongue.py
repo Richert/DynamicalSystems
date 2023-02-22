@@ -26,7 +26,7 @@ markersize = 6
 # define conditions
 fn = sys.argv[-1]
 conditions = ["het", "hom"]
-titles = [r"$\Delta = 1.0$", r"$\Delta = 0.1$"]
+titles = [r"$\Delta_v = 1.0$", r"$\Delta_v = 0.1$"]
 base_len = 6
 fig1 = plt.figure(1, figsize=(int(len(conditions)*base_len), base_len))
 grid1 = GridSpec(ncols=len(conditions), nrows=1, figure=fig1)
@@ -44,7 +44,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     # plot coherence
     ax = fig1.add_subplot(grid1[0, idx])
     sb.heatmap(DataFrame(index=alphas[::-1], columns=omegas, data=coh[::-1, :]), vmin=0.0, vmax=1.0, ax=ax, annot=False,
-               cbar=True if idx == len(conditions)-1 else False)
+               cbar=True if idx == len(conditions)-1 else False, xticklabels=3, yticklabels=3)
     ax.set_xlabel(r'$\omega$ (Hz)')
     ax.set_ylabel(r'$\alpha$ (Hz)')
     ax.set_title(f"Coherence for {title}")
