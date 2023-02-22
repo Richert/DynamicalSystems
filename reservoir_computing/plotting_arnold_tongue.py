@@ -44,7 +44,7 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
     # plot coherence
     ax = fig1.add_subplot(grid1[0, idx])
     sb.heatmap(DataFrame(index=alphas[::-1], columns=omegas, data=coh[::-1, :]), vmin=0.0, vmax=1.0, ax=ax, annot=False,
-               cbar=True if idx == len(conditions)-1 else False, xticklabels=3, yticklabels=3)
+               cbar=True if idx == len(conditions)-1 else False, xticklabels=3, yticklabels=3, square=True)
     ax.set_xlabel(r'$\omega$ (Hz)')
     ax.set_ylabel(r'$\alpha$ (Hz)')
     ax.set_title(f"Coherence for {title}")
