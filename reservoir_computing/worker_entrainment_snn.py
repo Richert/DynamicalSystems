@@ -6,45 +6,9 @@ import matplotlib.pyplot as plt
 from pandas import DataFrame
 
 
-def butter_bandpass_filter(data: np.ndarray, freqs: tuple, fs: int, order: int) -> np.ndarray:
-    sos = butter(order, freqs, btype="bandpass", output="sos", fs=fs)
-    return sosfilt(sos, data)
-
-
-def analytic_signal(sig: np.ndarray) -> tuple:
-    sig_analytic = hilbert(sig)
-    sig_phase = np.unwrap(np.angle(sig_analytic))
-    sig_envelope = np.abs(sig_analytic)
-    return sig_phase, sig_envelope
-
-
-def phase_locking(x: np.ndarray, y: np.ndarray) -> float:
-    return np.abs(np.mean(np.exp(1.0j*(x-y))))
-
-
-def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env: np.ndarray) -> float:
-    coh = np.abs(np.sum(x_env * y_env * np.exp(1.0j*(x_phase - y_phase))))
-    x_env_denom = np.sum(x_env**2)
-    y_env_denom = np.sum(y_env**2)
-    denom = np.sqrt(x_env_denom*y_env_denom)
-    if denom > 0:
-        return coh / denom
-    else:
-        return 0.0
-
-
-def get_dim(s: np.ndarray):
-    s -= np.mean(s)
-    s /= np.std(s)
-    cov = s.T @ s
-    cov[np.eye(cov.shape[0]) > 0] = 0.0
-    eigs = np.abs(np.linalg.eigvals(cov))
-    return np.sum(eigs)**2/np.sum(eigs**2), cov
-
-
 # load data
-tdir = sys.argv[-1]
-fn = sys.argv[-2]
+tdir = "results/rs_entrainment_0.pkl" #sys.argv[-1]
+fn = "results/rs_arnold_tongue_0.pkl" #sys.argv[-2]
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
@@ -60,7 +24,7 @@ print(f"Sampling frequency: {fs}")
 f_margin = 0.5
 print(f"Frequency band width (Hz): {2*f_margin}")
 f_order = 6
-f_cutoff = 10000
+f_cutoff = 100
 
 # Plot the frequency response for a few different orders.
 # plt.figure(1)
