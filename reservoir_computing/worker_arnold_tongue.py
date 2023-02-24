@@ -1,6 +1,6 @@
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 from rectipy import Network, random_connectivity, circular_connectivity
 import numpy as np
 import pickle
@@ -13,11 +13,11 @@ from pandas import DataFrame
 #############################
 
 # working directory
-wdir = "config"
-tdir = "results"
+# wdir = "config"
+# tdir = "results"
 
 # sweep condition
-cond = 0
+# cond = 0
 p1 = "p_in"
 p2 = "alpha"
 
@@ -49,8 +49,8 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[cond]
 
 # simulation parameters
-cutoff = 0.0
-T = 10000.0 + cutoff
+cutoff = 10000.0
+T = 200000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(np.round(T/dt))
@@ -58,11 +58,11 @@ time = np.linspace(0.0, T, num=steps)
 fs = int(np.round(1e3/(dt*sr), decimals=0))
 
 # input definition
-omega = 0.005
+omega = 5.0
 alpha = 1.0
 p_in = 0.1
 I_ext = np.zeros((steps, 1))
-I_ext[:, 0] = np.sin(2.0*np.pi*omega*time)
+I_ext[:, 0] = np.sin(2.0*np.pi*omega*time*1e-3)
 ko = I_ext[::sr, 0]
 
 # filtering options
@@ -70,14 +70,14 @@ print(f"Sampling frequency: {fs}")
 f_margin = 0.5
 print(f"Frequency band width (Hz): {2*f_margin}")
 f_order = 6
-f_cutoff = 100
+f_cutoff = int(np.round(cutoff/(dt*sr), decimals=0))
 
 # simulation
 ############
 
 # prepare results storage
-results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "omega": omega, "p": p}
-n_reps = 1
+results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "omega": omega, "p": p, "Deltas": Deltas}
+n_reps = 5
 res_cols = ["Delta", "coh_inp", "coh_noinp", "dim"]
 entrainment = DataFrame(np.zeros((n_reps, len(res_cols))), columns=res_cols)
 covariances = {"Delta": [], "cov": []}
@@ -136,7 +136,7 @@ for Delta in Deltas:
         ik_noinp = np.mean(ik_net.loc[:, W_in[:, 0] < alpha].values, axis=-1)
 
         # calculate coherence and PLV
-        for ik, cond in zip([ik_inp, ik_noinp], ["inp", "noinp"]):
+        for ik, c in zip([ik_inp, ik_noinp], ["inp", "noinp"]):
 
             # scale data
             ik -= np.min(ik)
@@ -168,18 +168,18 @@ for Delta in Deltas:
             # plt.show()
 
             # store results
-            entrainment.loc[i, f"coh_{cond}"] = coh
+            entrainment.loc[i, f"coh_{c}"] = coh
 
         # calculate dimensionality of network dynamics
         dim, cov = get_dim(ik_net.values)
         entrainment.loc[i, "dim"] = dim
+        entrainment.loc[i, "Delta"] = Delta
         covariances["Delta"].append(Delta)
         covariances["cov"].append(cov)
 
-        # go to next trial
+        # go to next run
         i += 1
-
-    print(f"Run {i} done for condition {cond}.")
+        print(f"Run {i} done for condition {cond}.")
 
 # save results
 fname = f"rs_entrainment"
