@@ -58,12 +58,9 @@ time = np.linspace(0.0, T, num=steps)
 fs = int(np.round(1e3/(dt*sr), decimals=0))
 
 # input definition
-omega = 5.0
+omegas = [5.0, 4.0]
 alpha = 1.0
 p_in = 0.1
-I_ext = np.zeros((steps, 1))
-I_ext[:, 0] = np.sin(2.0*np.pi*omega*time*1e-3)
-ko = I_ext[::sr, 0]
 
 # filtering options
 print(f"Sampling frequency: {fs}")
@@ -76,19 +73,24 @@ f_cutoff = int(np.round(cutoff/(dt*sr), decimals=0))
 ############
 
 # prepare results storage
-results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "omega": omega, "p": p, "Deltas": Deltas}
+results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "omegas": omegas, "p": p, "Deltas": Deltas}
 n_reps = 5
-res_cols = ["Delta", "coh_inp", "coh_noinp", "dim"]
+res_cols = ["Delta", "omega", "coh_inp", "coh_noinp", "dim"]
 entrainment = DataFrame(np.zeros((n_reps, len(res_cols))), columns=res_cols)
-covariances = {"Delta": [], "cov": []}
+covariances = {"Delta": [], "omega": [], "cov": []}
 
 # loop over repetitions
 i = 0
-for Delta in Deltas:
+for Delta, omega in zip(Deltas, omegas):
     for _ in range(n_reps):
 
         # simulation preparations
         #########################
+
+        # initialize input
+        I_ext = np.zeros((steps, 1))
+        I_ext[:, 0] = np.sin(2.0 * np.pi * omega * time * 1e-3)
+        ko = I_ext[::sr, 0]
 
         # adjust parameters according to sweep condition
         for param, v in zip([p1, p2], [v1, v2]):
@@ -113,14 +115,14 @@ for Delta in Deltas:
         thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
 
         # collect remaining model parameters
-        node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d, "g": g,
-                     "E_r": E_r, "tau_s": tau_s, "v": v_t}
+        node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
+                     "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
         # initialize model
         net = Network.from_yaml(f"{wdir}/ik/rs", weights=W, source_var="s", target_var="s_in",
                                 input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                                node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike, dt=dt,
-                                verbose=False, clear=True, device="cuda:0")
+                                node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                                dt=dt, verbose=False, clear=True, device="cuda:0")
         net.add_input_layer(1, weights=W_in)
 
         # simulation
@@ -174,7 +176,9 @@ for Delta in Deltas:
         dim, cov = get_dim(ik_net.values)
         entrainment.loc[i, "dim"] = dim
         entrainment.loc[i, "Delta"] = Delta
+        entrainment.loc[i, "omega"] = omega
         covariances["Delta"].append(Delta)
+        covariances["omega"].append(omega)
         covariances["cov"].append(cov)
 
         # go to next run
