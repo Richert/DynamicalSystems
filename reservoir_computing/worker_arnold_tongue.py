@@ -46,7 +46,7 @@ with open(f"{wdir}/arnold_tongue_sweep.pkl", "rb") as f:
     v2s = sweep[p2]
     f.close()
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
-v1, v2 = vals[cond]
+v1, v2 = vals[int(cond)]
 
 # simulation parameters
 cutoff = 10000.0
