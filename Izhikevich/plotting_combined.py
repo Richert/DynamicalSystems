@@ -25,7 +25,7 @@ print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
-plt.rcParams['figure.dpi'] = 200
+plt.rcParams['figure.dpi'] = 400
 plt.rcParams['figure.figsize'] = (12, 5.5)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
@@ -145,15 +145,15 @@ titles = [fr'(D) Low fs heterogeneity (${delta_str} = {deltas_2pop[1]}$ mV)',
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
     ax.plot(fre)
-    xmin = np.min(fre.v1)
-    xmax = np.max(fre.v1)
+    xmin = np.min(fre.values)
+    xmax = np.max(fre.values)
     plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2000, x2=2500.0, color='grey', alpha=0.15)
     plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2500, x2=3000.0, color='grey', alpha=0.3)
     ax.set_xlabel('time (ms)')
     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
     ax.set_title(title)
     ax.set_ylabel(r'$r$ (Hz)')
-    plt.legend(fre.columns.v1, loc=2)
+    plt.legend(fre.columns.values, loc=2)
     if i == len(data)-1:
         ax.set_yticks([0.0, 0.025, 0.05])
         ax.set_yticklabels(['0', '25', '50'])
@@ -169,8 +169,8 @@ time = fre_3pop_hom.index
 for i, (fre, title) in enumerate(zip(data, titles)):
     ax = fig.add_subplot(grid[3, i*3:(i+1)*3])
     ax.plot(time, fre)
-    xmin = np.min(fre.v1)
-    xmax = np.max(fre.v1)
+    xmin = np.min(fre.values)
+    xmax = np.max(fre.values)
     plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=1500, x2=2500.0, color='grey', alpha=0.15)
     plt.fill_betweenx([xmin - 0.1 * xmax, xmax + 0.1 * xmax], x1=2500, x2=3500.0, color='grey', alpha=0.3)
     ax.set_xlabel('time (ms)')
@@ -183,7 +183,7 @@ for i, (fre, title) in enumerate(zip(data, titles)):
     elif i == len(data)-1:
         ax.set_yticks([0.0, 0.06, 0.12])
         ax.set_yticklabels(['0', '60', '120'])
-    plt.legend(fre.columns.v1, loc=2)
+    plt.legend(fre.columns.values, loc=2)
 
 # finishing touches
 ###################
@@ -193,5 +193,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/ik_combined.pdf')
+plt.savefig(f'results/ik_combined.svg')
 plt.show()

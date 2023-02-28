@@ -36,12 +36,13 @@ if len(sys.argv) > 1:
     fn = sys.argv[-1]  # EITHER: provide path via the command line, i.e. "python batch_epsp_fittting.py /path/to/file"
 else:
     fn = "dSPN_control"  # OR: adjust this to the desired file path, i.e. "path/to/file"
-data = read_csv(f"{fn}.csv")
-#data = read_excel(f"{fn}.xlsx")
+#data = read_csv(f"{fn}.csv")
+data = read_excel(f"{fn}.xlsx")
 
 # cut off irrelevant parts
-cutoff_idx = np.argwhere(np.isnan(data.sum(axis=0, skipna=False).values))[0, 0]
-data = data.iloc[:, :cutoff_idx]
+cutoff_idx = np.argwhere(np.isnan(data.sum(axis=0, skipna=False).values)).squeeze()
+if len(cutoff_idx) > 0:
+    data = data.iloc[:, :cutoff_idx[0]]
 
 # bring data into desired format
 data = DataFrame(index=data["time"].values, data=data.iloc[:, 1:].values)

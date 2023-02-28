@@ -29,7 +29,7 @@ conditions = ["het", "hom"]
 titles = [r"$\Delta_v = 1.0$", r"$\Delta_v = 0.1$"]
 base_len = 6
 fig1 = plt.figure(1, figsize=(int(len(conditions)*base_len), base_len))
-grid1 = GridSpec(ncols=len(conditions), nrows=1, figure=fig1)
+grid1 = GridSpec(ncols=len(conditions)+1, nrows=1, figure=fig1)
 
 for idx, (cond, title) in enumerate(zip(conditions, titles)):
 
