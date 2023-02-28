@@ -81,7 +81,7 @@ modules = {"d": [], "s": [], "m": [], "cov": []}
 
 # loop over repetitions
 i = 0
-for d in zip(ds):
+for d in ds:
     for _ in range(n_reps):
 
         # simulation preparations
@@ -126,19 +126,18 @@ for d in zip(ds):
         dim, cov = get_dim(rs.values)
 
         # calculate modularity
-        m, adj, nodes = modularity(z(rs.values).T, threshold=0.1, min_connections=10, min_nodes=10,
-                                   cross_corr_method='cov', decorator=None)
-        C = sort_via_modules(adj, m)
-        signals = {}
+        m, adj, nodes = modularity(cov, threshold=0.1, min_connections=10, min_nodes=10, decorator=None)
+        cov = sort_via_modules(adj, m)
+        signals = {"time": rs.index}
         for key, (indices, _) in m.items():
-            signals[key] = np.mean(rs[:, nodes[indices]], axis=1)
+            signals[key] = np.mean(rs.values[:, nodes[indices]], axis=1)
 
         # save results
         dimensionalities.loc[i, "dim"] = dim
         dimensionalities.loc[i, "d"] = d
         modules["d"].append(d)
         modules["m"].append(m)
-        modules["cov"].append(C)
+        modules["cov"].append(cov)
         modules["s"].append(signals)
 
         # go to next run
