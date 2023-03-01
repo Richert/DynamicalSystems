@@ -1,6 +1,6 @@
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 from rectipy import Network, random_connectivity, circular_connectivity
 from pyrecu import modularity, sort_via_modules
 import numpy as np
@@ -20,11 +20,11 @@ def z(x: np.ndarray):
 #############################
 
 # working directory
-wdir = "config"
-tdir = "results"
+# wdir = "config"
+# tdir = "results"
 
 # sweep condition
-cond = 0
+# cond = 0
 p1 = "p"
 p2 = "Delta"
 
