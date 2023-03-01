@@ -22,7 +22,7 @@ for IDX in `seq 0 $range_end`; do
   # python calls
   (
   echo "Starting job #$(($IDX+1)) of ${n} jobs..."
-  python function_generation_snn.py $IDX $wdir $tdir
+  python worker_dimensionality.py $IDX $wdir $tdir
   sleep 1
  	) &
 
