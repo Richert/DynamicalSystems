@@ -1,5 +1,7 @@
 from pycobi import ODESystem
+import matplotlib.pyplot as plt
 import sys
+sys.path.append('../')
 
 """
 Bifurcation analysis of the Izhikevich mean-field model.
@@ -32,81 +34,92 @@ a.run(e='rs', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPA
 
 NPR = 20
 
-# continuation in background input
-a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:1',
-      origin='t', NMX=8000, DSMAX=0.02, UZR={8: [40.0]}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0)
+# continuation in global coupling strength
+a.run(starting_point='UZ1', c='qif', ICP=4, NPAR=n_params, NDIM=n_dim, name='g:1',
+      origin='t', NMX=8000, DSMAX=0.1, UZR={4: [15.0]}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0)
+
+# continuation in Delta
+a.run(starting_point='UZ1', c='qif', ICP=5, NPAR=n_params, NDIM=n_dim, name='Delta:1',
+      origin='g:1', NMX=8000, DSMAX=0.05, UZR={5: [0.5]}, STOP=[], NPR=NPR, RL1=2.0, RL0=0.0,
+      bidirectional=True)
 
 # continuation in SFA strength
 a.run(starting_point='UZ1', c='qif', ICP=16, NPAR=n_params, NDIM=n_dim, name='d:1',
-      origin='eta:1', NMX=8000, DSMAX=0.05, UZR={16: [100.0]}, STOP=[], NPR=NPR, RL1=210.0, RL0=0.0,
-      bidirectional=True, EPSS=1e-6)
-
-# continuation in global coupling strength
-a.run(starting_point='UZ1', c='qif', ICP=4, NPAR=n_params, NDIM=n_dim, name='g:1',
-      origin='d:1', NMX=8000, DSMAX=0.02, UZR={4: [15.0, 20.0]}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0,
+      origin='Delta:1', NMX=8000, DSMAX=0.1, UZR={16: [100.0]}, STOP=[], NPR=NPR, RL1=210.0, RL0=0.0,
       bidirectional=True)
-
-# continuation in synaptic time constant
-taus = [10.0, 20.0, 40.0]
-a.run(starting_point='UZ1', c='qif', ICP=17, NPAR=n_params, NDIM=n_dim, name='tau_s:1',
-      origin='g:1', NMX=8000, DSMAX=0.1, UZR={17: taus}, STOP=[], NPR=NPR, RL1=50.0, RL0=0.0)
 
 # continuation in background input
+a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:1',
+      origin='Delta:1', NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0)
 a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:2',
-      origin='g:1', NMX=8000, DSMAX=0.02, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0,
-      bidirectional=True)
-a.run(starting_point='UZ2', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='eta:3',
-      origin='g:1', NMX=8000, DSMAX=0.02, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0,
-      bidirectional=True)
-
-# continuations in coupling strength
-for i in range(len(taus)):
-    a.run(starting_point=f'UZ{i+1}', c='qif', ICP=4, NPAR=n_params, NDIM=n_dim, name=f'g:{i+2}',
-          origin='tau_s:1', NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=NPR, RL1=100.0, RL0=0.0,
-          bidirectional=True)
+      origin='d:1', NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=NPR, RL1=200.0, RL0=-200.0)
 
 # 2D continuations
 ##################
 
 NPR = 20
 
-# 2D continuation follow-up in Delta and eta
-a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='Delta/eta:lp1', origin=f'eta:3', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='Delta/eta:lp2', origin=f'eta:3', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
+# 2D continuation follow-up in Delta and eta for d = 10
+a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='Delta/eta:lp1', origin=f'eta:1', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='Delta/eta:lp2', origin=f'eta:1', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
+
+# 2D continuation follow-up in Delta and eta for d = 100
+a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='Delta/eta:lp3', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
+a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='Delta/eta:lp4', origin=f'eta:2', NMX=8000, DSMAX=0.05,
+      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 a.run(starting_point='HB1', c='qif2', ICP=[5, 8], name='Delta/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=10.0, RL0=0.0, bidirectional=True)
-
-# 2D continuation follow-up in g and eta
-a.run(starting_point='LP1', c='qif2', ICP=[4, 8], name='g/eta:lp1', origin=f'eta:3', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[4, 8], name='g/eta:lp2', origin=f'eta:3', NMX=8000, DSMAX=0.05,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[4, 8], name='g/eta:hb1', origin=f'eta:2', NMX=8000, DSMAX=0.05,
       NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
 
-# 2D continuation follow-up in g and d
-a.run(starting_point='LP1', c='qif2', ICP=[4, 16], name='g/d:lp1', origin=f'g:2', NMX=8000, DSMAX=0.1,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[4, 16], name='g/d:lp2', origin=f'g:2', NMX=8000, DSMAX=0.1,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[4, 16], name='g/d:hb1', origin=f'g:2', NMX=8000, DSMAX=0.1,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB2', c='qif2', ICP=[4, 16], name='g/d:hb2', origin=f'g:2', NMX=8000, DSMAX=0.2,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
+# plotting
+##########
 
-# 2D continuation follow-up in g and tau_s
-a.run(starting_point='LP1', c='qif2', ICP=[4, 17], name='g/tau_s:lp1', origin=f'g:2', NMX=8000, DSMAX=0.1,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[4, 17], name='g/tau_s:lp2', origin=f'g:2', NMX=8000, DSMAX=0.1,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[4, 17], name='g/tau_s:hb1', origin=f'g:2', NMX=8000, DSMAX=0.1,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB2', c='qif2', ICP=[4, 17], name='g/tau_s:hb2', origin=f'g:2', NMX=8000, DSMAX=0.2,
-      NPR=NPR, RL1=100.0, RL0=0.0, bidirectional=True)
+# plot settings
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.dpi'] = 400
+plt.rcParams['figure.figsize'] = (8, 4)
+plt.rcParams['font.size'] = 10.0
+plt.rcParams['axes.titlesize'] = 10
+plt.rcParams['axes.labelsize'] = 10
+plt.rcParams['lines.linewidth'] = 1.0
+markersize = 6
 
-# save results
-fname = '../results/rs_bifs.pkl'
-kwargs = {"tau_s": taus}
-a.to_file(fname, **kwargs)
+
+# plot 2D continuations
+fig, axes = plt.subplots(ncols=2)
+
+# d = 10
+ax = axes[0]
+a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E')
+a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E')
+ax.set_xlabel(r"$\eta$ (pA)")
+ax.set_ylabel(r"$\Delta_v$ (mV)")
+ax.set_title(r"$\kappa = 10$")
+ax.set_xlim([20.0, 70.0])
+ax.set_ylim([0.0, 4.0])
+
+# d = 100
+ax = axes[1]
+a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:lp3', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable="solid")
+a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:lp4', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E')
+a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:hb1', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77')
+ax.set_xlabel(r"$\kappa$ (pA)")
+ax.set_ylabel(r"$\Delta_v$ (mV)")
+ax.set_title(r"$\kappa = 100$")
+ax.set_xlim([20.0, 70.0])
+ax.set_ylim([0.0, 1.6])
+
+# saving/plotting
+fig.canvas.draw()
+plt.savefig(f'../results/rs_bifs.pdf')
+plt.show()

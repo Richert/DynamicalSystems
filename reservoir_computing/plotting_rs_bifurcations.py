@@ -34,13 +34,13 @@ grid = gridspec.GridSpec(nrows=3, ncols=3, figure=fig)
 #################
 
 # settings
-x_params = [("eta", 8), ("eta", 8), ("d", 16)]
-y_params = [("g", 4), ("Delta", 5), ("g", 4)]
+x_params = [("eta", 8), ("eta", 8), ("eta", 8)]
+y_params = [("g", 4), ("Delta", 5), ("d", 16)]
 x_lims = [(0.0, 100.0), (0.0, 50.0), (0.0, 200.0)]
-y_lims = [(0.0, 50.0), (0.0, 50.0), (0.0, 50.0)]
+y_lims = [(0.0, 50.0), (0.0, 50.0), (0.0, 200.0)]
 grid_locs = [grid[:2, 0], grid[:2, 1], grid[:2, 2]]
-bfs = ["lp1", "lp2", "hb1", "hb2"]
-colors = ['#5D6D7E', '#5D6D7E', '#148F77', '#148F77']
+bfs = ["lp1", "lp2", "hb1"]
+colors = ['#5D6D7E', '#5D6D7E', '#148F77']
 
 # plotting
 for (x_key, x_idx), (y_key, y_idx), loc, xl, yl in zip(x_params, y_params, grid_locs, x_lims, y_lims):
