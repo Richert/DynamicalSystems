@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set condition
-tdir="/media/richard/data/dimensionality"
-wdir="/home/rgf3807/PycharmProjects/DynamicalSystems/reservoir_computing/config"
+tdir="media/storage/richard/data/dimensionality"
+wdir="~/PycharmProjects/DynamicalSystems/reservoir_computing/config"
 n=18
 batch_size=6
 range_end=$(($n-1))
