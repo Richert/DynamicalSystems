@@ -1,5 +1,5 @@
 import sys
-cond, wdir, tdir = sys.argv[-3:]
+cond, wdir, tdir, device = sys.argv[-4:]
 sys.path.append(wdir)
 from rectipy import Network, random_connectivity, circular_connectivity
 from pyrecu import modularity, sort_via_modules
@@ -111,7 +111,7 @@ for d, eta in zip(ds, etas):
         net = Network.from_yaml(f"{wdir}/ik/rs", weights=W, source_var="s", target_var="s_in",
                                 input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                                 node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                                dt=dt, verbose=False, clear=True, device="cuda:0")
+                                dt=dt, verbose=False, clear=True, device=device)
 
         # simulation
         ############

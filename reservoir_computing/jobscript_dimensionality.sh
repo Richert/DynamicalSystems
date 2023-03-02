@@ -19,10 +19,17 @@ export VECLIB_MAXIMUM_THREADS=$n_threads
 python sweep_dimensionality.py
 for IDX in `seq 0 $range_end`; do
 
+  # choose device
+  if ((IDX % 2)); then
+    device="cuda:0"
+  else
+    device="cuda:1"
+  fi
+
   # python calls
   (
   echo "Starting job #$(($IDX+1)) of ${n} jobs..."
-  python worker_dimensionality.py $IDX $wdir $tdir
+  python worker_dimensionality.py $IDX $wdir $tdir $device
   sleep 1
  	) &
 
