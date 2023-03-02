@@ -36,7 +36,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 55.0
+etas = [50.0, 55.0]
 a = 0.03
 b = -2.0
 ds = [10.0, 100.0]
@@ -58,7 +58,7 @@ v1, v2 = vals[int(cond)]
 
 # simulation parameters
 cutoff = 2000.0
-T = 6000.0 + cutoff
+T = 3000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(np.round(T/dt))
@@ -81,7 +81,7 @@ modules = {"d": [], "s": [], "m": [], "cov": []}
 
 # loop over repetitions
 i = 0
-for d in ds:
+for d, eta in zip(ds, etas):
     for _ in range(n_reps):
 
         # simulation preparations

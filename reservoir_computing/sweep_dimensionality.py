@@ -3,7 +3,7 @@ import pickle
 
 # parameter sweep definition
 sweep = dict()
-sweep["Delta"] = [0.2, 1.0, 2.0]
+sweep["Delta"] = [0.1, 0.5, 1.0]
 sweep["p"] = 1/2**np.arange(6)
 
 # save sweep to file

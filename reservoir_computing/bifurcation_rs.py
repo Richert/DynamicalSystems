@@ -82,7 +82,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 400
-plt.rcParams['figure.figsize'] = (8, 4)
+plt.rcParams['figure.figsize'] = (4, 2)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -104,6 +104,10 @@ ax.set_ylabel(r"$\Delta_v$ (mV)")
 ax.set_title(r"$\kappa = 10$")
 ax.set_xlim([20.0, 70.0])
 ax.set_ylim([0.0, 4.0])
+ax.axhline(y=0.2, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
+ax.axhline(y=1.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
+ax.axhline(y=2.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
+ax.axvline(x=55.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 
 # d = 100
 ax = axes[1]
@@ -118,8 +122,11 @@ ax.set_ylabel(r"$\Delta_v$ (mV)")
 ax.set_title(r"$\kappa = 100$")
 ax.set_xlim([20.0, 70.0])
 ax.set_ylim([0.0, 1.6])
+ax.axhline(y=0.1, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
+ax.axhline(y=1.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
+ax.axvline(x=55.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'../results/rs_bifs.pdf')
+plt.savefig(f'../results/rs_bifs.svg')
 plt.show()
