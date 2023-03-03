@@ -4,7 +4,7 @@ import pickle
 # parameter sweep definition
 sweep = dict()
 sweep["Delta"] = [0.1, 0.5, 1.0]
-sweep["p"] = 1/2**np.arange(6)
+sweep["p"] = 1/2**np.arange(1, 7)
 
 # save sweep to file
 fname = "dimensionality_sweep"
