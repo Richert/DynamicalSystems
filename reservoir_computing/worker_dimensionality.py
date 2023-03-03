@@ -71,7 +71,7 @@ results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "ds": ds, "p":
 n_reps = 5
 res_cols = ["d", "dim"]
 dimensionalities = DataFrame(np.zeros((n_reps, len(res_cols))), columns=res_cols)
-modules = {"d": [], "s": [], "m": [], "cov": [], "W": []}
+modules = {"d": [], "s": [], "m": [], "cov": [], "W": [], "thetas": [], "nodes": []}
 
 # loop over repetitions
 i = 0
@@ -134,6 +134,8 @@ for d, eta in zip(ds, etas):
         modules["cov"].append(cov)
         modules["s"].append(signals)
         modules["W"].append(W)
+        modules["thetas"].append(thetas)
+        modules["nodes"].append(nodes)
 
         # go to next run
         i += 1

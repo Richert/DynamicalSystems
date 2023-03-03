@@ -88,10 +88,11 @@ fig = plt.figure(1)
 grid = GridSpec(nrows=9, ncols=2, figure=fig)
 dv = "dim"
 dv_label = "Dimensionality"
-ticks = 3
+xticks = 3
+yticks = 4
 square = False
 cbar_kwargs = {"shrink": 1.0}
-module_example = 4
+module_example = 0
 
 # d = 10
 ax = fig.add_subplot(grid[:2, 0])
@@ -117,8 +118,8 @@ a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:lp4', ax=ax, line_col
                     line_color_unstable='#5D6D7E')
 a.plot_continuation(f'PAR(8)', f'PAR(5)', cont=f'Delta/eta:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77')
-ax.set_xlabel(r"$\kappa$ (pA)")
-ax.set_ylabel(r"$\Delta_v$ (mV)")
+ax.set_xlabel(r"$\eta$ (pA)")
+ax.set_ylabel(r"")
 ax.set_title(r"$\kappa = 100$ pA")
 ax.set_xlim([20.0, 70.0])
 ax.set_ylim([0.0, 1.6])
@@ -140,7 +141,7 @@ dim_lc = dimensionality.loc[dimensionality["d"] > 50.0, :]
 dim_lc = dim_lc.loc[dim_lc["p"] < 1.0, :]
 ax = fig.add_subplot(grid[2:4, 1])
 g = sb.barplot(data=dim_lc, x="p", y=dv, hue="Delta", errorbar="sd", palette="dark", alpha=0.8, ax=ax)
-ax.set_ylabel(dv_label)
+ax.set_ylabel("")
 ax.set_title(r"Synchronous regime ($\kappa = 100$ pA)")
 
 # plot the modularity example for the steady-state
@@ -156,7 +157,7 @@ modex = module_examples["lc"][module_example]
 ax2 = fig.add_subplot(grid[4:6, 1])
 ax2.imshow(modex["cov"] > 0.0, cmap='magma', aspect="equal", interpolation="none")
 ax2.set_xlabel('neuron id')
-ax2.set_ylabel('neuron id')
+ax2.set_ylabel('')
 ax2.set_title(fr"$p = {condition['p']}$, $\Delta_v = {condition['Delta']}$ mV")
 
 # plot the corresponding module signals for the steady-state
@@ -194,7 +195,7 @@ for key, (indices, _) in modex["m"].items():
 ax4.plot(np.mean([modex["s"][key][xl[0]:xl[1]] for key in modex["m"]], axis=0),
          c="black", linestyle="--", label="mean-field")
 ax4.set_xlabel('time (ms)')
-ax4.set_ylabel(r'$s$')
+ax4.set_ylabel(r'')
 ax4.set_title("Communities exhibit distinct \n mean-field dynamics")
 # plt.legend()
 
@@ -202,7 +203,7 @@ ax4.set_title("Communities exhibit distinct \n mean-field dynamics")
 ax = fig.add_subplot(grid[7:9, 0])
 mf_het = mf_data.loc[mf_data.loc[:, "Delta"] > 0.5, :]
 sb.heatmap(mf_het.pivot(index="alpha", columns="omega", values="coh"), ax=ax, vmin=0.0, vmax=1.0, annot=False,
-           cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
+           cbar=False, xticklabels=xticks, yticklabels=yticks, square=square)
 ax.set_xlabel(r'$\omega$ (Hz)')
 ax.set_ylabel(r'$\alpha$ (Hz)')
 ax.set_title(r"$\Delta_v = 1.0$ mV")
@@ -211,9 +212,9 @@ ax.set_title(r"$\Delta_v = 1.0$ mV")
 ax = fig.add_subplot(grid[7:9, 1])
 mf_hom = mf_data.loc[mf_data.loc[:, "Delta"] < 0.5, :]
 sb.heatmap(mf_hom.pivot(index="alpha", columns="omega", values="coh"), ax=ax, vmin=0.0, vmax=1.0, annot=False,
-           cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
+           cbar=True, xticklabels=xticks, yticklabels=yticks, square=square, cbar_kws=cbar_kwargs)
 ax.set_xlabel(r'$\omega$ (Hz)')
-ax.set_ylabel(r'$\alpha$ (Hz)')
+ax.set_ylabel(r'')
 ax.set_title(r"$\Delta_v = 0.1$ mV")
 
 # padding
@@ -221,5 +222,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/dimensionality.pdf')
+plt.savefig(f'results/dimensionality.svg')
 plt.show()
