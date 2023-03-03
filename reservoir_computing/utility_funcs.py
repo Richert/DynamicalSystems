@@ -31,8 +31,8 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
 
 
 def get_dim(s: np.ndarray):
-    s -= np.mean(s)
-    s /= np.std(s)
+    s = s - np.mean(s)
+    s = s / np.std(s)
     cov = s.T @ s
     cov[np.eye(cov.shape[0]) > 0] = 0.0
     eigs = np.abs(np.linalg.eigvals(cov))

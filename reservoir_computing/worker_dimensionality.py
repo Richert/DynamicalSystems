@@ -10,12 +10,6 @@ from utility_funcs import lorentzian, dist, get_dim
 from pandas import DataFrame
 
 
-def z(x: np.ndarray):
-    x -= np.mean(x)
-    x /= np.std(x)
-    return x
-
-
 # parameters and preparations
 #############################
 
@@ -109,7 +103,7 @@ for d, eta in zip(ds, etas):
 
         # initialize model
         net = Network.from_yaml(f"{wdir}/ik/rs", weights=W, source_var="s", target_var="s_in",
-                                input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                                input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                                 node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                                 dt=dt, verbose=False, clear=True, device=device)
 
@@ -126,7 +120,7 @@ for d, eta in zip(ds, etas):
         dim, cov = get_dim(rs.values)
 
         # calculate modularity
-        m, adj, nodes = modularity(cov, threshold=0.1, min_connections=10, min_nodes=10, decorator=None)
+        m, adj, nodes = modularity(cov, threshold=0.1, min_connections=5, min_nodes=50, decorator=None)
         cov = sort_via_modules(adj, m)
         signals = {"time": rs.index}
         for key, (indices, _) in m.items():
