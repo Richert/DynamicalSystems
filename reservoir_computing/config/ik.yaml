@@ -47,6 +47,34 @@ fs_op:
     eta: 2.0
     E_r: -65.0
 
+# mean-field operator for regular-spiking IK neurons
+rs_mf_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*k^2*absv(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s_in*(E_r-v) - u + eta) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
+    - "s' = -s/tau_s + r + s_ext"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    eta: 0.0
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 0.03
+    kappa: 100.0
+    tau_s: 6.0
+    s_ext: input(0.0)
+    s_in: input(0.0)
+
 # node templates
 ################
 
@@ -61,3 +89,9 @@ fs:
   base: NodeTemplate
   operators:
     - fs_op
+
+# regular spiking mean-field population
+rs_mf:
+  base: NodeTemplate
+  operators:
+    - rs_mf_op
