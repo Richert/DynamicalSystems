@@ -52,7 +52,7 @@ v1, v2 = vals[int(cond)]
 
 # simulation parameters
 cutoff = 2000.0
-T = 3000.0 + cutoff
+T = 5000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(np.round(T/dt))
@@ -120,7 +120,7 @@ for d, eta in zip(ds, etas):
         dim, cov = get_dim(rs.values)
 
         # calculate modularity
-        m, adj, nodes = modularity(cov, threshold=0.1, min_connections=5, min_nodes=50, decorator=None)
+        m, adj, nodes = modularity(cov, threshold=0.1, min_connections=10, min_nodes=200, decorator=None)
         cov = sort_via_modules(adj, m)
         signals = {"time": rs.index}
         for key, (indices, _) in m.items():

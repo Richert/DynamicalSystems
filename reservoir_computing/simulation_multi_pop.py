@@ -101,7 +101,7 @@ for file in os.listdir(path):
                 example += 1
 
 # extract condition
-idx = 3
+idx = 2
 cond = "lc"
 example = module_examples[cond][idx]
 W = example["W"]
@@ -110,7 +110,7 @@ modules = example["m"]
 nodes = example["nodes"]
 
 # fit theta distribution for each module
-deltas, thresholds = fit_lorentzian(thetas, modules, nodes, x_range=0.1, alpha=0.99)
+deltas, thresholds = fit_lorentzian(thetas, modules, nodes, x_range=0.2, alpha=0.99)
 print(f"Spike threshold distribution community means: {thresholds}")
 print(f"Spike threshold distribution community widths: {deltas}")
 
