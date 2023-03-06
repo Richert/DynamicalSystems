@@ -7,24 +7,15 @@ from scipy.optimize import minimize_scalar
 from scipy.stats import norm, cauchy
 
 
-def fit_lorentzian(x: np.ndarray, modules: dict, nodes: list, delta_lb: float = 0.01, delta_ub: float = 10.0,
-                   x_range: float = 0.0, alpha: float = 0.9) -> tuple:
+def fit_lorentzian(x: np.ndarray, modules: dict, nodes: list) -> tuple:
     deltas = []
     mus = []
     x = x[nodes]
-    epsilon = 1.0
     for indices, _ in modules.values():
         x_mod = x[indices]
-        x_mean = np.mean(x_mod)
-        x_lb = np.min(x_mod)
-        x_lb -= x_range*np.abs(x_lb)
-        x_ub = np.max(x_mod)
-        x_ub += x_range*np.abs(x_ub)
-        res = minimize_scalar(sample_sd_cauchy, bounds=(delta_lb, delta_ub),
-                              args=(epsilon, x_mod, x_mean, len(x_mod), x_lb, x_ub, alpha),
-                              method='bounded', options={'maxiter': 1000, 'disp': True})
-        deltas.append(res.x)
-        mus.append(x_mean)
+        mu, delta = cauchy.fit(x_mod)
+        deltas.append(delta)
+        mus.append(mu)
     return np.asarray(deltas), np.asarray(mus)
 
 
@@ -49,6 +40,7 @@ def get_module_coupling(W: np.ndarray, modules: dict, nodes: list) -> np.ndarray
             W_tmp = W[targets, :]
             W_tmp = W_tmp[:, sources]
             W_mod[i, j] = np.mean(np.sum(W_tmp, axis=1))
+    W_mod /= np.sum(W_mod, axis=1, keepdims=False)
     return W_mod
 
 
@@ -76,7 +68,7 @@ def sample_sd_cauchy(delta: float, epsilon: float, targets: np.ndarray, mu: floa
 # load SNN data
 module_examples = {"lc": [], "ss": []}
 example = 0
-condition = {"Delta": 1.0, "p": 0.125}
+condition = {"Delta": 1.0, "p": 0.0625}
 path = "results/dimensionality2"
 fn = "rs_dimensionality"
 for file in os.listdir(path):
@@ -110,7 +102,7 @@ modules = example["m"]
 nodes = example["nodes"]
 
 # fit theta distribution for each module
-deltas, thresholds = fit_lorentzian(thetas, modules, nodes, x_range=0.2, alpha=0.99)
+deltas, thresholds = fit_lorentzian(thetas, modules, nodes)
 print(f"Spike threshold distribution community means: {thresholds}")
 print(f"Spike threshold distribution community widths: {deltas}")
 

@@ -1,8 +1,9 @@
-import sys
-cond, wdir, tdir, device = sys.argv[-4:]
-sys.path.append(wdir)
+# import sys
+# cond, wdir, tdir, device = sys.argv[-4:]
+# sys.path.append(wdir)
 from rectipy import Network, random_connectivity, circular_connectivity
-from pyrecu import modularity, sort_via_modules
+from sklearn.decomposition import SparsePCA, DictionaryLearning
+from networkx import navigable_small_world_graph, to_pandas_adjacency
 import numpy as np
 import pickle
 from scipy.stats import rv_discrete
@@ -13,17 +14,19 @@ from pandas import DataFrame
 # parameters and preparations
 #############################
 
+device = "cuda:0"
+
 # working directory
-# wdir = "config"
-# tdir = "results"
+wdir = "config"
+tdir = "results"
 
 # sweep condition
-# cond = 0
+cond = 9
 p1 = "p"
 p2 = "Delta"
 
 # network parameters
-N = 2000
+N = int(30*30)
 p = 0.1
 C = 100.0
 k = 0.7
@@ -39,7 +42,7 @@ E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
 v_reset = -1000.0
-connectivity = "random"
+connectivity = "small_world"
 
 # parameter sweep definition
 with open(f"{wdir}/dimensionality_sweep.pkl", "rb") as f:
@@ -52,7 +55,7 @@ v1, v2 = vals[int(cond)]
 
 # simulation parameters
 cutoff = 2000.0
-T = 5000.0 + cutoff
+T = 3000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(np.round(T/dt))
@@ -71,7 +74,7 @@ results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "ds": ds, "p":
 n_reps = 5
 res_cols = ["d", "dim"]
 dimensionalities = DataFrame(np.zeros((n_reps, len(res_cols))), columns=res_cols)
-modules = {"d": [], "s": [], "m": [], "cov": [], "W": [], "thetas": [], "nodes": []}
+modules = {"d": [], "s": [], "m": [], "cov": [], "W": [], "thetas": []}
 
 # loop over repetitions
 i = 0
@@ -91,8 +94,15 @@ for d, eta in zip(ds, etas):
             pdfs = np.asarray([dist(idx, method="inverse_squared") for idx in indices])
             pdfs /= np.sum(pdfs)
             W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)))
+        elif connectivity == "small_world":
+            G = navigable_small_world_graph(30, p=1, q=np.maximum(1, int(N*0.01)), r=2, dim=2)
+            W = to_pandas_adjacency(G).values
+            W /= np.sum(W, axis=1)
         else:
             W = random_connectivity(N, N, p, normalize=True)
+        import matplotlib.pyplot as plt
+        plt.imshow(W)
+        plt.show()
 
         # create background current distribution
         thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
@@ -120,22 +130,32 @@ for d, eta in zip(ds, etas):
         dim, cov = get_dim(rs.values)
 
         # calculate modularity
-        m, adj, nodes = modularity(cov, threshold=0.1, min_connections=10, min_nodes=200, decorator=None)
-        cov = sort_via_modules(adj, m)
-        signals = {"time": rs.index}
-        for key, (indices, _) in m.items():
-            signals[key] = np.mean(rs.values[:, nodes[indices]], axis=1)
+        model = DictionaryLearning(n_components=5, fit_algorithm="cd", transform_algorithm="lasso_cd", alpha=10.0,
+                                   transform_alpha=0.01, n_jobs=-1, positive_code=True, positive_dict=True)
+        # model = SparsePCA(n_components=5, alpha=2.0, ridge_alpha=1.0)
+        s = model.fit_transform(rs.values)
+        factors = model.components_
+
+        import matplotlib.pyplot as plt
+        fig, axes = plt.subplots(ncols=2, figsize=(12, 4))
+        ax = axes[0]
+        ax.plot(np.mean(s, axis=1), label="fit")
+        ax.plot(np.mean(rs.values, axis=1), label="target")
+        ax.legend()
+        ax = axes[1]
+        im = ax.imshow(factors, interpolation="none", aspect="auto")
+        plt.colorbar(im, ax=ax, shrink=0.8)
+        plt.show()
 
         # save results
         dimensionalities.loc[i, "dim"] = dim
         dimensionalities.loc[i, "d"] = d
         modules["d"].append(d)
-        modules["m"].append(m)
+        modules["m"].append(factors)
         modules["cov"].append(cov)
-        modules["s"].append(signals)
+        modules["s"].append(s)
         modules["W"].append(W)
         modules["thetas"].append(thetas)
-        modules["nodes"].append(nodes)
 
         # go to next run
         i += 1
