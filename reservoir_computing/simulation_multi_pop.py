@@ -8,16 +8,20 @@ from scipy.stats import norm, cauchy
 
 
 def fit_lorentzian(x: np.ndarray, modules: dict, nodes: list, delta_lb: float = 0.01, delta_ub: float = 10.0,
-                   x_range: float = 1.5) -> tuple:
+                   x_range: float = 0.0, alpha: float = 0.9) -> tuple:
     deltas = []
     mus = []
     x = x[nodes]
+    epsilon = 1.0
     for indices, _ in modules.values():
         x_mod = x[indices]
         x_mean = np.mean(x_mod)
-        x_lb = np.min(x_mod)*x_range
-        x_ub = np.max(x_mod)*x_range
-        res = minimize_scalar(sample_sd_cauchy, bounds=(delta_lb, delta_ub), args=(x_mod, x_mean, len(x_mod), x_lb, x_ub),
+        x_lb = np.min(x_mod)
+        x_lb -= x_range*np.abs(x_lb)
+        x_ub = np.max(x_mod)
+        x_ub += x_range*np.abs(x_ub)
+        res = minimize_scalar(sample_sd_cauchy, bounds=(delta_lb, delta_ub),
+                              args=(epsilon, x_mod, x_mean, len(x_mod), x_lb, x_ub, alpha),
                               method='bounded', options={'maxiter': 1000, 'disp': True})
         deltas.append(res.x)
         mus.append(x_mean)
@@ -58,15 +62,22 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
     return samples
 
 
-def sample_sd_cauchy(delta: float, samples: np.ndarray, mu: float, n_samples: int, lb: float, ub: float):
-    samples_c = lorentzian(n_samples, eta=mu, delta=delta, lb=lb, ub=ub)
-    return (np.std(samples_c) - np.std(samples))**2
+def sample_sd_cauchy(delta: float, epsilon: float, targets: np.ndarray, mu: float, n_samples: int, lb: float, ub: float,
+                     alpha: float = 0.99):
+    samples = lorentzian(n_samples, eta=mu, delta=delta, lb=lb, ub=ub)
+    # plt.hist(samples, label="fit")
+    # plt.hist(targets, label="target")
+    # plt.legend()
+    # plt.show()
+    epsilon = alpha*epsilon + (1-alpha)*(np.std(samples) - np.std(targets))**2
+    return epsilon
+
 
 # load SNN data
 module_examples = {"lc": [], "ss": []}
 example = 0
-condition = {"Delta": 1.0, "p": 0.03125}
-path = "results/dimensionality"
+condition = {"Delta": 1.0, "p": 0.125}
+path = "results/dimensionality2"
 fn = "rs_dimensionality"
 for file in os.listdir(path):
     if fn in file:
@@ -85,13 +96,13 @@ for file in os.listdir(path):
             if include_example:
                 key = "ss" if dim_tmp["d"] < 50.0 else "lc"
                 module_examples[key].append({"m": mods["m"][i], "s": mods["s"][i], "cov": mods["cov"][i],
-                                             "W": mods["W"][i], "nodes": np.arange(0, mods["cov"][i].shape[0]), "thetas": lorentzian(1000, -40.0, Delta, -60.0, -20.0)}  #nodes: mods[i]["nodes"], thetas: mods[i]["thetas"]
+                                             "W": mods["W"][i], "nodes": mods["nodes"][i], "thetas": mods["thetas"][i]}
                                             )
                 example += 1
 
 # extract condition
-idx = 0
-cond = "ss"
+idx = 3
+cond = "lc"
 example = module_examples[cond][idx]
 W = example["W"]
 thetas = example["thetas"]
@@ -99,7 +110,9 @@ modules = example["m"]
 nodes = example["nodes"]
 
 # fit theta distribution for each module
-deltas, thresholds = fit_lorentzian(thetas, modules, nodes, x_range=1.0)
+deltas, thresholds = fit_lorentzian(thetas, modules, nodes, x_range=0.1, alpha=0.99)
+print(f"Spike threshold distribution community means: {thresholds}")
+print(f"Spike threshold distribution community widths: {deltas}")
 
 # approximate the connectivity within and between modules
 W_mods = get_module_coupling(W, modules, nodes)
@@ -109,6 +122,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
+Delta = condition["Delta"]
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -131,6 +145,10 @@ sr = 1000
 res = mf.run(simulation_time=T, step_size=dt, sampling_step_size=dt*sr, outputs={"s": "all/rs_mf_op/s"},
              solver="scipy", method="DOP853", cutoff=cutoff)
 
+# calculate module covariance patterns
+cov_mf = np.cov(res["s"].values.T)
+cov_snn = np.cov(np.asarray([example["s"][idx] for idx in modules]))
+
 # plotting
 fig, axes = plt.subplots(nrows=len(modules), figsize=(10, 2*len(modules)))
 for i, mod in enumerate(modules):
@@ -142,4 +160,18 @@ for i, mod in enumerate(modules):
     ax.set_title(f"Module {mod}")
     ax.legend()
 plt.tight_layout()
+
+fig, axes = plt.subplots(ncols=2, figsize=(10, 5))
+ax = axes[0]
+ax.imshow(cov_snn, interpolation="none", aspect="equal")
+ax.set_xlabel("module id")
+ax.set_ylabel("module id")
+ax.set_title("SNN")
+ax = axes[1]
+ax.imshow(cov_mf, interpolation="none", aspect="equal")
+ax.set_xlabel("module id")
+ax.set_ylabel("module id")
+ax.set_title("MF")
+plt.tight_layout()
+
 plt.show()

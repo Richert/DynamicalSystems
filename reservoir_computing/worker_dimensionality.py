@@ -23,7 +23,7 @@ p1 = "p"
 p2 = "Delta"
 
 # network parameters
-N = 1000
+N = 2000
 p = 0.1
 C = 100.0
 k = 0.7

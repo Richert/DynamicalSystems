@@ -134,6 +134,7 @@ dim_ss = dim_ss.loc[dim_ss["p"] < 1.0, :]
 ax = fig.add_subplot(grid[2:4, 0])
 sb.barplot(data=dim_ss, x="p", y=dv, hue="Delta", errorbar="sd", palette="dark", alpha=0.8, ax=ax)
 ax.set_ylabel(dv_label)
+ax.set_xlabel("coupling probability (p)")
 ax.set_title(r"Asynchronous regime ($\kappa = 10$ pA)")
 
 # plot dimensionality bar graph for steady-state regime
@@ -142,6 +143,7 @@ dim_lc = dim_lc.loc[dim_lc["p"] < 1.0, :]
 ax = fig.add_subplot(grid[2:4, 1])
 g = sb.barplot(data=dim_lc, x="p", y=dv, hue="Delta", errorbar="sd", palette="dark", alpha=0.8, ax=ax)
 ax.set_ylabel("")
+ax.set_xlabel("coupling probability (p)")
 ax.set_title(r"Synchronous regime ($\kappa = 100$ pA)")
 
 # plot the modularity example for the steady-state
@@ -150,7 +152,7 @@ ax = fig.add_subplot(grid[4:6, 0])
 ax.imshow(modex["cov"] > 0.0, cmap='magma', aspect="equal", interpolation="none")
 ax.set_xlabel('neuron id')
 ax.set_ylabel('neuron id')
-ax.set_title(fr"$p = {condition['p']}$, $\Delta_v = {condition['Delta']}$ mV")
+ax.set_title(fr"Community structure")
 
 # plot the modularity example for the oscillatory state
 modex = module_examples["lc"][module_example]
@@ -177,7 +179,7 @@ ax3.plot(np.mean([modex["s"][key][xl[0]:xl[1]] for key in modex["m"]], axis=0),
          c="black", linestyle="--", label="mean-field")
 ax3.set_xlabel('time (ms)')
 ax3.set_ylabel(r'$s$')
-ax3.set_title("Communities exhibit distinct \n mean-field dynamics")
+ax3.set_title("Community mean-field dynamics")
 # plt.legend()
 
 # plot the corresponding module signals for the oscillatory state
@@ -196,7 +198,7 @@ ax4.plot(np.mean([modex["s"][key][xl[0]:xl[1]] for key in modex["m"]], axis=0),
          c="black", linestyle="--", label="mean-field")
 ax4.set_xlabel('time (ms)')
 ax4.set_ylabel(r'')
-ax4.set_title("Communities exhibit distinct \n mean-field dynamics")
+ax4.set_title("Community mean-field dynamics")
 # plt.legend()
 
 # plot mf coherence for the heterogeneous case
