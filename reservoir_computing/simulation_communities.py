@@ -2,16 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyrates import NodeTemplate, CircuitTemplate
 from rectipy import Network
-from networkx import random_partition_graph, to_pandas_adjacency
-from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian
+from networkx import to_pandas_adjacency
+from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling
 
 
 # model parameters
-n_comms = 3
-n_neurons = 500
+n_comms = 5
+n_neurons = 200
 N = int(n_comms*n_neurons)
-p_in = 0.06
-p_out = 0.01
+p_in = 0.2
+p_out = 0.1
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -28,8 +28,8 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # simulation parameters
-cutoff = 1000.0
-T = 4000.0 + cutoff
+cutoff = 0.0
+T = 3000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(T/dt)
@@ -43,9 +43,7 @@ device = "cuda:0"
 #######################
 
 # create SNN connectivity
-G = random_partition_graph([n_neurons for _ in range(n_comms)], p_in, p_out, directed=False)
-W = to_pandas_adjacency(G).values
-W /= np.sum(W, axis=1)
+W = community_coupling(p_in, p_out, n_comms, n_neurons, sigma=0.02)
 plt.imshow(W)
 plt.show()
 

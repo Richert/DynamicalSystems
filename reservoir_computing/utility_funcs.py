@@ -87,3 +87,22 @@ def get_module_coupling(W: np.ndarray, modules: dict, nodes: list = None) -> np.
             W_mod[i, j] = np.mean(np.sum(W_tmp, axis=1))
     W_mod /= np.sum(W_mod, axis=1, keepdims=False)
     return W_mod
+
+
+def community_coupling(p_in: float, p_out: float, n_communities: int, n_neurons: int, sigma: float = 0.01,
+                       p_min: float = 0.01):
+    N = int(n_neurons*n_communities)
+    W = np.zeros((N, N))
+    for i in range(n_communities):
+        for j in range(n_communities):
+            p = p_in if i == j else p_out
+            p = np.maximum(p_min,np.random.randn()*sigma + p)
+            comm_coupling = np.random.binomial(n_neurons, p)/n_neurons
+            conns = np.random.rand(n_neurons, n_neurons)
+            conns_sorted = np.sort(conns.flatten())
+            threshold = conns_sorted[-int(comm_coupling*len(conns_sorted))]
+            conns[conns < threshold] = 0.0
+            conns[conns >= threshold] = 1.0
+            W[i*n_neurons:(i+1)*n_neurons, j*n_neurons:(j+1)*n_neurons] = conns
+    W /= np.sum(W, axis=1)
+    return W
