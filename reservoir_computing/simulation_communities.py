@@ -32,8 +32,8 @@ cutoff = 100.0
 T = 1000.0 + cutoff
 dt = 1e-2
 sr = 100
-alpha = 0.2
-sigma = 50.0
+alpha = 0.05
+sigma = 100.0
 steps = int(T/dt)
 cutoff_steps = int(cutoff/(dt*sr))
 I_ext = np.zeros((steps, N))
@@ -51,6 +51,7 @@ device = "cuda:0"
 
 # create SNN connectivity
 W = community_coupling(p_in, p_out, n_comms, n_neurons, sigma=0.02)
+print(np.sum(np.sum(W, axis=1)))
 
 # draw spike thresholds from distribution
 thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
@@ -78,6 +79,7 @@ for idx in range(n_comms):
 
 # get mean-field connectivity
 W_mf = get_module_coupling(W, modules)
+print(np.sum(np.sum(W_mf, axis=1)))
 
 # get mean-field spike threshold distribution parameters
 deltas, thresholds = fit_lorentzian(thetas, modules)
