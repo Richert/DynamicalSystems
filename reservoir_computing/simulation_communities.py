@@ -10,8 +10,8 @@ from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian
 n_comms = 3
 n_neurons = 500
 N = int(n_comms*n_neurons)
-p_in = 0.2
-p_out = 0.05
+p_in = 0.06
+p_out = 0.01
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -33,7 +33,7 @@ T = 4000.0 + cutoff
 dt = 1e-2
 sr = 100
 steps = int(T/dt)
-cutoff_steps = int(cutoff/dt)
+cutoff_steps = int(cutoff/(dt*sr))
 I_ext = np.zeros((steps, 1))
 
 # meta parameters
@@ -45,6 +45,9 @@ device = "cuda:0"
 # create SNN connectivity
 G = random_partition_graph([n_neurons for _ in range(n_comms)], p_in, p_out, directed=False)
 W = to_pandas_adjacency(G).values
+W /= np.sum(W, axis=1)
+plt.imshow(W)
+plt.show()
 
 # draw spike thresholds from distribution
 thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
