@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 from pyrates import NodeTemplate, CircuitTemplate
 from rectipy import Network
 from networkx import to_pandas_adjacency
-from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling
-
+from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling, get_community_input
+from scipy.ndimage import gaussian_filter1d
 
 # model parameters
 n_comms = 5
 n_neurons = 200
 N = int(n_comms*n_neurons)
-p_in = 0.2
-p_out = 0.1
+p_in = 0.1
+p_out = 0.05
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -28,13 +28,20 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # simulation parameters
-cutoff = 0.0
-T = 3000.0 + cutoff
+cutoff = 100.0
+T = 1000.0 + cutoff
 dt = 1e-2
 sr = 100
+alpha = 0.2
+sigma = 50.0
 steps = int(T/dt)
 cutoff_steps = int(cutoff/(dt*sr))
-I_ext = np.zeros((steps, 1))
+I_ext = np.zeros((steps, N))
+I_mf = np.zeros((steps, n_comms))
+for i in range(n_comms):
+    inp = gaussian_filter1d(np.random.randn(steps, 1), sigma=sigma)*alpha
+    I_ext[:, i*n_neurons:(i+1)*n_neurons] = inp
+    I_mf[:, i] = inp[:, 0]
 
 # meta parameters
 device = "cuda:0"
@@ -44,8 +51,6 @@ device = "cuda:0"
 
 # create SNN connectivity
 W = community_coupling(p_in, p_out, n_comms, n_neurons, sigma=0.02)
-plt.imshow(W)
-plt.show()
 
 # draw spike thresholds from distribution
 thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
@@ -68,7 +73,7 @@ snn_res = obs["out"].iloc[cutoff_steps:, :]
 modules = {}
 counter = 0
 for idx in range(n_comms):
-    modules[str(counter)] = [i+counter for i in range(n_neurons)]
+    modules[str(idx)] = [i+counter for i in range(n_neurons)]
     counter += n_neurons
 
 # get mean-field connectivity
@@ -87,37 +92,55 @@ mf.add_edges_from_matrix("rs_mf_op/s", "rs_mf_op/s_in", nodes=nodes, weight=W_mf
 mf.update_var(node_vars={f"all/rs_mf_op/{key}": val for key, val in node_vars.items()})
 
 # simulate mean-field network dynamics
-res = mf.run(simulation_time=T, step_size=dt, sampling_step_size=dt*sr, outputs={"s": "all/rs_mf_op/s"},
-             solver="scipy", method="DOP853", cutoff=cutoff)
+mf_res = mf.run(simulation_time=T, step_size=dt, sampling_step_size=dt * sr, outputs={"s": "all/rs_mf_op/s"},
+                inputs={f"{n}/rs_mf_op/s_ext": I_mf[:, i] for i, n in enumerate(nodes)},
+                solver="euler", cutoff=cutoff)
 
 # calculate module covariance patterns
-cov_mf = np.cov(res["s"].values.T)
-cov_snn = np.cov(np.asarray([np.mean(snn_res.iloc[:, idx]) for idx in modules.values()]))
+mf_var = np.mean([np.var(mf_res["s"].iloc[:, i]) for i in range(n_comms)])
+snn_var = np.mean([np.var(snn_res.iloc[:, i]) for i in range(n_comms)])
+mf_res_noise = mf_res["s"].values.T
+# mf_res_noise += np.random.randn(*mf_res_noise.shape)*(snn_var-mf_var)
+cov_mf = np.corrcoef(mf_res_noise)
+cov_snn = np.corrcoef(np.asarray([np.mean(snn_res.iloc[:, idx]) for idx in modules.values()]))
 
 # plotting
 fig, axes = plt.subplots(nrows=len(modules), figsize=(10, 2*len(modules)))
 for i, mod in enumerate(modules):
     ax = axes[i]
-    ax.plot(res.index, np.mean(snn_res.iloc[:, modules[mod]], axis=1), label="SNN")
-    ax.plot(res.index, res["s"][str(mod)], label="MF")
+    ax.plot(mf_res.index, np.mean(snn_res.iloc[:, modules[mod]], axis=1), label="SNN")
+    ax.plot(mf_res.index, mf_res_noise[i, :], label="MF")
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("s")
-    ax.set_title(f"Module {mod}")
+    ax.set_title(f"Module {i}")
     ax.legend()
 plt.tight_layout()
 
-fig, axes = plt.subplots(ncols=2, figsize=(10, 5))
-ax = axes[0]
-ax.imshow(cov_snn, interpolation="none", aspect="equal")
+fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(10, 7))
+ax = axes[0, 0]
+im = ax.imshow(cov_snn, interpolation="none", aspect="equal", vmax=1.0, vmin=0.0)
 ax.set_xlabel("module id")
 ax.set_ylabel("module id")
-ax.set_title("SNN")
-ax = axes[1]
-ax.imshow(cov_mf, interpolation="none", aspect="equal")
+ax.set_title("Corr (SNN)")
+plt.colorbar(im, ax=ax, shrink=0.8)
+ax = axes[0, 1]
+im = ax.imshow(cov_mf, interpolation="none", aspect="equal", vmax=1.0, vmin=0.0)
 ax.set_xlabel("module id")
 ax.set_ylabel("module id")
-ax.set_title("MF")
+ax.set_title("Corr (MF)")
+plt.colorbar(im, ax=ax, shrink=0.8)
 plt.tight_layout()
-
+ax = axes[1, 0]
+im = ax.imshow(W, interpolation="none", aspect="equal")
+ax.set_xlabel("module id")
+ax.set_ylabel("module id")
+ax.set_title("W (SNN)")
+plt.colorbar(im, ax=ax, shrink=0.8)
+ax = axes[1, 1]
+im = ax.imshow(W_mf, interpolation="none", aspect="equal")
+ax.set_xlabel("module id")
+ax.set_ylabel("module id")
+ax.set_title("W (MF)")
+plt.colorbar(im, ax=ax, shrink=0.8)
 plt.show()
 

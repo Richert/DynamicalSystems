@@ -85,7 +85,7 @@ def get_module_coupling(W: np.ndarray, modules: dict, nodes: list = None) -> np.
             W_tmp = W[targets, :]
             W_tmp = W_tmp[:, sources]
             W_mod[i, j] = np.mean(np.sum(W_tmp, axis=1))
-    W_mod /= np.sum(W_mod, axis=1, keepdims=False)
+    # W_mod /= np.sum(W_mod, axis=1, keepdims=False)
     return W_mod
 
 
@@ -106,3 +106,10 @@ def community_coupling(p_in: float, p_out: float, n_communities: int, n_neurons:
             W[i*n_neurons:(i+1)*n_neurons, j*n_neurons:(j+1)*n_neurons] = conns
     W /= np.sum(W, axis=1)
     return W
+
+
+def get_community_input(I_ext: np.ndarray, modules: dict) -> np.ndarray:
+    I_com = np.zeros((I_ext.shape[0], len(modules)))
+    for m, idx in modules.items():
+        I_com[:, m] = np.mean(I_ext[:, idx], axis=-1)
+    return I_com
