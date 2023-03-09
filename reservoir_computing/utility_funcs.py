@@ -58,3 +58,32 @@ def dist(x: int, method: str = "inverse") -> float:
         return np.exp(-x)
     else:
         raise ValueError("Invalid method.")
+
+
+def fit_lorentzian(x: np.ndarray, modules: dict, nodes: list = None) -> tuple:
+    deltas = []
+    mus = []
+    if nodes:
+        x = x[nodes]
+    for indices in modules.values():
+        x_mod = x[indices]
+        mu, delta = cauchy.fit(x_mod)
+        deltas.append(delta)
+        mus.append(mu)
+    return np.asarray(deltas), np.asarray(mus)
+
+
+def get_module_coupling(W: np.ndarray, modules: dict, nodes: list = None) -> np.ndarray:
+    if nodes:
+        W = W[nodes, :]
+        W = W[:, nodes]
+    W_mod = np.zeros((len(modules), len(modules)))
+    for i, mod1 in enumerate(modules):
+        targets = modules[mod1]
+        for j, mod2 in enumerate(modules):
+            sources = modules[mod2]
+            W_tmp = W[targets, :]
+            W_tmp = W_tmp[:, sources]
+            W_mod[i, j] = np.mean(np.sum(W_tmp, axis=1))
+    W_mod /= np.sum(W_mod, axis=1, keepdims=False)
+    return W_mod

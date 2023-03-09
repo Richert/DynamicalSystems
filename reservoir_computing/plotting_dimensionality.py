@@ -134,7 +134,7 @@ dim_ss = dim_ss.loc[dim_ss["p"] < 1.0, :]
 ax = fig.add_subplot(grid[2:4, 0])
 sb.barplot(data=dim_ss, x="p", y=dv, hue="Delta", errorbar="sd", palette="dark", alpha=0.8, ax=ax)
 ax.set_ylabel(dv_label)
-ax.set_xlabel("coupling probability (p)")
+ax.set_xlabel(r"coupling probability ($p$)")
 ax.set_title(r"Asynchronous regime ($\kappa = 10$ pA)")
 
 # plot dimensionality bar graph for steady-state regime

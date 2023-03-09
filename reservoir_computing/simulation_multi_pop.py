@@ -29,9 +29,10 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
-def get_module_coupling(W: np.ndarray, modules: dict, nodes: list) -> np.ndarray:
-    W = W[nodes, :]
-    W = W[:, nodes]
+def get_module_coupling(W: np.ndarray, modules: dict, nodes: list = None) -> np.ndarray:
+    if nodes:
+        W = W[nodes, :]
+        W = W[:, nodes]
     W_mod = np.zeros((len(modules), len(modules)))
     for i, mod1 in enumerate(modules):
         targets, _ = modules[mod1]
