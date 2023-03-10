@@ -5,6 +5,7 @@ from rectipy import Network
 from networkx import to_pandas_adjacency
 from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling, get_community_input
 from scipy.ndimage import gaussian_filter1d
+from sklearn.decomposition import SparsePCA
 
 # model parameters
 n_comms = 5
@@ -66,6 +67,10 @@ snn = Network.from_yaml("config/ik/rs", weights=W, source_var="s", target_var="s
 # simulate SNN dynamics
 obs = snn.run(inputs=I_ext, sampling_steps=sr, record_output=True, verbose=False)
 snn_res = obs["out"].iloc[cutoff_steps:, :]
+
+# perform sparse PCA on SNN dynamics
+pca = SparsePCA(n_components=n_comms)
+snn_res_lowdim = pca.fit_transform(snn_res.values)
 
 # simulate MF dynamics
 ######################
