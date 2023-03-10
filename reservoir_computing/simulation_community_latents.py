@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from pyrates import NodeTemplate, CircuitTemplate
 from rectipy import Network
 from networkx import to_pandas_adjacency
-from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling, get_community_input
+from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling, get_community_input, get_pc_coupling
 from scipy.ndimage import gaussian_filter1d
 from sklearn.decomposition import SparsePCA
 
@@ -39,10 +39,10 @@ steps = int(T/dt)
 cutoff_steps = int(cutoff/(dt*sr))
 I_ext = np.zeros((steps, N))
 I_mf = np.zeros((steps, n_comms))
-for i in range(n_comms):
-    inp = gaussian_filter1d(np.random.randn(steps, 1)*alpha, sigma=sigma)
-    I_ext[:, i*n_neurons:(i+1)*n_neurons] = inp
-    I_mf[:, i] = inp[:, 0]
+# for i in range(n_comms):
+#     inp = gaussian_filter1d(np.random.randn(steps, 1)*alpha, sigma=sigma)
+#     I_ext[:, i*n_neurons:(i+1)*n_neurons] = inp
+#     I_mf[:, i] = inp[:, 0]
 
 # meta parameters
 device = "cuda:0"
@@ -71,22 +71,22 @@ snn_res = obs["out"].iloc[cutoff_steps:, :]
 # perform sparse PCA on SNN dynamics
 pca = SparsePCA(n_components=n_comms)
 snn_res_lowdim = pca.fit_transform(snn_res.values)
+Q = pca.components_
 
 # simulate MF dynamics
 ######################
 
-# define communities
-modules = {}
-counter = 0
-for idx in range(n_comms):
-    modules[str(idx)] = [i+counter for i in range(n_neurons)]
-    counter += n_neurons
-
 # get mean-field connectivity
-W_mf = get_module_coupling(W, modules)
+W_mf = get_pc_coupling(W, Q)
 print(np.sum(np.sum(W_mf, axis=1)))
 
 # get mean-field spike threshold distribution parameters
+threshold = 1e-12
+modules = {}
+for m in range(Q.shape[0]):
+    loadings = Q[m, :]
+    loadings[np.abs(loadings) < threshold] = 0.0
+    modules[str(m)] = np.argwhere(loadings > 0.0).squeeze()
 deltas, thresholds = fit_lorentzian(thetas, modules)
 
 # initialize mean-field network
@@ -105,17 +105,16 @@ mf_res = mf.run(simulation_time=T, step_size=dt, sampling_step_size=dt * sr, out
 
 # calculate module covariance patterns
 mf_var = np.mean([np.var(mf_res["s"].iloc[:, i]) for i in range(n_comms)])
-snn_var = np.mean([np.var(snn_res.iloc[:, i]) for i in range(n_comms)])
+snn_var = np.mean([np.var(snn_res_lowdim[:, i]) for i in range(n_comms)])
 mf_res_noise = mf_res["s"].values.T
-# mf_res_noise += np.random.randn(*mf_res_noise.shape)*(snn_var-mf_var)
 cov_mf = np.corrcoef(mf_res_noise)
-cov_snn = np.corrcoef(np.asarray([np.mean(snn_res.iloc[:, idx]) for idx in modules.values()]))
+cov_snn = np.corrcoef(snn_res_lowdim.T)
 
 # plotting
 fig, axes = plt.subplots(nrows=len(modules), figsize=(10, 2*len(modules)))
 for i, mod in enumerate(modules):
     ax = axes[i]
-    ax.plot(mf_res.index, np.mean(snn_res.iloc[:, modules[mod]], axis=1), label="SNN")
+    ax.plot(mf_res.index, snn_res_lowdim[:, i], label="SNN")
     ax.plot(mf_res.index, mf_res_noise[i, :], label="MF")
     ax.set_xlabel("time (ms)")
     ax.set_ylabel("s")

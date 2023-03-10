@@ -89,6 +89,20 @@ def get_module_coupling(W: np.ndarray, modules: dict, nodes: list = None) -> np.
     return W_mod
 
 
+def get_pc_coupling(W: np.ndarray, Q: np.ndarray) -> np.ndarray:
+    # n = Q.shape[0]
+    # W_mod = np.zeros((n, n))
+    # for i in range(n):
+    #     targets = Q[i, :]
+    #     for j in range(n):
+    #         sources = Q[j, :]
+    #         W_tmp = W[targets, :]
+    #         W_tmp = W_tmp[:, sources]
+    #         W_mod[i, j] = np.mean(np.sum(W_tmp, axis=1))
+    # # W_mod /= np.sum(W_mod, axis=1, keepdims=True)
+    return Q @ W @ Q.T
+
+
 def community_coupling(p_in: float, p_out: float, n_communities: int, n_neurons: int, sigma: float = 0.01,
                        p_min: float = 0.01):
     N = int(n_neurons*n_communities)
