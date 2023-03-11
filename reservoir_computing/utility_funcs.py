@@ -127,3 +127,12 @@ def get_community_input(I_ext: np.ndarray, modules: dict) -> np.ndarray:
     for m, idx in modules.items():
         I_com[:, m] = np.mean(I_ext[:, idx], axis=-1)
     return I_com
+
+
+def lorentzian_nll(mu: float, delta: float, x: np.ndarray, weights: np.ndarray = None) -> float:
+    if weights is None:
+        return np.sum(np.log(delta**2 + (x - mu)**2)) - len(x) * np.log(delta)
+    else:
+        ll = np.log(delta/(delta**2 + (x - mu)**2))
+        w = np.abs(weights)
+        return - np.inner(w, ll).squeeze()

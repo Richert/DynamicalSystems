@@ -3,9 +3,15 @@ import matplotlib.pyplot as plt
 from pyrates import NodeTemplate, CircuitTemplate
 from rectipy import Network
 from networkx import to_pandas_adjacency
-from utility_funcs import lorentzian, get_module_coupling, fit_lorentzian, community_coupling, get_community_input, get_pc_coupling
+from utility_funcs import lorentzian, community_coupling, get_community_input, get_pc_coupling, lorentzian_nll
 from scipy.ndimage import gaussian_filter1d
 from sklearn.decomposition import SparsePCA
+from scipy.optimize import minimize
+
+
+def lorentzian_loss(params, x, weights):
+    return lorentzian_nll(params[0], params[1], x, weights)
+
 
 # model parameters
 n_comms = 5
@@ -51,7 +57,7 @@ device = "cuda:0"
 #######################
 
 # create SNN connectivity
-W = community_coupling(p_in, p_out, n_comms, n_neurons, sigma=0.02)
+W = community_coupling(p_in, p_out, n_comms, n_neurons, sigma=0.01)
 print(np.sum(np.sum(W, axis=1)))
 
 # draw spike thresholds from distribution
@@ -81,17 +87,19 @@ W_mf = get_pc_coupling(W, Q)
 print(np.sum(np.sum(W_mf, axis=1)))
 
 # get mean-field spike threshold distribution parameters
-threshold = 1e-12
 modules = {}
+thresholds, deltas = [], []
 for m in range(Q.shape[0]):
     loadings = Q[m, :]
-    loadings[np.abs(loadings) < threshold] = 0.0
-    modules[str(m)] = np.argwhere(loadings > 0.0).squeeze()
-deltas, thresholds = fit_lorentzian(thetas, modules)
+    modules[str(m)] = loadings
+    res = minimize(lorentzian_loss, x0=np.asarray([0.0, 1.0]), bounds=([-100.0, 0.0], [0.01, 10.0]),
+                   args=(thetas, Q[m, :]))
+    thresholds.append(res.x[0])
+    deltas.append(res.x[1])
 
 # initialize mean-field network
-node_vars = {"C": C, "k": k, "v_r": v_r, "v_t": thresholds, "Delta": deltas, "tau_u": 1/a, "b": b, "E_r": E_r,
-             "eta": eta, "kappa": kappa, "g": g, "tau_s": tau_s, "v": v_t}
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_t": np.asarray(thresholds), "Delta": np.asarray(deltas), "tau_u": 1/a,
+             "b": b, "E_r": E_r, "eta": eta, "kappa": kappa, "g": g, "tau_s": tau_s, "v": v_t}
 rs = NodeTemplate.from_yaml("config/ik/rs_mf")
 nodes = [str(key) for key in modules]
 mf = CircuitTemplate("rs", nodes={key: rs for key in nodes})
@@ -100,8 +108,7 @@ mf.update_var(node_vars={f"all/rs_mf_op/{key}": val for key, val in node_vars.it
 
 # simulate mean-field network dynamics
 mf_res = mf.run(simulation_time=T, step_size=dt, sampling_step_size=dt * sr, outputs={"s": "all/rs_mf_op/s"},
-                inputs={f"{n}/rs_mf_op/s_ext": I_mf[:, i] for i, n in enumerate(nodes)},
-                solver="euler", cutoff=cutoff)
+                inputs={f"{m}/rs_mf_op/s_ext": I_mf[:, int(m)] for m in modules}, solver="euler", cutoff=cutoff)
 
 # calculate module covariance patterns
 mf_var = np.mean([np.var(mf_res["s"].iloc[:, i]) for i in range(n_comms)])
