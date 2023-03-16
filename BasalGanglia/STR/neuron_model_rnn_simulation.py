@@ -2,10 +2,8 @@ import numba as nb
 nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(2)
 import numpy as np
-from pyrecu import RNN
-from pyrecu.neural_models import ik_ata, stop_at_spike_ata, spike_reset_ata
+from rectipy import Network
 import matplotlib.pyplot as plt
-import pickle
 from scipy.stats import cauchy
 plt.rcParams['backend'] = 'TkAgg'
 
@@ -37,9 +35,7 @@ d = 90.0
 a = 0.01
 b = -20.0
 tau_s = 4.0
-J = 5.0
 g = 5.0
-q = 0.0
 E_r = -60.0
 W = np.load('config/msn_conn.npy')
 
@@ -66,7 +62,7 @@ callback_args = (v_spike, v_reset, J, d)
 # initialize model
 u_init = np.zeros((2*N+1,))
 u_init[:N] += -60.0
-model = RNN(N, 2*N+1, ik_ata, func_args, spike_reset_ata, callback_args, u_init=u_init)
+model = Network.from_yaml()
 
 # define outputs
 outputs = {'s': {'idx': np.asarray([2*N]), 'avg': False}, 'v': {'idx': np.arange(0, N), 'avg': True}}

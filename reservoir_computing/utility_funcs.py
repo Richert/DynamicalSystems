@@ -130,9 +130,9 @@ def get_community_input(I_ext: np.ndarray, modules: dict) -> np.ndarray:
 
 
 def lorentzian_nll(mu: float, delta: float, x: np.ndarray, weights: np.ndarray = None) -> float:
+    ll = np.log(delta) - np.log(delta**2 + (x - mu)**2)
     if weights is None:
-        return np.sum(np.log(delta**2 + (x - mu)**2)) - len(x) * np.log(delta)
+        return - np.sum(ll)
     else:
-        ll = np.log(delta/(delta**2 + (x - mu)**2))
         w = np.abs(weights)
         return - np.inner(w, ll).squeeze()

@@ -22,26 +22,38 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
 # load snn data
-path = "results/rs_entrainment" #sys.argv[-2]
-file_id = "rs_entrainment" #sys.argv[-1]
-data = []
-columns = ["coh_inp", "coh_noinp", "dim", "p_in", "alpha", "Delta"]
-meta_data = {"Delta": 0.0, "p": 1.0, "omega": 1.0}
-for id, file in enumerate(os.listdir(path)):
-    if file_id in file:
+path = "results/dimensionality2"
+fn = "rs_dimensionality"
+snn_data = []
+columns = ["Delta", "omega", "dim", "coh_inp", "coh_noinp"]
+covariance_examples = []
+example = 0
+condition = {"p_in": 0.1, "alpha": 0.01}
+for file in os.listdir(path):
+    if fn in file:
         f = pickle.load(open(f"{path}/{file}", "rb"))
-        if id == 0:
-            for key in meta_data:
-                meta_data[key] = f[key]
-        row = list()
-        row.append(np.mean(f["entrainment"].loc[:, "coh_inp"].values))
-        row.append(np.mean(f["entrainment"].loc[:, "coh_noinp"].values))
-        row.append(np.mean(f["dim"]))
-        row.append(np.round(f["sweep"]["p_in"], decimals=2))
-        row.append(np.round(f["sweep"]["alpha"]*1e3, decimals=2))
-        data.append(row + [1.0])
-        data.append(row + [0.1])
-snn_data = pd.DataFrame(data=data, columns=columns)
+        entrainment = f["entrainment"]
+        cov = f["covariances"]
+        p_in = f["sweep"]["p_in"]
+        alpha = f["sweep"]["alpha"]
+        for i in range(entrainment.shape[0]):
+            row = []
+            entrain = entrainment.iloc[i, :]
+            row.append(p_in)
+            row.append(alpha)
+            for c in columns:
+                row.append(entrain[c])
+            snn_data.append(row)
+            include_example = True
+            condition_test = {"p_in": p_in, "alpha": alpha}
+            for key in condition:
+                if np.abs(condition[key] - condition_test[key]) > 1e-4:
+                    include_example = False
+            if include_example:
+                covariance_examples.append({"cov": cov["cov"][i], "Delta": cov["Delta"][i], "omega": cov["omega"][i]})
+                example += 1
+
+snn_data = pd.DataFrame(columns=["p_in", "alpha"] + columns, data=snn_data)
 
 # load mean-field data
 fn = "results/rs_arnold_tongue"
@@ -113,7 +125,7 @@ ax.set_ylabel(r'$\alpha$ (Hz)')
 for idx, Delta in enumerate(Deltas):
     ax = axes[idx][1]
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
-    sb.heatmap(snn.pivot(index="alpha", columns="p_in", values="coh_inp"), ax=ax, vmin=0.0, vmax=1.0, annot=False,
+    sb.heatmap(snn.pivot_table(index="alpha", columns="p_in", values="coh_inp"), ax=ax, vmin=0.0, vmax=1.0, annot=False,
                cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')
@@ -122,7 +134,7 @@ for idx, Delta in enumerate(Deltas):
 for idx, Delta in enumerate(Deltas):
     ax = axes[idx][2]
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
-    sb.heatmap(snn.pivot(index="alpha", columns="p_in", values="coh_noinp"), ax=ax, vmin=0.0, vmax=1.0, annot=False,
+    sb.heatmap(snn.pivot_table(index="alpha", columns="p_in", values="coh_noinp"), ax=ax, vmin=0.0, vmax=1.0, annot=False,
                cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')
@@ -131,7 +143,7 @@ for idx, Delta in enumerate(Deltas):
 for idx, Delta in enumerate(Deltas):
     ax = axes[idx][3]
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
-    sb.heatmap(snn.pivot(index="alpha", columns="p_in", values="dim"), ax=ax, annot=False,
+    sb.heatmap(snn.pivot_table(index="alpha", columns="p_in", values="dim"), ax=ax, annot=False,
                cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')

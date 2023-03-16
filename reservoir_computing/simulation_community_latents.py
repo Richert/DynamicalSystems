@@ -5,7 +5,7 @@ from rectipy import Network
 from networkx import to_pandas_adjacency
 from utility_funcs import lorentzian, community_coupling, get_community_input, get_pc_coupling, lorentzian_nll
 from scipy.ndimage import gaussian_filter1d
-from sklearn.decomposition import SparsePCA
+from sklearn.decomposition import DictionaryLearning
 from scipy.optimize import minimize
 
 
@@ -35,8 +35,8 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # simulation parameters
-cutoff = 100.0
-T = 1000.0 + cutoff
+cutoff = 200.0
+T = 2000.0 + cutoff
 dt = 1e-2
 sr = 100
 alpha = 0.1
@@ -75,16 +75,17 @@ obs = snn.run(inputs=I_ext, sampling_steps=sr, record_output=True, verbose=False
 snn_res = obs["out"].iloc[cutoff_steps:, :]
 
 # perform sparse PCA on SNN dynamics
-pca = SparsePCA(n_components=n_comms)
-snn_res_lowdim = pca.fit_transform(snn_res.values)
-Q = pca.components_
+latents = DictionaryLearning(n_components=n_comms, positive_dict=True, positive_code=True, fit_algorithm="cd",
+                             transform_algorithm="lasso_cd")
+snn_res_lowdim = latents.fit_transform(snn_res.values)
+Q = latents.components_
 
 # simulate MF dynamics
 ######################
 
 # get mean-field connectivity
 W_mf = get_pc_coupling(W, Q)
-print(np.sum(np.sum(W_mf, axis=1)))
+W_mf /= np.sum(W_mf, axis=1, keepdims=True)
 
 # get mean-field spike threshold distribution parameters
 modules = {}
