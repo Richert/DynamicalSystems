@@ -38,9 +38,9 @@ for file in os.listdir(path):
         alpha = f["sweep"]["alpha"]
         for i in range(entrainment.shape[0]):
             row = []
+            print(entrainment.columns.values)
+            print(entrainment.at[0, "dim"])
             entrain = entrainment.iloc[i, :]
-            print(entrain.columns.values)
-            print(entrain.at[0, "dim"])
             row.append(p_in)
             row.append(alpha)
             for c in columns:
