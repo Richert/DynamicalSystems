@@ -140,8 +140,8 @@ for idx, Delta in enumerate(Deltas):
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
     snn_inp = snn.pivot_table(index="alpha", columns="p_in", values="coh_inp")
     snn_noinp = snn.pivot_table(index="alpha", columns="p_in", values="coh_noinp")
-    sb.heatmap(snn_inp - snn_noinp, ax=ax, vmin=0.0, vmax=1.0, annot=False,
-               cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
+    sb.heatmap(snn_inp - snn_noinp, ax=ax, annot=False, cbar=True, xticklabels=ticks, yticklabels=ticks, square=square,
+               cbar_kws=cbar_kwargs)
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')
 
