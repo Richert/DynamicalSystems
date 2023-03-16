@@ -39,6 +39,8 @@ for file in os.listdir(path):
         for i in range(entrainment.shape[0]):
             row = []
             entrain = entrainment.iloc[i, :]
+            print(entrain.columns.values)
+            print(entrain.at[0, "dim"])
             row.append(p_in)
             row.append(alpha)
             for c in columns:
