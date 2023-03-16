@@ -34,8 +34,8 @@ for file in os.listdir(path):
         f = pickle.load(open(f"{path}/{file}", "rb"))
         entrainment = f["entrainment"]
         cov = f["cov"]
-        p_in = f["sweep"]["p_in"]
-        alpha = f["sweep"]["alpha"]
+        p_in = np.round(f["sweep"]["p_in"], decimals=2)
+        alpha = np.round(f["sweep"]["alpha"]*1e3, decimals=2)
         for i in range(entrainment.shape[0]):
             try:
                 row = []
