@@ -22,8 +22,8 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
 # load snn data
-path = "results/dimensionality2"
-fn = "rs_dimensionality"
+path = "/media/richard/data/entrainment_snn"
+fn = "rs_entrainment"
 snn_data = []
 columns = ["Delta", "omega", "dim", "coh_inp", "coh_noinp"]
 covariance_examples = []
