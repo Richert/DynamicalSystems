@@ -37,23 +37,24 @@ for file in os.listdir(path):
         p_in = f["sweep"]["p_in"]
         alpha = f["sweep"]["alpha"]
         for i in range(entrainment.shape[0]):
-            row = []
-            print(entrainment.columns.values)
-            print(entrainment.at[0, "dim"])
-            entrain = entrainment.iloc[i, :]
-            row.append(p_in)
-            row.append(alpha)
-            for c in columns:
-                row.append(entrain[c])
-            snn_data.append(row)
-            include_example = True
-            condition_test = {"p_in": p_in, "alpha": alpha}
-            for key in condition:
-                if np.abs(condition[key] - condition_test[key]) > 1e-4:
-                    include_example = False
-            if include_example:
-                covariance_examples.append({"cov": cov["cov"][i], "Delta": cov["Delta"][i], "omega": cov["omega"][i]})
-                example += 1
+            try:
+                row = []
+                entrain = entrainment.iloc[i, :]
+                row.append(p_in)
+                row.append(alpha)
+                for c in columns:
+                    row.append(entrain[c])
+                snn_data.append(row)
+                include_example = True
+                condition_test = {"p_in": p_in, "alpha": alpha}
+                for key in condition:
+                    if np.abs(condition[key] - condition_test[key]) > 1e-4:
+                        include_example = False
+                if include_example:
+                    covariance_examples.append({"cov": cov["cov"][i], "Delta": cov["Delta"][i], "omega": cov["omega"][i]})
+                    example += 1
+            except KeyError:
+                pass
 
 snn_data = pd.DataFrame(columns=["p_in", "alpha"] + columns, data=snn_data)
 
