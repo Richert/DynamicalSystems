@@ -33,7 +33,7 @@ for file in os.listdir(path):
     if fn in file:
         f = pickle.load(open(f"{path}/{file}", "rb"))
         entrainment = f["entrainment"]
-        cov = f["covariances"]
+        cov = f["cov"]
         p_in = f["sweep"]["p_in"]
         alpha = f["sweep"]["alpha"]
         for i in range(entrainment.shape[0]):
