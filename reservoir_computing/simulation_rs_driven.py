@@ -1,86 +1,98 @@
-import matplotlib.pyplot as plt
+from rectipy import Network, random_connectivity
 import numpy as np
-from pyrates import CircuitTemplate, NodeTemplate
-from scipy.signal import welch
+from utility_funcs import lorentzian
+import matplotlib.pyplot as plt
 
 # network definition
 ####################
 
-# define network nodes
-ko = NodeTemplate.from_yaml("model_templates.oscillators.kuramoto.sin_pop")
-ik = NodeTemplate.from_yaml("model_templates.neural_mass_models.ik.ik_theta_pop")
-nodes = {'ik': ik, 'ko': ko}
-
-# define network edges
-alpha = 0.0005
-edges = [
-    ('ko/sin_op/s', 'ik/ik_theta_op/r_in', None, {'weight': alpha}),
-    ('ik/ik_theta_op/r', 'ik/ik_theta_op/r_in', None, {'weight': 1.0})
-]
-
-# initialize network
-net = CircuitTemplate(name="ik_forced", nodes=nodes, edges=edges)
-
-# update izhikevich parameters
-node_vars = {
-    "C": 100.0,
-    "k": 0.7,
-    "v_r": -60.0,
-    "v_t": -40.0,
-    #"eta": 55.0,
-    "Delta": 1.0,
-    "g": 15.0,
-    "E_r": 0.0,
-    "b": -2.0,
-    "a": 0.03,
-    "d": 100.0,
-    "tau_s": 6.0,
-}
-node, op = "ik", "ik_theta_op"
-net.update_var(node_vars={f"{node}/{op}/{var}": val for var, val in node_vars.items()})
-
-# update kuramoto parameters
-omega = 0.001
-net.update_var(node_vars={"ko/phase_op/omega": omega})
-
-# perform simulation
-####################
+# network parameters
+N = 1000
+p = 0.1
+C = 100.0
+k = 0.7
+v_r = -60.0
+v_t = -40.0
+Delta = 1.0
+eta = 55.0
+a = 0.03
+b = -2.0
+d = 100.0
+g = 15.0
+E_r = 0.0
+tau_s = 6.0
+v_spike = 1000.0
+v_reset = -1000.0
 
 # simulation parameters
-cutoff = 0.0
-T = 100000.0 + cutoff
+cutoff = 10000.0
+T = 20000.0 + cutoff
 dt = 1e-2
-dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 55.0
+sr = 100
+steps = int(np.round(T/dt))
+time = np.linspace(0.0, T, num=steps)
 
-# perform simulation
-res = net.run(T, dt, sampling_step_size=dts, cutoff=cutoff,
-              inputs={"ik/ik_theta_op/I_ext": inp},
-              outputs={"ko": "ko/phase_op/theta", "ik": "ik/ik_theta_op/r"},
-              solver="euler", float_precision="float64")
+# input definition
+alpha = 0.0007
+omega = 5.0
+p_in = 0.32
 
-# save results
-res.to_csv("results/rs_driven_hom.csv")
+# initialize input
+I_ext = np.zeros((steps, 1))
+I_ext[:, 0] = np.sin(2.0 * np.pi * omega * time * 1e-3)
+ko = I_ext[::sr, 0]
 
-# calculate psd of firing rate dynamics
-freqs, pows = welch(res["ik"].values.squeeze(), fs=1/dts, window="hamming", nperseg=8192)
-entrained_freq = freqs[np.argmax(pows)]
+# create connectivity matrix
+W = random_connectivity(N, N, p, normalize=True)
+
+# create input matrix
+W_in = np.zeros((N, 1))
+idx = np.random.choice(np.arange(N), size=int(N*p_in), replace=False)
+W_in[idx, 0] = alpha
+
+# create background current distribution
+thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)
+
+# collect remaining model parameters
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
+             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+
+# initialize model
+net = Network.from_yaml(f"config/ik/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                        dt=dt, verbose=False, clear=True, device="cuda:0")
+net.add_input_layer(1, weights=W_in)
+
+# simulation
+obs = net.run(inputs=I_ext, sampling_steps=sr, record_output=True, verbose=False)
+res = obs["out"]
+time = np.linspace(0, T, num=res.shape[0])
+ik_inp = np.mean(res.loc[:, W_in[:, 0] > 0].values, axis=-1)
+ik_noinp = np.mean(res.loc[:, W_in[:, 0] < alpha].values, axis=-1)
 
 # plot results
+start = 5000
+stop = 10000
 fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
 ax = axes[0]
-ax.plot(res.index, res["ik"]*1e3)
+ax.plot(time[start:stop], ik_inp[start:stop])
 ax.set_xlabel("time (ms)")
-ax.set_ylabel("r (Hz)")
+ax.set_ylabel("$s$")
+ax.set_title("Mean-field of driven cells")
 ax = axes[1]
-ax.plot(res.index, np.sin(2.0*np.pi*res["ko"]))
+ax.plot(time[start:stop], ik_noinp[start:stop])
 ax.set_xlabel("time (ms)")
-ax.set_ylabel("input")
+ax.set_ylabel("$s$")
+ax.set_title("Mean-field of non-driven cells")
 ax = axes[2]
-ax.plot(freqs[freqs < 0.1]*1e3, pows[freqs < 0.1])
-ax.set_xlabel("f (Hz)")
-ax.set_ylabel("PSD")
-ax.set_title(f"Entrained freq = {entrained_freq} for omega = {omega} and alpha = {alpha}")
+ax.plot(time[start:stop], ko[start:stop])
+ax.set_xlabel("time (ms)")
+ax.set_ylabel(r"$I_{ext}$")
+ax.set_title("Driver")
+plt.suptitle(fr"$\omega = {omega}$, $\alpha = {alpha}$, $p_i = {p_in}$")
 
 plt.tight_layout()
+plt.savefig(f'results/snn_entrainment_9.pdf')
 plt.show()
+

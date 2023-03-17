@@ -24,9 +24,9 @@ markersize = 6
 #########################
 
 # define conditions
-fn = sys.argv[-1]
-conditions = ["het", "hom"]
-titles = [r"$\Delta_v = 1.0$", r"$\Delta_v = 0.1$"]
+fn = "results/mf_entrainment"  #sys.argv[-1]
+conditions = ["fp", "lc"]
+titles = ["Coherence (FP)", "Coherence (LC)"]
 base_len = 6
 fig1 = plt.figure(1, figsize=(int(len(conditions)*base_len), base_len))
 grid1 = GridSpec(ncols=len(conditions)+1, nrows=1, figure=fig1)
@@ -35,19 +35,16 @@ for idx, (cond, title) in enumerate(zip(conditions, titles)):
 
     # load data
     data = pickle.load(open(f"{fn}_{cond}.pkl", "rb"))
-    alphas = np.round(data["alphas"]*1e3, decimals=1)
-    omegas = np.round(data["omegas"]*1e3, decimals=1)
     coh = data["coherence"]
-    plv = data["plv"]
-    res_map = data["map"]
 
     # plot coherence
     ax = fig1.add_subplot(grid1[0, idx])
-    sb.heatmap(DataFrame(index=alphas[::-1], columns=omegas, data=coh[::-1, :]), vmin=0.0, vmax=1.0, ax=ax, annot=False,
-               cbar=True if idx == len(conditions)-1 else False, xticklabels=3, yticklabels=3, square=True)
+    sb.heatmap(coh, vmin=0.0, vmax=1.0, ax=ax, annot=False,
+               cbar=True if idx == len(conditions)-1 else False, xticklabels=3, yticklabels=3, square=True,
+               cbar_kws={"shrink": 0.4})
     ax.set_xlabel(r'$\omega$ (Hz)')
-    ax.set_ylabel(r'$\alpha$ (Hz)')
-    ax.set_title(f"Coherence for {title}")
+    ax.set_ylabel(r'$\Delta$ (mV)')
+    ax.set_title(title)
 
 # finishing touches
 ###################
@@ -57,5 +54,5 @@ fig1.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig1.canvas.draw()
-plt.savefig(f'results/rs_arnold_tongue_coh.pdf')
+plt.savefig(f'results/rs_arnold_tongue.pdf')
 plt.show()

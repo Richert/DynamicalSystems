@@ -1,6 +1,8 @@
 import pickle
 import numpy as np
 import sys
+
+import pandas as pd
 from scipy.signal import butter, sosfilt, hilbert, sosfreqz
 import matplotlib.pyplot as plt
 
@@ -27,11 +29,11 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
 
 
 # load data
-fn = sys.argv[-1] #"results/rs_arnold_tongue_hom.pkl"
+fn = "results/mf_entrainment_fp.pkl"
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
-alphas = data["alphas"]*1e3
+deltas = data["deltas"]
 omegas = data["omegas"]*1e3
 res = data["res"]
 res_map = data["map"]
@@ -41,7 +43,7 @@ fs = int(np.round(1000.0/(res.index[1] - res.index[0]), decimals=0))
 print(f"Sampling frequency: {fs}")
 f_margin = 0.5
 print(f"Frequency band width (Hz): {2*f_margin}")
-f_order = 6
+f_order = 5
 f_cutoff = 10000
 
 # Plot the frequency response for a few different orders.
@@ -57,14 +59,14 @@ f_cutoff = 10000
 # plt.show()
 
 # compute phase locking values and coherences
-coherences = np.zeros((len(alphas), len(omegas)))
+coherences = np.zeros((len(deltas), len(omegas)))
 plvs = np.zeros_like(coherences)
 for key in res_map.index:
 
     # extract and scale data
     omega = res_map.at[key, 'omega'] * 1e3
-    alpha = res_map.at[key, 'alpha'] * 1e3
-    ik = res["ik"][key].values.squeeze()
+    Delta = res_map.at[key, 'Delta']
+    ik = res["rs"][key].values.squeeze()
     ik -= np.min(ik)
     ik /= np.max(ik)
     ko = res["ko"][key].values.squeeze()
@@ -79,27 +81,27 @@ for key in res_map.index:
     ko_phase, ko_env = analytic_signal(ko[f_cutoff:-f_cutoff])
 
     # calculate plv and coherence
-    plv = phase_locking(ik_phase, ko_phase)
+    # plv = phase_locking(ik_phase, ko_phase)
     coh = coherence(ik_phase, ko_phase, ik_env, ko_env)
 
     # test plotting
     # plt.figure(2)
-    # plt.plot(ik_filtered, label="ik_f")
-    # plt.plot(ko, label="ko")
-    # plt.plot(ik, label="ik")
-    # plt.title(f"Coh = {coh}, PLV = {plv}")
+    # plt.plot(ik_filtered[2000:5000], label="ik_f")
+    # plt.plot(ko[2000:5000], label="ko")
+    # plt.plot(ik[2000:5000], label="ik")
+    # plt.title(f"Coh = {coh}")
     # plt.legend()
     # plt.show()
 
     # find matrix position that corresponds to these parameters
-    idx_r = np.argmin(np.abs(alphas - alpha))
+    idx_r = np.argmin(np.abs(deltas - Delta))
     idx_c = np.argmin(np.abs(omegas - omega))
 
     # store coherence value at driving frequency
-    plvs[idx_r, idx_c] = plv
+    # plvs[idx_r, idx_c] = plv
     coherences[idx_r, idx_c] = coh
 
 # save results
-data["coherence"] = coherences
-data["plv"] = plvs
+data["coherence"] = pd.DataFrame(index=np.round(deltas, decimals=2), columns=np.round(omegas, decimals=2),
+                                 data=coherences)
 pickle.dump(data, open(fn, "wb"))

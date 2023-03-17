@@ -109,7 +109,7 @@ for Delta, omega in zip(Deltas, omegas):
         # create input matrix
         W_in = np.zeros((N, 1))
         idx = np.random.choice(np.arange(N), size=int(N*p_in), replace=False)
-        W_in[idx, 0] = alpha
+        W_in[idx, 0] = alpha/p_in
 
         # create background current distribution
         thetas = lorentzian(N, v_t, Delta, v_r, 2 * v_t - v_r)

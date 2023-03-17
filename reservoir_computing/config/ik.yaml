@@ -52,7 +52,7 @@ rs_mf_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta*k^2*absv(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s_in*(E_r-v) - u + eta) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s_in*(E_r-v) - u + eta + I_ext) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
     - "s' = -s/tau_s + r + s_ext"
   variables:
@@ -74,6 +74,7 @@ rs_mf_op:
     tau_s: 6.0
     s_ext: input(0.0)
     s_in: input(0.0)
+    I_ext: input(0.0)
 
 # node templates
 ################
