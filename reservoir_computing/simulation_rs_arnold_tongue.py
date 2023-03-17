@@ -15,7 +15,7 @@ nodes = {node: rs, 'ko': ko}
 
 # define network edges
 edges = [
-    ('ko/sin_op/s', f'{node}/{op}/s_ext', None, {'weight': 0.0008}),
+    ('ko/sin_op/s', f'{node}/{op}/s_ext', None, {'weight': 0.01}),
     (f'{node}/{op}/s', f'{node}/{op}/s_in', None, {'weight': 1.0})
 ]
 

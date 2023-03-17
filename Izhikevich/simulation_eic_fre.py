@@ -35,8 +35,8 @@ eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs
                           'rs/rs_op/v': -45.0})
 
 # generate run function
-# eic.get_run_func(func_name='eic_run', file_name='config/eic', step_size=dt, backend='fortran',
-#                  auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
+eic.get_run_func(func_name='eic_run', file_name='config/eic_shadowing.f90', step_size=dt, backend='fortran',
+                 auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
@@ -49,7 +49,7 @@ fig, ax = plt.subplots(figsize=(12, 4))
 ax.plot(res*1e3)
 ax.set_ylabel(r'$r(t)$')
 ax.set_xlabel("time (ms)")
-plt.legend(res.columns.v1)
+plt.legend(res.columns.values)
 plt.tight_layout()
 plt.show()
 
