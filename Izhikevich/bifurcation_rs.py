@@ -57,9 +57,9 @@ c4_sols, c4_cont = a.run(starting_point='UZ2', c='qif', ICP=16, NPAR=n_params, N
 r1_sols, r1_cont = a.run(starting_point='UZ1', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='I_ext:1',
                          origin=c3_cont, NMX=8000, DSMAX=0.05, UZR={}, STOP=[], NPR=100,
                          RL1=150.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP1', c='qif2', ICP=[5, 16], name='D/I:lp1', origin=r1_cont, NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='D/I:lp1', origin=r1_cont, NMX=8000, DSMAX=0.05,
       NPR=20, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[5, 16], name='D/I:lp2', origin=r1_cont, NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='D/I:lp2', origin=r1_cont, NMX=8000, DSMAX=0.05,
       NPR=20, RL1=5.0, RL0=0.0, bidirectional=True)
 
 # continuations in I for d = 100.0
@@ -69,11 +69,11 @@ r2_sols, r2_cont = a.run(starting_point='UZ2', c='qif', ICP=8, NPAR=n_params, ND
 r3_sols, r3_cont = a.run(starting_point='UZ2', c='qif', ICP=8, NPAR=n_params, NDIM=n_dim, name='I_ext:3',
                          origin=c4_cont, NMX=8000, DSMAX=0.05, UZR={}, STOP=[], NPR=100,
                          RL1=150.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP1', c='qif2', ICP=[5, 16], name='D/I:lp3', origin=r2_cont, NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP1', c='qif2', ICP=[5, 8], name='D/I:lp3', origin=r2_cont, NMX=8000, DSMAX=0.05,
       NPR=20, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='LP2', c='qif2', ICP=[5, 16], name='D/I:lp4', origin=r2_cont, NMX=8000, DSMAX=0.05,
+a.run(starting_point='LP2', c='qif2', ICP=[5, 8], name='D/I:lp4', origin=r2_cont, NMX=8000, DSMAX=0.05,
       NPR=20, RL1=5.0, RL0=0.0, bidirectional=True)
-a.run(starting_point='HB1', c='qif2', ICP=[5, 16], name='D/I:hb1', origin=r3_cont, NMX=8000, DSMAX=0.05,
+a.run(starting_point='HB1', c='qif2', ICP=[5, 8], name='D/I:hb1', origin=r3_cont, NMX=8000, DSMAX=0.05,
       NPR=20, RL1=5.0, RL0=0.0, bidirectional=True)
 
 # save results

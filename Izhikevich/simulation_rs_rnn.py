@@ -1,81 +1,71 @@
-import numba as nb
-nb.config.THREADING_LAYER = 'omp'
-nb.set_num_threads(4)
+from rectipy import Network, random_connectivity
+import sys
+sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
-from pyrecu import RNN
-from pyrecu.neural_models import ik_ata
+from reservoir_computing.utility_funcs import lorentzian
 import matplotlib.pyplot as plt
 import pickle
-from scipy.stats import cauchy
-plt.rcParams['backend'] = 'TkAgg'
-
-
-def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
-    samples = np.zeros((n,))
-    for i in range(n):
-        s = cauchy.rvs(loc=eta, scale=delta)
-        while s <= lb or s >= ub:
-            s = cauchy.rvs(loc=eta, scale=delta)
-        samples[i] = s
-    return samples
 
 
 # define parameters
 ###################
 
 # model parameters
-N = 10000
-C = 100.0   # unit: pF
-k = 0.7  # unit: None
-v_r = -60.0  # unit: mV
-v_t = -40.0  # unit: mV
-v_spike = 2000.0  # unit: mV
-v_reset = -3000.0  # unit: mV
-Delta = 0.4  # unit: mV
-d = 10.0
+N = 2000
+p = 0.1
+C = 100.0
+k = 0.7
+v_r = -60.0
+v_t = -40.0
+Delta = 0.5
+eta = 0.0
 a = 0.03
 b = -2.0
-tau_s = 6.0
-J = 1.0
-g = 20.0
-q = 0.0
+d = 10.0
+g = 15.0
 E_r = 0.0
+tau_s = 6.0
+v_spike = 1000.0
+v_reset = -1000.0
 
 # define lorentzian of etas
-spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
+thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
+
+# define connectivity
+W = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
 T = 2500.0
 cutoff = 500.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 45.0
-inp[int(1000/dt):int(2000/dt)] += 15.0
+inp = np.zeros((int(T/dt), 1)) + 25.0
+inp[int(1000/dt):int(2000/dt), 0] += 25.0
 
 # run the model
 ###############
 
 # initialize model
-u_init = np.zeros((3*N,))
-u_init[:N] -= 60.0
-model = RNN(N, 3*N, ik_ata, C=C, k=k, v_r=v_r, v_t=spike_thresholds, v_spike=v_spike, v_reset=v_reset, d=d, a=a, b=b,
-            tau_s=tau_s, J=J, g=g, E_r=E_r, q=q, u_init=u_init)
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
+             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
-# define outputs
-outputs = {'s': {'idx': np.arange(2*N, 3*N), 'avg': True}, 'v': {'idx': np.arange(0, N), 'avg': True}}
+# initialize model
+net = Network.from_yaml(f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                        dt=dt, verbose=False, clear=True, device="cuda:0")
 
 # perform simulation
-res = model.run(T=T, dt=dt, dts=dts, outputs=outputs, inp=inp, cutoff=cutoff, parallel=True, fastmath=True)
+obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False)
+res = obs["out"]
 
 # plot results
-fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-ax[0].plot(np.mean(res["s"], axis=1))
-ax[0].set_ylabel(r'$s(t)$')
-ax[1].plot(np.mean(res["v"], axis=1))
-ax[1].set_ylabel(r'$v(t)$')
-ax[1].set_xlabel('time')
+fig, ax = plt.subplots(figsize=(12, 3))
+ax.plot(np.mean(res, axis=1))
+ax.set_ylabel(r'$s(t)$')
+ax.set_xlabel('time')
 plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/ik_rnn_exc_het2.p", "wb"))
+pickle.dump({'results': res}, open("results/rs_snn_hom_low_sfa.p", "wb"))
