@@ -56,6 +56,8 @@ a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb1', ax=ax, line_co
                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb2', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
+a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:2:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title(r'(B) $\Delta_{fs} = 0.1$ mV, $\kappa_{rs} = 100.0$')
@@ -74,10 +76,12 @@ ax.set_title(r'(C) $\Delta_{fs} = 1.0$ mV, $\kappa_{rs} = 10.0$')
 ax.set_ylim([0.0, 1.6])
 ax.set_xlim([0.0, 100.0])
 
-# Delta_fs = 1.0, d_rs = 10.0
+# Delta_fs = 1.0, d_rs = 100.0
 ax = fig.add_subplot(grid[1, 1])
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:4:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
+a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:4:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title(r'(D) $\Delta_{fs} = 1.0$ mV, $\kappa_{rs} = 100.0$')
