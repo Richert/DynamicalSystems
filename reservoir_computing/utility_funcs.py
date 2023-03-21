@@ -49,13 +49,11 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
-def dist(x: int, method: str = "inverse") -> float:
+def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: float = 1.0) -> float:
     if method == "inverse":
-        return 1/x if x > 0 else 1
-    if method == "inverse_squared":
-        return 1/x**2 if x > 0 else 1
+        return 1/x**inverse_pow if x > 0 else zero_val
     if method == "exp":
-        return np.exp(-x)
+        return np.exp(-x) if x > 0 else zero_val
     else:
         raise ValueError("Invalid method.")
 
