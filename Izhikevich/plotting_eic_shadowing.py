@@ -33,25 +33,25 @@ a.update_bifurcation_style("HB", color="#76448A")
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=2, ncols=2, figure=fig)
+grid = gridspec.GridSpec(nrows=4, ncols=4, figure=fig)
 
 # 2D continuations
 ##################
 
 # Delta_fs = 0.1, d_rs = 10.0
-ax = fig.add_subplot(grid[0, 0])
+ax = fig.add_subplot(grid[:2, 0])
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb2', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title(r'(A) $\Delta_{fs} = 0.1$ mV, $\kappa_{rs} = 10.0$')
-ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
+ax.set_title(r'(A) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([10.0, 70.0])
 
 # Delta_fs = 0.1, d_rs = 100.0
-ax = fig.add_subplot(grid[1, 0])
+ax = fig.add_subplot(grid[2:, 0])
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb2', ax=ax, line_color_stable='#148F77',
@@ -60,33 +60,51 @@ a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:2:lp1', ax=ax, line_co
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title(r'(B) $\Delta_{fs} = 0.1$ mV, $\kappa_{rs} = 100.0$')
-ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
+ax.set_title(r'(B) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([10.0, 70.0])
 
 # Delta_fs = 1.0, d_rs = 10.0
-ax = fig.add_subplot(grid[0, 1])
+ax = fig.add_subplot(grid[:2, 1])
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:3:lp1', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:3:lp2', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title(r'(C) $\Delta_{fs} = 1.0$ mV, $\kappa_{rs} = 10.0$')
-ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
+ax.set_title(r'(E) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([10.0, 70.0])
 
 # Delta_fs = 1.0, d_rs = 100.0
-ax = fig.add_subplot(grid[1, 1])
+ax = fig.add_subplot(grid[2:, 1])
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:4:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:4:lp1', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
-ax.set_title(r'(D) $\Delta_{fs} = 1.0$ mV, $\kappa_{rs} = 100.0$')
-ax.set_ylim([0.0, 1.6])
-ax.set_xlim([0.0, 100.0])
+ax.set_title(r'(F) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([10.0, 70.0])
+
+# time series
+#############
+
+conditions = ["hom_low_sfa", "het_low_sfa", "hom_high_sfa", "het_high_sfa"]
+titles = [r"(C) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$", r"(D) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$",
+          r"(G) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$", r"(H) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$"]
+subplots = [0, 1, 2, 3]
+for cond, title, idx in zip(conditions, titles, subplots):
+    data = pickle.load(open(f"results/eic_{cond}.p", "rb"))["results"]
+    ax = fig.add_subplot(grid[idx, 2:])
+    ax.plot(data.index, data["rs"], label="RS")
+    ax.plot(data.index, data["fs"], label="FS")
+    if idx == 0:
+        plt.legend()
+    ax.set_xlabel("time (ms)")
+    ax.set_ylabel(r"$r$ (Hz)")
+    ax.set_title(title)
 
 # finishing touches
 ###################

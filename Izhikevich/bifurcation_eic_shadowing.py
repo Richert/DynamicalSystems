@@ -32,11 +32,11 @@ t_sols, t_cont = a.run(e='eic_shadowing', c='ivp', name='t', DS=1e-4, DSMIN=1e-1
 
 # continuation in background input to RS population
 c1_sols, c1_cont = a.run(starting_point='UZ1', c='qif', ICP=15, NPAR=n_params, NDIM=n_dim, name='I_rs:1',
-                         origin=t_cont, NMX=8000, DSMAX=0.1, UZR={15: [55.0]}, STOP=[f'UZ1'], NPR=100,
+                         origin=t_cont, NMX=8000, DSMAX=0.1, UZR={15: [60.0]}, STOP=[f'UZ1'], NPR=100,
                          RL1=100.0)
 
 # continuation in Delta_fs
-vals = [0.1, 1.0]
+vals = [0.2, 2.0]
 c2_sols, c2_cont = a.run(starting_point='UZ1', c='qif', ICP=26, NPAR=n_params, NDIM=n_dim, name='D_fs:1',
                          origin=c1_cont, NMX=8000, DSMAX=0.1, UZR={26: vals}, STOP=[], NPR=100, RL1=3.0,
                          RL0=0.0, bidirectional=True)
@@ -69,8 +69,8 @@ r2_sols, r2_cont = a.run(starting_point='UZ2', c='qif', ICP=30, NPAR=n_params, N
                          origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=150.0)
 a.run(starting_point='HB1', c='qif2', ICP=[6, 30], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:2:hb1', origin=r2_cont,
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
-a.run(starting_point='HB2', c='qif2', ICP=[6, 30], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:2:hb2', origin=r2_cont,
-      NMX=8000, DSMAX=0.1, UZR={6: [0.1]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
+a.run(starting_point='HB3', c='qif2', ICP=[6, 30], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:2:hb2', origin=r2_cont,
+      NMX=8000, DSMAX=0.1, UZR={6: [0.02]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
 a.run(starting_point='UZ1', c='qif', ICP=30, NPAR=n_params, NDIM=n_dim, name='I_fs:2:2', origin='D_rs/I_fs:2:hb2',
       NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL0=0.0, DS="-")
 a.run(starting_point='LP1', c='qif2', ICP=[6, 30], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:2:lp1', origin='I_fs:2:2',

@@ -1,4 +1,4 @@
-from pyrates import CircuitTemplate, NodeTemplate
+from pyrates import CircuitTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -9,22 +9,20 @@ from scipy.ndimage import gaussian_filter1d
 # define model parameters
 #########################
 
-d_rs = 100.0
+d_rs = 10.0
 Delta_rs = 0.5
-Delta_fs = 1.0
+Delta_fs = 2.0
 
 # define inputs
 T = 4000.0
 cutoff = 1000.0
 dt = 1e-2
 dts = 1e-1
-I_rs = np.zeros((int(T/dt),)) + 55.0
-I_fs = np.zeros((int(T/dt),)) + 20.0
-# I_fs[:int(cutoff*0.5/dt)] -= 20.0
-start = 1500.0
-dur = 2000.0
-ramp = np.linspace(0.0, 50.0, num=int(dur/dt))
-I_fs[int(start/dt):int((start+dur)/dt)] += ramp
+I_rs = np.zeros((int(T/dt),)) + 60.0
+I_fs = np.zeros((int(T/dt),)) + 45.0
+# I_fs[:int(cutoff*0.5/dt)] -= 10.0
+I_fs[int(1500/dt):int(3500/dt)] -= 15.0
+# I_fs[int(2500/dt):int(3500/dt)] += 9.0
 I_fs = gaussian_filter1d(I_fs, sigma=1000)
 
 # run the mean-field model
@@ -57,4 +55,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_het_high_sfa.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_het_low_sfa.p", "wb"))
