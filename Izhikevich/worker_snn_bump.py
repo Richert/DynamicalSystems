@@ -1,6 +1,6 @@
 from rectipy import Network, circular_connectivity
 import sys
-cond, wdir, tdir, device = sys.argv[-4:]
+cond, wdir, tdir = sys.argv[-3:]
 sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
@@ -33,7 +33,7 @@ v_spike = 1000.0
 v_reset = -1000.0
 
 # device for computations
-# device = "cuda:0"
+device = "cuda:0"
 
 # working directory
 # wdir = "config"
