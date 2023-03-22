@@ -4,11 +4,30 @@ cond, wdir, tdir = sys.argv[-3:]
 sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
-from reservoir_computing.utility_funcs import lorentzian, dist
+from scipy.stats import cauchy
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
+
+
+def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
+    samples = np.zeros((n,))
+    for i in range(n):
+        s = cauchy.rvs(loc=eta, scale=delta)
+        while s <= lb or s >= ub:
+            s = cauchy.rvs(loc=eta, scale=delta)
+        samples[i] = s
+    return samples
+
+
+def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: float = 1.0) -> float:
+    if method == "inverse":
+        return 1/x**inverse_pow if x > 0 else zero_val
+    if method == "exp":
+        return np.exp(-x) if x > 0 else zero_val
+    else:
+        raise ValueError("Invalid method.")
 
 
 # define parameters
