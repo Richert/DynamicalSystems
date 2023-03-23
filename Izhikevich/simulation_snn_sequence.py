@@ -13,16 +13,16 @@ from scipy.stats import rv_discrete
 
 # model parameters
 N = 1000
-p = 0.1
+p = 0.2
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
-eta = 45.0
+Delta = 0.1
+eta = 75.0
 a = 0.03
 b = -2.0
-d = 100.0
+d = 400.0
 g = 15.0
 E_r = 0.0
 tau_s = 6.0
@@ -42,12 +42,12 @@ plt.show()
 print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
-T = 1500.0
+T = 2000.0
 dt = 1e-2
 dts = 1e-1
-p_in = 0.1
+p_in = 0.5
 inp = np.zeros((int(T/dt), N))
-inp[int(400/dt):int(500/dt), :int(N*p_in)] += 20.0
+inp[int(500/dt):int(1500/dt), :int(N*p_in)] += 30.0
 
 # run the model
 ###############

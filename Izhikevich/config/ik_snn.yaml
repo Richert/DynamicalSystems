@@ -7,7 +7,7 @@ rs_op:
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*s_in*(E_r - v)) / C"
     - "u' = (b*(mean(v)-v_r) - u) / tau_u + kappa*mean(spike)"
-    - "s' = -s/tau_s + spike"
+    - "s' = -s/tau_s + spike + s_ext"
   variables:
     s: output(0.0)
     v: variable(-60.0)
@@ -26,6 +26,7 @@ rs_op:
     spike: input(0.0)
     s_in: input(0.0)
     I_ext: input(0.0)
+    s_ext: input(0.0)
 
 # population of regular-spiking neurons
 rs:

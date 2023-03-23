@@ -141,19 +141,19 @@ for i in range(n_reps):
     results["population_dists"].append(population_dist)
 
     # plot results
-    fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
-    ax = axes[0]
-    im = ax.imshow(s.T, aspect=4.0, interpolation="none")
-    plt.colorbar(im, ax=ax, shrink=0.8)
-    ax.set_xlabel('time')
-    ax.set_ylabel('neurons')
-    ax = axes[1]
-    ax.plot(target_dist, label="target")
-    ax.plot(population_dist, label="SNN")
-    ax.set_xlabel("neurons")
-    ax.set_ylabel("probability")
-    plt.tight_layout()
-    plt.show()
+    # fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
+    # ax = axes[0]
+    # im = ax.imshow(s.T, aspect=4.0, interpolation="none")
+    # plt.colorbar(im, ax=ax, shrink=0.8)
+    # ax.set_xlabel('time')
+    # ax.set_ylabel('neurons')
+    # ax = axes[1]
+    # ax.plot(target_dist, label="target")
+    # ax.plot(population_dist, label="SNN")
+    # ax.set_xlabel("neurons")
+    # ax.set_ylabel("probability")
+    # plt.tight_layout()
+    # plt.show()
 
 # save results
 fname = f"snn_bump"

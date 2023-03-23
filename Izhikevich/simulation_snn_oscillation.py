@@ -13,7 +13,7 @@ from scipy.stats import rv_discrete
 
 # model parameters
 N = 1000
-p = 0.1
+p = 0.2
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -34,7 +34,7 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define connectivity
 indices = np.arange(0, N, dtype=np.int32)
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.5) for idx in indices])
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 # W = line_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
@@ -45,15 +45,15 @@ print(np.sum(np.sum(W, axis=1)))
 # define inputs
 T = 3000.0
 dt = 1e-2
-dts = 1e-1
+sr = 10
 p_in = 0.1
-omega = 0.005
+omega = 0.0035
 steps = int(T/dt)
 inp = np.zeros((steps, N))
 time = np.linspace(0, T, steps)
-driver = np.sin(2.0*np.pi*omega*time) * 50.0
+driver = np.sin(2.0*np.pi*omega*time)
 for idx in range(int(N*p_in)):
-    inp[:, idx] = driver
+    inp[driver > 0.3, idx] = 1e-2
 
 # run the model
 ###############
@@ -64,17 +64,18 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
 
 # initialize model
 net = Network.from_yaml(f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                        input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                         node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                         dt=dt, verbose=False, clear=True, device="cuda:0")
 
 # perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False)
+obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
 res = obs["out"]
 
 # plot results
 fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
 ax = axes[0]
+ax.plot(inp[:, 0] * 1e2, label="input")
 ax.plot(np.mean(res, axis=1), label="mean-field")
 ax.plot(np.mean(res.iloc[:, :int(N*p_in)], axis=1), label="driven")
 ax.plot(np.mean(res.iloc[:, int(N*p_in):], axis=1), label="non-driven")
