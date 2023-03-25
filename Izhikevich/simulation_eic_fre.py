@@ -14,15 +14,15 @@ Delta_rs = 0.5
 Delta_fs = 2.0
 
 # define inputs
-T = 4000.0
-cutoff = 1000.0
+T = 2500.0
+cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
 I_rs = np.zeros((int(T/dt),)) + 60.0
 I_fs = np.zeros((int(T/dt),)) + 45.0
-# I_fs[:int(cutoff*0.5/dt)] -= 10.0
-I_fs[int(1500/dt):int(3500/dt)] -= 15.0
-# I_fs[int(2500/dt):int(3500/dt)] += 9.0
+I_fs[:int(cutoff*0.5/dt)] += 20.0
+I_fs[int(1500/dt):int(3500/dt)] += 20.0
+# I_fs[int(2500/dt):int(3500/dt)] -= 20.0
 I_fs = gaussian_filter1d(I_fs, sigma=1000)
 
 # run the mean-field model

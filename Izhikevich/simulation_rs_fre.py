@@ -24,7 +24,7 @@ Delta = 0.5
 eta = 0.0
 a = 0.03
 b = -2.0
-d = 10.0
+d = 100.0
 g = 15.0
 E_r = 0.0
 tau_s = 6.0
@@ -36,9 +36,9 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt), 1)) + 23.0
-inp[:int(cutoff*0.5/dt), 0] -= 15.0
-inp[int(750/dt):int(2000/dt), 0] += 25
+inp = np.zeros((int(T/dt), 1)) + 40.0
+# inp[:int(cutoff*0.5/dt), 0] -= 15.0
+inp[int(750/dt):int(2000/dt), 0] += 20
 
 # run the mean-field model
 ##########################
@@ -90,4 +90,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'mf': res_mf, "snn": res_snn}, open("results/rs_hom_low_sfa.p", "wb"))
+pickle.dump({'mf': res_mf, "snn": res_snn}, open("results/rs_high_sfa.p", "wb"))

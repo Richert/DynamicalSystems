@@ -18,7 +18,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 0.1
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -43,6 +43,7 @@ plt.show()
 print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
+cutoff = 1000.0
 T = 3000.0
 dt = 1e-2
 sr = 10
@@ -53,7 +54,7 @@ inp = np.zeros((steps, N))
 time = np.linspace(0, T, steps)
 driver = np.sin(2.0*np.pi*omega*time)
 for idx in range(int(N*p_in)):
-    inp[driver > 0.3, idx] = 1e-2
+    inp[driver > 0.3, idx] = 5e-3
 
 # run the model
 ###############
@@ -72,6 +73,12 @@ net = Network.from_yaml(f"config/ik_snn/rs", weights=W, source_var="s", target_v
 obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
 res = obs["out"]
 
+# calculate correlation between driver and driven network
+start = int(cutoff/(dt*sr))
+snn_driven = np.mean(res.iloc[:, :int(N*p_in)], axis=1)
+driver_signal = driver[::sr]
+correlation = np.corrcoef(snn_driven[start:], driver_signal[start:])[0, 1]
+
 # plot results
 fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
 ax = axes[0]
@@ -82,7 +89,7 @@ ax.plot(np.mean(res.iloc[:, int(N*p_in):], axis=1), label="non-driven")
 ax.legend()
 ax.set_xlabel("time")
 ax.set_ylabel("s")
-ax.set_title("mean-field dynamics")
+ax.set_title(f"Input-Driven Correlation: {correlation}")
 ax = axes[1]
 im = ax.imshow(res.T, aspect=4.0, interpolation="none")
 plt.colorbar(im, ax=ax, shrink=0.8)
@@ -95,4 +102,3 @@ plt.tight_layout()
 fig.canvas.draw()
 plt.savefig(f'results/snn_oscillations_het.pdf')
 plt.show()
-
