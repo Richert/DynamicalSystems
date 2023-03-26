@@ -9,9 +9,9 @@ from scipy.ndimage import gaussian_filter1d
 # define model parameters
 #########################
 
-d_rs = 10.0
+d_rs = 100.0
 Delta_rs = 0.5
-Delta_fs = 2.0
+Delta_fs = 0.2
 
 # define inputs
 T = 2500.0
@@ -20,9 +20,8 @@ dt = 1e-2
 dts = 1e-1
 I_rs = np.zeros((int(T/dt),)) + 60.0
 I_fs = np.zeros((int(T/dt),)) + 45.0
-I_fs[:int(cutoff*0.5/dt)] += 20.0
-I_fs[int(1500/dt):int(3500/dt)] += 20.0
-# I_fs[int(2500/dt):int(3500/dt)] -= 20.0
+# I_fs[:int(cutoff*0.5/dt)] += 20.0
+I_fs[int(750/dt):int(2000/dt)] -= 20.0
 I_fs = gaussian_filter1d(I_fs, sigma=1000)
 
 # run the mean-field model
@@ -41,7 +40,7 @@ eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs
 
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-              outputs={'rs': 'rs/rs_op/r', 'fs': 'fs/fs_op/r'},
+              outputs={'rs': 'rs/rs_op/s_ampa', 'fs': 'fs/fs_op/r'},
               inputs={'rs/rs_op/I_ext': I_rs, 'fs/fs_op/I_ext': I_fs},
               decorator=nb.njit, fastmath=True, vectorize=False)
 
@@ -55,4 +54,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_het_low_sfa.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_hom_high_sfa.p", "wb"))

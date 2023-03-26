@@ -140,27 +140,27 @@ plt.legend([points[2], points[1]], ["Fold", "Andronov-Hopf"], loc=1)
 # time series
 #############
 
-data = [fre_hom, fre_het]
-titles = [fr'(E) ${delta_str} = {deltas[1]}$ mV' + r', $\Delta_{rs} = 1.0$ mV',
-          fr'(F) ${delta_str} = {deltas[2]}$ mV' + r', $\Delta_{rs} = 1.0$ mV']
-for i, (fre, title) in enumerate(zip(data, titles)):
-    ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
-    ax.plot(fre)
-    xmin = np.min(fre.v1)
-    xmax = np.max(fre.v1)
-    plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2000, x2=2500.0, color='grey', alpha=0.15)
-    plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2500, x2=3000.0, color='grey', alpha=0.3)
-    ax.set_xlabel('time (ms)')
-    ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
-    ax.set_title(title)
-    ax.set_ylabel(r'$r$ (Hz)')
-    plt.legend(fre.columns.v1)
-    if i == len(data)-1:
-        ax.set_yticks([0.0, 0.025, 0.05])
-        ax.set_yticklabels(['0', '25', '50'])
-    elif i == 0:
-        ax.set_yticks([0.0, 0.1, 0.2])
-        ax.set_yticklabels(['0', '100', '200'])
+# data = [fre_hom, fre_het]
+# titles = [fr'(E) ${delta_str} = {deltas[1]}$ mV' + r', $\Delta_{rs} = 1.0$ mV',
+#           fr'(F) ${delta_str} = {deltas[2]}$ mV' + r', $\Delta_{rs} = 1.0$ mV']
+# for i, (fre, title) in enumerate(zip(data, titles)):
+#     ax = fig.add_subplot(grid[2, i*3:(i+1)*3])
+#     ax.plot(fre)
+#     xmin = np.min(fre.v1)
+#     xmax = np.max(fre.v1)
+#     plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2000, x2=2500.0, color='grey', alpha=0.15)
+#     plt.fill_betweenx([xmin-0.1*xmax, xmax+0.1*xmax], x1=2500, x2=3000.0, color='grey', alpha=0.3)
+#     ax.set_xlabel('time (ms)')
+#     ax.set_ylim([xmin-0.1*xmax, xmax+0.1*xmax])
+#     ax.set_title(title)
+#     ax.set_ylabel(r'$r$ (Hz)')
+#     plt.legend(fre.columns.v1)
+#     if i == len(data)-1:
+#         ax.set_yticks([0.0, 0.025, 0.05])
+#         ax.set_yticklabels(['0', '25', '50'])
+#     elif i == 0:
+#         ax.set_yticks([0.0, 0.1, 0.2])
+#         ax.set_yticklabels(['0', '100', '200'])
 
 # finishing touches
 ###################
@@ -170,5 +170,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/eic.pdf')
+plt.savefig(f'results/eic.svg')
 plt.show()

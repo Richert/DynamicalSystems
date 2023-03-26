@@ -12,8 +12,6 @@ def outside_bump_activity(x: np.ndarray, y: np.ndarray) -> float:
 
 
 def total_bump_difference(x: np.ndarray, y: np.ndarray) -> float:
-    x = x / np.max(x)
-    y = y / np.max(y)
     diff = x - y
     return np.sqrt(np.mean(np.inner(diff, diff)).squeeze())
 
@@ -41,6 +39,8 @@ for file in os.listdir(path):
 
         # calculate KLD
         for x, y in zip(snn_data, targets):
+            x = x / np.max(x)
+            y = y / np.max(y)
             results["within_bump_dist"].append(total_bump_difference(x, y))
             results["outside_bump_dist"].append(outside_bump_activity(x, y))
             results[p1].append(v1)

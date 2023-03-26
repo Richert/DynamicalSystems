@@ -21,7 +21,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['figure.figsize'] = (6, 6)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -74,39 +74,59 @@ results = pd.DataFrame.from_dict(results)
 
 # create figure layout
 fig = plt.figure(1)
-grid = GridSpec(nrows=2, ncols=2, figure=fig)
+grid = GridSpec(nrows=6, ncols=2, figure=fig)
 
 # meta parameters
 example_id = 0
 ticks = 3
 
-# plot within-bump distance
-ax = fig.add_subplot(grid[0, 0])
-within_dist = results.pivot(index=p1, columns=p2, values="within_bump_dist")
-# within_dist = np.sqrt(within_dist)
-sb.heatmap(within_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks)
-ax.set_title("RMSE (Input, Bump)")
+# plot time series
+conditions = ["hom", "het"]
+titles = [r"(B) $p_{in} = 0.25$, $\Delta_{rs} = 0.1$ mV",
+          r"(C) $p_{in} = 0.25$, $\Delta_{rs} = 1.0$ mV"]
+subplots = [0, 1]
+for idx, cond, title in zip(subplots, conditions, titles):
+    ax = fig.add_subplot(grid[idx, 1])
+    data = pickle.load(open(f"results/snn_bump_{cond}.pkl", "rb"))["results"]
+    ax.imshow(data.T, interpolation="none", aspect="auto", cmap="Greys")
+    ax.set_xlabel("time")
+    ax.set_ylabel("neuron id")
+    ax.set_title(title)
 
-# plot outside-bump distance
-ax = fig.add_subplot(grid[0, 1])
-outside_dist = results.pivot(index=p1, columns=p2, values="outside_bump_dist")
-sb.heatmap(outside_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks)
-ax.set_xlim([0, 19])
-ax.set_title("Outside-bump activity")
-
-# plot examples
+# plot bumps over p_in
+titles = [r"(D) Network bump for $\Delta_{rs} = 0.1$ mV",
+          r"(E) Network bump for $\Delta_{rs} = 1.0$ mV"]
 for i, val in enumerate(example_condition[p1]):
-    ax = fig.add_subplot(grid[1, i])
+    ax = fig.add_subplot(grid[2:4, i])
     idx = np.argwhere(np.asarray(examples[p1]) == val).squeeze()
     example = pd.DataFrame.from_dict({key: np.asarray(val)[idx] for key, val in examples.items()})
     sb.heatmap(example.pivot(index=p2, columns="neuron_id", values="s"), cbar=True, ax=ax,
-               xticklabels=50*ticks, yticklabels=ticks)
+               xticklabels=50*ticks, yticklabels=ticks, rasterized=True)
     lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
     ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
     for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
         ax.plot([lb, lb], [j, j+1], color="blue", linewidth=1)
         ax.plot([ub, ub], [j, j+1], color="blue", linewidth=1)
-    ax.set_title(f"Network steady state for {p1} = {val}")
+    ax.set_title(titles[i])
+    ax.set_xlabel("neuron id")
+    ax.set_ylabel(r"$p_{in}$")
+
+# plot within-bump distance
+ax = fig.add_subplot(grid[4:, 0])
+within_dist = results.pivot(index=p1, columns=p2, values="within_bump_dist")
+sb.heatmap(within_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+ax.set_title("(F) RMSE (input, bump)")
+ax.set_xlabel(r"$p_{in}$")
+ax.set_ylabel(r"$\Delta_{rs}$")
+
+# plot outside-bump distance
+ax = fig.add_subplot(grid[4:, 1])
+outside_dist = results.pivot(index=p1, columns=p2, values="outside_bump_dist")
+sb.heatmap(outside_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+ax.set_xlim([0, 19])
+ax.set_title("(G) Average outside-bump activity")
+ax.set_xlabel(r"$p_{in}$")
+ax.set_ylabel(r"$\Delta_{rs}$")
 
 # finishing touches
 ###################
@@ -116,5 +136,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/snn_bump.pdf')
+plt.savefig(f'results/snn_bump.svg')
 plt.show()
