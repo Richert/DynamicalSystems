@@ -78,13 +78,12 @@ mf_data = pd.DataFrame(data=data, columns=columns)
 # plotting #
 ############
 
-fig = plt.figure(1, figsize=(12, 6))
-grid = GridSpec(ncols=4, nrows=2, figure=fig)
+fig = plt.figure(1, figsize=(12, 4))
+grid = GridSpec(ncols=3, nrows=2, figure=fig)
 square = False
 ticks = 3
 cbar_kwargs = {"shrink": 1.0}
-cols = ["(A) Mean-field model", "(B) Driven Neurons", "(C) Difference to Non-Driven Neurons",
-        "(D) Network Dimensionality"]
+cols = ["(A) Mean-field model", "(B) Driven Neurons", "(C) Network Dimensionality"]
 rows = [rf"$\Delta = {d}$" for d in Deltas]
 pad = 5.0
 axes = []
@@ -134,23 +133,13 @@ for idx, Delta in enumerate(Deltas):
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')
 
-# plot average coherence difference to coherence between undriven neurons and driving signal for the 2D parameter sweep
-for idx, Delta in enumerate(Deltas):
-    ax = axes[idx][2]
-    snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
-    snn_inp = snn.pivot_table(index="alpha", columns="p_in", values="coh_inp")
-    snn_noinp = snn.pivot_table(index="alpha", columns="p_in", values="coh_noinp")
-    sb.heatmap(snn_inp - snn_noinp, ax=ax, annot=False, cbar=True, xticklabels=ticks, yticklabels=ticks, square=square,
-               cbar_kws=cbar_kwargs)
-    ax.set_xlabel(r'$p_{in}$')
-    ax.set_ylabel(r'$\alpha$ (Hz)')
-
 # plot dimensionality of the network dynamics
 for idx, Delta in enumerate(Deltas):
     ax = axes[idx][3]
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
     sb.heatmap(snn.pivot_table(index="alpha", columns="p_in", values="dim"), ax=ax, annot=False,
-               cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs)
+               cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs,
+               vmin=19, vmax=45)
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')
 
