@@ -135,7 +135,7 @@ for idx, Delta in enumerate(Deltas):
 
 # plot dimensionality of the network dynamics
 for idx, Delta in enumerate(Deltas):
-    ax = axes[idx][3]
+    ax = axes[idx][2]
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
     sb.heatmap(snn.pivot_table(index="alpha", columns="p_in", values="dim"), ax=ax, annot=False,
                cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs,
