@@ -34,7 +34,7 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: fl
 ###################
 
 # model parameters
-N = 2000
+N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -61,7 +61,7 @@ device = "cuda:0"
 # sweep condition
 # cond = 350
 p1 = "Delta"
-p2 = "trial"
+p2 = "p_in"
 
 # parameter sweep definition
 with open(f"{wdir}/bump_sweep.pkl", "rb") as f:
@@ -77,24 +77,14 @@ print(f"Condition: {p1} = {v1},  {p2} = {v2}")
 n_reps = 5
 
 # input parameters
-cutoff = 500.0
 T = 3000.0
 dt = 1e-2
 sr = 10
-p_in_vals = np.linspace(0.01, 0.99, num=20)
+p_in = 0.16
 
 # time-averaging parameters
 sigma = 200
-window = [27500, 29500]
-
-# define lorentzian of etas
-thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
-
-# define connectivity
-indices = np.arange(0, N, dtype=np.int32)
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
-pdfs /= np.sum(pdfs)
-W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
+window = [22500, 27500]
 
 # simulation
 ############
@@ -104,18 +94,26 @@ for param, v in zip([p1, p2], [v1, v2]):
     exec(f"{param} = {v}")
 
 # prepare results storage
-results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "population_dists": [], "target_dists": [],
-           "p_in": [], "W": W, "thetas": thetas}
+results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "population_dists": [], "target_dists": []}
 
-for i, p_in in enumerate(p_in_vals):
+for i in range(n_reps):
 
     # define inputs
     n_inputs = int(N * p_in)
     center = int(N*0.5)
     inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-    inp = np.zeros((int(T/dt), N))
-    inp[:int(cutoff*0.5/dt), :] -= 30.0
-    inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
+    inp = np.zeros((int(T / dt), N))
+    inp[:int(200 / dt), :] -= 30.0
+    inp[int(1000 / dt):int(2000 / dt), inp_indices] += 30.0
+
+    # define lorentzian of etas
+    thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
+
+    # define connectivity
+    indices = np.arange(0, N, dtype=np.int32)
+    pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
+    pdfs /= np.sum(pdfs)
+    W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
     # initialize model
     node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,

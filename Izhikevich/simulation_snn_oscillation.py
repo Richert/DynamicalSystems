@@ -12,7 +12,7 @@ from scipy.stats import rv_discrete
 ###################
 
 # model parameters
-N = 1000
+N = 2000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -34,7 +34,7 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define connectivity
 indices = np.arange(0, N, dtype=np.int32)
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.5) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 # W = line_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
@@ -43,8 +43,8 @@ plt.show()
 print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
-cutoff = 1000.0
-T = 3000.0
+cutoff = 2000.0
+T = 5000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1

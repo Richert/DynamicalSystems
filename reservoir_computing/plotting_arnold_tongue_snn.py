@@ -139,7 +139,7 @@ for idx, Delta in enumerate(Deltas):
     snn = snn_data.loc[np.abs(snn_data.loc[:, "Delta"] - Delta) < 1e-3, :]
     sb.heatmap(snn.pivot_table(index="alpha", columns="p_in", values="dim"), ax=ax, annot=False,
                cbar=True, xticklabels=ticks, yticklabels=ticks, square=square, cbar_kws=cbar_kwargs,
-               vmin=19, vmax=45)
+               vmin=19, vmax=45, rasterization=False)
     ax.set_xlabel(r'$p_{in}$')
     ax.set_ylabel(r'$\alpha$ (Hz)')
 
@@ -151,5 +151,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/entrainment.pdf')
+plt.savefig(f'results/entrainment.svg')
 plt.show()
