@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import correlate, correlation_lags
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -30,21 +31,76 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: fl
         raise ValueError("Invalid method.")
 
 
+def corr(s1: np.ndarray, s2: np.ndarray, method: str = "direct", max_lag: int = 100) -> np.ndarray:
+    padding = list(np.zeros((max_lag,)))
+    s2 = np.asarray(padding + list(s2) + padding)
+    return np.max(correlate(s1, s2, mode="valid", method=method))
+
+
+def cross_corr(N: int, signals: np.ndarray, method: str = 'direct', max_lag: int = 100) -> np.ndarray:
+    C = np.zeros((N, N))
+    padding = list(np.zeros((max_lag,)))
+    for n2 in range(N):
+        s2 = np.asarray(padding + list(signals[n2]) + padding)
+        for n1 in range(n2+1, N):
+            s1 = signals[n1]
+            C[n1, n2] = np.max(correlate(s1, s2, mode="valid", method=method))
+            C[n2, n1] = C[n1, n2]
+    return C
+
+
+def sequentiality_calculation(N: int, signals: np.ndarray, lags: np.ndarray, zero_lag: int, method: str = 'direct') -> tuple:
+    sym = 0
+    asym = 0
+    max_lag = np.max(lags)
+    padding = list(np.zeros((max_lag,)))
+    for n1 in range(N):
+        s1 = np.asarray(padding + list(signals[n1]) + padding)
+        for n2 in range(N):
+            cc = correlate(s1, signals[n2], mode="valid", method=method)
+            for l in lags:
+                sym += (cc[zero_lag + l] - cc[zero_lag - l]) ** 2
+                asym += (cc[zero_lag + l] + cc[zero_lag - l]) ** 2
+    return sym, asym
+
+
+def sequentiality(signals: np.ndarray, **kwargs) -> float:
+    """Estimates the sequentiality of the dynamics of a system using the method proposed by Bernacchia et al. (2022).
+
+    :param signals: `N x T` matrix containing the dynamics of `N` units sampled at `T` time steps.
+    :param kwargs: Additional keyword arguments to be passed to the decorator function.
+    :return: Estimate of the sequentiality of the system dynamcis.
+    """
+
+    # preparations
+    N = signals.shape[0]
+    m = signals.shape[1]
+    lags = kwargs.pop("lags", correlation_lags(m, m, mode='valid'))
+    lags_pos = lags[lags > 0]
+    zero_lag = np.argwhere(lags == 0)[0]
+
+    # sum up cross-correlations over neurons and lags
+    sym, asym = sequentiality_calculation(N, signals, lags_pos, zero_lag)
+
+    # calculate sequentiality
+    return np.sqrt(sym/asym)
+
+
 # define parameters
 ###################
 
 # model parameters
-N = 1000
+N = 2000
 p = 0.2
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 0.1
-eta = 30.0
+eta = 55.0
 a = 0.03
 b = -2.0
-d = 10.0
+d = 100.0
 g = 15.0
 E_r = 0.0
 tau_s = 6.0
@@ -61,7 +117,7 @@ device = "cuda:0"
 # sweep condition
 # cond = 350
 p1 = "Delta"
-p2 = "p_in"
+p2 = "trial"
 
 # parameter sweep definition
 with open(f"{wdir}/bump_sweep.pkl", "rb") as f:
@@ -73,18 +129,35 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[int(cond)]
 print(f"Condition: {p1} = {v1},  {p2} = {v2}")
 
-# number of repetitions per condition
-n_reps = 5
-
-# input parameters
-T = 3000.0
+# define inputs
+T = 5000.0
 dt = 1e-2
 sr = 10
-p_in = 0.16
+p_in = 0.1
+omega = 0.0035
+steps = int(T/dt)
+inp = np.zeros((steps, N))
+time = np.linspace(0, T, steps)
+driver = np.sin(2.0*np.pi*omega*time)
+n_inputs = int(p_in*N)
+center = int(N*0.5)
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+inp[driver > 0.3, inp_indices] = 5e-3
+cutoff = int(2000.0/(dt*sr))
 
-# time-averaging parameters
-sigma = 200
-window = [22500, 27500]
+# cross-correlation parameters
+sigma = 50
+max_lag = int(0.5/(omega*dt*sr))
+lags = np.arange(0, max_lag)
+
+# define lorentzian of etas
+thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
+
+# define connectivity
+indices = np.arange(0, N, dtype=np.int32)
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
+pdfs /= np.sum(pdfs)
+W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
 # simulation
 ############
@@ -94,26 +167,10 @@ for param, v in zip([p1, p2], [v1, v2]):
     exec(f"{param} = {v}")
 
 # prepare results storage
-results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "population_dists": [], "target_dists": []}
-
-for i in range(n_reps):
-
-    # define inputs
-    n_inputs = int(N * p_in)
-    center = int(N*0.5)
-    inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-    inp = np.zeros((int(T / dt), N))
-    inp[:int(200 / dt), :] -= 30.0
-    inp[int(1000 / dt):int(2000 / dt), inp_indices] += 30.0
-
-    # define lorentzian of etas
-    thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
-
-    # define connectivity
-    indices = np.arange(0, N, dtype=np.int32)
-    pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
-    pdfs /= np.sum(pdfs)
-    W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
+alphas = np.linspace(1e-3, 2e-2, num=20)
+results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "correlations": [], "alphas": alphas, "W": W,
+           "thetas": thetas, "input_indices": inp_indices, "dimensionality": [], "sequentiality": []}
+for i, alpha in enumerate(alphas):
 
     # initialize model
     node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
@@ -127,18 +184,24 @@ for i in range(n_reps):
 
     # perform simulation
     obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
-    res = obs["out"]
+    res = obs["out"].iloc[cutoff:, :]
+    s = gaussian_filter1d(res, sigma=50, axis=0)
 
-    # calculate the distribution of the time-averaged network activity after the stimulation was turned off
-    s = gaussian_filter1d(res, sigma=200, axis=0)
-    population_dist = np.mean(s[window[0]: window[1], :], axis=0).squeeze()
-    population_dist /= np.sum(population_dist)
-    target_dist = np.zeros((N,))
-    target_dist[inp_indices] = 1.0/len(inp_indices)
+    # calculate the correlation between the input and each network unit
+    corr_driver = np.asarray([corr(driver[::sr], s[:, idx]) for idx in range(N)])
+
+    # calculate the network dimensionality
+    corr_net = cross_corr(N, s, max_lag=max_lag)
+    eigs = np.linalg.eigvals(corr_net)
+    dim = np.sum(eigs)**2/np.sum(eigs**2)
+
+    # calculate the network sequentiality
+    seq = sequentiality(s, lags=lags)
 
     # store results
-    results["target_dists"].append(target_dist)
-    results["population_dists"].append(population_dist)
+    results["correlations"].append(corr_driver)
+    results["dimensionality"].append(dim)
+    results["sequentiality"].append(seq)
 
     # plot results
     # fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
@@ -156,7 +219,7 @@ for i in range(n_reps):
     # plt.show()
 
 # save results
-fname = f"snn_bump"
+fname = f"snn_entrainment"
 with open(f"{tdir}/{fname}_{cond}.pkl", "wb") as f:
     pickle.dump(results, f)
     f.close()
