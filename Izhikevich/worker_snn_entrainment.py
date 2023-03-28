@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import correlate, correlation_lags
+from scipy.signal import correlate
+from time import perf_counter
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -37,61 +38,18 @@ def corr(s1: np.ndarray, s2: np.ndarray, method: str = "direct", max_lag: int = 
     return np.max(correlate(s1, s2, mode="valid", method=method))
 
 
-def cross_corr(N: int, signals: np.ndarray, method: str = 'direct', max_lag: int = 100) -> np.ndarray:
-    C = np.zeros((N, N))
-    padding = list(np.zeros((max_lag,)))
-    for n2 in range(N):
-        s2 = np.asarray(padding + list(signals[n2]) + padding)
-        for n1 in range(n2+1, N):
-            s1 = signals[n1]
-            C[n1, n2] = np.max(correlate(s1, s2, mode="valid", method=method))
-            C[n2, n1] = C[n1, n2]
-    return C
-
-
-def sequentiality_calculation(N: int, signals: np.ndarray, lags: np.ndarray, zero_lag: int, method: str = 'direct'
-                              ) -> tuple:
-    sym = 0
-    asym = 0
-    max_lag = np.max(lags)
-    padding = list(np.zeros((max_lag,)))
-    for n1 in range(N):
-        s1 = np.asarray(padding + list(signals[n1]) + padding)
-        for n2 in range(N):
-            cc = correlate(s1, signals[n2], mode="valid", method=method)
-            for l in lags:
-                sym += (cc[zero_lag + l] - cc[zero_lag - l]) ** 2
-                asym += (cc[zero_lag + l] + cc[zero_lag - l]) ** 2
-    return sym, asym
-
-
-def sequentiality(signals: np.ndarray, **kwargs) -> float:
-    """Estimates the sequentiality of the dynamics of a system using the method proposed by Bernacchia et al. (2022).
-
-    :param signals: `N x T` matrix containing the dynamics of `N` units sampled at `T` time steps.
-    :param kwargs: Additional keyword arguments to be passed to the decorator function.
-    :return: Estimate of the sequentiality of the system dynamcis.
+def get_kernel(X: np.ndarray, alpha: float = 1e-12):
     """
-
-    # preparations
-    N = signals.shape[0]
-    m = signals.shape[1]
-    lags = kwargs.pop("lags", correlation_lags(m, m, mode='valid'))
-    lags_pos = lags[lags > 0]
-    zero_lag = np.argwhere(lags == 0)[0]
-
-    # sum up cross-correlations over neurons and lags
-    sym, asym = sequentiality_calculation(N, signals, lags_pos, zero_lag)
-
-    # calculate sequentiality
-    return np.sqrt(sym/asym)
+    """
+    X_t = X.T
+    return X @ np.linalg.inv(X_t @ X + alpha*np.eye(X.shape[1])) @ X_t
 
 
 # define parameters
 ###################
 
 # model parameters
-N = 2000
+N = 500
 p = 0.2
 C = 100.0
 k = 0.7
@@ -137,17 +95,34 @@ sr = 10
 p_in = 0.1
 omega = 0.0035
 steps = int(T/dt)
-time = np.linspace(0, T, steps)
-driver = np.sin(2.0*np.pi*omega*time)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+inp_dist = np.zeros((N,))
+inp_dist[inp_indices] = 1.0
 cutoff = int(2000.0/(dt*sr))
 
-# cross-correlation parameters
+# define stimulation signal
+time = np.linspace(0, T, steps)
+driver_tmp = np.sin(2.0*np.pi*omega*time)
+driver = np.zeros_like(driver_tmp)
+driver[driver_tmp > 0.9] = 1.0
+
+# downsample driver and calculate maximum correlation between driver and itself
+driver_ds = driver[::sr]
+max_corr = np.max(correlate(driver_ds, driver_ds, mode="valid"))
+
+# infer stimulation onsets
+margin = 10
+ds = 2
+driver_diff = np.diff(driver_ds[cutoff::ds])
+stim_onsets = np.argwhere(driver_diff > 0.1).squeeze()
+min_isi = np.min(np.abs(np.diff(stim_onsets))) - margin
+
+# other analysis parameters
 sigma = 50
-max_lag = int(0.5/(omega*dt*sr))
-lags = np.arange(0, max_lag)
+max_lag = int(0.5/(omega*dt*sr*ds))
+kernel_lag = 5
 
 # define lorentzian of etas
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
@@ -166,7 +141,7 @@ for param, v in zip([p1, p2], [v1, v2]):
     exec(f"{param} = {v}")
 
 # prepare results storage
-alphas = np.linspace(1e-3, 2e-2, num=20)
+alphas = np.linspace(1e-1, 2e-1, num=20)
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "correlations": [], "alphas": alphas, "W": W,
            "thetas": thetas, "input_indices": inp_indices, "dimensionality": [], "sequentiality": []}
 for i, alpha in enumerate(alphas):
@@ -184,12 +159,15 @@ for i, alpha in enumerate(alphas):
     # define input
     inp = np.zeros((steps, N))
     for idx in inp_indices:
-        inp[driver > 0.3, idx] = alpha
+        inp[:, idx] = driver*alpha
 
     # perform simulation
+    t0 = perf_counter()
     obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
-    res = obs["out"].iloc[cutoff:, :]
+    res = obs["out"].iloc[cutoff:, :].values
     s = gaussian_filter1d(res, sigma=50, axis=0).T
+    t1 = perf_counter()
+    print(f"Simulation time: {t1-t0} s.")
 
     fig, ax = plt.subplots(figsize=(10, 4))
     im = ax.imshow(s, aspect=4.0, interpolation="none")
@@ -199,27 +177,54 @@ for i, alpha in enumerate(alphas):
     plt.show()
 
     # calculate the correlation between the input and each network unit
-    corr_driver = np.asarray([corr(driver[::sr], s[idx, :]) for idx in range(N)])
+    t0 = perf_counter()
+    corr_driver = np.asarray([corr(driver_ds, s[idx, :], method="auto")/max_corr for idx in range(N)])
+    t1 = perf_counter()
+    print(f"Corr(driver, net) time: {t1 - t0} s.")
 
     # calculate the network dimensionality
+    t0 = perf_counter()
     corr_net = np.cov(s)
-    eigs = np.linalg.eigvals(corr_net)
+    eigs = np.abs(np.linalg.eigvals(corr_net))
     dim = np.sum(eigs)**2/np.sum(eigs**2)
+    t1 = perf_counter()
+    print(f"Dimensionality time: {t1 - t0} s.")
 
-    # calculate the network sequentiality
-    seq = sequentiality(s, lags=lags)
+    # calculate the network kernel
+    t0 = perf_counter()
+    kernel_performance = []
+    s_tmp = s[:, ::ds]
+    for sidx in stim_onsets:
+        if s_tmp.shape[1] - sidx > min_isi:
+            K = get_kernel(s_tmp[:, sidx:sidx+min_isi])
+            diff = (K - np.eye(K.shape[0]))**2
+            decoding_performance = []
+            lag = 0
+            while lag < max_lag:
+                decoding_performance.append(1.0/np.sqrt(np.mean(diff[lag:lag+kernel_lag, :])))
+                lag += kernel_lag
+            kernel_performance.append(decoding_performance)
+    t1 = perf_counter()
+    print(f"Kernel analysis time: {t1 - t0} s.")
 
     # store results
     results["correlations"].append(corr_driver)
     results["dimensionality"].append(dim)
-    results["sequentiality"].append(seq)
+    results["sequentiality"].append(np.mean(kernel_performance, axis=0))
 
     # plot results
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.set_title(f"Dim = {dim}, seq = {seq}")
-    ax.plot(corr_driver)
+    fig, axes = plt.subplots(nrows=2, figsize=(10, 4))
+    ax = axes[0]
+    ax.set_title(f"Dim = {dim}")
+    ax.plot(corr_driver, label="correlation with driver")
+    ax.plot(inp_dist, label="input")
     ax.set_xlabel("neurons")
     ax.set_ylabel("correlation")
+    ax.legend()
+    ax = axes[1]
+    ax.plot(results["sequentiality"][-1])
+    ax.set_xlabel("lags (ms)")
+    ax.set_ylabel("performance")
     plt.tight_layout()
     plt.show()
 
