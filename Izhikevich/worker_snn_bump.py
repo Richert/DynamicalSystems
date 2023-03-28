@@ -59,7 +59,7 @@ device = "cuda:0"
 # tdir = "results"
 
 # sweep condition
-# cond = 350
+# cond = 94
 p1 = "Delta"
 p2 = "trial"
 
@@ -138,6 +138,7 @@ for i, p_in in enumerate(p_in_vals):
     # store results
     results["target_dists"].append(target_dist)
     results["population_dists"].append(population_dist)
+    results["p_in"].append(p_in)
 
     # plot results
     # fig, axes = plt.subplots(nrows=2, figsize=(12, 8))

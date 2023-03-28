@@ -49,7 +49,8 @@ def cross_corr(N: int, signals: np.ndarray, method: str = 'direct', max_lag: int
     return C
 
 
-def sequentiality_calculation(N: int, signals: np.ndarray, lags: np.ndarray, zero_lag: int, method: str = 'direct') -> tuple:
+def sequentiality_calculation(N: int, signals: np.ndarray, lags: np.ndarray, zero_lag: int, method: str = 'direct'
+                              ) -> tuple:
     sym = 0
     asym = 0
     max_lag = np.max(lags)
