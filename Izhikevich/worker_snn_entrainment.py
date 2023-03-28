@@ -117,6 +117,7 @@ margin = 10
 ds = 2
 driver_diff = np.diff(driver_ds[cutoff::ds])
 stim_onsets = np.argwhere(driver_diff > 0.1).squeeze()
+stim_width = np.argwhere(driver_diff < -0.1).squeeze()[0] - stim_onsets[0]
 min_isi = np.min(np.abs(np.diff(stim_onsets))) - margin
 
 # other analysis parameters
@@ -201,7 +202,7 @@ for i, alpha in enumerate(alphas):
             decoding_performance = []
             lag = 0
             while lag < max_lag:
-                decoding_performance.append(1.0/np.sqrt(np.mean(diff[lag:lag+kernel_lag, :])))
+                decoding_performance.append(1.0/np.sqrt(np.mean(diff[lag:lag+stim_width, :])))
                 lag += kernel_lag
             kernel_performance.append(decoding_performance)
     t1 = perf_counter()
