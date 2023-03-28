@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-cond, wdir, tdir = sys.argv[-3:]
-sys.path.append(wdir)
+# cond, wdir, tdir = sys.argv[-3:]
+# sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -111,16 +111,16 @@ v_reset = -1000.0
 device = "cuda:0"
 
 # working directory
-# wdir = "config"
-# tdir = "results"
+wdir = "config"
+tdir = "results"
 
 # sweep condition
-# cond = 350
+cond = 55
 p1 = "Delta"
 p2 = "trial"
 
 # parameter sweep definition
-with open(f"{wdir}/bump_sweep.pkl", "rb") as f:
+with open(f"{wdir}/entrainment_sweep.pkl", "rb") as f:
     sweep = pickle.load(f)
     v1s = sweep[p1]
     v2s = sweep[p2]
@@ -129,20 +129,18 @@ vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[int(cond)]
 print(f"Condition: {p1} = {v1},  {p2} = {v2}")
 
-# define inputs
+# simulation-related parameters
 T = 5000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
 omega = 0.0035
 steps = int(T/dt)
-inp = np.zeros((steps, N))
 time = np.linspace(0, T, steps)
 driver = np.sin(2.0*np.pi*omega*time)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-inp[driver > 0.3, inp_indices] = 5e-3
 cutoff = int(2000.0/(dt*sr))
 
 # cross-correlation parameters
@@ -180,18 +178,30 @@ for i, alpha in enumerate(alphas):
     net = Network.from_yaml(f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                            dt=dt, verbose=False, clear=True, device="cpu")
+                            dt=dt, verbose=False, clear=True, device=device)
+
+    # define input
+    inp = np.zeros((steps, N))
+    for idx in inp_indices:
+        inp[driver > 0.3, idx] = alpha
 
     # perform simulation
     obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
     res = obs["out"].iloc[cutoff:, :]
-    s = gaussian_filter1d(res, sigma=50, axis=0)
+    s = gaussian_filter1d(res, sigma=50, axis=0).T
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    im = ax.imshow(s, aspect=4.0, interpolation="none")
+    plt.colorbar(im, ax=ax, shrink=0.8)
+    ax.set_xlabel('time')
+    ax.set_ylabel('neurons')
+    plt.show()
 
     # calculate the correlation between the input and each network unit
-    corr_driver = np.asarray([corr(driver[::sr], s[:, idx]) for idx in range(N)])
+    corr_driver = np.asarray([corr(driver[::sr], s[idx, :]) for idx in range(N)])
 
     # calculate the network dimensionality
-    corr_net = cross_corr(N, s, max_lag=max_lag)
+    corr_net = np.cov(s)
     eigs = np.linalg.eigvals(corr_net)
     dim = np.sum(eigs)**2/np.sum(eigs**2)
 
@@ -204,19 +214,13 @@ for i, alpha in enumerate(alphas):
     results["sequentiality"].append(seq)
 
     # plot results
-    # fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
-    # ax = axes[0]
-    # im = ax.imshow(s.T, aspect=4.0, interpolation="none")
-    # plt.colorbar(im, ax=ax, shrink=0.8)
-    # ax.set_xlabel('time')
-    # ax.set_ylabel('neurons')
-    # ax = axes[1]
-    # ax.plot(target_dist, label="target")
-    # ax.plot(population_dist, label="SNN")
-    # ax.set_xlabel("neurons")
-    # ax.set_ylabel("probability")
-    # plt.tight_layout()
-    # plt.show()
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.set_title(f"Dim = {dim}, seq = {seq}")
+    ax.plot(corr_driver)
+    ax.set_xlabel("neurons")
+    ax.set_ylabel("correlation")
+    plt.tight_layout()
+    plt.show()
 
 # save results
 fname = f"snn_entrainment"
