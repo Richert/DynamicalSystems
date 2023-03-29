@@ -49,7 +49,7 @@ def get_kernel(X: np.ndarray, alpha: float = 1e-12):
 ###################
 
 # model parameters
-N = 500
+N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -74,7 +74,7 @@ wdir = "config"
 tdir = "results"
 
 # sweep condition
-cond = 55
+cond = 105
 p1 = "Delta"
 p2 = "trial"
 
@@ -122,7 +122,7 @@ min_isi = np.min(np.abs(np.diff(stim_onsets))) - margin
 
 # other analysis parameters
 sigma = 50
-max_lag = int(0.5/(omega*dt*sr*ds))
+max_lag = int(1.0/(omega*dt*sr*ds))
 kernel_lag = 5
 
 # define lorentzian of etas
