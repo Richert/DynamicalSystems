@@ -84,6 +84,10 @@ p_in_vals = np.linspace(0.01, 0.99, num=20)
 sigma = 200
 window = [27500, 29500]
 
+# adjust parameters according to sweep condition
+for param, v in zip([p1, p2], [v1, v2]):
+    exec(f"{param} = {v}")
+
 # define lorentzian of etas
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
@@ -95,10 +99,6 @@ W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices
 
 # simulation
 ############
-
-# adjust parameters according to sweep condition
-for param, v in zip([p1, p2], [v1, v2]):
-    exec(f"{param} = {v}")
 
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "population_dists": [], "target_dists": [],

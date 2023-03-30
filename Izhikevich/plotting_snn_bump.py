@@ -8,7 +8,7 @@ import seaborn as sb
 
 
 # file path and name
-path = "results/bump"
+path = "results/bump_new"
 fn = "snn_bump"
 
 # parameters of interest
@@ -32,7 +32,9 @@ markersize = 6
 # load data
 sweep = pickle.load(open("config/bump_sweep.pkl", "rb"))
 example_condition = {p1: [0.1, 1.0]}
-examples = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
+single_id = 2
+# examples_avg = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
+examples_single = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
 results = {"within_bump_dist": [], "outside_bump_dist": [], p1: [], p2: []}
 precisions = {"within_bump_dist": 4, "outside_bump_dist": 4, p1: 2, p2: 2}
 for i, val in enumerate(example_condition[p1]):
@@ -47,27 +49,49 @@ for file in os.listdir(path):
         snn_data = data["population_dists"]
         bumps = data["bumps"]
         v1 = np.round(data["sweep"][p1], decimals=precisions[p1])
-        v2 = np.round(data["sweep"][p2], decimals=precisions[p2])
+        trial = data["sweep"]["trial"]
+        v2s = np.round(data[p2], decimals=precisions[p2])
 
         # store KLD results
         for key in ["within_bump_dist", "outside_bump_dist", p1, p2]:
-            results[key].append(np.round(np.mean(bumps[key]), decimals=precisions[key]))
+            results[key].append(np.round(bumps[key], decimals=precisions[key]))
 
         # store examples
-        if v1 in example_condition[p1]:
-            target = np.diff(np.mean(targets, axis=0))
-            snn = np.mean(snn_data, axis=0)
-            target_lb = np.argwhere(target > 1e-4).squeeze()
-            target_ub = np.argwhere(target < 0.0).squeeze()
-            for i, s in enumerate(snn):
-                examples["s"].append(s/np.max(snn))
-                examples["neuron_id"].append(i)
-                examples["target_lb"].append(target_lb)
-                examples["target_ub"].append(target_ub)
-                examples[p1].append(v1)
-                examples[p2].append(v2)
+        if v1 in example_condition[p1] and trial == single_id:
 
-results = pd.DataFrame.from_dict(results)
+            # # for average bump examples
+            # target = np.diff(np.mean(targets, axis=0))
+            # snn = np.mean(snn_data, axis=0)
+            # target_lb = np.argwhere(target > 1e-4).squeeze()
+            # target_ub = np.argwhere(target < 0.0).squeeze()
+            # examples_avg[p2].append(v2s)
+            # for i, s in enumerate(snn):
+            #     examples_avg["s"].append(s / np.max(snn))
+            #     examples_avg["neuron_id"].append(i)
+            #     examples_avg["target_lb"].append(target_lb)
+            #     examples_avg["target_ub"].append(target_ub)
+            #     examples_avg[p1].append(v1)
+
+            # for single bump examples
+            for snn, target, v2 in zip(snn_data, targets, v2s):
+                target = np.diff(target)
+                target_lb = np.argwhere(target > 1e-4).squeeze()
+                target_ub = np.argwhere(target < 0.0).squeeze()
+                for i, s in enumerate(snn):
+                    examples_single["s"].append(s / np.max(snn))
+                    examples_single["neuron_id"].append(i)
+                    examples_single["target_lb"].append(target_lb)
+                    examples_single["target_ub"].append(target_ub)
+                    examples_single[p1].append(v1)
+                    examples_single[p2].append(v2)
+
+results_final = {key: [] for key in results}
+for v1 in sweep[p1]:
+    idx = np.argwhere([results[p1][i][0] for i in range(len(results[p1]))] == np.round(v1, decimals=precisions[p1])
+                      ).squeeze()
+    for key, val in results.items():
+        results_final[key].extend(list(np.round(np.mean([val[i] for i in idx], axis=0), decimals=precisions[key])))
+results = pd.DataFrame.from_dict(results_final)
 
 # plotting
 ##########
@@ -93,13 +117,31 @@ for idx, cond, title in zip(subplots, conditions, titles):
     ax.set_ylabel("neuron id")
     ax.set_title(title)
 
-# plot bumps over p_in
-titles = [r"(D) Network bump for $\Delta_{rs} = 0.1$ mV",
-          r"(E) Network bump for $\Delta_{rs} = 1.0$ mV"]
+# plot average bumps over p_in
+# titles = [r"(D) Average Network bump for $\Delta_{rs} = 0.1$ mV",
+#           r"(E) Average Network bump for $\Delta_{rs} = 1.0$ mV"]
+# for i, val in enumerate(example_condition[p1]):
+#     ax = fig.add_subplot(grid[2:4, i])
+#     idx = np.argwhere(np.asarray(examples_avg[p1]) == val).squeeze()
+#     example = pd.DataFrame.from_dict({key: np.asarray(val)[idx] for key, val in examples_avg.items()})
+#     sb.heatmap(example.pivot(index=p2, columns="neuron_id", values="s"), cbar=True, ax=ax,
+#                xticklabels=50*ticks, yticklabels=ticks, rasterized=True)
+#     lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
+#     ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
+#     for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
+#         ax.plot([lb, lb], [j, j+1], color="blue", linewidth=1)
+#         ax.plot([ub, ub], [j, j+1], color="blue", linewidth=1)
+#     ax.set_title(titles[i])
+#     ax.set_xlabel("neuron id")
+#     ax.set_ylabel(r"$p_{in}$")
+
+# plot example bumps over p_in
+titles = [r"(D) Example Network bump for $\Delta_{rs} = 0.1$ mV",
+          r"(E) Example Network bump for $\Delta_{rs} = 1.0$ mV"]
 for i, val in enumerate(example_condition[p1]):
     ax = fig.add_subplot(grid[2:4, i])
-    idx = np.argwhere(np.asarray(examples[p1]) == val).squeeze()
-    example = pd.DataFrame.from_dict({key: np.asarray(val)[idx] for key, val in examples.items()})
+    idx = np.argwhere(np.asarray(examples_single[p1]) == val).squeeze()
+    example = pd.DataFrame.from_dict({key: np.asarray(val)[idx] for key, val in examples_single.items()})
     sb.heatmap(example.pivot(index=p2, columns="neuron_id", values="s"), cbar=True, ax=ax,
                xticklabels=50*ticks, yticklabels=ticks, rasterized=True)
     lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
@@ -136,5 +178,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/snn_bump.svg')
+plt.savefig(f'results/snn_bump.pdf')
 plt.show()

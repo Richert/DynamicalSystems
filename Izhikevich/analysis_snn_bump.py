@@ -17,7 +17,7 @@ def total_bump_difference(x: np.ndarray, y: np.ndarray) -> float:
 
 
 # file path and name
-path = "results/bump"
+path = "results/bump_new"
 fn = "snn_bump"
 
 # parameters of interest
@@ -28,17 +28,17 @@ p2 = "p_in"
 for file in os.listdir(path):
     if fn in file:
 
-        results = {"within_bump_dist": [], "outside_bump_dist": [],p1: [], p2: []}
+        results = {"within_bump_dist": [], "outside_bump_dist": [], p1: [], p2: []}
 
         # extract data
         data = pickle.load(open(f"{path}/{file}", "rb"))
         targets = data["target_dists"]
         snn_data = data["population_dists"]
         v1 = data["sweep"][p1]
-        v2 = data["sweep"][p2]
+        v2s = data[p2]
 
         # calculate KLD
-        for x, y in zip(snn_data, targets):
+        for x, y, v2 in zip(snn_data, targets, v2s):
             x = x / np.max(x)
             y = y / np.max(y)
             results["within_bump_dist"].append(total_bump_difference(x, y))
