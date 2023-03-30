@@ -76,7 +76,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.5
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -92,7 +92,7 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define connectivity
 indices = np.arange(0, N, dtype=np.int32)
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.0) for idx in indices])
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 # plt.imshow(W, interpolation="none", aspect="equal")
@@ -105,13 +105,13 @@ T = 5000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
-omega = 0.0055
+omega = 0.005
 steps = int(T/dt)
 inp = np.zeros((steps, N))
 time = np.linspace(0, T, steps)
 driver = np.sin(2.0*np.pi*omega*time)
 for idx in range(int(N*p_in)):
-    inp[driver > 0.9, idx] = 5e-3
+    inp[driver > 0.9, idx] = 1e-2
 
 # run the model
 ###############
