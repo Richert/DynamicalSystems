@@ -41,8 +41,8 @@ def _sequentiality(signals: np.ndarray, max_lag: int, threshold: float = 1e-6) -
                 cc = np.correlate(s1, s2, mode="valid")
                 cc_pos = cc[max_lag+lags]
                 cc_neg = cc[max_lag-lags]
-                sym += (cc_pos - cc_neg) ** 2
-                asym += (cc_pos + cc_neg) ** 2
+                sym += np.sum((cc_pos - cc_neg) ** 2)
+                asym += np.sum((cc_pos + cc_neg) ** 2)
     return sym, asym
 
 
@@ -59,8 +59,9 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
 
         # calculate sequentiality
         res = _sequentiality(signals[start:stop], max_lag=max_lag)
-        sym.append(res[0])
-        asym.append(res[1])
+        if res[1] > 1e-8:
+            sym.append(res[0])
+            asym.append(res[1])
 
     return np.mean([np.sqrt(s/a) for s, a in zip(sym, asym)]).squeeze()
 
@@ -91,11 +92,11 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
 
 # define connectivity
 indices = np.arange(0, N, dtype=np.int32)
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=2/3) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
-plt.imshow(W, interpolation="none", aspect="equal")
-plt.show()
+# plt.imshow(W, interpolation="none", aspect="equal")
+# plt.show()
 print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
@@ -104,13 +105,13 @@ T = 5000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
-omega = 0.0035
+omega = 0.004
 steps = int(T/dt)
 inp = np.zeros((steps, N))
 time = np.linspace(0, T, steps)
 driver = np.sin(2.0*np.pi*omega*time)
 for idx in range(int(N*p_in)):
-    inp[driver > 0.9, idx] = 5e-2
+    inp[driver > 0.9, idx] = 5e-3
 
 # run the model
 ###############
