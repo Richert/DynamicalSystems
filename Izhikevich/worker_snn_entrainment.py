@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -9,13 +9,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import correlate, butter, sosfilt
-from typing import Union
-
-
-def butter_bandpass_filter(data: np.ndarray, freqs: Union[float, tuple], fs: int, order: int) -> np.ndarray:
-    sos = butter(order, freqs, btype="low", output="sos", fs=fs)
-    return sosfilt(sos, data, axis=-1)
+from scipy.signal import correlate, find_peaks
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -107,11 +101,11 @@ v_reset = -1000.0
 device = "cuda:0"
 
 # working directory
-wdir = "config"
-tdir = "results"
+# wdir = "config"
+# tdir = "results"
 
 # sweep condition
-cond = 105
+# cond = 75
 p1 = "Delta"
 p2 = "trial"
 
@@ -123,14 +117,15 @@ with open(f"{wdir}/entrainment_sweep.pkl", "rb") as f:
     f.close()
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[int(cond)]
-print(f"Condition: {p1} = {v1},  {p2} = {v2}")
+omegas = sweep["omega"]
+omega = omegas[np.argmin(np.abs(v1s - v1))]
+print(f"Condition: {p1} = {v1},  {p2} = {v2}, omega = {omega}")
 
 # simulation-related parameters
 T = 3000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
-omega = 0.005
 alpha = 1e-2
 steps = int(T/dt)
 n_inputs = int(p_in*N)
@@ -142,7 +137,7 @@ cutoff = int(1000.0/(dt*sr))
 
 # define stimulation signal
 time = np.linspace(0, T, steps)
-driver_tmp = np.sin(2.0*np.pi*omega*time)
+driver_tmp = np.sin(2.0 * np.pi * omega * 1e-3 * time)
 driver = np.zeros_like(driver_tmp)
 driver[driver_tmp > 0.9] = 1.0
 
@@ -159,11 +154,12 @@ min_isi = np.min(np.abs(np.diff(stim_onsets))) - margin
 
 # other analysis parameters
 sigma = 10
-f_high = 7.0
-f_order = 5
-f_cutoff = 2500
+spike_height = 0.7
+spike_width = 50
+isi_bins = 20
+isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
-conn_pows = np.linspace(0.5, 1.5, num=3)
+conn_pows = np.linspace(0.5, 1.5, num=20)
 
 # define lorentzian of etas
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
@@ -178,8 +174,9 @@ for param, v in zip([p1, p2], [v1, v2]):
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "alpha": alpha, "thetas": thetas,
            "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "corr_driven": [],
-           "corr_nondriven": [], "population_avg": [], "population_var": [], "omegas": [], "conn_pows": conn_pows}
-for i, conn_pow in enumerate(conn_pows):
+           "corr_nondriven": [], "steady_state_spiking": [], "oscillatory_spiking": [], "network_oscillations": [],
+           "omegas": omegas, "conn_pows": conn_pows}
+for conn_pow in conn_pows:
 
     # define connectivity
     pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
@@ -229,44 +226,45 @@ for i, conn_pow in enumerate(conn_pows):
     population_dist /= np.max(population_dist)
 
     # calculate power in the bandpass-filtered signal
-    r_filtered = butter_bandpass_filter(s, freqs=f_high, fs=int(1e3/(dt*sr)), order=f_order) * (1e3/tau_s)
-    r_var = np.var(r_filtered[:, f_cutoff:-f_cutoff], axis=1)
+    oscillatory_spiking = []
+    for s_tmp in s:
+        spikes, _ = find_peaks(s_tmp, height=spike_height, width=spike_width)
+        spike_intervals = np.diff(spikes)
+        isi_hist, intervals = np.histogram(spike_intervals, bins=isi_bins)
+        if intervals[-1] < isi_min:
+            oscillatory_spiking.append(0.0)
+        else:
+            oscillatory_spiking.append(np.sum(isi_hist[intervals[:-1] > isi_min]))
 
     # store results
     results["corr_driven"].append(corr_driven)
     results["corr_nondriven"].append(corr_nondriven)
     results["dimensionality"].append(dim)
     results["sequentiality"].append(np.mean(sequentiality_measures))
-    results["population_avg"].append(population_dist)
-    results["population_var"].append(r_var)
-    results["omegas"].append(omega)
+    results["network_oscillations"].append(np.mean(oscillatory_spiking))
+    results["steady_state_spiking"].append(population_dist)
+    results["oscillatory_spiking"].append(oscillatory_spiking)
 
     # plot results
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
-    ax = axes[0, 0]
-    im = ax.imshow(s, aspect="auto", interpolation="none")
-    plt.colorbar(im, ax=ax, shrink=0.8)
-    ax.set_xlabel('time')
-    ax.set_ylabel('neurons')
-    ax.set_title("Network activity raw")
-    ax = axes[1, 0]
-    ax.plot(population_dist)
-    ax.set_xlabel("neuron id")
-    ax.set_ylabel("s")
-    ax.set_title("Mean activity over 2 s")
-    ax = axes[0, 1]
-    im = ax.imshow(r_filtered, aspect="auto", interpolation="none")
-    plt.colorbar(im, ax=ax, shrink=0.8)
-    ax.set_xlabel('time')
-    ax.set_ylabel('neurons')
-    ax.set_title(f"Network activity < {np.round(f_high, decimals=1)} Hz")
-    ax = axes[1, 1]
-    ax.plot(r_var)
-    ax.set_xlabel("neuron id")
-    ax.set_ylabel("var")
-    ax.set_title(f"Signal variance < {np.round(f_high, decimals=1)} Hz")
-    plt.tight_layout()
-    plt.show()
+    # fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
+    # ax = axes[0]
+    # im = ax.imshow(s, aspect="auto", interpolation="none")
+    # plt.colorbar(im, ax=ax, shrink=0.8)
+    # ax.set_xlabel('time')
+    # ax.set_ylabel('neurons')
+    # ax.set_title("Network activity raw")
+    # ax = axes[1]
+    # ax.plot(population_dist)
+    # ax.set_xlabel("neuron id")
+    # ax.set_ylabel("s")
+    # ax.set_title("Mean activity over 2 s")
+    # ax = axes[2]
+    # ax.plot(oscillatory_spiking)
+    # ax.set_xlabel("neuron id")
+    # ax.set_ylabel("Low-freq strength")
+    # ax.set_title(f"Relative amount of long ISIs")
+    # plt.tight_layout()
+    # plt.show()
 
 # save results
 fname = f"snn_entrainment"

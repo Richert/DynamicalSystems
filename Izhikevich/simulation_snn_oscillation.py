@@ -100,8 +100,8 @@ W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices
 print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
-cutoff = 3000.0
-T = 5000.0
+cutoff = 1000.0
+T = 3000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
