@@ -86,7 +86,7 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
 ###################
 
 # model parameters
-N = 500
+N = 2000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -126,7 +126,7 @@ v1, v2 = vals[int(cond)]
 print(f"Condition: {p1} = {v1},  {p2} = {v2}")
 
 # simulation-related parameters
-T = 5000.0
+T = 3000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
@@ -138,7 +138,7 @@ center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 inp_dist = np.zeros((N,))
 inp_dist[inp_indices] = 1.0
-cutoff = int(3000.0/(dt*sr))
+cutoff = int(1000.0/(dt*sr))
 
 # define stimulation signal
 time = np.linspace(0, T, steps)
@@ -159,10 +159,11 @@ min_isi = np.min(np.abs(np.diff(stim_onsets))) - margin
 
 # other analysis parameters
 sigma = 10
-f_high = 6.0
+f_high = 7.0
 f_order = 5
+f_cutoff = 2500
 indices = np.arange(0, N, dtype=np.int32)
-conn_pows = np.linspace(0.5, 1.5, num=20)
+conn_pows = np.linspace(0.5, 1.5, num=3)
 
 # define lorentzian of etas
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
@@ -177,7 +178,7 @@ for param, v in zip([p1, p2], [v1, v2]):
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "alpha": alpha, "thetas": thetas,
            "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "corr_driven": [],
-           "corr_nondriven": [], "population_avg": [], "population_pow": [], "omegas": [], "conn_pows": conn_pows}
+           "corr_nondriven": [], "population_avg": [], "population_var": [], "omegas": [], "conn_pows": conn_pows}
 for i, conn_pow in enumerate(conn_pows):
 
     # define connectivity
@@ -206,10 +207,10 @@ for i, conn_pow in enumerate(conn_pows):
     s = gaussian_filter1d(res, sigma=sigma, axis=0).T
 
     # calculate the correlation between the network
-    snn_driven = np.mean(s[inp_indices, :], axis=1)
-    snn_nondriven = np.mean(np.concatenate([s[:inp_indices[0], :], s[inp_indices[-1]:, :]], axis=0), axis=1)
-    corr_driven = np.corrcoef(snn_driven[cutoff:], driver_ds[cutoff:])[0, 1]
-    corr_nondriven = np.corrcoef(snn_nondriven[cutoff:], driver_ds[cutoff:])[0, 1]
+    snn_driven = np.mean(s[inp_indices, :], axis=0)
+    snn_nondriven = np.mean(np.concatenate([s[:inp_indices[0], :], s[inp_indices[-1]:, :]], axis=0), axis=0)
+    corr_driven = np.corrcoef(snn_driven, driver_ds[cutoff:])[0, 1]
+    corr_nondriven = np.corrcoef(snn_nondriven, driver_ds[cutoff:])[0, 1]
 
     # calculate the network dimensionality
     corr_net = np.cov(s)
@@ -224,12 +225,12 @@ for i, conn_pow in enumerate(conn_pows):
             sequentiality_measures.append(sequentiality(s_tmp, neighborhood=50, max_lag=margin))
 
     # calculate the steady-state network activity
-    population_dist = np.mean(s, axis=0).squeeze()
-    population_dist /= np.sum(population_dist)
+    population_dist = np.mean(s, axis=1).squeeze()
+    population_dist /= np.max(population_dist)
 
     # calculate power in the bandpass-filtered signal
-    s_filtered = butter_bandpass_filter(s, freqs=f_high, fs=int(1e3/(dt*sr)), order=f_order)
-    s_pow = (0.5*(np.max(s_filtered, axis=1) - np.min(s_filtered, axis=1)))**2
+    r_filtered = butter_bandpass_filter(s, freqs=f_high, fs=int(1e3/(dt*sr)), order=f_order) * (1e3/tau_s)
+    r_var = np.var(r_filtered[:, f_cutoff:-f_cutoff], axis=1)
 
     # store results
     results["corr_driven"].append(corr_driven)
@@ -237,26 +238,34 @@ for i, conn_pow in enumerate(conn_pows):
     results["dimensionality"].append(dim)
     results["sequentiality"].append(np.mean(sequentiality_measures))
     results["population_avg"].append(population_dist)
-    results["population_pow"].append(s_pow)
+    results["population_var"].append(r_var)
     results["omegas"].append(omega)
 
     # plot results
-    fig, axes = plt.subplots(figsize=(10, 6))
-    ax = axes[0]
-    im = ax.imshow(s, aspect=4.0, interpolation="none")
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 6))
+    ax = axes[0, 0]
+    im = ax.imshow(s, aspect="auto", interpolation="none")
     plt.colorbar(im, ax=ax, shrink=0.8)
     ax.set_xlabel('time')
     ax.set_ylabel('neurons')
-    ax = axes[1]
+    ax.set_title("Network activity raw")
+    ax = axes[1, 0]
     ax.plot(population_dist)
     ax.set_xlabel("neuron id")
     ax.set_ylabel("s")
     ax.set_title("Mean activity over 2 s")
-    ax = axes[2]
-    ax.plot(s_pow)
+    ax = axes[0, 1]
+    im = ax.imshow(r_filtered, aspect="auto", interpolation="none")
+    plt.colorbar(im, ax=ax, shrink=0.8)
+    ax.set_xlabel('time')
+    ax.set_ylabel('neurons')
+    ax.set_title(f"Network activity < {np.round(f_high, decimals=1)} Hz")
+    ax = axes[1, 1]
+    ax.plot(r_var)
     ax.set_xlabel("neuron id")
-    ax.set_ylabel("power")
-    ax.set_title(f"Power at {np.round(omega*1e3, decimals=1)} Hz")
+    ax.set_ylabel("var")
+    ax.set_title(f"Signal variance < {np.round(f_high, decimals=1)} Hz")
+    plt.tight_layout()
     plt.show()
 
 # save results
