@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -80,7 +80,7 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
 ###################
 
 # model parameters
-N = 1000
+N = 2000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -101,11 +101,11 @@ v_reset = -1000.0
 device = "cuda:0"
 
 # working directory
-wdir = "config"
-tdir = "results"
+# wdir = "config"
+# tdir = "results"
 
 # sweep condition
-cond = 105
+# cond = 105
 p1 = "Delta"
 p2 = "trial"
 
@@ -159,7 +159,7 @@ spike_width = 50
 isi_bins = 20
 isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
-conn_pows = np.linspace(0.5, 1.5, num=3)
+conn_pows = np.linspace(0.5, 1.5, num=20)
 
 # define lorentzian of etas
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
@@ -246,25 +246,25 @@ for conn_pow in conn_pows:
     results["oscillatory_spiking"].append(oscillatory_spiking)
 
     # plot results
-    fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
-    ax = axes[0]
-    im = ax.imshow(s, aspect="auto", interpolation="none")
-    plt.colorbar(im, ax=ax, shrink=0.8)
-    ax.set_xlabel('time')
-    ax.set_ylabel('neurons')
-    ax.set_title("Network activity raw")
-    ax = axes[1]
-    ax.plot(population_dist)
-    ax.set_xlabel("neuron id")
-    ax.set_ylabel("s")
-    ax.set_title("Mean activity over 2 s")
-    ax = axes[2]
-    ax.plot(oscillatory_spiking)
-    ax.set_xlabel("neuron id")
-    ax.set_ylabel("Low-freq strength")
-    ax.set_title(f"Relative amount of long ISIs")
-    plt.tight_layout()
-    plt.show()
+    # fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
+    # ax = axes[0]
+    # im = ax.imshow(s, aspect="auto", interpolation="none")
+    # plt.colorbar(im, ax=ax, shrink=0.8)
+    # ax.set_xlabel('time')
+    # ax.set_ylabel('neurons')
+    # ax.set_title("Network activity raw")
+    # ax = axes[1]
+    # ax.plot(population_dist)
+    # ax.set_xlabel("neuron id")
+    # ax.set_ylabel("s")
+    # ax.set_title("Mean activity over 2 s")
+    # ax = axes[2]
+    # ax.plot(oscillatory_spiking)
+    # ax.set_xlabel("neuron id")
+    # ax.set_ylabel("Low-freq strength")
+    # ax.set_title(f"Relative amount of long ISIs")
+    # plt.tight_layout()
+    # plt.show()
 
 # save results
 fname = f"snn_entrainment"
