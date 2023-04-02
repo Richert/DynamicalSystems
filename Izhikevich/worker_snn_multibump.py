@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -55,11 +55,11 @@ v_reset = -1000.0
 device = "cuda:0"
 
 # working directory
-wdir = "config"
-tdir = "results"
+# wdir = "config"
+# tdir = "results"
 
 # sweep condition
-cond = 165
+# cond = 165
 p1 = "Delta"
 p2 = "trial"
 
@@ -82,7 +82,7 @@ p_in = 0.1
 n_inputs = int(N*p_in)
 start = int(0.3*N)
 stop = int(0.6*N)
-margin = int(0.05*N)
+margin = int(0.01*N)
 distances = np.arange(start+n_inputs+margin, stop, step=margin)
 
 # time-averaging parameters
@@ -144,19 +144,19 @@ for i, distance in enumerate(distances):
     results["population_dists"].append(population_dist)
 
     # plot results
-    fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
-    ax = axes[0]
-    im = ax.imshow(s.T, aspect=4.0, interpolation="none")
-    plt.colorbar(im, ax=ax, shrink=0.8)
-    ax.set_xlabel('time')
-    ax.set_ylabel('neurons')
-    ax = axes[1]
-    ax.plot(target_dist, label="target")
-    ax.plot(population_dist, label="SNN")
-    ax.set_xlabel("neurons")
-    ax.set_ylabel("probability")
-    plt.tight_layout()
-    plt.show()
+    # fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
+    # ax = axes[0]
+    # im = ax.imshow(s.T, aspect=4.0, interpolation="none")
+    # plt.colorbar(im, ax=ax, shrink=0.8)
+    # ax.set_xlabel('time')
+    # ax.set_ylabel('neurons')
+    # ax = axes[1]
+    # ax.plot(target_dist, label="target")
+    # ax.plot(population_dist, label="SNN")
+    # ax.set_xlabel("neurons")
+    # ax.set_ylabel("probability")
+    # plt.tight_layout()
+    # plt.show()
 
 # save results
 fname = f"snn_multibump"
