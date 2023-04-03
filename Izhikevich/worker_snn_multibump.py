@@ -107,7 +107,7 @@ W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices
 
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "population_dists": [], "target_dists": [],
-           "p_in": [], "W": W, "thetas": thetas}
+           "p_in": [], "W": W, "thetas": thetas, "distances": distances}
 
 for i, distance in enumerate(distances):
 
@@ -133,7 +133,7 @@ for i, distance in enumerate(distances):
     res = obs["out"]
 
     # calculate the distribution of the time-averaged network activity after the stimulation was turned off
-    s = gaussian_filter1d(res, sigma=200, axis=0)
+    s = gaussian_filter1d(res, sigma=sigma, axis=0)
     population_dist = np.mean(s[window[0]: window[1], :], axis=0).squeeze()
     population_dist /= np.sum(population_dist)
     target_dist = np.zeros((N,))

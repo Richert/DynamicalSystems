@@ -8,12 +8,12 @@ import seaborn as sb
 
 
 # file path and name
-path = "results/bump_new"
-fn = "snn_bump"
+path = "results/entrainment"
+fn = "snn_entrainment"
 
 # parameters of interest
 p1 = "Delta"
-p2 = "p_in"
+p2 = "conn_pows"
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -30,13 +30,13 @@ markersize = 6
 
 
 # load data
-sweep = pickle.load(open("config/bump_sweep.pkl", "rb"))
+sweep = pickle.load(open("config/entrainment_sweep.pkl", "rb"))
 example_condition = {p1: [0.1, 1.0]}
 single_id = 3
 # examples_avg = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
-examples_single = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
-results = {"within_bump_dist": [], "outside_bump_dist": [], p1: [], p2: []}
-precisions = {"within_bump_dist": 4, "outside_bump_dist": 4, p1: 2, p2: 2}
+examples_single = {p2: [], p1: [], "ss": [], "lc": [], "neuron_id": [], "target_lb": [], "target_ub": []}
+results = {"dim": [], "seq": [], "corr_driven": [], "corr_nondriven": [],  "network_oscillations": [], p1: [], p2: []}
+precisions = {"dim": 0, "seq": 2, p1: 2, p2: 2}
 for i, val in enumerate(example_condition[p1]):
     idx = np.argmin(np.abs(sweep[p1] - val)).squeeze()
     example_condition[p1][i] = np.round(sweep[p1][idx], decimals=precisions[p1])
@@ -45,16 +45,19 @@ for file in os.listdir(path):
 
         # extract data
         data = pickle.load(open(f"{path}/{file}", "rb"))
-        targets = data["target_dists"]
-        snn_data = data["population_dists"]
-        bumps = data["bumps"]
+        inp_indices = data["input_indices"]
+        snn_ss = data["steady_state_spiking"]
+        snn_lc = data["oscillatory_spiking"]
         v1 = np.round(data["sweep"][p1], decimals=precisions[p1])
         trial = data["sweep"]["trial"]
         v2s = np.round(data[p2], decimals=precisions[p2])
 
         # store KLD results
-        for key in ["within_bump_dist", "outside_bump_dist", p1, p2]:
-            results[key].append(np.round(bumps[key], decimals=precisions[key]))
+        for key in results:
+            try:
+                results[key].append(np.round(data[key], decimals=precisions[key]))
+            except KeyError:
+                results[key].append(np.round(data["sweep"][key], decimals=precisions[key]))
 
         # store examples
         if v1 in example_condition[p1] and trial == single_id:
@@ -73,12 +76,12 @@ for file in os.listdir(path):
             #     examples_avg[p1].append(v1)
 
             # for single bump examples
-            for snn, target, v2 in zip(snn_data, targets, v2s):
-                target = np.diff(target)
-                target_lb = np.argwhere(target > 1e-4).squeeze()
-                target_ub = np.argwhere(target < 0.0).squeeze()
-                for i, s in enumerate(snn):
-                    examples_single["s"].append(s / np.max(snn))
+            for ss, lc, v2 in zip(snn_ss, snn_lc, v2s):
+                target_lb = inp_indices[0]
+                target_ub = inp_indices[1]
+                for i in range(ss.shape[0]):
+                    examples_single["ss"].append(ss[i] / np.max(ss[i]))
+                    examples_single["lc"].append(lc[i])
                     examples_single["neuron_id"].append(i)
                     examples_single["target_lb"].append(target_lb)
                     examples_single["target_ub"].append(target_ub)
