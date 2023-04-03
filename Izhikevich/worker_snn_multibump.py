@@ -126,7 +126,7 @@ for i, distance in enumerate(distances):
     net = Network.from_yaml(f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
                             input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                            dt=dt, verbose=False, clear=True, device="cpu")
+                            dt=dt, verbose=False, clear=True, device=device)
 
     # perform simulation
     obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
