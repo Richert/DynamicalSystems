@@ -94,7 +94,7 @@ for param, v in zip([p1, p2], [v1, v2]):
     exec(f"{param} = {v}")
 
 # define lorentzian of etas
-thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
+thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # define connectivity
 indices = np.arange(0, N, dtype=np.int32)

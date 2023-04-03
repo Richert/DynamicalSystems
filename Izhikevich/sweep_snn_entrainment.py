@@ -8,7 +8,7 @@ sweep["trial"] = np.arange(0, 10)
 
 # load data that relate Delta to omega
 coh = pickle.load(open(f"results/mf_entrainment_lc.pkl", "rb"))["coherence"]
-threshold = 0.7
+threshold = 0.9
 omegas = []
 for delta in sweep["Delta"]:
     row = np.argmin(np.abs(coh.index - delta)).squeeze()

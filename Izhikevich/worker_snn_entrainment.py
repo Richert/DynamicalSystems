@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import correlate, find_peaks
+from scipy.signal import find_peaks
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -29,12 +29,6 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: fl
         return np.exp(-x) if x > 0 else zero_val
     else:
         raise ValueError("Invalid method.")
-
-
-def corr(s1: np.ndarray, s2: np.ndarray, method: str = "direct", max_lag: int = 100) -> np.ndarray:
-    padding = list(np.zeros((max_lag,)))
-    s2 = np.asarray(padding + list(s2) + padding)
-    return np.max(correlate(s1, s2, mode="valid", method=method))
 
 
 def _sequentiality(signals: np.ndarray, max_lag: int, threshold: float = 1e-6) -> tuple:
@@ -80,7 +74,7 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
 ###################
 
 # model parameters
-N = 2000
+N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -105,7 +99,7 @@ device = "cuda:0"
 # tdir = "results"
 
 # sweep condition
-# cond = 105
+# cond = 10
 p1 = "Delta"
 p2 = "trial"
 
@@ -131,8 +125,6 @@ steps = int(T/dt)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-inp_dist = np.zeros((N,))
-inp_dist[inp_indices] = 1.0
 cutoff = int(1000.0/(dt*sr))
 
 # define stimulation signal
@@ -140,10 +132,7 @@ time = np.linspace(0, T, steps)
 driver_tmp = np.sin(2.0 * np.pi * omega * 1e-3 * time)
 driver = np.zeros_like(driver_tmp)
 driver[driver_tmp > 0.9] = 1.0
-
-# downsample driver and calculate maximum correlation between driver and itself
 driver_ds = driver[::sr]
-max_corr = np.max(correlate(driver_ds, driver_ds, mode="valid"))
 
 # infer stimulation onsets
 margin = 200
@@ -161,15 +150,15 @@ isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
 conn_pows = np.linspace(0.5, 1.5, num=20)
 
-# define lorentzian of etas
-thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=0.0)
-
-# simulation
-############
-
 # adjust parameters according to sweep condition
 for param, v in zip([p1, p2], [v1, v2]):
     exec(f"{param} = {v}")
+
+# define lorentzian of etas
+thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
+
+# simulation
+############
 
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "alpha": alpha, "thetas": thetas,
@@ -184,12 +173,12 @@ for conn_pow in conn_pows:
     W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
     # initialize model
-    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
                  "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
     # initialize model
     net = Network.from_yaml(f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                            input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                             node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                             dt=dt, verbose=False, clear=True, device=device)
 
@@ -246,20 +235,28 @@ for conn_pow in conn_pows:
     results["oscillatory_spiking"].append(oscillatory_spiking)
 
     # plot results
-    # fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
+    # fig, axes = plt.subplots(nrows=4, figsize=(12, 9))
     # ax = axes[0]
+    # ax.plot(driver_ds[cutoff:], label="input")
+    # ax.plot(np.mean(s, axis=0), label="mean-field")
+    # ax.plot(snn_driven, label="driven")
+    # ax.plot(snn_nondriven, label="non-driven")
+    # ax.legend()
+    # ax = axes[1]
     # im = ax.imshow(s, aspect="auto", interpolation="none")
     # plt.colorbar(im, ax=ax, shrink=0.8)
     # ax.set_xlabel('time')
     # ax.set_ylabel('neurons')
-    # ax.set_title("Network activity raw")
-    # ax = axes[1]
+    # ax.set_title(f"Network dynamics (dim = {dim}, seq = {np.mean(sequentiality_measures)})")
+    # ax = axes[2]
     # ax.plot(population_dist)
     # ax.set_xlabel("neuron id")
     # ax.set_ylabel("s")
-    # ax.set_title("Mean activity over 2 s")
-    # ax = axes[2]
+    # ax.set_title(f"Mean activity (corr_driven = {corr_driven}, corr_nondriven = {corr_nondriven})")
+    # ax = axes[3]
     # ax.plot(oscillatory_spiking)
+    # ax.axvline(x=inp_indices[0], linestyle="--", color="blue")
+    # ax.axvline(x=inp_indices[-1], linestyle="--", color="blue")
     # ax.set_xlabel("neuron id")
     # ax.set_ylabel("Low-freq strength")
     # ax.set_title(f"Relative amount of long ISIs")
