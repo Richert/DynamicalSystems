@@ -32,7 +32,7 @@ markersize = 6
 # load data
 sweep = pickle.load(open("config/entrainment_sweep.pkl", "rb"))
 example_condition = {p1: [0.1, 1.0]}
-single_id = 0
+single_id = 3
 # examples_avg = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
 examples_single = {p2: [], p1: [], "ss": [], "lc": [], "neuron_id": [], "target_lb": [], "target_ub": []}
 results = {"dimensionality": [], "sequentiality": [], "corr_driven": [], "corr_nondriven": [],
@@ -68,7 +68,7 @@ for file in os.listdir(path):
 
             for ss, lc, v2 in zip(snn_ss, snn_lc, v2s):
                 target_lb = inp_indices[0]
-                target_ub = inp_indices[1]
+                target_ub = inp_indices[-1]
                 for i in range(ss.shape[0]):
                     examples_single["ss"].append(ss[i] / np.max(ss))
                     examples_single["lc"].append(lc[i])

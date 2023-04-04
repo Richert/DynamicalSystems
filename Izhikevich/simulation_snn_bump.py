@@ -13,7 +13,7 @@ from scipy.stats import rv_discrete
 
 # model parameters
 N = 1000
-p = 0.2
+p = 0.1
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -39,7 +39,7 @@ pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 plt.imshow(W, interpolation="none", aspect="equal")
 plt.show()
-print(np.sum(np.sum(W, axis=1)))
+print(np.mean(np.sum(W > 1e-6, axis=1)))
 
 # define inputs
 cutoff = 500.0

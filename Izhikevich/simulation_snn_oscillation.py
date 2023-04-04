@@ -58,7 +58,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.115
+Delta = 0.6
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -77,13 +77,13 @@ T = 3000.0
 dt = 1e-2
 sr = 10
 p_in = 0.1
-alpha = 1e-2
-omega = 3.47
+alpha = 0.0
+omega = 5.0
 steps = int(T/dt)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-cutoff = int(1000.0/(dt*sr))
+cutoff = int(0.0/(dt*sr))
 
 # define stimulation signal
 time = np.linspace(0, T, steps)
@@ -106,7 +106,7 @@ spike_width = 50
 isi_bins = 20
 isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
-conn_pow = 1.5
+conn_pow = 0.9
 
 # run the model
 ###############

@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-cond, wdir, tdir = sys.argv[-3:]
-sys.path.append(wdir)
+# cond, wdir, tdir = sys.argv[-3:]
+# sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -96,6 +96,8 @@ indices = np.arange(0, N, dtype=np.int32)
 pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
+plt.imshow(W)
+plt.show()
 
 # simulation
 ############
