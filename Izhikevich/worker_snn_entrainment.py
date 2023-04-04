@@ -74,7 +74,7 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
 ###################
 
 # model parameters
-N = 1000
+N = 2000
 p = 0.2
 C = 100.0
 k = 0.7
