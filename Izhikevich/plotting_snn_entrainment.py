@@ -143,9 +143,9 @@ ax.set_ylabel(r"$\Delta_{rs}$")
 
 # plot correlation between driver and non-driven part of the network
 ax = fig.add_subplot(grid[4:, 1])
-corr_driven = results.pivot(index=p1, columns=p2, values="corr_nondriven")
+corr_driven = results.pivot(index=p1, columns=p2, values="network_oscillations")
 sb.heatmap(corr_driven, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_title("(H) Corr(input, non-driven)")
+ax.set_title("(H) Network oscillations")
 ax.set_xlabel(r"$\lambda$")
 ax.set_ylabel(r"$\Delta_{rs}$")
 

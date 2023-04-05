@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks
 
 
 def _sequentiality(signals: np.ndarray, max_lag: int, threshold: float = 1e-6) -> tuple:
@@ -58,7 +59,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.6
+Delta = 0.1
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -83,7 +84,7 @@ steps = int(T/dt)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-cutoff = int(0.0/(dt*sr))
+cutoff = int(1000.0/(dt*sr))
 
 # define stimulation signal
 time = np.linspace(0, T, steps)
@@ -106,7 +107,7 @@ spike_width = 50
 isi_bins = 20
 isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
-conn_pow = 0.9
+conn_pow = 0.5
 
 # run the model
 ###############
@@ -137,7 +138,24 @@ obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
 res = obs["out"]
 s = gaussian_filter1d(res.values[cutoff:, :], sigma=sigma, axis=0).T
 
-# calculate the correlation between the network
+# calculate the correlation between the network and the driver
+s_smoothed = gaussian_filter1d(res.values, sigma=20*sigma, axis=0).T
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.imshow(s_smoothed, aspect="auto", interpolation="none")
+plt.show()
+freqs = []
+for idx in range(s_smoothed.shape[0]):
+    s_tmp = s_smoothed[idx, :]
+    if np.max(s_tmp) > 1e-12:
+        s_tmp /= np.max(s_tmp)
+        peaks, _ = find_peaks(s_tmp[cutoff:], prominence=0.5, width=200.0)
+    else:
+        peaks = []
+    if len(peaks) > 1:
+        isis = np.diff(peaks)
+        freqs.append(1e3/(np.mean(isis)*dt*sr))
+    else:
+        freqs.append(0.0)
 snn_driven = np.mean(s[inp_indices, :], axis=0)
 snn_nondriven = np.mean(np.concatenate([s[:inp_indices[0], :], s[inp_indices[-1]:, :]], axis=0), axis=0)
 corr_driven = np.corrcoef(snn_driven, driver_ds[cutoff:])[0, 1]
@@ -156,7 +174,7 @@ for sidx in stim_onsets:
         sequentiality_measures.append(sequentiality(s_tmp, neighborhood=50, max_lag=margin))
 
 # plot results
-fig, axes = plt.subplots(nrows=2, figsize=(12, 9))
+fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
 ax = axes[0]
 ax.plot(driver_ds[cutoff:], label="input")
 ax.plot(np.mean(s, axis=0), label="mean-field")
@@ -172,6 +190,11 @@ plt.colorbar(im, ax=ax, shrink=0.4)
 ax.set_xlabel('time')
 ax.set_ylabel('neurons')
 ax.set_title(f"Seq = {np.mean(sequentiality_measures)}, Dim = {dim}")
+ax = axes[2]
+ax.bar(np.arange(0, N), freqs, width=0.8)
+ax.set_xlabel("neuron ID")
+ax.set_ylabel("freq")
+ax.set_title(f"Network freq = {np.mean(freqs)}")
 plt.tight_layout()
 
 # saving

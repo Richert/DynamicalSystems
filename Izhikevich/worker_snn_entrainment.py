@@ -214,25 +214,33 @@ for conn_pow in conn_pows:
     population_dist = np.mean(s, axis=1).squeeze()
     population_dist /= np.max(population_dist)
 
-    # calculate power in the bandpass-filtered signal
-    oscillatory_spiking = []
-    for s_tmp in s:
-        spikes, _ = find_peaks(s_tmp, height=spike_height, width=spike_width)
-        spike_intervals = np.diff(spikes)
-        isi_hist, intervals = np.histogram(spike_intervals, bins=isi_bins)
-        if intervals[-1] < isi_min:
-            oscillatory_spiking.append(0.0)
+    # detect neural oscillations
+    s_smoothed = gaussian_filter1d(res.values, sigma=20 * sigma, axis=0).T
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.imshow(s_smoothed, aspect="auto", interpolation="none")
+    plt.show()
+    neural_freqs = []
+    for idx in range(s_smoothed.shape[0]):
+        s_tmp = s_smoothed[idx, :]
+        if np.max(s_tmp) > 1e-12:
+            s_tmp /= np.max(s_tmp)
+            peaks, _ = find_peaks(s_tmp[cutoff:-cutoff], prominence=0.5, width=200.0)
         else:
-            oscillatory_spiking.append(np.sum(isi_hist[intervals[:-1] > isi_min]))
+            peaks = []
+        if len(peaks) > 1:
+            isis = np.diff(peaks)
+            neural_freqs.append(1e3 / (np.mean(isis) * dt * sr))
+        else:
+            neural_freqs.append(0.0)
 
     # store results
     results["corr_driven"].append(corr_driven)
     results["corr_nondriven"].append(corr_nondriven)
     results["dimensionality"].append(dim)
     results["sequentiality"].append(np.mean(sequentiality_measures))
-    results["network_oscillations"].append(np.mean(oscillatory_spiking))
+    results["network_oscillations"].append(np.mean(neural_freqs))
     results["steady_state_spiking"].append(population_dist)
-    results["oscillatory_spiking"].append(oscillatory_spiking)
+    results["oscillatory_spiking"].append(neural_freqs)
 
     # plot results
     # fig, axes = plt.subplots(nrows=4, figsize=(12, 9))
