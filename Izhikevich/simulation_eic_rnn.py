@@ -13,7 +13,7 @@ from scipy.stats import rv_discrete
 ###################
 
 # general parameters
-N = 1000
+N = 2000
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
