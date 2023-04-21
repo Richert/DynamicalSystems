@@ -82,7 +82,7 @@ e_pdfs /= np.sum(e_pdfs)
 i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.5) for idx in indices])
 i_pdfs /= np.sum(i_pdfs)
 W_ee = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
-W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
+W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
 W_ei = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 W_ii = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 
