@@ -79,7 +79,7 @@ spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=2*vi_t -
 indices = np.arange(0, N, dtype=np.int32)
 e_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 e_pdfs /= np.sum(e_pdfs)
-i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
+i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.5) for idx in indices])
 i_pdfs /= np.sum(i_pdfs)
 W_ee = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
 W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
@@ -94,10 +94,10 @@ dts = 1e-1
 p_in = 0.25
 n_inputs = int(p_in*N)
 center = int(N*0.5)
-inp_indices = N + np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 inp = np.zeros((int(T/dt), 2*N))
-inp[:int(0.5*cutoff/dt), N:] += 20.0
-inp[int(1000/dt):int(2000/dt), inp_indices] -= 20.0
+inp[:int(0.5*cutoff/dt), :N] -= 20.0
+inp[int(1000/dt):int(2000/dt), inp_indices] += 20.0
 
 # run the model
 ###############
