@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -78,7 +78,7 @@ cutoff = 500.0
 T = 3000.0
 dt = 1e-2
 sr = 10
-p_in_vals = np.linspace(0.01, 0.99, num=20)
+p_in_vals = 10.0**np.linspace(-2.0, 0.0, num=20)
 
 # time-averaging parameters
 sigma = 200
