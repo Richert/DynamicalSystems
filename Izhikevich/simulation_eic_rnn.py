@@ -57,7 +57,7 @@ Delta_i = 0.2  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
-Ii = 75.0
+Ii = 45.0
 
 # synaptic parameters
 g_ampa = 1.0
@@ -67,9 +67,9 @@ E_gaba = -65.0
 tau_ampa = 6.0
 tau_gaba = 8.0
 k_ee = 15.0
-k_ei = 10.0
-k_ie = 5.0
-k_ii = 10.0
+k_ei = 15.0
+k_ie = 8.0
+k_ii = 8.0
 
 # define lorentzian of etas
 spike_thresholds_e = lorentzian(N, eta=ve_t, delta=Delta_e, lb=ve_r, ub=2*ve_t - ve_r)
@@ -96,8 +96,8 @@ n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = N + np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 inp = np.zeros((int(T/dt), 2*N))
-inp[:int(0.5*cutoff/dt), N:] += 30.0
-inp[int(1000/dt):int(2000/dt), inp_indices] -= 40.0
+inp[:int(0.5*cutoff/dt), N:] += 20.0
+inp[int(1000/dt):int(2000/dt), inp_indices] -= 20.0
 
 # run the model
 ###############
