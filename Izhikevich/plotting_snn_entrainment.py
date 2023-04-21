@@ -28,7 +28,6 @@ plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
-
 # load data
 sweep = pickle.load(open("config/entrainment_sweep.pkl", "rb"))
 example_condition = {p1: [0.1, 1.0]}
@@ -143,8 +142,9 @@ ax.set_ylabel(r"$\Delta_{rs}$")
 
 # plot correlation between driver and non-driven part of the network
 ax = fig.add_subplot(grid[4:, 1])
-corr_driven = results.pivot(index=p1, columns=p2, values="network_oscillations")
-sb.heatmap(corr_driven, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+results["network_oscillations"] = results["network_oscillations"] > 0.3
+freqs = results.pivot(index=p1, columns=p2, values="network_oscillations")
+sb.heatmap(freqs, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_title("(H) Network oscillations")
 ax.set_xlabel(r"$\lambda$")
 ax.set_ylabel(r"$\Delta_{rs}$")
