@@ -99,6 +99,10 @@ W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices
 # plt.imshow(W)
 # plt.show()
 
+# collect model variables
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
+             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+
 # simulation
 ############
 
@@ -117,18 +121,15 @@ for i, p_in in enumerate(p_in_vals):
     inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
 
     # initialize model
-    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
-
-    # initialize model
-    net = Network.from_yaml(f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                            input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                            node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                            dt=dt, verbose=False, clear=True, device=device)
+    net = Network(dt=dt, device=device)
+    net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                        verbose=False, clear=True)
 
     # perform simulation
-    obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
-    res = obs["out"]
+    obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
+    res = obs.to_numpy("out")
 
     # calculate the distribution of the time-averaged network activity after the stimulation was turned off
     s = gaussian_filter1d(res, sigma=200, axis=0)
