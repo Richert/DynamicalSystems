@@ -43,7 +43,7 @@ wdir = "config"
 tdir = "results"
 
 # sweep condition
-cond = 12
+cond = 5
 p1 = "Delta_i"
 p2 = "trial"
 
@@ -121,10 +121,10 @@ spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=2*vi_t -
 indices = np.arange(0, N, dtype=np.int32)
 e_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 e_pdfs /= np.sum(e_pdfs)
-i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
+i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.0) for idx in indices])
 i_pdfs /= np.sum(i_pdfs)
 W_ee = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
-W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
+W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 W_ei = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 W_ii = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 

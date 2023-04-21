@@ -18,7 +18,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams['figure.figsize'] = (12, 8)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -33,7 +33,7 @@ a.update_bifurcation_style("HB", color="#76448A")
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=4, ncols=4, figure=fig)
+grid = gridspec.GridSpec(nrows=6, ncols=4, figure=fig)
 
 # 2D continuations
 ##################
@@ -51,7 +51,7 @@ ax.set_title(r'(A) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
 # ax.set_xlim([10.0, 70.0])
 
 # Delta_fs = 0.1, d_rs = 100.0
-ax = fig.add_subplot(grid[2:, 0])
+ax = fig.add_subplot(grid[2:4, 0])
 a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb2', ax=ax, line_color_stable='#148F77',
@@ -77,7 +77,7 @@ ax.set_title(r'(E) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$')
 # ax.set_xlim([10.0, 70.0])
 
 # Delta_fs = 1.0, d_rs = 100.0
-ax = fig.add_subplot(grid[2:, 1])
+ax = fig.add_subplot(grid[2:4, 1])
 a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:4:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:4:lp1', ax=ax, line_color_stable='#5D6D7E',
@@ -85,6 +85,20 @@ a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:4:lp1', ax=ax, line_co
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title(r'(F) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
+# ax.set_ylim([0.0, 1.7])
+# ax.set_xlim([10.0, 70.0])
+
+# Delta_rs = 0.1, d_rs = 10.0
+ax = fig.add_subplot(grid[4:, 0])
+a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:hb1', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77', line_style_unstable='solid')
+a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+ax.set_ylabel(r'$\Delta_{fs}$ (mv)')
+ax.set_xlabel(r'$I_{rs}$ (pA)')
+ax.set_title(r'(G) $\Delta_{rs} = 0.1$ mV, $\kappa_{rs} = 10.0$')
 # ax.set_ylim([0.0, 1.7])
 # ax.set_xlim([10.0, 70.0])
 
