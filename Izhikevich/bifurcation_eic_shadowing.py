@@ -96,6 +96,24 @@ a.run(starting_point='UZ1', c='qif', ICP=26, NPAR=n_params, NDIM=n_dim, name='I_
 a.run(starting_point='LP1', c='qif2', ICP=[6, 26], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:4:lp1', origin='I_fs:4:2',
       NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
 
+# continuation in I_rs for Delta_fs = 0.2 and d_rs = 10.0
+a.run(starting_point='UZ1', c='qif', ICP=6, NPAR=n_params, NDIM=n_dim, name='D_rs:1', origin=c3_cont, NMX=8000,
+      DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=150.0)
+a.run(starting_point='UZ1', c='qif', ICP=15, NPAR=n_params, NDIM=n_dim, name='I_rs:2', origin="D_rs:1", NMX=8000,
+      DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=150.0)
+a.run(starting_point='HB1', c='qif2', ICP=[24, 15], NPAR=n_params, NDIM=n_dim, name='D_fs/I_rs:1:hb1', origin="I_rs:2",
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2', 'BP1'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
+
+# continuation in I_fs for Delta_fs = 2.0 and d_rs = 10.0
+a.run(starting_point='UZ1', c='qif', ICP=6, NPAR=n_params, NDIM=n_dim, name='D_rs:2', origin=c4_cont, NMX=8000,
+      DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=150.0)
+a.run(starting_point='UZ1', c='qif', ICP=15, NPAR=n_params, NDIM=n_dim, name='I_rs:3', origin="D_rs:2", NMX=8000,
+      DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=150.0)
+a.run(starting_point='LP1', c='qif2', ICP=[24, 15], NPAR=n_params, NDIM=n_dim, name='D_fs/I_rs:2:lp1', origin="I_rs:3",
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
+a.run(starting_point='LP2', c='qif2', ICP=[24, 15], NPAR=n_params, NDIM=n_dim, name='D_fs/I_rs:2:lp2', origin="I_rs:3",
+      NMX=8000, DSMAX=0.1, UZR={}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
+
 # save results
 ##############
 
