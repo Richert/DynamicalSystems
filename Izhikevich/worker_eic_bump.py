@@ -43,7 +43,7 @@ wdir = "config"
 tdir = "results"
 
 # sweep condition
-cond = 5
+cond = 11
 p1 = "Delta_i"
 p2 = "trial"
 
@@ -68,7 +68,7 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-Delta_e = 0.1  # unit: mV
+Delta_e = 0.2  # unit: mV
 de = 10.0
 ae = 0.03
 be = -2.0
@@ -121,7 +121,7 @@ spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=2*vi_t -
 indices = np.arange(0, N, dtype=np.int32)
 e_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 e_pdfs /= np.sum(e_pdfs)
-i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.0) for idx in indices])
+i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 i_pdfs /= np.sum(i_pdfs)
 W_ee = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
 W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
@@ -180,7 +180,7 @@ for i, p_in in enumerate(p_in_vals):
     inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
     inp[:, :] = 0
     inp[:int(cutoff*0.5/dt), :N] -= 30.0
-    inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
+    inp[int(1000/dt):int(1500/dt), inp_indices] += 15.0
 
     # perform simulation
     obs = model.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
