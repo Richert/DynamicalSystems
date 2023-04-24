@@ -103,6 +103,13 @@ W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
              "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
+# initialize model
+net = Network(dt=dt, device=device)
+net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                    verbose=False, clear=True)
+
 # simulation
 ############
 
@@ -120,13 +127,6 @@ for i, p_in in enumerate(p_in_vals):
     inp[:int(cutoff*0.5/dt), :] -= 30.0
     inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
 
-    # initialize model
-    net = Network(dt=dt, device=device)
-    net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                        verbose=False, clear=True)
-
     # perform simulation
     obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
     res = obs.to_numpy("out")
@@ -142,6 +142,9 @@ for i, p_in in enumerate(p_in_vals):
     results["target_dists"].append(target_dist)
     results["population_dists"].append(population_dist)
     results["p_in"].append(p_in)
+
+    # reset network state
+    net.reset()
 
     # plot results
     # fig, axes = plt.subplots(nrows=2, figsize=(12, 8))

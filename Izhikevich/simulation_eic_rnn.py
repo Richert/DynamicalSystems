@@ -32,7 +32,7 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: fl
 ###################
 
 # general parameters
-N = 2000
+N = 1000
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
@@ -42,7 +42,7 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-Delta_e = 1.0  # unit: mV
+Delta_e = 0.1  # unit: mV
 de = 10.0
 ae = 0.03
 be = -2.0
@@ -79,25 +79,27 @@ spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=2*vi_t -
 indices = np.arange(0, N, dtype=np.int32)
 e_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 e_pdfs /= np.sum(e_pdfs)
-i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.5) for idx in indices])
+i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.0) for idx in indices])
 i_pdfs /= np.sum(i_pdfs)
 W_ee = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
-W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
+W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 W_ei = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 W_ii = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 
 # define inputs
-T = 2500.0
+T = 3500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-p_in = 0.25
+p_in = 0.5
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 inp = np.zeros((int(T/dt), 2*N))
-# inp[:int(0.5*cutoff/dt), :N] -= 20.0
-inp[int(1000/dt):int(2000/dt), inp_indices] += 20.0
+inp[:int(0.5*cutoff/dt), :N] -= 20.0
+inp[:int(0.5*cutoff/dt), N:] += 20.0
+inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
+inp[int(2500/dt):int(3000/dt), N + inp_indices] += 30.0
 
 # run the model
 ###############
@@ -130,13 +132,13 @@ net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i", weight=W
                           source_nodes=[f"fs/fs_{i}" for i in range(N)], target_nodes=[f"rs/rs_{i}" for i in range(N)])
 
 # initialize rectipy model
-model = Network(dt=dt, device="cuda:0")
+model = Network(dt=dt, device="cpu")
 model.add_diffeq_node("eic", node=net, input_var="ik_op/I_ext", output_var="rs/all/ik_op/s",
                       spike_var="ik_op/spike", spike_def="all/all/ik_op/v", spike_reset=v_reset,
-                      spike_threshold=v_spike, verbose=False, clear=False)
+                      spike_threshold=v_spike, verbose=True, clear=False)
 
 # perform simulation
-obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False)
+obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=True)
 res = obs.to_numpy("out")
 
 # plot results
@@ -153,4 +155,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_snn_het_fs_hom_rs.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_snn_hom_fs_hom_rs.p", "wb"))
