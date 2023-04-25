@@ -59,7 +59,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -77,9 +77,9 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 T = 3000.0
 dt = 1e-2
 sr = 10
-p_in = 0.1
-alpha = 0.0
-omega = 5.0
+p_in = 0.4
+alpha = 1e-2
+omega = 5.1
 steps = int(T/dt)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
@@ -107,7 +107,7 @@ spike_width = 50
 isi_bins = 20
 isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
-conn_pow = 0.5
+conn_pow = 1.0
 
 # run the model
 ###############
@@ -123,10 +123,11 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
              "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # initialize model
-net = Network.from_yaml(f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                        dt=dt, verbose=False, clear=True, device="cuda:0")
+net = Network(dt=dt, device="cuda:0")
+net.add_diffeq_node("rs", node=f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                    input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                    verbose=False, clear=True)
 
 # define input
 inp = np.zeros((steps, N))
@@ -135,11 +136,11 @@ for idx in inp_indices:
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
-res = obs["out"]
-s = gaussian_filter1d(res.values[cutoff:, :], sigma=sigma, axis=0).T
+res = obs.to_numpy("out")
+s = gaussian_filter1d(res[cutoff:, :], sigma=sigma, axis=0).T
 
 # calculate the correlation between the network and the driver
-s_smoothed = gaussian_filter1d(res.values, sigma=20*sigma, axis=0).T
+s_smoothed = gaussian_filter1d(res, sigma=20*sigma, axis=0).T
 fig, ax = plt.subplots(figsize=(10, 5))
 ax.imshow(s_smoothed, aspect="auto", interpolation="none")
 plt.show()
