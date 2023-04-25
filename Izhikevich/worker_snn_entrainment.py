@@ -163,7 +163,7 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "alpha": alpha, "thetas": thetas,
            "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "corr_driven": [],
-           "corr_nondriven": [], "steady_state_spiking": [], "oscillatory_spiking": [], "network_oscillations": [],
+           "corr_nondriven": [], "steady_state_spiking": [], "network_freq": [], "network_oscillations": [],
            "omegas": omegas, "conn_pows": conn_pows}
 for conn_pow in conn_pows:
 
@@ -229,15 +229,16 @@ for conn_pow in conn_pows:
             neural_freqs.append(1e3 / (np.mean(isis) * dt * sr))
         else:
             neural_freqs.append(0.0)
+    osc_idx = np.asarray(neural_freqs) > 0.1
 
     # store results
     results["corr_driven"].append(corr_driven)
     results["corr_nondriven"].append(corr_nondriven)
     results["dimensionality"].append(dim)
     results["sequentiality"].append(np.mean(sequentiality_measures))
-    results["network_oscillations"].append(np.mean(neural_freqs))
+    results["network_oscillations"].append(np.mean(osc_idx))
     results["steady_state_spiking"].append(population_dist)
-    results["oscillatory_spiking"].append(neural_freqs)
+    results["network_freq"].append(np.mean(np.asarray(neural_freqs)[osc_idx]))
 
     # plot results
     # fig, axes = plt.subplots(nrows=4, figsize=(12, 9))
