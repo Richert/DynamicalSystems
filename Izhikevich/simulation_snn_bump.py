@@ -93,7 +93,7 @@ pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("/media/richard/dat
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 5))
-im = ax.imshow(res.T, aspect=4.0, interpolation="none")
+im = ax.imshow(res.T, aspect="auto", interpolation="none")
 plt.colorbar(im, ax=ax, shrink=0.8)
 ax.set_xlabel('time')
 ax.set_ylabel('neurons')

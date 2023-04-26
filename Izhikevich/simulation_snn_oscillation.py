@@ -77,8 +77,8 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 T = 3000.0
 dt = 1e-2
 sr = 10
-p_in = 0.4
-alpha = 1e-2
+p_in = 0.25
+alpha = 1.0
 omega = 5.1
 steps = int(T/dt)
 n_inputs = int(p_in*N)
