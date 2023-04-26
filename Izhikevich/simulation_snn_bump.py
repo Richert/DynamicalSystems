@@ -59,7 +59,7 @@ print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
 cutoff = 500.0
-T = 5000.0 + cutoff
+T = 3000.0 + cutoff
 dt = 1e-2
 dts = 1e-1
 p_in = 0.3
