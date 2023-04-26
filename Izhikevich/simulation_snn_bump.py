@@ -34,7 +34,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 1.0
 eta = 30.0
 a = 0.03
 b = -2.0
@@ -89,7 +89,7 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbos
 res = obs.to_dataframe("out")
 
 # save results
-pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("/media/richard/data/snn_bump_hom.pkl", "wb"))
+pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("/media/richard/data/snn_bump_het.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 5))
