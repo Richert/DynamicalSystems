@@ -34,7 +34,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 1.5
 eta = 30.0
 a = 0.03
 b = -2.0
@@ -55,14 +55,14 @@ pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 # plt.imshow(W, interpolation="none", aspect="equal")
 # plt.show()
-print(np.sum(np.sum(W, axis=1)))
+# print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
 cutoff = 500.0
 T = 3000.0 + cutoff
 dt = 1e-2
 dts = 1e-1
-p_in = 0.4
+p_in = 0.25
 n_inputs = int(N * p_in)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
