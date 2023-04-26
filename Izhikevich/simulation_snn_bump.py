@@ -89,7 +89,7 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbos
 res = obs.to_dataframe("out")
 
 # save results
-pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("results/snn_bump_hom.pkl", "wb"))
+pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("/media/richard/data/snn_bump_hom.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 5))
