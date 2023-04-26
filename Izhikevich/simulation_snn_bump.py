@@ -12,13 +12,13 @@ from scipy.stats import rv_discrete
 ###################
 
 # model parameters
-N = 1000
-p = 0.1
+N = 2000
+p = 0.2
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 0.1
 eta = 30.0
 a = 0.03
 b = -2.0
@@ -37,19 +37,22 @@ indices = np.arange(0, N, dtype=np.int32)
 pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
-plt.imshow(W, interpolation="none", aspect="equal")
-plt.show()
-print(np.mean(np.sum(W > 1e-6, axis=1)))
+# plt.imshow(W, interpolation="none", aspect="equal")
+# plt.show()
+print(np.sum(np.sum(W, axis=1)))
 
 # define inputs
 cutoff = 500.0
-T = 3000.0 + cutoff
+T = 5000.0 + cutoff
 dt = 1e-2
 dts = 1e-1
-p_in = 0.25
+p_in = 0.3
+n_inputs = int(N * p_in)
+center = int(N*0.5)
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 inp = np.zeros((int(T/dt), N))
 inp[:int(200/dt), :] -= 30.0
-inp[int(1000/dt):int(1500/dt), :int(N*p_in)] += 30.0
+inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
 
 # run the model
 ###############
@@ -59,17 +62,18 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
              "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # initialize model
-net = Network.from_yaml(f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                        dt=dt, verbose=False, clear=True, device="cuda:0")
+net = Network(dt=dt, device="cuda:0")
+net.add_diffeq_node("rs", f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                    verbose=False, clear=True)
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False)
-res = obs["out"]
+res = obs.to_dataframe("out")
 
 # save results
-pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("results/snn_bump_het.pkl", "wb"))
+pickle.dump({"results": res.iloc[int(cutoff/dts):, :]}, open("results/snn_bump_hom.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 5))

@@ -17,12 +17,12 @@ def total_bump_difference(x: np.ndarray, y: np.ndarray) -> float:
 
 
 # file path and name
-path = "results/multibump"
-fn = "snn_multibump"
+path = "results/bump"
+fn = "snn_bump"
 
 # parameters of interest
 p1 = "Delta"
-p2 = "distances"
+p2 = "p_in"
 
 # calculate KLDs
 for file in os.listdir(path):

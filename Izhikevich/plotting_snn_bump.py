@@ -8,7 +8,7 @@ import seaborn as sb
 
 
 # file path and name
-path = "results/bump_new"
+path = "results/bump"
 fn = "snn_bump"
 
 # parameters of interest
@@ -21,7 +21,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 6)
+plt.rcParams['figure.figsize'] = (6, 8)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -31,15 +31,17 @@ markersize = 6
 
 # load data
 sweep = pickle.load(open("config/bump_sweep.pkl", "rb"))
+precisions = {"within_bump_dist": 4, "outside_bump_dist": 4, p1: 2, p2: 3}
 example_condition = {p1: [0.1, 1.0]}
-single_id = 3
-# examples_avg = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
-examples_single = {p2: [], p1: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
-results = {"within_bump_dist": [], "outside_bump_dist": [], p1: [], p2: []}
-precisions = {"within_bump_dist": 4, "outside_bump_dist": 4, p1: 2, p2: 2}
 for i, val in enumerate(example_condition[p1]):
     idx = np.argmin(np.abs(sweep[p1] - val)).squeeze()
     example_condition[p1][i] = np.round(sweep[p1][idx], decimals=precisions[p1])
+single_id = 1
+examples_avg = {val: {p2: [], "s": [], "neuron_id": [], "target_lb": [], "target_ub": []}
+                for val in example_condition[p1]}
+examples_single = examples_avg.copy()
+results = {"within_bump_dist": [], "outside_bump_dist": [], p1: [], p2: []}
+
 for file in os.listdir(path):
     if fn in file:
 
@@ -57,34 +59,38 @@ for file in os.listdir(path):
             results[key].append(np.round(bumps[key], decimals=precisions[key]))
 
         # store examples
-        if v1 in example_condition[p1] and trial == single_id:
+        if v1 in example_condition[p1]:
 
-            # # for average bump examples
-            # target = np.diff(np.mean(targets, axis=0))
-            # snn = np.mean(snn_data, axis=0)
-            # target_lb = np.argwhere(target > 1e-4).squeeze()
-            # target_ub = np.argwhere(target < 0.0).squeeze()
-            # examples_avg[p2].append(v2s)
-            # for i, s in enumerate(snn):
-            #     examples_avg["s"].append(s / np.max(snn))
-            #     examples_avg["neuron_id"].append(i)
-            #     examples_avg["target_lb"].append(target_lb)
-            #     examples_avg["target_ub"].append(target_ub)
-            #     examples_avg[p1].append(v1)
+            examples_tmp = {key: [] for key in examples_avg[v1]}
 
-            # for single bump examples
+            # collect bump example
             for snn, target, v2 in zip(snn_data, targets, v2s):
                 target = np.diff(target)
-                target_lb = np.argwhere(target > 1e-4).squeeze()
+                target_lb = np.argwhere(target > 1e-12).squeeze()
                 target_ub = np.argwhere(target < 0.0).squeeze()
+                try:
+                    target_lb = int(target_lb)
+                    target_ub = int(target_ub)
+                except TypeError:
+                    target_lb = 0
+                    target_ub = len(target)-1
                 for i, s in enumerate(snn):
-                    examples_single["s"].append(s / np.max(snn))
-                    examples_single["neuron_id"].append(i)
-                    examples_single["target_lb"].append(target_lb)
-                    examples_single["target_ub"].append(target_ub)
-                    examples_single[p1].append(v1)
-                    examples_single[p2].append(v2)
+                    examples_tmp["s"].append(s / np.max(snn))
+                    examples_tmp["neuron_id"].append(i)
+                    examples_tmp["target_lb"].append(target_lb)
+                    examples_tmp["target_ub"].append(target_ub)
+                    examples_tmp[p2].append(v2)
 
+            # collect examples for averaging
+            for key, val in examples_tmp.items():
+                examples_avg[v1][key].append(val)
+
+            if trial == single_id:
+
+                # for single bump examples
+                examples_single[v1] = examples_tmp.copy()
+
+# create final results data frames
 results_final = {key: [] for key in results}
 for v1 in sweep[p1]:
     idx = np.argwhere([results[p1][i][0] for i in range(len(results[p1]))] == np.round(v1, decimals=precisions[p1])
@@ -98,11 +104,11 @@ results = pd.DataFrame.from_dict(results_final)
 
 # create figure layout
 fig = plt.figure(1)
-grid = GridSpec(nrows=6, ncols=2, figure=fig)
+grid = GridSpec(nrows=8, ncols=2, figure=fig)
 
 # meta parameters
 example_id = 0
-ticks = 3
+ticks = 5
 
 # plot time series
 conditions = ["hom", "het"]
@@ -117,33 +123,15 @@ for idx, cond, title in zip(subplots, conditions, titles):
     ax.set_ylabel("neuron id")
     ax.set_title(title)
 
-# plot average bumps over p_in
-# titles = [r"(D) Average Network bump for $\Delta_{rs} = 0.1$ mV",
-#           r"(E) Average Network bump for $\Delta_{rs} = 1.0$ mV"]
-# for i, val in enumerate(example_condition[p1]):
-#     ax = fig.add_subplot(grid[2:4, i])
-#     idx = np.argwhere(np.asarray(examples_avg[p1]) == val).squeeze()
-#     example = pd.DataFrame.from_dict({key: np.asarray(val)[idx] for key, val in examples_avg.items()})
-#     sb.heatmap(example.pivot(index=p2, columns="neuron_id", values="s"), cbar=True, ax=ax,
-#                xticklabels=50*ticks, yticklabels=ticks, rasterized=True)
-#     lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
-#     ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
-#     for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
-#         ax.plot([lb, lb], [j, j+1], color="blue", linewidth=1)
-#         ax.plot([ub, ub], [j, j+1], color="blue", linewidth=1)
-#     ax.set_title(titles[i])
-#     ax.set_xlabel("neuron id")
-#     ax.set_ylabel(r"$p_{in}$")
-
 # plot example bumps over p_in
-titles = [r"(D) Example Network bump for $\Delta_{rs} = 0.1$ mV",
-          r"(E) Example Network bump for $\Delta_{rs} = 1.0$ mV"]
+titles = [r"(D) Example bump for $\Delta_{rs} = 0.1$ mV",
+          r"(E) Example bump for $\Delta_{rs} = 1.0$ mV"]
+p_in_ticks = [0.02, 0.1, 0.5]
 for i, val in enumerate(example_condition[p1]):
     ax = fig.add_subplot(grid[2:4, i])
-    idx = np.argwhere(np.asarray(examples_single[p1]) == val).squeeze()
-    example = pd.DataFrame.from_dict({key: np.asarray(val)[idx] for key, val in examples_single.items()})
-    sb.heatmap(example.pivot(index=p2, columns="neuron_id", values="s"), cbar=True, ax=ax,
-               xticklabels=50*ticks, yticklabels=ticks, rasterized=True)
+    example = pd.DataFrame.from_dict({key: np.asarray(v) for key, v in examples_single[val].items()})
+    data = example.pivot(index=p2, columns="neuron_id", values="s")
+    sb.heatmap(data, cbar=True, ax=ax, xticklabels=100*ticks, yticklabels=ticks, rasterized=True)
     lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
     ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
     for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
@@ -152,23 +140,58 @@ for i, val in enumerate(example_condition[p1]):
     ax.set_title(titles[i])
     ax.set_xlabel("neuron id")
     ax.set_ylabel(r"$p_{in}$")
+    ylocs = [np.argmin(np.abs(data.index - tick)).squeeze() for tick in p_in_ticks]
+    ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
+
+# plot average bumps over p_in
+titles = [r"(F) Average bump for $\Delta_{rs} = 0.1$ mV",
+          r"(G) Average bump for $\Delta_{rs} = 1.0$ mV"]
+for i, val in enumerate(example_condition[p1]):
+    ax = fig.add_subplot(grid[4:6, i])
+    example_dict = {}
+    for key, v in examples_avg[val].items():
+        v_mean = np.mean(v, axis=0)
+        if key in precisions:
+            v_final = np.round(v_mean, decimals=precisions[key])
+        elif key == "neuron_id":
+            v_final = np.asarray(v_mean, dtype=np.int32)
+        else:
+            v_final = v_mean
+        example_dict[key] = v_final
+    example = pd.DataFrame.from_dict(example_dict)
+    data = example.pivot(index=p2, columns="neuron_id", values="s")
+    sb.heatmap(data, cbar=True, ax=ax, xticklabels=100*ticks, yticklabels=ticks, rasterized=True)
+    lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
+    ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
+    for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
+        ax.plot([lb, lb], [j, j+1], color="blue", linewidth=1)
+        ax.plot([ub, ub], [j, j+1], color="blue", linewidth=1)
+    ax.set_title(titles[i])
+    ax.set_xlabel("neuron id")
+    ax.set_ylabel(r"$p_{in}$")
+    ylocs = [np.argmin(np.abs(data.index - tick)).squeeze() for tick in p_in_ticks]
+    ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
 
 # plot within-bump distance
-ax = fig.add_subplot(grid[4:, 0])
-within_dist = results.pivot(index=p1, columns=p2, values="within_bump_dist")
+ax = fig.add_subplot(grid[6:, 0])
+within_dist = results.pivot(index=p2, columns=p1, values="within_bump_dist")
 sb.heatmap(within_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_title("(F) RMSE (input, bump)")
-ax.set_xlabel(r"$p_{in}$")
-ax.set_ylabel(r"$\Delta_{rs}$")
+ax.set_title("(H) RMSE (input, bump)")
+ax.set_ylabel(r"$p_{in}$")
+ax.set_xlabel(r"$\Delta_{rs}$")
+ylocs = [np.argmin(np.abs(within_dist.index - tick)).squeeze() for tick in p_in_ticks]
+ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
 
 # plot outside-bump distance
-ax = fig.add_subplot(grid[4:, 1])
-outside_dist = results.pivot(index=p1, columns=p2, values="outside_bump_dist")
+ax = fig.add_subplot(grid[6:, 1])
+outside_dist = results.pivot(index=p2, columns=p1, values="outside_bump_dist")
 sb.heatmap(outside_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlim([0, 19])
-ax.set_title("(G) Average outside-bump activity")
-ax.set_xlabel(r"$p_{in}$")
-ax.set_ylabel(r"$\Delta_{rs}$")
+ax.set_title("(I) Average outside-bump activity")
+ax.set_ylabel(r"$p_{in}$")
+ax.set_xlabel(r"$\Delta_{rs}$")
+ylocs = [np.argmin(np.abs(outside_dist.index - tick)).squeeze() for tick in p_in_ticks]
+ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
 
 # finishing touches
 ###################
