@@ -49,6 +49,13 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
     return np.mean([np.sqrt(s/a) for s, a in zip(sym, asym)]).squeeze()
 
 
+def get_kernel(X: np.ndarray, alpha: float = 1e-12):
+    """
+    """
+    X_t = X.T
+    return X @ np.linalg.inv(X_t @ X + alpha*np.eye(X.shape[1])) @ X_t
+
+
 # define parameters
 ###################
 
@@ -59,7 +66,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -78,8 +85,8 @@ T = 3000.0
 dt = 1e-2
 sr = 10
 p_in = 0.25
-alpha = 20.0
-omega = 3.6
+alpha = 50.0
+omega = 5.1
 steps = int(T/dt)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
@@ -167,12 +174,15 @@ corr_net = np.cov(s)
 eigs = np.abs(np.linalg.eigvals(corr_net))
 dim = np.sum(eigs)**2/np.sum(eigs**2)
 
-# calculate the network sequentiality
+# calculate the network sequentiality and kernel rank
 sequentiality_measures = []
+kernel_diff = []
 for sidx in stim_onsets:
     if s.shape[1] - sidx > min_isi:
         s_tmp = s[:, sidx:sidx + min_isi]
         sequentiality_measures.append(sequentiality(s_tmp, neighborhood=50, max_lag=margin))
+        K = get_kernel(s_tmp.T)
+        kernel_diff.append(np.mean((K-np.eye(K.shape[0]))**2, axis=1))
 
 # plot results
 fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
@@ -192,9 +202,12 @@ ax.set_xlabel('time')
 ax.set_ylabel('neurons')
 ax.set_title(f"Seq = {np.mean(sequentiality_measures)}, Dim = {dim}")
 ax = axes[2]
-ax.bar(np.arange(0, N), freqs, width=0.8)
-ax.set_xlabel("neuron ID")
-ax.set_ylabel("freq")
+# ax.bar(np.arange(0, N), freqs, width=0.8)
+# ax.set_xlabel("neuron ID")
+# ax.set_ylabel("freq")
+ax.plot(np.mean(kernel_diff, axis=0))
+ax.set_xlabel("lags")
+ax.set_ylabel("mse")
 ax.set_title(f"Network freq = {np.mean(freqs)}")
 plt.tight_layout()
 
