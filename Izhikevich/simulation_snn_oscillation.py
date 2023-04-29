@@ -84,7 +84,7 @@ T = 3000.0
 dt = 1e-2
 sr = 10
 p_in = 0.25
-alpha = 10.0
+alpha = 40.0
 omega = 5.1
 steps = int(T/dt)
 n_inputs = int(p_in*N)
@@ -182,12 +182,16 @@ for sidx in stim_onsets:
         s_tmp = s[:, sidx:sidx + min_isi]
         sequentiality_measures.append(sequentiality(s_tmp, neighborhood=50, max_lag=margin))
         signals.append(s_tmp)
-        c_inverses.append(get_cinv(s_tmp))
+        c_inverses.append(get_cinv(s_tmp, alpha=1e-6))
 s_mean = np.mean(signals, axis=0)
 s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
 C_inv = np.mean(c_inverses, axis=0)
 K = s_mean.T @ C_inv @ s_mean
+K /= np.max(K)
 G = s_var.T @ C_inv @ s_mean
+target = np.sin(2.0 * np.pi * 1.0 * 1e-3 * sr * np.arange(0, K.shape[0]))
+prediction = target @ K
+distortion = target @ G
 
 # plot results
 fig, axes = plt.subplots(nrows=4, figsize=(12, 9))
@@ -207,13 +211,20 @@ ax.set_xlabel('time')
 ax.set_ylabel('neurons')
 ax.set_title(f"Seq = {np.mean(sequentiality_measures)}, Dim = {dim}")
 ax = axes[2]
-ax.plot(np.mean((K - np.eye(K.shape[0]))**2, axis=0))
+mse = np.mean((K - np.eye(K.shape[0]))**2, axis=0)
+ax.plot(target, label="target")
+ax.plot(prediction, label="prediction")
 ax.set_xlabel("lags")
 ax.set_ylabel("MSE(K-I)")
+ax.legend()
+ax.set_title(f"Mean MSE: {np.mean(mse)}")
 ax = axes[3]
-ax.plot(np.mean(G, axis=0))
+ax.plot(distortion, label="distortion")
+ax.plot(prediction, label="prediction")
 ax.set_xlabel("lags")
 ax.set_ylabel("mean(G[:, lag])")
+ax.legend()
+ax.set_title(f"Mean G: {np.mean(G.flatten())}")
 plt.tight_layout()
 
 _, axes = plt.subplots(ncols=2, figsize=(12, 6))
