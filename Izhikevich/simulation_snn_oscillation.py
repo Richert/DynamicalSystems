@@ -67,6 +67,32 @@ def pca(X: np.ndarray) -> tuple:
     return eigvals[sort_idx]/np.sum(vals_abs), eigvecs[:, sort_idx]
 
 
+def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: dict):
+
+    # perform simulation for each stimulation time
+    signals = []
+    inputs = []
+    print("Simulating stimulation trials...")
+    start = int(np.round(cycle_steps / sr))
+    for i, stim in enumerate(stim_onsets):
+        inp = np.zeros((stim + cycle_steps, 1))
+        inp[stim:stim + stim_width] = alpha
+        obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
+        res = obs.to_numpy("out")[-start:, :]
+        signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
+        inputs.append(inp[::sr][-start:])
+        net.reset(y0)
+        print(f"Trials finished: {(i + 1)} / {len(stim_onsets)}")
+
+    return signals, inputs
+
+
+def mse(x: np.ndarray, y: np.ndarray) -> float:
+    x = x.squeeze() / np.max(x.flatten())
+    y = y.squeeze() / np.max(y.flatten())
+    return float(np.mean((x - y)**2))
+
+
 # define parameters
 ###################
 
@@ -97,16 +123,16 @@ v_reset = -1000.0
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # simulation parameters
-T_init = 1000.0
+T_init = 2000.0
 dt = 1e-2
 sr = 10
-alpha = 40.0
+alpha = 80.0
 p_in = 0.25
 idx = np.argmin(np.abs(deltas - Delta))
 freq = freqs[idx]
 T = 1e3/freq
 cycle_steps = int(T/dt)
-stim_onsets = np.linspace(0, T, num=4)[:-1]
+stim_onsets = np.linspace(0, T, num=21)[:-1]
 stim_onsets = [int(onset/dt) for onset in stim_onsets]
 stim_width = int(10.0/dt)
 
@@ -121,8 +147,8 @@ isi_min = 1500
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
 
-# run the model
-###############
+# simulations
+#############
 
 # define connectivity
 pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
@@ -147,19 +173,8 @@ inp = np.zeros((init_steps, 1))
 net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
 y0 = net.state
 
-# perform simulation for each stimulation time
-signals = []
-inputs = []
-print("Simulating stimulation trials...")
-start = int(np.round(cycle_steps/sr))
-for i, stim in enumerate(stim_onsets):
-    inp = np.zeros((stim+cycle_steps, 1))
-    inp[stim:stim+stim_width] = alpha
-    obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
-    res = obs.to_numpy("out")[-start:, :]
-    signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
-    inputs.append(inp[::sr][-start:])
-    print(f"Trials finished: {(i + 1)} / {len(stim_onsets)}")
+# get signals for each stimulation onset
+signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0)
 
 # calculate the network dimensionality
 print("Starting dimensionality calculation...")
@@ -192,10 +207,16 @@ C_inv = np.linalg.inv(np.mean(cs, axis=0))
 w = C_inv @ s_mean
 K = s_mean.T @ w
 G = s_var.T @ w
-target = np.sin(2.0 * np.pi * 0.5 * 1e-3 * sr * np.arange(0, K.shape[0]))
+print("Finished.")
+
+# calculate the prediction performance for a concrete target
+delay = 500
+sigma_t = int(delay*0.1)
+target = np.zeros((K.shape[0]))
+target[delay] = 1.0
+target = gaussian_filter1d(target, sigma=sigma_t)
 prediction = K @ target
 distortion = G @ target
-print("Finished.")
 
 # calculate the readout weights
 w_readout = w @ target
@@ -213,7 +234,14 @@ v_explained, pcs = pca(K_funcs)
 pc1_proj = K_funcs @ pcs[:, 0]
 print("Finished.")
 
-# plot network dynamics
+# calculate the network response on test data
+test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=5)
+test_signals, test_inputs = get_signals(list(test_onsets), cycle_steps, sr, net, y0)
+test_loss = np.mean([mse(test_sig, target) for test_sig in test_signals])
+
+# plotting
+##########
+
 fig, axes = plt.subplots(nrows=4, figsize=(12, 9))
 s_all = np.concatenate(signals, axis=1)
 inp_all = np.concatenate(inputs, axis=0)
@@ -265,11 +293,13 @@ examples = [0, 1, 2]
 fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
 for i, ex in enumerate(examples):
     ax = axes[i]
-    ax.plot(w_readout @ signals[ex], label="reconstruction")
+    ax.plot(w_readout @ test_signals[ex], label="prediction")
     ax.plot(target, label="target")
     ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("s")
+    if i == 0:
+        ax.set_title(f"Test loss: {test_loss}")
 plt.tight_layout()
 
 # plot PCA results
