@@ -77,11 +77,11 @@ def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: 
     for i, stim in enumerate(stim_onsets):
         inp = np.zeros((stim + cycle_steps, 1))
         inp[stim:stim + stim_width] = alpha
+        net.reset(y0)
         obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
         res = obs.to_numpy("out")[-start:, :]
         signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
         inputs.append(inp[::sr][-start:])
-        net.reset(y0)
         print(f"Trials finished: {(i + 1)} / {len(stim_onsets)}")
 
     return signals, inputs
@@ -108,7 +108,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -123,11 +123,11 @@ v_reset = -1000.0
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # simulation parameters
-T_init = 2000.0
+T_init = 1000.0
 dt = 1e-2
 sr = 10
-alpha = 80.0
-p_in = 0.25
+alpha = 100.0
+p_in = 0.1
 idx = np.argmin(np.abs(deltas - Delta))
 freq = freqs[idx]
 T = 1e3/freq
@@ -210,11 +210,10 @@ G = s_var.T @ w
 print("Finished.")
 
 # calculate the prediction performance for a concrete target
-delay = 500
-sigma_t = int(delay*0.1)
-target = np.zeros((K.shape[0]))
-target[delay] = 1.0
-target = gaussian_filter1d(target, sigma=sigma_t)
+omega = 40.0
+sigma_t = int(omega * 0.1)
+target = np.sin(2*np.pi*np.arange(0, int(np.round(cycle_steps / sr)))*omega*dt*sr*1e-3)
+# target = gaussian_filter1d(target, sigma=sigma_t)
 prediction = K @ target
 distortion = G @ target
 
