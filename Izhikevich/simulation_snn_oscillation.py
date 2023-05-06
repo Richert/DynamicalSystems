@@ -67,7 +67,8 @@ def pca(X: np.ndarray) -> tuple:
     return eigvals[sort_idx]/np.sum(vals_abs), eigvecs[:, sort_idx]
 
 
-def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: dict, sigma: float = 10.0):
+def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: dict, inp_indices: np.ndarray,
+                sigma: float = 10.0):
 
     # perform simulation for each stimulation time
     signals = []
@@ -75,14 +76,14 @@ def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: 
     print("Simulating stimulation trials...")
     start = int(np.round(cycle_steps / sr))
     for i, stim in enumerate(stim_onsets):
-        inp = np.zeros((stim + cycle_steps, 1))
-        inp[stim:stim + stim_width] = alpha
-        inp = gaussian_filter1d(inp, sigma=sigma)
+        inp = np.zeros((stim + cycle_steps, N))
+        inp[stim:stim + stim_width, inp_indices] = alpha
+        inp = gaussian_filter1d(inp, sigma=sigma, axis=0)
         net.reset(y0)
         obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
         res = obs.to_numpy("out")[-start:, :]
         signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
-        inputs.append(inp[::sr][-start:])
+        inputs.append(inp[::sr, inp_indices[0]][-start:])
         print(f"Trials finished: {(i + 1)} / {len(stim_onsets)}")
 
     return signals, inputs
@@ -109,7 +110,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -136,6 +137,9 @@ cycle_steps = int(T/dt)
 stim_onsets = np.linspace(0, T/3, num=21)[:-1]
 stim_onsets = [int(onset/dt) for onset in stim_onsets]
 stim_width = int(20.0/dt)
+n_inputs = int(p_in*N)
+center = int(N*0.5)
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 
 # other analysis parameters
 sigma = 10
@@ -175,7 +179,7 @@ net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
 y0 = net.state
 
 # get signals for each stimulation onset
-signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, sigma=sigma)
+signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
 # calculate the network dimensionality
 print("Starting dimensionality calculation...")
@@ -238,7 +242,7 @@ print("Finished.")
 
 # calculate the network response on test data
 test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=5)
-test_signals, test_inputs = get_signals(list(test_onsets), cycle_steps, sr, net, y0, sigma=sigma)
+test_signals, test_inputs = get_signals(list(test_onsets), cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 test_loss = np.mean([mse(test_sig, target) for test_sig in test_signals])
 print(f"Test loss (MSE between target and prediction) = {test_loss}")
 
@@ -252,7 +256,7 @@ s_all /= np.max(s_all)
 inp_all /= np.max(inp_all)
 ax = axes[0]
 ax.plot(np.mean(s_all, axis=0), label="s")
-ax.plot(np.mean(inp_all, axis=1), label="I_ext")
+ax.plot(inp_all, label="I_ext")
 ax.legend()
 ax.set_xlabel("time")
 ax.set_title("Mean signal")

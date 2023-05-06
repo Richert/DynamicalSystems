@@ -78,8 +78,8 @@ def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: 
     for i, stim in enumerate(stim_onsets):
         inp = np.zeros((stim + cycle_steps, N))
         inp[stim:stim + stim_width, inp_indices] = alpha
-        inp = gaussian_filter1d(inp, sigma=sigma)
-        net.reset(y0.copy())
+        inp = gaussian_filter1d(inp, sigma=sigma, axis=0)
+        net.reset(y0)
         obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
         res = obs.to_numpy("out")[-start:, :]
         signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
@@ -111,7 +111,7 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 45.0
+eta = 48.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -174,7 +174,7 @@ net.add_diffeq_node("rs", node=f"config/ik_snn/rs", weights=W, source_var="s", t
 # perform initial wash-out simulation
 init_steps = int(T_init/dt)
 inp = np.zeros((init_steps, 1))
-net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
+obs = net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
 y0 = net.state
 
 # get signals for each stimulation onset
@@ -255,7 +255,7 @@ s_all /= np.max(s_all)
 inp_all /= np.max(inp_all)
 ax = axes[0]
 ax.plot(np.mean(s_all, axis=0), label="s")
-ax.plot(np.mean(inp_all, axis=1), label="I_ext")
+ax.plot(inp_all, label="I_ext")
 ax.legend()
 ax.set_xlabel("time")
 ax.set_title("Mean signal")
