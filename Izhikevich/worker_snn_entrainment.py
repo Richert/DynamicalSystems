@@ -161,9 +161,7 @@ with open(f"{wdir}/entrainment_sweep.pkl", "rb") as f:
     f.close()
 vals = [(v1, v2) for v1 in v1s for v2 in v2s]
 v1, v2 = vals[int(cond)]
-omegas = sweep["omega"]
-omega = omegas[np.argmin(np.abs(v1s - v1))]
-print(f"Condition: {p1} = {v1},  {p2} = {v2}, omega = {omega}")
+print(f"Condition: {p1} = {v1},  {p2} = {v2}")
 
 # adjust parameters according to sweep condition
 for param, v in zip([p1, p2], [v1, v2]):
@@ -229,7 +227,7 @@ y0 = net.state
 # prepare results storage
 results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
            "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "Ks": [], "Gs": [],
-           "test_signals": [], "test_onsets": [], "omegas": omegas, "alphas": alphas}
+           "test_signals": [], "test_onsets": [], "alphas": alphas}
 for i, alpha in enumerate(alphas):
 
     # define connectivity
