@@ -119,7 +119,7 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # load data that maps deltas to frequencies
-data = pickle.load(open("results/fre_oscillations.pkl", "rb"))
+data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
 deltas = data["deltas"]
 freqs = data["freqs"]
 
