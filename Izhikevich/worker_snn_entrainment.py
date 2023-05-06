@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -9,7 +9,6 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import find_peaks
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -70,8 +69,59 @@ def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap:
     return np.mean([np.sqrt(s/a) for s, a in zip(sym, asym)]).squeeze()
 
 
+def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: dict, inp_indices: np.ndarray,
+                sigma: float = 10.0):
+
+    # perform simulation for each stimulation time
+    signals = []
+    inputs = []
+    print("Simulating stimulation trials...")
+    start = int(np.round(cycle_steps / sr))
+    for i, stim in enumerate(stim_onsets):
+        inp = np.zeros((stim + cycle_steps, N))
+        inp[stim:stim + stim_width, inp_indices] = alpha
+        inp = gaussian_filter1d(inp, sigma=sigma, axis=0)
+        net.reset(y0)
+        obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False, enable_grad=False)
+        res = obs.to_numpy("out")[-start:, :]
+        signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
+        inputs.append(inp[::sr, inp_indices[0]][-start:])
+        print(f"Trials finished: {(i + 1)} / {len(stim_onsets)}")
+
+    return signals, inputs
+
+
+def mse(x: np.ndarray, y: np.ndarray) -> float:
+    x = x.squeeze() / np.max(x.flatten())
+    y = y.squeeze() / np.max(y.flatten())
+    return float(np.mean((x - y)**2))
+
+
+def get_c(X: np.ndarray, alpha: float = 1e-4):
+    """
+    """
+    return X @ X.T + alpha*np.eye(X.shape[0])
+
+
+def pca(X: np.ndarray) -> tuple:
+    X = X - X.mean()
+    Z = X / X.std()
+    C = Z.T @ Z
+    eigvals, eigvecs = np.linalg.eig(C)
+    if np.abs(np.min(eigvecs[:, 0])) > np.abs(np.max(eigvecs[:, 0])):
+        eigvecs[:, 0] *= -1
+    vals_abs = np.abs(eigvals)
+    sort_idx = np.argsort(vals_abs)[::-1]
+    return eigvals[sort_idx]/np.sum(vals_abs), eigvecs[:, sort_idx]
+
+
 # define parameters
 ###################
+
+# load data that maps deltas to frequencies
+data = pickle.load(open("results/fre_oscillations.pkl", "rb"))
+deltas = data["deltas"]
+freqs = data["freqs"]
 
 # model parameters
 N = 2000
@@ -80,7 +130,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 1.0
 eta = 55.0
 a = 0.03
 b = -2.0
@@ -95,11 +145,11 @@ v_reset = -1000.0
 device = "cuda:0"
 
 # working directory
-wdir = "config"
-tdir = "results"
+# wdir = "config"
+# tdir = "results"
 
 # sweep condition
-cond = 10
+# cond = 10
 p1 = "Delta"
 p2 = "trial"
 
@@ -115,41 +165,6 @@ omegas = sweep["omega"]
 omega = omegas[np.argmin(np.abs(v1s - v1))]
 print(f"Condition: {p1} = {v1},  {p2} = {v2}, omega = {omega}")
 
-# simulation-related parameters
-T = 3000.0
-dt = 1e-2
-sr = 10
-p_in = 0.1
-alpha = 1e-2
-steps = int(T/dt)
-n_inputs = int(p_in*N)
-center = int(N*0.5)
-inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-cutoff = int(1000.0/(dt*sr))
-
-# define stimulation signal
-time = np.linspace(0, T, steps)
-driver_tmp = np.sin(2.0 * np.pi * omega * 1e-3 * time)
-driver = np.zeros_like(driver_tmp)
-driver[driver_tmp > 0.9] = 1.0
-driver_ds = driver[::sr]
-
-# infer stimulation onsets
-margin = 200
-driver_diff = np.diff(driver_ds[cutoff:])
-stim_onsets = np.argwhere(driver_diff > 0.1).squeeze()
-stim_width = np.argwhere(driver_diff < -0.1).squeeze()[0] - stim_onsets[0]
-min_isi = np.min(np.abs(np.diff(stim_onsets))) - margin
-
-# other analysis parameters
-sigma = 10
-spike_height = 0.7
-spike_width = 50
-isi_bins = 20
-isi_min = 1500
-indices = np.arange(0, N, dtype=np.int32)
-conn_pows = np.linspace(0.5, 1.5, num=20)
-
 # adjust parameters according to sweep condition
 for param, v in zip([p1, p2], [v1, v2]):
     exec(f"{param} = {v}")
@@ -157,115 +172,156 @@ for param, v in zip([p1, p2], [v1, v2]):
 # define lorentzian of etas
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
+# simulation parameters
+T_init = 2000.0
+dt = 1e-2
+sr = 10
+alphas = np.linspace(1, 100, 20)
+p_in = 0.2
+idx = np.argmin(np.abs(deltas - Delta))
+freq = freqs[idx]
+T = 1e3/freq
+cycle_steps = int(T/dt)
+n_stims = 20
+n_tests = 5
+stim_onsets = np.linspace(0, T/3, num=n_stims+1)[:-1]
+stim_onsets = [int(onset/dt) for onset in stim_onsets]
+stim_width = int(20.0/dt)
+n_inputs = int(p_in*N)
+center = int(N*0.5)
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+
+# other analysis parameters
+sigma = 10
+margin = 100
+seq_range = 50
+indices = np.arange(0, N, dtype=np.int32)
+conn_pow = 0.75
+
+# simulations
+#############
+
+# define connectivity
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
+pdfs /= np.sum(pdfs)
+W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
+
+# collect parameters
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
+             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+
+# initialize model
+net = Network(dt=dt, device="cuda:0")
+net.add_diffeq_node("rs", node=f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                    verbose=False, clear=True)
+
+# perform initial wash-out simulation
+init_steps = int(T_init/dt)
+inp = np.zeros((init_steps, 1))
+net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
+y0 = net.state
+
 # simulation
 ############
 
 # prepare results storage
-results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "alpha": alpha, "thetas": thetas,
-           "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "corr_driven": [],
-           "corr_nondriven": [], "steady_state_spiking": [], "network_freq": [], "network_oscillations": [],
-           "omegas": omegas, "conn_pows": conn_pows}
-for conn_pow in conn_pows:
+results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
+           "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "Ks": [], "Gs": [],
+           "test_signals": [], "test_onsets": [], "omegas": omegas, "alphas": alphas}
+for i, alpha in enumerate(alphas):
 
     # define connectivity
     pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
     pdfs /= np.sum(pdfs)
     W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
-    # model parameters
-    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
-                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
-
     # initialize model
-    net = Network.from_yaml(f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                            input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                            node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                            dt=dt, verbose=False, clear=True, device=device)
+    net = Network(dt=dt, device="cuda:0")
+    net.add_diffeq_node("rs", node=f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                        verbose=False, clear=True)
 
-    # define input
-    inp = np.zeros((steps, N))
-    for idx in inp_indices:
-        inp[:, idx] = driver*alpha
+    # perform initial wash-out simulation
+    init_steps = int(T_init / dt)
+    inp = np.zeros((init_steps, 1))
+    net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
+    y0 = net.state
 
-    # perform simulation
-    obs = net.run(inputs=inp, sampling_steps=sr, record_output=True, verbose=False)
-    res = obs["out"]
-    s = gaussian_filter1d(res.iloc[cutoff:, :].values, sigma=sigma, axis=0).T
-
-    # calculate the correlation between the network
-    snn_driven = np.mean(s[inp_indices, :], axis=0)
-    snn_nondriven = np.mean(np.concatenate([s[:inp_indices[0], :], s[inp_indices[-1]:, :]], axis=0), axis=0)
-    corr_driven = np.corrcoef(snn_driven, driver_ds[cutoff:])[0, 1]
-    corr_nondriven = np.corrcoef(snn_nondriven, driver_ds[cutoff:])[0, 1]
+    # get signals for each stimulation onset
+    signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
     # calculate the network dimensionality
-    corr_net = np.cov(s)
-    eigs = np.abs(np.linalg.eigvals(corr_net))
-    dim = np.sum(eigs)**2/np.sum(eigs**2)
+    dims = []
+    for i, s in enumerate(signals):
+        corr_net = np.cov(s)
+        eigs = np.abs(np.linalg.eigvals(corr_net))
+        dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
 
     # calculate the network sequentiality
-    sequentiality_measures = []
-    for sidx in stim_onsets:
-        if s.shape[1] - sidx > min_isi:
-            s_tmp = s[:, sidx:sidx + min_isi]
-            sequentiality_measures.append(sequentiality(s_tmp, neighborhood=50, max_lag=margin))
+    seqs = []
+    for i, s in enumerate(signals):
+        seqs.append(sequentiality(s, neighborhood=seq_range, max_lag=margin))
 
-    # calculate the steady-state network activity
-    population_dist = np.mean(s, axis=1).squeeze()
-    population_dist /= np.max(population_dist)
+    # calculate the network covariance matrices
+    cs = []
+    for i, s in enumerate(signals):
+        cs.append(get_c(s, alpha=1e-4))
 
-    # detect neural oscillations
-    s_smoothed = gaussian_filter1d(res.values, sigma=20 * sigma, axis=0).T
-    neural_freqs = []
-    for idx in range(s_smoothed.shape[0]):
-        s_tmp = s_smoothed[idx, :]
-        if np.max(s_tmp) > 1e-12:
-            s_tmp /= np.max(s_tmp)
-            peaks, _ = find_peaks(s_tmp[cutoff:-cutoff], prominence=0.5, width=200.0)
-        else:
-            peaks = []
-        if len(peaks) > 1:
-            isis = np.diff(peaks)
-            neural_freqs.append(1e3 / (np.mean(isis) * dt * sr))
-        else:
-            neural_freqs.append(0.0)
-    osc_idx = np.asarray(neural_freqs) > 0.1
+    # calculate the network kernel
+    s_mean = np.mean(signals, axis=0)
+    s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
+    C_inv = np.linalg.inv(np.mean(cs, axis=0))
+    w = C_inv @ s_mean
+    K = s_mean.T @ w
+    G = s_var.T @ w
+
+    # calculate the network response on test data
+    test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=n_tests)
+    test_signals, _ = get_signals(list(test_onsets), cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
     # store results
-    results["corr_driven"].append(corr_driven)
-    results["corr_nondriven"].append(corr_nondriven)
-    results["dimensionality"].append(dim)
-    results["sequentiality"].append(np.mean(sequentiality_measures))
-    results["network_oscillations"].append(np.mean(osc_idx))
-    results["steady_state_spiking"].append(population_dist)
-    results["network_freq"].append(np.mean(np.asarray(neural_freqs)[osc_idx]))
+    results["dimensionality"].append(np.mean(dims))
+    results["sequentiality"].append(np.mean(seqs))
+    results["Ks"].append(K)
+    results["Gs"].append(G)
+    results["test_signals"].append(test_signals)
+    results["test_onsets"].append(np.round(dt*2.0*np.pi*test_onsets/T, decimals=2))
+
+    print(f"Finished {(i+1)} of {len(alphas)} jobs.")
 
     # plot results
-    # fig, axes = plt.subplots(nrows=4, figsize=(12, 9))
+    # _, axes = plt.subplots(nrows=2, figsize=(12, 5))
+    # s_all = np.concatenate(signals, axis=1)
+    # inp_all = np.concatenate(inputs, axis=0)
+    # s_all /= np.max(s_all)
+    # inp_all /= np.max(inp_all)
     # ax = axes[0]
-    # ax.plot(driver_ds[cutoff:], label="input")
-    # ax.plot(np.mean(s, axis=0), label="mean-field")
-    # ax.plot(snn_driven, label="driven")
-    # ax.plot(snn_nondriven, label="non-driven")
+    # ax.plot(np.mean(s_all, axis=0), label="s")
+    # ax.plot(inp_all, label="I_ext")
     # ax.legend()
+    # ax.set_xlabel("time")
+    # ax.set_title("Mean signal")
     # ax = axes[1]
-    # im = ax.imshow(s, aspect="auto", interpolation="none")
-    # plt.colorbar(im, ax=ax, shrink=0.8)
+    # im = ax.imshow(s_all, aspect="auto", interpolation="none")
+    # plt.colorbar(im, ax=ax, shrink=0.4)
     # ax.set_xlabel('time')
     # ax.set_ylabel('neurons')
-    # ax.set_title(f"Network dynamics (dim = {dim}, seq = {np.mean(sequentiality_measures)})")
-    # ax = axes[2]
-    # ax.plot(population_dist)
-    # ax.set_xlabel("neuron id")
-    # ax.set_ylabel("s")
-    # ax.set_title(f"Mean activity (corr_driven = {corr_driven}, corr_nondriven = {corr_nondriven})")
-    # ax = axes[3]
-    # ax.plot(neural_freqs)
-    # ax.axvline(x=inp_indices[0], linestyle="--", color="blue")
-    # ax.axvline(x=inp_indices[-1], linestyle="--", color="blue")
-    # ax.set_xlabel("neuron id")
-    # ax.set_ylabel("freq")
-    # ax.set_title(f"Neural oscillation freq")
+    # ax.set_title(f"Seq = {np.mean(seqs)}, Dim = {np.mean(dims)}")
+    # plt.tight_layout()
+    # _, axes = plt.subplots(ncols=2, figsize=(12, 6))
+    # ax = axes[0]
+    # ax.imshow(K, aspect="auto", interpolation="none")
+    # ax.set_xlabel("lags")
+    # ax.set_ylabel("lags")
+    # ax.set_title(f"K")
+    # ax = axes[1]
+    # ax.imshow(G, aspect="auto", interpolation="none")
+    # ax.set_xlabel("lags")
+    # ax.set_ylabel("lags")
+    # ax.set_title(f"G")
     # plt.tight_layout()
     # plt.show()
 
