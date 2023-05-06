@@ -210,7 +210,7 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
 
 # initialize model
 net = Network(dt=dt, device="cuda:0")
-net.add_diffeq_node("rs", node=f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                     node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                     verbose=False, clear=True)

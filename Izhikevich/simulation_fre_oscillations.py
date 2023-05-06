@@ -54,6 +54,6 @@ for delta in deltas:
     freqs.append(len(peaks)*1e3/T)
 
 # save data
-fn = "results/fre_oscillations.pkl"
+fn = "config/fre_oscillations.pkl"
 pickle.dump({"res": res, "map": res_map, "deltas": deltas, "freqs": freqs},
             open(fn, "wb"))
