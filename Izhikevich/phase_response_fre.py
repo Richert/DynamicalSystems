@@ -23,7 +23,7 @@ node_vars = {
 net.update_var(node_vars={f"p/ik_op/{var}": val for var, val in node_vars.items()})
 
 # load data that maps deltas to frequencies
-data = pickle.load(open("results/fre_oscillations.pkl", "rb"))
+data = pickle.load(open("config/fre_oscillations.pkl", "rb"))
 deltas = data["deltas"]
 freqs = data["freqs"]
 param_map = {"Delta": {"vars": [f"ik_op/Delta"], "nodes": ['p']}}

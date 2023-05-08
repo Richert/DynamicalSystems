@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
+import h5py
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -75,7 +76,6 @@ def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: 
     # perform simulation for each stimulation time
     signals = []
     inputs = []
-    print("Simulating stimulation trials...")
     start = int(np.round(cycle_steps / sr))
     for i, stim in enumerate(stim_onsets):
         inp = np.zeros((stim + cycle_steps, N))
@@ -86,7 +86,6 @@ def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: 
         res = obs.to_numpy("out")[-start:, :]
         signals.append(gaussian_filter1d(res, sigma=sigma, axis=0).T)
         inputs.append(inp[::sr, inp_indices[0]][-start:])
-        print(f"Trials finished: {(i + 1)} / {len(stim_onsets)}")
 
     return signals, inputs
 
@@ -118,13 +117,17 @@ def pca(X: np.ndarray) -> tuple:
 # define parameters
 ###################
 
+# working directory
+# wdir = "config"
+# tdir = "results"
+
 # load data that maps deltas to frequencies
 data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
 deltas = data["deltas"]
 freqs = data["freqs"]
 
 # model parameters
-N = 2000
+N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
@@ -144,12 +147,8 @@ v_reset = -1000.0
 # device for computations
 device = "cuda:0"
 
-# working directory
-# wdir = "config"
-# tdir = "results"
-
 # sweep condition
-# cond = 10
+# cond = 11
 p1 = "Delta"
 p2 = "trial"
 
@@ -196,8 +195,8 @@ seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
 
-# simulations
-#############
+# initial simulation
+####################
 
 # define connectivity
 pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
@@ -221,13 +220,16 @@ inp = np.zeros((init_steps, 1))
 net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
 y0 = net.state
 
-# simulation
-############
+# main simulation
+#################
 
-# prepare results storage
-results = {"sweep": {p1: v1, p2: v2}, "T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
-           "input_indices": inp_indices, "dimensionality": [], "sequentiality": [], "Ks": [], "Gs": [],
-           "test_signals": [], "test_onsets": [], "alphas": alphas}
+fname = f"snn_entrainment"
+f = f"{tdir}/{fname}_{cond}.h5"
+hf = h5py.File(f, "w")
+g = hf.create_group("sweep")
+for key, val in {p1: v1, p2: v2}.items():
+    g.create_dataset(key, data=val)
+hf.close()
 for i, alpha in enumerate(alphas):
 
     # define connectivity
@@ -251,21 +253,20 @@ for i, alpha in enumerate(alphas):
     # get signals for each stimulation onset
     signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
-    # calculate the network dimensionality
     dims = []
-    for i, s in enumerate(signals):
+    seqs = []
+    cs = []
+    for s in signals:
+
+        # calculate the network dimensionality
         corr_net = np.cov(s)
         eigs = np.abs(np.linalg.eigvals(corr_net))
         dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
 
-    # calculate the network sequentiality
-    seqs = []
-    for i, s in enumerate(signals):
+        # calculate the network sequentiality
         seqs.append(sequentiality(s, neighborhood=seq_range, max_lag=margin))
 
-    # calculate the network covariance matrices
-    cs = []
-    for i, s in enumerate(signals):
+        # calculate the network covariance matrices
         cs.append(get_c(s, alpha=1e-4))
 
     # calculate the network kernel
@@ -281,13 +282,14 @@ for i, alpha in enumerate(alphas):
     test_signals, _ = get_signals(list(test_onsets), cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
     # store results
-    results["dimensionality"].append(np.mean(dims))
-    results["sequentiality"].append(np.mean(seqs))
-    results["Ks"].append(K)
-    results["Gs"].append(G)
-    results["test_signals"].append(test_signals)
-    results["test_onsets"].append(np.round(dt*2.0*np.pi*test_onsets/T, decimals=2))
-
+    hf = h5py.File(f, 'r+')
+    g = hf.create_group(f"{i}")
+    results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
+               "input_indices": inp_indices, "dimensionality": np.mean(dims), "sequentiality": np.mean(seqs), "K": K,
+               "G": G, "test_signals": test_signals, "test_onsets": test_onsets, "alpha": alpha}
+    for key, val in results.items():
+        g.create_dataset(key, data=val)
+    hf.close()
     print(f"Finished {(i+1)} of {len(alphas)} jobs.")
 
     # plot results
@@ -322,9 +324,3 @@ for i, alpha in enumerate(alphas):
     # ax.set_title(f"G")
     # plt.tight_layout()
     # plt.show()
-
-# save results
-fname = f"snn_entrainment"
-with open(f"{tdir}/{fname}_{cond}.pkl", "wb") as f:
-    pickle.dump(results, f)
-    f.close()

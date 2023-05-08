@@ -99,7 +99,7 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 ###################
 
 # load data that maps deltas to frequencies
-data = pickle.load(open("results/fre_oscillations.pkl", "rb"))
+data = pickle.load(open("config/fre_oscillations.pkl", "rb"))
 deltas = data["deltas"]
 freqs = data["freqs"]
 
