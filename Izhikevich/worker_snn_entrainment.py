@@ -127,7 +127,7 @@ deltas = data["deltas"]
 freqs = data["freqs"]
 
 # model parameters
-N = 2000
+N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
