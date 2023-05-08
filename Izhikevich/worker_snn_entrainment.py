@@ -10,6 +10,7 @@ import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
 import h5py
+import time
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -120,6 +121,7 @@ def pca(X: np.ndarray) -> tuple:
 # working directory
 # wdir = "config"
 # tdir = "results"
+# cond = 11
 
 # load data that maps deltas to frequencies
 data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
@@ -148,7 +150,6 @@ v_reset = -1000.0
 device = "cuda:0"
 
 # sweep condition
-# cond = 11
 p1 = "Delta"
 p2 = "trial"
 
@@ -232,6 +233,8 @@ for key, val in {p1: v1, p2: v2}.items():
 hf.close()
 for i, alpha in enumerate(alphas):
 
+    t0 = time.perf_counter()
+
     # define connectivity
     pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
     pdfs /= np.sum(pdfs)
@@ -290,7 +293,9 @@ for i, alpha in enumerate(alphas):
     for key, val in results.items():
         g.create_dataset(key, data=val)
     hf.close()
-    print(f"Finished {(i+1)} of {len(alphas)} jobs.")
+
+    t1 = time.perf_counter()
+    print(f"Finished {(i+1)} of {len(alphas)} jobs after {t1-t0}s.")
 
     # plot results
     # _, axes = plt.subplots(nrows=2, figsize=(12, 5))
