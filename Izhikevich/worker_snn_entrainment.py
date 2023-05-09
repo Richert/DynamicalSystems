@@ -118,6 +118,11 @@ def pca(X: np.ndarray) -> tuple:
 # define parameters
 ###################
 
+# sweep sizes
+n_stims = 20
+n_tests = 5
+n_alphas = 20
+
 # working directory
 # wdir = "config"
 # tdir = "results"
@@ -174,14 +179,12 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 T_init = 2000.0
 dt = 1e-2
 sr = 10
-alphas = np.linspace(1, 100, 20)
+alphas = np.linspace(1, 100, n_alphas)
 p_in = 0.2
 idx = np.argmin(np.abs(deltas - Delta))
 freq = freqs[idx]
 T = 1e3/freq
 cycle_steps = int(T/dt)
-n_stims = 20
-n_tests = 5
 stim_onsets = np.linspace(0, T/3, num=n_stims+1)[:-1]
 stim_onsets = [int(onset/dt) for onset in stim_onsets]
 stim_width = int(20.0/dt)
@@ -189,7 +192,20 @@ n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 
+# create two target signals to fit
+delay = 2000
+steps = int(cycle_steps/sr)
+target_1 = np.zeros((steps,))
+target_1[delay] = 1.0
+target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
+t = np.linspace(0, T*1e-3, steps)
+f1 = 5.0
+f2 = 20.0
+target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
+targets = [target_1, target_2]
+
 # other analysis parameters
+K_width = 100
 sigma = 10
 margin = 100
 seq_range = 50
@@ -284,12 +300,38 @@ for i, alpha in enumerate(alphas):
     test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=n_tests)
     test_signals, _ = get_signals(list(test_onsets), cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
+    # calculate the prediction performance for concrete targets
+    train_predictions = []
+    train_distortions = []
+    test_predictions = []
+    readouts = []
+    losses = []
+    for target in targets:
+        train_predictions.append(K @ target)
+        train_distortions.append(G @ target)
+        w_readout = w @ target
+        readouts.append(w_readout)
+        losses.append(np.mean([mse(test_sig, target) for test_sig in test_signals]))
+        test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
+
+    # calculate the network kernel basis functions
+    K_funcs = np.zeros((K.shape[0] - 2 * K_width, K_width))
+    for j in range(K_funcs.shape[0]):
+        rows = np.arange(K_width + j, 2 * K_width + j)
+        cols = rows[::-1]
+        K_funcs[j, :] = K[rows, cols]
+    v_explained, pcs = pca(K_funcs)
+    pc1_proj = K_funcs @ pcs[:, 0]
+
     # store results
     hf = h5py.File(f, 'r+')
     g = hf.create_group(f"{i}")
     results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
-               "input_indices": inp_indices, "dimensionality": np.mean(dims), "sequentiality": np.mean(seqs), "K": K,
-               "G": G, "test_signals": test_signals, "test_onsets": test_onsets, "alpha": alpha}
+               "input_indices": inp_indices, "dimensionality": np.mean(dims), "sequentiality": np.mean(seqs),
+               "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
+               "distortions": train_distortions, "test_predictions": test_predictions,
+               "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
+               "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs}
     for key, val in results.items():
         g.create_dataset(key, data=val)
     hf.close()
@@ -298,34 +340,49 @@ for i, alpha in enumerate(alphas):
     print(f"Finished {(i+1)} of {len(alphas)} jobs after {t1-t0}s.")
 
     # plot results
-    # _, axes = plt.subplots(nrows=2, figsize=(12, 5))
-    # s_all = np.concatenate(signals, axis=1)
-    # inp_all = np.concatenate(inputs, axis=0)
-    # s_all /= np.max(s_all)
-    # inp_all /= np.max(inp_all)
-    # ax = axes[0]
-    # ax.plot(np.mean(s_all, axis=0), label="s")
-    # ax.plot(inp_all, label="I_ext")
-    # ax.legend()
-    # ax.set_xlabel("time")
-    # ax.set_title("Mean signal")
-    # ax = axes[1]
-    # im = ax.imshow(s_all, aspect="auto", interpolation="none")
-    # plt.colorbar(im, ax=ax, shrink=0.4)
-    # ax.set_xlabel('time')
-    # ax.set_ylabel('neurons')
-    # ax.set_title(f"Seq = {np.mean(seqs)}, Dim = {np.mean(dims)}")
-    # plt.tight_layout()
-    # _, axes = plt.subplots(ncols=2, figsize=(12, 6))
-    # ax = axes[0]
-    # ax.imshow(K, aspect="auto", interpolation="none")
-    # ax.set_xlabel("lags")
-    # ax.set_ylabel("lags")
-    # ax.set_title(f"K")
-    # ax = axes[1]
-    # ax.imshow(G, aspect="auto", interpolation="none")
-    # ax.set_xlabel("lags")
-    # ax.set_ylabel("lags")
-    # ax.set_title(f"G")
-    # plt.tight_layout()
-    # plt.show()
+    _, axes = plt.subplots(nrows=2, figsize=(12, 5))
+    s_all = np.concatenate(signals, axis=1)
+    inp_all = np.concatenate(inputs, axis=0)
+    s_all /= np.max(s_all)
+    inp_all /= np.max(inp_all)
+    ax = axes[0]
+    ax.plot(np.mean(s_all, axis=0), label="s")
+    ax.plot(inp_all, label="I_ext")
+    ax.legend()
+    ax.set_xlabel("time")
+    ax.set_title("Mean signal")
+    ax = axes[1]
+    im = ax.imshow(s_all, aspect="auto", interpolation="none")
+    plt.colorbar(im, ax=ax, shrink=0.4)
+    ax.set_xlabel('time')
+    ax.set_ylabel('neurons')
+    ax.set_title(f"Seq = {np.mean(seqs)}, Dim = {np.mean(dims)}")
+    plt.tight_layout()
+
+    _, axes = plt.subplots(ncols=2, figsize=(12, 6))
+    ax = axes[0]
+    ax.plot(target_1, label="target")
+    ax.plot(train_predictions[0], label="prediction")
+    ax.set_xlabel("time")
+    ax.set_title(f"T1")
+    ax.legend()
+    ax = axes[1]
+    ax.plot(target_2, label="target")
+    ax.plot(train_predictions[1], label="prediction")
+    ax.set_xlabel("time")
+    ax.set_title(f"T2")
+    ax.legend()
+    plt.tight_layout()
+
+    examples = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
+    for i, ex in enumerate(examples):
+        ax = axes[i]
+        ax.plot(test_predictions[ex[0]][ex[1]], label="prediction")
+        ax.plot(targets[ex[0]], label="target")
+        ax.legend()
+        ax.set_xlabel("time")
+        ax.set_ylabel("s")
+        ax.set_title(f"Stimulation phase: {test_onsets[ex[1]]}")
+    plt.tight_layout()
+    plt.show()
