@@ -194,7 +194,7 @@ inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
 
 # create two target signals to fit
 delay = 2000
-steps = int(cycle_steps/sr)
+steps = int(np.round(cycle_steps / sr))
 target_1 = np.zeros((steps,))
 target_1[delay] = 1.0
 target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
@@ -331,7 +331,7 @@ for i, alpha in enumerate(alphas):
                "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
                "distortions": train_distortions, "test_predictions": test_predictions,
                "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-               "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs}
+               "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "losses": losses}
     for key, val in results.items():
         g.create_dataset(key, data=val)
     hf.close()
