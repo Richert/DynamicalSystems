@@ -240,7 +240,7 @@ y0 = net.state
 # main simulation
 #################
 
-fname = f"snn_entrainment"
+fname = f"snn_oscillatory"
 f = f"{tdir}/{fname}_{cond}.h5"
 hf = h5py.File(f, "w")
 g = hf.create_group("sweep")
