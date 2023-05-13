@@ -305,13 +305,11 @@ for i, alpha in enumerate(alphas):
     train_distortions = []
     test_predictions = []
     readouts = []
-    losses = []
     for target in targets:
         train_predictions.append(K @ target)
         train_distortions.append(G @ target)
         w_readout = w @ target
         readouts.append(w_readout)
-        losses.append(np.mean([mse(test_sig, target) for test_sig in test_signals]))
         test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
     # calculate the network kernel basis functions
@@ -331,7 +329,7 @@ for i, alpha in enumerate(alphas):
                "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
                "distortions": train_distortions, "test_predictions": test_predictions,
                "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-               "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "losses": losses}
+               "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs}
     for key, val in results.items():
         g.create_dataset(key, data=val)
     hf.close()
