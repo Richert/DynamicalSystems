@@ -17,9 +17,9 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 ###########
 
 res_dict = {"alpha": [], "dim": [], "seq": [], "train_loss_1": [], "train_loss_2": [], "test_loss_1": [],
-            "test_loss_2": [], "trial": [], "delta": [], "kernel_width": [], "kernel_variance": []}
+            "test_loss_2": [], "trial": [], "delta": [], "pc1_dominance": [], "pc1_variance": []}
 
-path = "results/entrainment"
+path = "results/oscillatory"
 for f in os.listdir(path):
 
     # load data set
@@ -38,13 +38,9 @@ for f in os.listdir(path):
         res_dict["test_loss_1"].append(np.mean(test_losses))
         test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
         res_dict["test_loss_2"].append(np.mean(test_losses))
-        pc1 = np.asarray(g["pcs"])[:, 0]
-        hm = np.max(pc1)*0.5
-        idx0 = np.argmin(pc1[:int(0.5*len(pc1))] - hm).squeeze()
-        idx1 = np.argmin(pc1[int(0.5 * len(pc1)):] - hm).squeeze()
-        res_dict["kernel_width"].append(idx1 - idx0)
+        res_dict["pc1_dominance"].append(np.real(np.asarray(g["v_explained"])[0]))
         pc1_proj = np.asarray(g["pc1_projection"])
-        res_dict["kernel_variance"].append(np.var(pc1_proj))
+        res_dict["pc1_variance"].append(np.var(pc1_proj))
 
         # collect sweep results
         g = data["sweep"]
@@ -147,19 +143,19 @@ ax.set_title("Task II: Test loss")
 
 # kernel width
 ax = fig.add_subplot(grid[0, 2])
-kwidth = df.pivot(index="alpha", columns="delta", values="kernel_width")
-sb.heatmap(kwidth, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+pc1_dom = df.pivot(index="alpha", columns="delta", values="pc1_dominance")
+sb.heatmap(pc1_dom, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
-ax.set_title("Kernel width")
+ax.set_title("Var explained by 1. PC of Kernel")
 
 # kernel variance
 ax = fig.add_subplot(grid[1, 2])
-kvar = df.pivot(index="alpha", columns="delta", values="kernel_variance")
+kvar = df.pivot(index="alpha", columns="delta", values="pc1_variance")
 sb.heatmap(kvar, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
-ax.set_title("Kernel variance")
+ax.set_title("Variance of 1. PC of Kernel")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
