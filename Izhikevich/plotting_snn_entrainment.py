@@ -17,7 +17,7 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 ###########
 
 res_dict = {"alpha": [], "dim": [], "seq": [], "train_loss_1": [], "train_loss_2": [], "test_loss_1": [],
-            "test_loss_2": [], "trial": [], "delta": [], "pc1_dominance": [], "pc1_variance": []}
+            "test_loss_2": [], "trial": [], "delta": [], "kernel_distortion": [], "pc1_variance": []}
 
 path = "results/oscillatory"
 for f in os.listdir(path):
@@ -38,9 +38,9 @@ for f in os.listdir(path):
         res_dict["test_loss_1"].append(np.mean(test_losses))
         test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
         res_dict["test_loss_2"].append(np.mean(test_losses))
-        res_dict["pc1_dominance"].append(np.real(np.asarray(g["v_explained"])[0]))
-        pc1_proj = np.asarray(g["pc1_projection"])
-        res_dict["pc1_variance"].append(np.var(pc1_proj))
+        res_dict["kernel_distortion"].append(np.sum(np.abs(np.asarray(g["distortions"][0]))))
+        pc1_proj = np.real(np.asarray(g["pc1_projection"]))
+        res_dict["pc1_variance"].append(np.max(pc1_proj)-np.min(pc1_proj))
 
         # collect sweep results
         g = data["sweep"]
@@ -143,11 +143,11 @@ ax.set_title("Task II: Test loss")
 
 # kernel width
 ax = fig.add_subplot(grid[0, 2])
-pc1_dom = df.pivot(index="alpha", columns="delta", values="pc1_dominance")
-sb.heatmap(pc1_dom, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+distort = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
+sb.heatmap(distort, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
-ax.set_title("Var explained by 1. PC of Kernel")
+ax.set_title("Kernel distortion")
 
 # kernel variance
 ax = fig.add_subplot(grid[1, 2])
