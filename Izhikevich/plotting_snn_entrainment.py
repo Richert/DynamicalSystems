@@ -5,6 +5,7 @@ import seaborn as sb
 import matplotlib.pyplot as plt
 import h5py
 from matplotlib.gridspec import GridSpec
+from scipy.signal import find_peaks
 
 
 def mse(x: np.ndarray, y: np.ndarray) -> float:
@@ -16,8 +17,7 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-res_dict = {"alpha": [], "dim": [], "seq": [], "train_loss_1": [], "train_loss_2": [], "test_loss_1": [],
-            "test_loss_2": [], "trial": [], "delta": [], "kernel_distortion": [], "pc1_variance": []}
+res_dict = {"alpha": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "kernel_distortion": []}
 
 path = "results/oscillatory"
 for f in os.listdir(path):
@@ -31,16 +31,22 @@ for f in os.listdir(path):
         g = data[f"{i}"]
         res_dict["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
         res_dict["dim"].append(np.asarray(g["dimensionality"]))
-        res_dict["seq"].append(np.asarray(g["sequentiality"]))
-        res_dict["train_loss_1"].append(mse(np.asarray(g["targets"][0]), np.asarray(g["train_predictions"][0])))
-        res_dict["train_loss_2"].append(mse(np.asarray(g["targets"][1]), np.asarray(g["train_predictions"][1])))
-        test_losses = [mse(np.asarray(g["targets"][0]), np.asarray(sig)) for sig in g["test_predictions"][0]]
-        res_dict["test_loss_1"].append(np.mean(test_losses))
+        # res_dict["seq"].append(np.asarray(g["sequentiality"]))
+        # res_dict["train_loss_1"].append(mse(np.asarray(g["targets"][0]), np.asarray(g["train_predictions"][0])))
+        # res_dict["train_loss_2"].append(mse(np.asarray(g["targets"][1]), np.asarray(g["train_predictions"][1])))
+        # test_losses = [mse(np.asarray(g["targets"][0]), np.asarray(sig)) for sig in g["test_predictions"][0]]
+        # res_dict["test_loss_1"].append(np.mean(test_losses))
         test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
-        res_dict["test_loss_2"].append(np.mean(test_losses))
-        res_dict["kernel_distortion"].append(np.sum(np.abs(np.asarray(g["distortions"][0]))))
+        res_dict["test_loss"].append(np.mean(test_losses))
         pc1_proj = np.real(np.asarray(g["pc1_projection"]))
-        res_dict["pc1_variance"].append(np.max(pc1_proj)-np.min(pc1_proj))
+        pc1 = np.real(np.asarray(g["pcs"][:, 0]))
+        pc1 -= np.min(pc1)
+        pc1 /= np.max(pc1)
+        peaks, _ = find_peaks(pc1, height=0.05, width=5)
+        # plt.plot(pc1)
+        # plt.title(f"Peaks: {len(peaks)}")
+        # plt.show()
+        res_dict["kernel_distortion"].append(len(peaks)*(np.var(pc1_proj)))
 
         # collect sweep results
         g = data["sweep"]
@@ -93,69 +99,29 @@ ticks = 3
 fig = plt.figure(1)
 grid = GridSpec(nrows=2, ncols=3, figure=fig)
 
-# dimensionality
+# test loss
 ax = fig.add_subplot(grid[0, 0])
+test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
+sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+ax.set_xlabel(r"$\Delta$")
+ax.set_ylabel(r"$\alpha$")
+ax.set_title("MSE (test data)")
+
+# dimensionality
+ax = fig.add_subplot(grid[0, 1])
 dim = df.pivot(index="alpha", columns="delta", values="dim")
 sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("Dimensionality")
 
-# dimensionality
-ax = fig.add_subplot(grid[1, 0])
-seq = df.pivot(index="alpha", columns="delta", values="seq")
-sb.heatmap(seq, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
-ax.set_title("Sequentiality")
-
-# train loss 1
-# ax = fig.add_subplot(grid[0, 1])
-# train_loss = df.pivot(index="alpha", columns="delta", values="train_loss_1")
-# sb.heatmap(train_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-# ax.set_xlabel(r"$\Delta$")
-# ax.set_ylabel(r"$\alpha$")
-# ax.set_title("Task I: Train loss")
-#
-# # train loss 2
-# ax = fig.add_subplot(grid[1, 1])
-# train_loss = df.pivot(index="alpha", columns="delta", values="train_loss_2")
-# sb.heatmap(train_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-# ax.set_xlabel(r"$\Delta$")
-# ax.set_ylabel(r"$\alpha$")
-# ax.set_title("Task II: Train loss")
-
-# test loss 1
-ax = fig.add_subplot(grid[0, 1])
-test_loss = df.pivot(index="alpha", columns="delta", values="test_loss_1")
-sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
-ax.set_title("Task I: Test loss")
-
-# train loss 2
-ax = fig.add_subplot(grid[1, 1])
-test_loss = df.pivot(index="alpha", columns="delta", values="test_loss_2")
-sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
-ax.set_title("Task II: Test loss")
-
-# kernel width
+# kernel variance
 ax = fig.add_subplot(grid[0, 2])
-distort = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
-sb.heatmap(distort, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+k = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
+sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("Kernel distortion")
-
-# kernel variance
-ax = fig.add_subplot(grid[1, 2])
-kvar = df.pivot(index="alpha", columns="delta", values="pc1_variance")
-sb.heatmap(kvar, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
-ax.set_title("Variance of 1. PC of Kernel")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
