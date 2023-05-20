@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import h5py
 from matplotlib.gridspec import GridSpec
 from scipy.signal import find_peaks
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def mse(x: np.ndarray, y: np.ndarray) -> float:
@@ -26,7 +27,7 @@ fns = ["snn_oscillations_hom.h5", "snn_oscillations_het.h5"]
 for f in fns:
     data = h5py.File(f"{path}/{f}", "r")
     g = data["sweep"]
-    examples["delta"].append(np.round(np.asarray(g["delta"]), decimals=1))
+    examples["delta"].append(np.round(np.asarray(g["Delta"]), decimals=1))
     g = data["data"]
     examples["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
     examples["s"].append(np.asarray(g["s"]))
@@ -34,34 +35,36 @@ for f in fns:
     examples["pc1"].append(np.asarray(g["pcs"])[:, 0])
     examples["pc1_projection"].append(np.asarray(g["pc1_projection"]))
     examples["target"].append(np.asarray(g["targets"]))
-    examples["prediction"].append(np.asarray(g["test_precitions"]))
+    examples["prediction"].append(np.asarray(g["test_predictions"]))
 
 # load parameter sweep data
 res_dict = {"alpha": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "kernel_distortion": []}
 for f in os.listdir(path):
 
-    # load data set
-    data = h5py.File(f"{path}/{f}", "r")
+    if "snn_oscillatory_" in f:
 
-    for i in range(len(data)-1):
+        # load data set
+        data = h5py.File(f"{path}/{f}", "r")
 
-        # collect simulation data
-        g = data[f"{i}"]
-        res_dict["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
-        res_dict["dim"].append(np.asarray(g["dimensionality"]))
-        test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
-        res_dict["test_loss"].append(np.mean(test_losses))
-        pc1_proj = np.real(np.asarray(g["pc1_projection"]))
-        pc1 = np.real(np.asarray(g["pcs"][:, 0]))
-        pc1 -= np.min(pc1)
-        pc1 /= np.max(pc1)
-        peaks, _ = find_peaks(pc1, height=0.05, width=5)
-        res_dict["kernel_distortion"].append(len(peaks)*(np.var(pc1_proj)))
+        for i in range(len(data)-1):
 
-        # collect sweep results
-        g = data["sweep"]
-        res_dict["trial"].append(np.asarray(g["trial"]))
-        res_dict["delta"].append(np.round(np.asarray(g["Delta"]), decimals=2))
+            # collect simulation data
+            g = data[f"{i}"]
+            res_dict["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
+            res_dict["dim"].append(np.asarray(g["dimensionality"]))
+            test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
+            res_dict["test_loss"].append(np.mean(test_losses))
+            pc1_proj = np.real(np.asarray(g["pc1_projection"]))
+            pc1 = np.real(np.asarray(g["pcs"][:, 0]))
+            pc1 -= np.min(pc1)
+            pc1 /= np.max(pc1)
+            peaks, _ = find_peaks(pc1, height=0.05, width=5)
+            res_dict["kernel_distortion"].append(len(peaks)*(np.var(pc1_proj)))
+
+            # collect sweep results
+            g = data["sweep"]
+            res_dict["trial"].append(np.asarray(g["trial"]))
+            res_dict["delta"].append(np.round(np.asarray(g["Delta"]), decimals=2))
 
 # turn dictionary into dataframe
 res_df = pd.DataFrame.from_dict(res_dict)
@@ -102,15 +105,14 @@ plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
-
-# plotting parameters
 ticks = 3
+
 # create figure layout
 fig = plt.figure(1)
-grid = GridSpec(nrows=2, ncols=4, figure=fig)
+grid = GridSpec(nrows=5, ncols=4, figure=fig)
 
 # test loss
-ax = fig.add_subplot(grid[0, 1])
+ax = fig.add_subplot(grid[:2, 1])
 test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
 sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -118,7 +120,7 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("MSE (test data)")
 
 # dimensionality
-ax = fig.add_subplot(grid[0, 2])
+ax = fig.add_subplot(grid[:2, 2])
 dim = df.pivot(index="alpha", columns="delta", values="dim")
 sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -126,7 +128,7 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("Dimensionality")
 
 # kernel variance
-ax = fig.add_subplot(grid[0, 3])
+ax = fig.add_subplot(grid[:2, 3])
 k = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
 sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -135,16 +137,35 @@ ax.set_title("Kernel distortion")
 
 # SNN dynamics
 for i, s in enumerate(examples["s"]):
-    ax = fig.add_subplot(grid[1, i])
+    ax = fig.add_subplot(grid[2, 2*i:2*(i+1)])
     s_all = np.concatenate(s, axis=1)
-    inp_all = np.concatenate(examples["onsets"], axis=0)
     s_all /= np.max(s_all)
-    inp_all /= np.max(inp_all)
     im = ax.imshow(s_all, aspect="auto", interpolation="none")
     plt.colorbar(im, ax=ax, shrink=0.4)
     ax.set_xlabel('time')
     ax.set_ylabel('neurons')
+    ax.set_title(fr"$\alpha = {examples['alpha'][i]}$, $\Delta = {examples['delta'][i]}$")
 
+# PC1
+for i, pc1 in enumerate(examples["pc1"]):
+    ax = fig.add_subplot(grid[3, 2 * i:2 * (i + 1)])
+    pc1_proj = examples["pc1_projection"][i]
+    ax2 = inset_axes(ax, width="30%", height="50%", loc=2)
+    ax2.plot(pc1)
+    ax.plot(pc1_proj)
+    ax.set_xlabel("time")
+    ax.set_ylabel("s")
+    ax.set_title(r"Projection onto 1. PC of $K$")
+
+# predictions
+for i, pred in enumerate(examples["prediction"]):
+    ax = fig.add_subplot(grid[4, 2 * i:2 * (i + 1)])
+    ax.plot(examples["target"][i][1], label="target")
+    ax.plot(pred[1][1], label="prediction")
+    ax.legend()
+    ax.set_xlabel("time")
+    ax.set_ylabel("")
+    ax.set_title("Example prediction")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
