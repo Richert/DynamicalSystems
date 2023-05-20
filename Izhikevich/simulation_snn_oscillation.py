@@ -305,7 +305,7 @@ results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
            "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
            "distortions": train_distortions, "test_predictions": test_predictions,
            "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs}
+           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "s": test_signals}
 for key, val in results.items():
     g.create_dataset(key, data=val)
 hf.close()

@@ -17,9 +17,27 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-res_dict = {"alpha": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "kernel_distortion": []}
-
 path = "results/oscillatory"
+
+# load examples
+examples = {"s": [], "onsets": [], "pc1": [], "pc1_projection": [], "target": [], "prediction": [], "delta": [],
+            "alpha": []}
+fns = ["snn_oscillations_hom.h5", "snn_oscillations_het.h5"]
+for f in fns:
+    data = h5py.File(f"{path}/{f}", "r")
+    g = data["sweep"]
+    examples["delta"].append(np.round(np.asarray(g["delta"]), decimals=1))
+    g = data["data"]
+    examples["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
+    examples["s"].append(np.asarray(g["s"]))
+    examples["onsets"].append(np.asarray(g["test_onsets"]))
+    examples["pc1"].append(np.asarray(g["pcs"])[:, 0])
+    examples["pc1_projection"].append(np.asarray(g["pc1_projection"]))
+    examples["target"].append(np.asarray(g["targets"]))
+    examples["prediction"].append(np.asarray(g["test_precitions"]))
+
+# load parameter sweep data
+res_dict = {"alpha": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "kernel_distortion": []}
 for f in os.listdir(path):
 
     # load data set
@@ -31,11 +49,6 @@ for f in os.listdir(path):
         g = data[f"{i}"]
         res_dict["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
         res_dict["dim"].append(np.asarray(g["dimensionality"]))
-        # res_dict["seq"].append(np.asarray(g["sequentiality"]))
-        # res_dict["train_loss_1"].append(mse(np.asarray(g["targets"][0]), np.asarray(g["train_predictions"][0])))
-        # res_dict["train_loss_2"].append(mse(np.asarray(g["targets"][1]), np.asarray(g["train_predictions"][1])))
-        # test_losses = [mse(np.asarray(g["targets"][0]), np.asarray(sig)) for sig in g["test_predictions"][0]]
-        # res_dict["test_loss_1"].append(np.mean(test_losses))
         test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
         res_dict["test_loss"].append(np.mean(test_losses))
         pc1_proj = np.real(np.asarray(g["pc1_projection"]))
@@ -43,9 +56,6 @@ for f in os.listdir(path):
         pc1 -= np.min(pc1)
         pc1 /= np.max(pc1)
         peaks, _ = find_peaks(pc1, height=0.05, width=5)
-        # plt.plot(pc1)
-        # plt.title(f"Peaks: {len(peaks)}")
-        # plt.show()
         res_dict["kernel_distortion"].append(len(peaks)*(np.var(pc1_proj)))
 
         # collect sweep results
@@ -97,10 +107,10 @@ markersize = 6
 ticks = 3
 # create figure layout
 fig = plt.figure(1)
-grid = GridSpec(nrows=2, ncols=3, figure=fig)
+grid = GridSpec(nrows=2, ncols=4, figure=fig)
 
 # test loss
-ax = fig.add_subplot(grid[0, 0])
+ax = fig.add_subplot(grid[0, 1])
 test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
 sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -108,7 +118,7 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("MSE (test data)")
 
 # dimensionality
-ax = fig.add_subplot(grid[0, 1])
+ax = fig.add_subplot(grid[0, 2])
 dim = df.pivot(index="alpha", columns="delta", values="dim")
 sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -116,12 +126,15 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("Dimensionality")
 
 # kernel variance
-ax = fig.add_subplot(grid[0, 2])
+ax = fig.add_subplot(grid[0, 3])
 k = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
 sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("Kernel distortion")
+
+# SNN dynamics
+
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
