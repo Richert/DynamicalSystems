@@ -134,6 +134,16 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("Kernel distortion")
 
 # SNN dynamics
+for i, s in enumerate(examples["s"]):
+    ax = fig.add_subplot(grid[1, i])
+    s_all = np.concatenate(s, axis=1)
+    inp_all = np.concatenate(examples["onsets"], axis=0)
+    s_all /= np.max(s_all)
+    inp_all /= np.max(inp_all)
+    im = ax.imshow(s_all, aspect="auto", interpolation="none")
+    plt.colorbar(im, ax=ax, shrink=0.4)
+    ax.set_xlabel('time')
+    ax.set_ylabel('neurons')
 
 
 # padding
