@@ -116,8 +116,9 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # condition
-alpha = 40.0
-Delta = 0.1
+cond = "hom"
+alpha = 21.8
+Delta = 0.15
 
 # training and testing
 n_stims = 20
@@ -125,7 +126,7 @@ n_tests = 5
 
 # working directory
 wdir = "config"
-tdir = "results"
+tdir = "results/oscillatory"
 
 # load data that maps deltas to frequencies
 data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
@@ -219,7 +220,7 @@ y0 = net.state
 # main simulation
 #################
 
-fname = f"snn_oscillations_hom"
+fname = f"snn_oscillations_{cond}"
 f = f"{tdir}/{fname}.h5"
 hf = h5py.File(f, "w")
 g = hf.create_group("sweep")

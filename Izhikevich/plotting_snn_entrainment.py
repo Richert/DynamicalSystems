@@ -59,7 +59,7 @@ for f in os.listdir(path):
             pc1 -= np.min(pc1)
             pc1 /= np.max(pc1)
             peaks, _ = find_peaks(pc1, height=0.05, width=5)
-            res_dict["kernel_distortion"].append(len(peaks)*(np.var(pc1_proj)))
+            res_dict["kernel_distortion"].append(len(peaks)*np.var(pc1_proj))
 
             # collect sweep results
             g = data["sweep"]
@@ -109,10 +109,10 @@ ticks = 3
 
 # create figure layout
 fig = plt.figure(1)
-grid = GridSpec(nrows=5, ncols=4, figure=fig)
+grid = GridSpec(nrows=5, ncols=6, figure=fig)
 
 # test loss
-ax = fig.add_subplot(grid[:2, 1])
+ax = fig.add_subplot(grid[:2, :2])
 test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
 sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -120,7 +120,7 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("MSE (test data)")
 
 # dimensionality
-ax = fig.add_subplot(grid[:2, 2])
+ax = fig.add_subplot(grid[:2, 2:4])
 dim = df.pivot(index="alpha", columns="delta", values="dim")
 sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -128,7 +128,7 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("Dimensionality")
 
 # kernel variance
-ax = fig.add_subplot(grid[:2, 3])
+ax = fig.add_subplot(grid[:2, 4:])
 k = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
 sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -137,7 +137,7 @@ ax.set_title("Kernel distortion")
 
 # SNN dynamics
 for i, s in enumerate(examples["s"]):
-    ax = fig.add_subplot(grid[2, 2*i:2*(i+1)])
+    ax = fig.add_subplot(grid[2, 3*i:3*(i+1)])
     s_all = np.concatenate(s, axis=1)
     s_all /= np.max(s_all)
     im = ax.imshow(s_all, aspect="auto", interpolation="none")
@@ -148,20 +148,24 @@ for i, s in enumerate(examples["s"]):
 
 # PC1
 for i, pc1 in enumerate(examples["pc1"]):
-    ax = fig.add_subplot(grid[3, 2 * i:2 * (i + 1)])
+    ax = fig.add_subplot(grid[3, 3*i:3*(i + 1)])
     pc1_proj = examples["pc1_projection"][i]
     ax2 = inset_axes(ax, width="30%", height="50%", loc=2)
     ax2.plot(pc1)
+    ax2.set_yticks([])
+    ax2.set_xticks([])
     ax.plot(pc1_proj)
     ax.set_xlabel("time")
     ax.set_ylabel("s")
     ax.set_title(r"Projection onto 1. PC of $K$")
+    ax.set_ylim([0.0, 0.1])
 
 # predictions
+example = 0
 for i, pred in enumerate(examples["prediction"]):
-    ax = fig.add_subplot(grid[4, 2 * i:2 * (i + 1)])
+    ax = fig.add_subplot(grid[4, 3*i:3*(i + 1)])
     ax.plot(examples["target"][i][1], label="target")
-    ax.plot(pred[1][1], label="prediction")
+    ax.plot(pred[1][example], label="prediction")
     ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("")
