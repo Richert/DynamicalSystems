@@ -22,7 +22,7 @@ path = "results/oscillatory"
 
 # load examples
 examples = {"s": [], "onsets": [], "pc1": [], "pc1_projection": [], "target": [], "prediction": [], "delta": [],
-            "alpha": []}
+            "alpha": [], "dt": 0.0, "sr": 1,"input_indices": []}
 fns = ["snn_oscillations_hom.h5", "snn_oscillations_het.h5"]
 for f in fns:
     data = h5py.File(f"{path}/{f}", "r")
@@ -36,6 +36,10 @@ for f in fns:
     examples["pc1_projection"].append(np.asarray(g["pc1_projection"]))
     examples["target"].append(np.asarray(g["targets"]))
     examples["prediction"].append(np.asarray(g["test_predictions"]))
+    if examples["dt"] == 0.0:
+        examples["dt"] = np.asarray(g["dt"])
+        examples["sr"] = np.asarray(g["sr"])
+        examples["input_indices"] = np.asarray(g["input_indices"])
 
 # load parameter sweep data
 res_dict = {"alpha": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "kernel_distortion": []}
@@ -90,8 +94,9 @@ for alpha in alphas_unique:
 
 df = pd.DataFrame.from_dict(res_dict_final)
 
-# plotting
-##########
+############
+# plotting #
+############
 
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -99,20 +104,24 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 8)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
-ticks = 3
+ticks = 5
 
 # create figure layout
-fig = plt.figure(1)
-grid = GridSpec(nrows=5, ncols=6, figure=fig)
+fig = plt.figure(figsize=(12, 8), constrained_layout=True)
+grid_highlvl = fig.add_gridspec(5, 1)
+
+# 2D plots
+##########
+
+grid = grid_highlvl[:2].subgridspec(1, 3)
 
 # test loss
-ax = fig.add_subplot(grid[:2, :2])
+ax = fig.add_subplot(grid[0, 0])
 test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
 sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -120,7 +129,7 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("MSE (test data)")
 
 # dimensionality
-ax = fig.add_subplot(grid[:2, 2:4])
+ax = fig.add_subplot(grid[0, 1])
 dim = df.pivot(index="alpha", columns="delta", values="dim")
 sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
@@ -128,48 +137,64 @@ ax.set_ylabel(r"$\alpha$")
 ax.set_title("Dimensionality")
 
 # kernel variance
-ax = fig.add_subplot(grid[:2, 4:])
+ax = fig.add_subplot(grid[0, 2])
 k = df.pivot(index="alpha", columns="delta", values="kernel_distortion")
 sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("Kernel distortion")
 
+# 1D plots
+##########
+
+grid = grid_highlvl[2:].subgridspec(3, 2)
+
 # SNN dynamics
+width = int(20.0/(examples["dt"]*examples["sr"]))
+indices = examples["input_indices"]
 for i, s in enumerate(examples["s"]):
-    ax = fig.add_subplot(grid[2, 3*i:3*(i+1)])
+    ax = fig.add_subplot(grid[0, i])
     s_all = np.concatenate(s, axis=1)
     s_all /= np.max(s_all)
-    im = ax.imshow(s_all, aspect="auto", interpolation="none")
-    plt.colorbar(im, ax=ax, shrink=0.4)
+    im = ax.imshow(s_all, aspect="auto", interpolation="none", cmap="Greys")
+    plt.sca(ax)
+    dur = 0
+    for n in range(len(s)):
+        plt.fill_betweenx(y=indices, x1=[dur for _ in range(len(indices))],
+                          x2=[width + dur for _ in range(len(indices))], color='red', alpha=0.5)
+        dur += len(s[n, 0])
+        ax.axvline(x=dur, color="blue", linestyle="solid")
     ax.set_xlabel('time')
     ax.set_ylabel('neurons')
     ax.set_title(fr"$\alpha = {examples['alpha'][i]}$, $\Delta = {examples['delta'][i]}$")
 
 # PC1
 for i, pc1 in enumerate(examples["pc1"]):
-    ax = fig.add_subplot(grid[3, 3*i:3*(i + 1)])
+    ax = fig.add_subplot(grid[1, i])
     pc1_proj = examples["pc1_projection"][i]
-    ax2 = inset_axes(ax, width="30%", height="50%", loc=2)
-    ax2.plot(pc1)
-    ax2.set_yticks([])
-    ax2.set_xticks([])
-    ax.plot(pc1_proj)
+    if i == 0:
+        ax2 = inset_axes(ax, width="30%", height="50%", loc=1)
+        ax2.plot(pc1, color="black", label="PC1")
+        ax2.legend()
+        ax2.set_yticks([])
+        ax2.set_xticks([])
+    ax.plot(pc1_proj, color="orange")
     ax.set_xlabel("time")
-    ax.set_ylabel("s")
+    ax.set_ylabel("")
     ax.set_title(r"Projection onto 1. PC of $K$")
     ax.set_ylim([0.0, 0.1])
 
 # predictions
 example = 0
 for i, pred in enumerate(examples["prediction"]):
-    ax = fig.add_subplot(grid[4, 3*i:3*(i + 1)])
-    ax.plot(examples["target"][i][1], label="target")
-    ax.plot(pred[1][example], label="prediction")
-    ax.legend()
+    ax = fig.add_subplot(grid[2, i])
+    ax.plot(examples["target"][i][1], label="target", color="black")
+    ax.plot(pred[1][example], label="prediction", color="orange")
+    if i == 0:
+        ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("")
-    ax.set_title("Example prediction")
+    ax.set_title(f"Function generation for test trial {example+1}")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
