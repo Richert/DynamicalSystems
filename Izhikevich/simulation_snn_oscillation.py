@@ -290,13 +290,19 @@ for target in targets:
     test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
 # calculate the network kernel basis functions
-K_funcs = np.zeros((K.shape[0] - 2 * K_width, K_width))
-for j in range(K_funcs.shape[0]):
-    rows = np.arange(K_width + j, 2 * K_width + j)
-    cols = rows[::-1]
-    K_funcs[j, :] = K[rows, cols]
-v_explained, pcs = pca(K_funcs)
-pc1_proj = K_funcs @ pcs[:, 0]
+# K_funcs = np.zeros((K.shape[0] - 2 * K_width, K_width))
+# for j in range(K_funcs.shape[0]):
+#     rows = np.arange(K_width + j, 2 * K_width + j)
+#     cols = rows[::-1]
+#     K_funcs[j, :] = K[rows, cols]
+K_shifted = np.zeros_like(K)
+for j in range(K.shape[0]):
+    K_shifted[j, :] = np.roll(K[j, :], shift=int(K.shape[1]/2)-j)
+v_explained, pcs = pca(K_shifted)
+pc1_proj = K_shifted @ pcs[:, 0]
+eye = np.zeros_like(pcs[:, 0])
+eye[int(len(eye)/2)] = 1.0
+eye_proj = K_shifted @ eye
 
 # store results
 hf = h5py.File(f, 'r+')
@@ -306,7 +312,8 @@ results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
            "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
            "distortions": train_distortions, "test_predictions": test_predictions,
            "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "s": test_signals}
+           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "s": test_signals, "K": K,
+           "K_shifted": K_shifted, "eye_projection": eye_proj}
 for key, val in results.items():
     g.create_dataset(key, data=val)
 hf.close()
@@ -357,7 +364,13 @@ for i, ex in enumerate(examples):
     ax.set_ylabel("s")
     ax.set_title(f"Stimulation phase: {test_onsets[ex[1]]}")
 plt.tight_layout()
-plt.show()
+
+_, axes = plt.subplots(ncols=2, figsize=(12, 6))
+ax = axes[0]
+ax.imshow(K, interpolation="none", aspect="auto")
+ax = axes[1]
+ax.imshow(K_shifted, interpolation="none", aspect="auto")
+plt.tight_layout()
 
 # saving
 plt.show()
