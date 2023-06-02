@@ -83,13 +83,14 @@ ax.set_title(fr"(A) Network dynamics for all test trials")
 # covariance and kernel matrices
 grid = grid_highlvl[1, 0].subgridspec(1, 2)
 ax = fig.add_subplot(grid[0, 0])
-sb.heatmap(examples["K"], cbar=True, ax=ax, xticklabels=2000, yticklabels=2000, rasterized=True, cmap="flare")
+sb.heatmap(examples["K"], cbar=True, ax=ax, xticklabels=2000, yticklabels=2000, rasterized=True, cmap="rocket_r")
 ax.set_xlabel(r"T")
 ax.set_ylabel(r"T")
 ax.set_title(fr"(B) Network response kernel $K$")
 ax = fig.add_subplot(grid[0, 1])
 dim = examples["dim"]
 C = np.corrcoef(s_all)
+C[np.isnan(C)] = 0.0
 sb.heatmap(C, cbar=True, ax=ax, xticklabels=400, yticklabels=400, rasterized=True)
 ax.set_xlabel(r"N")
 ax.set_ylabel(r"N")
@@ -113,7 +114,7 @@ ax.set_ylabel("")
 ax.set_title(rf"(E) Projection onto PC1 of $K$")
 
 # predictions
-test_examples = [0, 1]
+test_examples = [2, 4]
 titles = ["F", "G"]
 row = 0
 grid = grid_highlvl[:, 1].subgridspec(4, 1)
