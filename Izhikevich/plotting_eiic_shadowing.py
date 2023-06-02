@@ -33,54 +33,94 @@ a.update_bifurcation_style("HB", color="#76448A")
 
 # create figure layout
 fig = plt.figure(1)
-grid = gridspec.GridSpec(nrows=2, ncols=2, figure=fig)
+grid = gridspec.GridSpec(nrows=2, ncols=3, figure=fig)
 
 # 2D continuations
 ##################
 
-# Delta_fs = 0.1, d_rs = 10.0
+# Delta_lts = 0.1, d_rs = 10.0
 ax = fig.add_subplot(grid[0, 0])
-a.plot_continuation('PAR(45)', 'PAR(41)', cont=f'D_lts/I_lts:1:lp1', ax=ax, line_color_stable='#5D6D7E',
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:1:lp1', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(45)', 'PAR(41)', cont=f'D_lts/I_lts:1:lp2', ax=ax, line_color_stable='#5D6D7E',
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:1:lp2', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
-ax.set_ylabel(r'$\Delta_{lts}$ (mv)')
-ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(r'(A) $\Delta_{fs} = 0.1$ mV, $\Delta_{rs} = 0.1$')
-ax.set_ylim([0.0, 2.0])
-ax.set_xlim([50.0, 150.0])
-
-# Delta_fs = 0.1, d_rs = 100.0
-ax = fig.add_subplot(grid[1, 0])
-a.plot_continuation('PAR(45)', 'PAR(41)', cont=f'D_lts/I_lts:2:hb1', ax=ax, line_color_stable='#148F77',
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:1:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
-ax.set_ylabel(r'$\Delta_{lts}$ (mv)')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:1:hb2', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77', line_style_unstable='solid')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(r'(B) $\Delta_{fs} = 0.1$ mV, $\Delta_{rs} = 1.0$')
-ax.set_ylim([0.0, 2.0])
-ax.set_xlim([50.0, 150.0])
+ax.set_title(r'(A) $\Delta_{lts} = 0.1$ mV, $\kappa_{rs} = 10.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([80.0, 160.0])
 
-# Delta_fs = 1.0, d_rs = 10.0
+# Delta_lts = 0.6, d_rs = 10.0
 ax = fig.add_subplot(grid[0, 1])
-a.plot_continuation('PAR(45)', 'PAR(41)', cont=f'D_lts/I_lts:3:lp1', ax=ax, line_color_stable='#5D6D7E',
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:2:lp1', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
-a.plot_continuation('PAR(45)', 'PAR(41)', cont=f'D_lts/I_lts:3:lp2', ax=ax, line_color_stable='#5D6D7E',
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:2:lp2', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
-ax.set_ylabel(r'$\Delta_{lts}$ (mv)')
-ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(r'(C) $\Delta_{fs} = 1.0$ mV, $\Delta_{rs} = 0.1$')
-ax.set_ylim([0.0, 2.0])
-ax.set_xlim([50.0, 150.0])
-
-# Delta_fs = 1.0, d_rs = 10.0
-ax = fig.add_subplot(grid[1, 1])
-a.plot_continuation('PAR(45)', 'PAR(41)', cont=f'D_lts/I_lts:4:hb1', ax=ax, line_color_stable='#148F77',
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:2:hb1', ax=ax, line_color_stable='#148F77',
                     line_color_unstable='#148F77', line_style_unstable='solid')
-ax.set_ylabel(r'$\Delta_{lts}$ (mv)')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{lts}$ (pA)')
-ax.set_title(r'(D) $\Delta_{fs} = 1.0$ mV, $\Delta_{rs} = 1.0$')
-ax.set_ylim([0.0, 2.0])
-ax.set_xlim([50.0, 150.0])
+ax.set_title(r'(B) $\Delta_{lts} = 0.6$ mV, $\kappa_{rs} = 10.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([80.0, 160.0])
+
+# Delta_lts = 1.8, d_rs = 10.0
+ax = fig.add_subplot(grid[0, 2])
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:3:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:3:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
+ax.set_xlabel(r'$I_{lts}$ (pA)')
+ax.set_title(r'(C) $\Delta_{lts} = 1.8$ mV, $\kappa_{rs} = 10.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([80.0, 160.0])
+
+# Delta_lts = 0.1, d_rs = 100.0
+ax = fig.add_subplot(grid[1, 0])
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:4:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:4:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:4:hb1', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77', line_style_unstable='solid')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
+ax.set_xlabel(r'$I_{lts}$ (pA)')
+ax.set_title(r'(D) $\Delta_{lts} = 0.1$ mV, $\kappa_{rs} = 100.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([60.0, 120.0])
+
+# Delta_lts = 0.6, d_rs = 100.0
+ax = fig.add_subplot(grid[1, 1])
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:5:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:5:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:5:hb1', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77', line_style_unstable='solid')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
+ax.set_xlabel(r'$I_{lts}$ (pA)')
+ax.set_title(r'(E) $\Delta_{lts} = 0.6$ mV, $\kappa_{rs} = 100.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([60.0, 120.0])
+
+# Delta_lts = 1.8, d_rs = 100.0
+ax = fig.add_subplot(grid[1, 2])
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:6:lp1', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:6:lp2', ax=ax, line_color_stable='#5D6D7E',
+                    line_color_unstable='#5D6D7E', line_style_unstable='solid')
+a.plot_continuation('PAR(45)', 'PAR(6)', cont=f'D_rs/I_lts:6:hb1', ax=ax, line_color_stable='#148F77',
+                    line_color_unstable='#148F77', line_style_unstable='solid')
+ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
+ax.set_xlabel(r'$I_{lts}$ (pA)')
+ax.set_title(r'(F) $\Delta_{lts} = 1.8$ mV, $\kappa_{rs} = 100.0$')
+ax.set_ylim([0.0, 1.7])
+ax.set_xlim([60.0, 120.0])
 
 # finishing touches
 ###################
@@ -90,5 +130,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/eiic_shadowing.pdf')
+plt.savefig(f'results/eiic_shadowing.svg')
 plt.show()

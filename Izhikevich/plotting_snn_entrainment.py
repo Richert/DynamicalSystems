@@ -119,7 +119,7 @@ plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
-ticks = 5
+ticks = 6
 
 # create figure layout
 fig = plt.figure(figsize=(12, 9), constrained_layout=True)
@@ -137,6 +137,7 @@ sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasteriz
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("(A) Dimensionality")
+ax.invert_yaxis()
 
 # test loss
 ax = fig.add_subplot(grid[0, 1])
@@ -145,6 +146,7 @@ sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, ra
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("(B) MSE (test data)")
+ax.invert_yaxis()
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 2])
@@ -153,6 +155,7 @@ sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("(C) Kernel variance")
+ax.invert_yaxis()
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 3])
@@ -161,6 +164,7 @@ sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
 ax.set_title("(D) Kernel quality")
+ax.invert_yaxis()
 
 # 1D plots
 ##########
@@ -216,7 +220,7 @@ columns = [0, 2]
 vmax = np.max([np.max(K.flatten()) for K in examples["K"]])
 for K, title, grid in zip(examples["K"], titles, grids):
     ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(K, cbar=True, ax=ax, xticklabels=2000, yticklabels=2000, rasterized=True, vmax=vmax, cmap="flare")
+    sb.heatmap(K, cbar=True, ax=ax, xticklabels=1500, yticklabels=1500, rasterized=True, vmax=vmax, cmap="rocket_r")
     ax.set_xlabel(r"T")
     ax.set_ylabel(r"T")
     ax.set_title(fr"({title}) Network response kernel $K$")

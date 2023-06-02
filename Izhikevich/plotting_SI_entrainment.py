@@ -83,7 +83,7 @@ ax.set_title(fr"(A) Network dynamics for all test trials")
 # covariance and kernel matrices
 grid = grid_highlvl[1, 0].subgridspec(1, 2)
 ax = fig.add_subplot(grid[0, 0])
-sb.heatmap(examples["K"], cbar=True, ax=ax, xticklabels=2000, yticklabels=2000, rasterized=True, cmap="rocket_r")
+sb.heatmap(examples["K"], cbar=True, ax=ax, xticklabels=1500, yticklabels=1500, rasterized=True, cmap="magma_r")
 ax.set_xlabel(r"T")
 ax.set_ylabel(r"T")
 ax.set_title(fr"(B) Network response kernel $K$")
@@ -129,7 +129,6 @@ for ex, title in zip(test_examples, titles):
     ax.fill_between(np.arange(len(dist)), y1=fit - dist, y2=fit + dist, color="blue", alpha=0.5)
     ax.plot(examples["prediction"][1][ex], label="prediction", color="orange")
     if row == 0:
-        ax.legend()
         ax.set_title(f"(F) Function generation performance on target 1")
     ax.set_xlabel("")
     ax.set_ylabel("")
@@ -147,6 +146,7 @@ for ex, title in zip(test_examples, titles):
     if row == 0:
         ax.set_title(f"(G) Function generation performance on target 2")
     if row == 1:
+        ax.legend()
         ax.set_xlabel("time")
     row += 1
 
