@@ -22,7 +22,9 @@ path = "results/oscillatory"
 
 # load examples
 examples = {"s": [], "onsets": [], "pc1": [], "pc1_projection": [], "target": [], "prediction": [], "delta": [],
-            "alpha": [], "dt": 0.0, "sr": 1, "input_indices": [], "eye_projection": [], "K": []}
+            "alpha": [], "dt": 0.0, "sr": 1, "input_indices": [], "eye_projection": [], "K": [], "train_prediction": [],
+            "train_variance": []
+            }
 fns = ["snn_oscillations_hom.h5", "snn_oscillations_het.h5"]
 for f in fns:
     data = h5py.File(f"{path}/{f}", "r")
@@ -38,6 +40,8 @@ for f in fns:
     examples["eye_projection"].append(np.asarray(g["eye_projection"]))
     examples["target"].append(np.asarray(g["targets"]))
     examples["prediction"].append(np.asarray(g["test_predictions"]))
+    examples["train_prediction"].append(np.asarray(g["train_predictions"]))
+    examples["train_variance"].append(np.asarray(g["distortions"]))
     if examples["dt"] == 0.0:
         examples["dt"] = np.asarray(g["dt"])
         examples["sr"] = np.asarray(g["sr"])
@@ -69,7 +73,7 @@ for f in os.listdir(path):
             # pc1 /= np.max(pc1)
             # peaks, _ = find_peaks(pc1, height=0.05, width=5)
             res_dict["kernel_distortion"].append(np.std(pc1_proj))
-            res_dict["kernel_quality"].append(mse(pc1, eye)/float(np.asarray(g["v_explained"])[0]))
+            res_dict["kernel_quality"].append(np.sum(np.asarray(g["distortions"]).flatten()**2))
 
             # collect sweep results
             g = data["sweep"]
@@ -126,21 +130,21 @@ grid_highlvl = fig.add_gridspec(10, 1)
 
 grid = grid_highlvl[:3].subgridspec(1, 4)
 
-# test loss
-ax = fig.add_subplot(grid[0, 0])
-test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
-sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
-ax.set_title("(A) MSE (test data)")
-
 # dimensionality
-ax = fig.add_subplot(grid[0, 1])
+ax = fig.add_subplot(grid[0, 0])
 dim = df.pivot(index="alpha", columns="delta", values="dim")
 sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
-ax.set_title("(B) Dimensionality")
+ax.set_title("(A) Dimensionality")
+
+# test loss
+ax = fig.add_subplot(grid[0, 1])
+test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
+sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+ax.set_xlabel(r"$\Delta$")
+ax.set_ylabel(r"$\alpha$")
+ax.set_title("(B) MSE (test data)")
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 2])
@@ -156,7 +160,7 @@ k = df.pivot(index="alpha", columns="delta", values="kernel_quality")
 sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$\alpha$")
-ax.set_title("(C) Kernel quality")
+ax.set_title("(D) Kernel quality")
 
 # 1D plots
 ##########
@@ -166,7 +170,7 @@ grid_examples = grid_highlvl[3:].subgridspec(4, 4)
 # SNN dynamics
 width = int(20.0/(examples["dt"]*examples["sr"]))
 indices = examples["input_indices"]
-titles = ["D", "E"]
+titles = ["E", "F"]
 for i, s in enumerate(examples["s"]):
     ax = fig.add_subplot(grid_examples[0, i*2:(i+1)*2])
     s_all = np.concatenate(s, axis=1)
@@ -185,7 +189,7 @@ for i, s in enumerate(examples["s"]):
 
 # Kernel
 grids = [grid_examples[1, 1].subgridspec(1, 1), grid_examples[1, 3].subgridspec(1, 1)]
-titles = ["G", "J"]
+titles = ["H", "K"]
 columns = [1, 3]
 xlen = 250
 for pc1, title, grid in zip(examples["pc1"], titles, grids):
@@ -194,9 +198,9 @@ for pc1, title, grid in zip(examples["pc1"], titles, grids):
     ax.plot(pc1[center-xlen:center+xlen], color="black")
     ax.set_xlabel("time")
     ax.set_ylabel("PC coefficient")
-    ax.set_title(f"({title}) PC1")
+    ax.set_title(fr"({title}) PC1 of $K$")
 grids = [grid_examples[2, 1].subgridspec(1, 1), grid_examples[2, 3].subgridspec(1, 1)]
-titles = ["H", "K"]
+titles = ["I", "L"]
 columns = [1, 3]
 ymax = np.max([np.max(p) for p in examples["pc1_projection"]])
 for proj, title, grid in zip(examples["pc1_projection"], titles, grids):
@@ -207,7 +211,7 @@ for proj, title, grid in zip(examples["pc1_projection"], titles, grids):
     ax.set_title(rf"({title}) Projection onto PC1 of $K$")
     ax.set_ylim([0.0, ymax+0.05*ymax])
 grids = [grid_examples[1:3, 0].subgridspec(1, 1), grid_examples[1:3, 2].subgridspec(1, 1)]
-titles = ["F", "I"]
+titles = ["G", "J"]
 columns = [0, 2]
 vmax = np.max([np.max(K.flatten()) for K in examples["K"]])
 for K, title, grid in zip(examples["K"], titles, grids):
@@ -215,20 +219,25 @@ for K, title, grid in zip(examples["K"], titles, grids):
     sb.heatmap(K, cbar=True, ax=ax, xticklabels=2000, yticklabels=2000, rasterized=True, vmax=vmax, cmap="flare")
     ax.set_xlabel(r"T")
     ax.set_ylabel(r"T")
-    ax.set_title(f"({title}) K")
+    ax.set_title(fr"({title}) Network response kernel $K$")
 
 # predictions
-example = 1
-titles = ["H", "I"]
+grid = grid_examples[3, :].subgridspec(1, 2)
+test_example = 4
+titles = ["M", "N"]
 for i, pred in enumerate(examples["prediction"]):
-    ax = fig.add_subplot(grid_examples[3, i*2:(i+1)*2])
+    ax = fig.add_subplot(grid[0, i])
     ax.plot(examples["target"][i][1], label="target", color="black")
-    ax.plot(pred[1][example], label="prediction", color="orange")
-    if i == 0:
+    dist = examples["train_variance"][i][1]
+    fit = examples["train_prediction"][i][1]
+    ax.plot(fit, label="fit", color="blue")
+    ax.fill_between(np.arange(len(dist)), y1=fit - dist, y2=fit + dist, color="blue", alpha=0.5)
+    ax.plot(pred[1][test_example], label="prediction", color="orange")
+    if i == 1:
         ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("")
-    ax.set_title(f"({titles[i]}) Function generation (test trial {example+1})")
+    ax.set_title(f"({titles[i]}) Function generation performance")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)

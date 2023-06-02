@@ -116,9 +116,9 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # condition
-cond = "hom"
-alpha = 21.8
-Delta = 0.15
+cond = "het"
+alpha = 45.0
+Delta = 1.0
 
 # training and testing
 n_stims = 20
@@ -220,7 +220,7 @@ y0 = net.state
 # main simulation
 #################
 
-fname = f"snn_oscillations_{cond}"
+fname = f"SI_oscillations_{cond}"
 f = f"{tdir}/{fname}.h5"
 hf = h5py.File(f, "w")
 g = hf.create_group("sweep")
