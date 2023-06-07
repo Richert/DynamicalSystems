@@ -269,9 +269,13 @@ for s in signals:
 s_mean = np.mean(signals, axis=0)
 s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
 C_inv = np.linalg.inv(np.mean(cs, axis=0))
-w = C_inv @ s_mean
-K = s_mean.T @ w
-G = s_var.T @ w
+C_inv2 = np.linalg.inv(s_mean @ s_mean.T + alpha*np.eye(s_mean.shape[0]) + 1/n_stims * s_var @ s_var.T)
+w1 = C_inv @ s_mean
+w2 = C_inv2 @ s_mean
+K1 = s_mean.T @ w1
+G1 = s_var.T @ w1
+K2 = s_mean.T @ w2
+G2 = s_var.T @ w2
 
 # calculate the network response on test data
 test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=n_tests)
@@ -283,9 +287,9 @@ train_distortions = []
 test_predictions = []
 readouts = []
 for target in targets:
-    train_predictions.append(K @ target)
-    train_distortions.append(G @ target)
-    w_readout = w @ target
+    train_predictions.append(K2 @ target)
+    train_distortions.append(G2 @ target)
+    w_readout = w2 @ target
     readouts.append(w_readout)
     test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
@@ -295,14 +299,11 @@ for target in targets:
 #     rows = np.arange(K_width + j, 2 * K_width + j)
 #     cols = rows[::-1]
 #     K_funcs[j, :] = K[rows, cols]
-K_shifted = np.zeros_like(K)
-for j in range(K.shape[0]):
-    K_shifted[j, :] = np.roll(K[j, :], shift=int(K.shape[1]/2)-j)
+K_shifted = np.zeros_like(K2)
+for j in range(K2.shape[0]):
+    K_shifted[j, :] = np.roll(K2[j, :], shift=int(K2.shape[1]/2)-j)
 v_explained, pcs = pca(K_shifted)
 pc1_proj = K_shifted @ pcs[:, 0]
-eye = np.zeros_like(pcs[:, 0])
-eye[int(len(eye)/2)] = 1.0
-eye_proj = K_shifted @ eye
 
 # store results
 hf = h5py.File(f, 'r+')
@@ -312,8 +313,8 @@ results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
            "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
            "distortions": train_distortions, "test_predictions": test_predictions,
            "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "s": test_signals, "K": K,
-           "K_shifted": K_shifted, "eye_projection": eye_proj}
+           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "s": test_signals, "K": K2,
+           "K_shifted": K_shifted, }
 for key, val in results.items():
     g.create_dataset(key, data=val)
 hf.close()
@@ -365,12 +366,19 @@ for i, ex in enumerate(examples):
     ax.set_title(f"Stimulation phase: {test_onsets[ex[1]]}")
 plt.tight_layout()
 
-_, axes = plt.subplots(ncols=2, figsize=(12, 6))
+fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
 ax = axes[0]
-ax.imshow(K, interpolation="none", aspect="auto")
+im = ax.imshow(K1, interpolation="none", aspect="auto")
+plt.colorbar(im, ax=ax, shrink=0.8)
+ax.set_title("K")
 ax = axes[1]
-ax.imshow(K_shifted, interpolation="none", aspect="auto")
-plt.tight_layout()
+im = ax.imshow(K2, interpolation="none", aspect="auto")
+plt.colorbar(im, ax=ax, shrink=0.8)
+ax.set_title("K2")
+ax = axes[2]
+im = ax.imshow(C_inv - C_inv2, interpolation="none", aspect="auto")
+plt.colorbar(im, ax=ax, shrink=0.8)
+ax.set_title("K - K2")
 
 # saving
 plt.show()

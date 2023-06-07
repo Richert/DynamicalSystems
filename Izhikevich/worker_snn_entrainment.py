@@ -97,12 +97,6 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
     return float(np.mean((x - y)**2))
 
 
-def get_c(X: np.ndarray, alpha: float = 1e-4):
-    """
-    """
-    return X @ X.T + alpha*np.eye(X.shape[0])
-
-
 def pca(X: np.ndarray) -> tuple:
     X = X - X.mean()
     Z = X / X.std()
@@ -211,6 +205,7 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
+gamma = 1e-4
 
 # initial simulation
 ####################
@@ -273,8 +268,6 @@ for i, alpha in enumerate(alphas):
     signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
     dims = []
-    seqs = []
-    cs = []
     for s in signals:
 
         # calculate the network dimensionality
@@ -282,16 +275,10 @@ for i, alpha in enumerate(alphas):
         eigs = np.abs(np.linalg.eigvals(corr_net))
         dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
 
-        # calculate the network sequentiality
-        seqs.append(sequentiality(s, neighborhood=seq_range, max_lag=margin))
-
-        # calculate the network covariance matrices
-        cs.append(get_c(s, alpha=1e-4))
-
     # calculate the network kernel
     s_mean = np.mean(signals, axis=0)
     s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
-    C_inv = np.linalg.inv(np.mean(cs, axis=0))
+    C_inv = np.linalg.inv(s_mean @ s_mean.T + gamma*np.eye(s_mean.shape[0]) + 1/n_stims * s_var @ s_var.T)
     w = C_inv @ s_mean
     K = s_mean.T @ w
     G = s_var.T @ w
@@ -302,34 +289,34 @@ for i, alpha in enumerate(alphas):
 
     # calculate the prediction performance for concrete targets
     train_predictions = []
-    train_distortions = []
     test_predictions = []
     readouts = []
     for target in targets:
         train_predictions.append(K @ target)
-        train_distortions.append(G @ target)
         w_readout = w @ target
         readouts.append(w_readout)
         test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
-    # calculate the network kernel basis functions
-    K_funcs = np.zeros((K.shape[0] - 2 * K_width, K_width))
-    for j in range(K_funcs.shape[0]):
-        rows = np.arange(K_width + j, 2 * K_width + j)
-        cols = rows[::-1]
-        K_funcs[j, :] = K[rows, cols]
-    v_explained, pcs = pca(K_funcs)
-    pc1_proj = K_funcs @ pcs[:, 0]
+    # calculate the kernel variance
+    kernel_var = np.sum(np.abs(G.flatten()))
+
+    # calculate the kernel quality
+    K_shifted = np.zeros_like(K)
+    for j in range(K.shape[0]):
+        K_shifted[j, :] = np.roll(K[j, :], shift=int(K.shape[1] / 2) - j)
+    K_mean = np.mean(K_shifted, axis=0)
+    K_var = np.var(K_shifted, axis=0)
+    K_diag = np.diag(K)
 
     # store results
     hf = h5py.File(f, 'r+')
     g = hf.create_group(f"{i}")
     results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
-               "input_indices": inp_indices, "dimensionality": np.mean(dims), "sequentiality": np.mean(seqs),
+               "input_indices": inp_indices, "dimensionality": np.mean(dims),
                "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
-               "distortions": train_distortions, "test_predictions": test_predictions,
+               "kernel_variance": kernel_var, "test_predictions": test_predictions,
                "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-               "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs}
+               "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag}
     for key, val in results.items():
         g.create_dataset(key, data=val)
     hf.close()
