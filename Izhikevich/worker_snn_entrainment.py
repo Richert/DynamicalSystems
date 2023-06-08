@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-cond, wdir, tdir = sys.argv[-3:]
-sys.path.append(wdir)
+# cond, wdir, tdir = sys.argv[-3:]
+# sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -97,16 +97,10 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
     return float(np.mean((x - y)**2))
 
 
-def pca(X: np.ndarray) -> tuple:
-    X = X - X.mean()
-    Z = X / X.std()
-    C = Z.T @ Z
-    eigvals, eigvecs = np.linalg.eig(C)
-    if np.abs(np.min(eigvecs[:, 0])) > np.abs(np.max(eigvecs[:, 0])):
-        eigvecs[:, 0] *= -1
-    vals_abs = np.abs(eigvals)
-    sort_idx = np.argsort(vals_abs)[::-1]
-    return eigvals[sort_idx]/np.sum(vals_abs), eigvecs[:, sort_idx]
+def get_c(X: np.ndarray, alpha: float = 1e-4):
+    """
+    """
+    return X @ X.T + alpha*np.eye(X.shape[0])
 
 
 # define parameters
@@ -115,12 +109,11 @@ def pca(X: np.ndarray) -> tuple:
 # sweep sizes
 n_stims = 20
 n_tests = 5
-n_alphas = 20
 
 # working directory
-# wdir = "config"
-# tdir = "results"
-# cond = 11
+wdir = "config"
+tdir = "results"
+cond = 11
 
 # load data that maps deltas to frequencies
 data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
@@ -173,18 +166,23 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 T_init = 2000.0
 dt = 1e-2
 sr = 10
-alphas = np.linspace(1, 100, n_alphas)
+alpha = 30.0
 p_in = 0.2
 idx = np.argmin(np.abs(deltas - Delta))
 freq = freqs[idx]
 T = 1e3/freq
 cycle_steps = int(T/dt)
-stim_onsets = np.linspace(0, T/3, num=n_stims+1)[:-1]
+stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
+stim_phases = 2.0*np.pi*stim_onsets/T
 stim_onsets = [int(onset/dt) for onset in stim_onsets]
 stim_width = int(20.0/dt)
 n_inputs = int(p_in*N)
 center = int(N*0.5)
 inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+test_trials = list(np.arange(0, n_stims, n_tests))
+train_trials = list(np.arange(0, n_stims))
+for t in test_trials:
+    train_trials.pop(train_trials.index(t))
 
 # create two target signals to fit
 delay = 2000
@@ -242,132 +240,134 @@ g = hf.create_group("sweep")
 for key, val in {p1: v1, p2: v2}.items():
     g.create_dataset(key, data=val)
 hf.close()
-for i, alpha in enumerate(alphas):
 
-    t0 = time.perf_counter()
+t0 = time.perf_counter()
 
-    # define connectivity
-    pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
-    pdfs /= np.sum(pdfs)
-    W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
+# define connectivity
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
+pdfs /= np.sum(pdfs)
+W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
-    # initialize model
-    net = Network(dt=dt, device="cuda:0")
-    net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                        verbose=False, clear=True)
+# initialize model
+net = Network(dt=dt, device="cuda:0")
+net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                    verbose=False, clear=True)
 
-    # perform initial wash-out simulation
-    init_steps = int(T_init / dt)
-    inp = np.zeros((init_steps, 1))
-    net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
-    y0 = net.state
+# perform initial wash-out simulation
+init_steps = int(T_init / dt)
+inp = np.zeros((init_steps, 1))
+net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
+y0 = net.state
 
-    # get signals for each stimulation onset
-    signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
+# get signals for each stimulation onset
+signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
-    dims = []
-    for s in signals:
+# extract results for training and testing
+train_signals = [signals[idx] for idx in train_trials]
+test_signals = [signals[idx] for idx in test_trials]
+train_phases = [stim_phases[idx] for idx in train_trials]
+test_phases = [stim_phases[idx] for idx in test_trials]
 
-        # calculate the network dimensionality
-        corr_net = np.cov(s)
-        eigs = np.abs(np.linalg.eigvals(corr_net))
-        dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
+dims, cs = [], []
+for s in train_signals:
 
-    # calculate the network kernel
-    s_mean = np.mean(signals, axis=0)
-    s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
-    C_inv = np.linalg.inv(s_mean @ s_mean.T + gamma*np.eye(s_mean.shape[0]) + 1/n_stims * s_var @ s_var.T)
-    w = C_inv @ s_mean
-    K = s_mean.T @ w
-    G = s_var.T @ w
+    # calculate the network dimensionality
+    corr_net = np.cov(s)
+    eigs = np.abs(np.linalg.eigvals(corr_net))
+    dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
 
-    # calculate the network response on test data
-    test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=n_tests)
-    test_signals, _ = get_signals(list(test_onsets), cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
+    # calculate the network covariance matrices
+    cs.append(get_c(s, alpha=gamma))
 
-    # calculate the prediction performance for concrete targets
-    train_predictions = []
-    test_predictions = []
-    readouts = []
-    for target in targets:
-        train_predictions.append(K @ target)
-        w_readout = w @ target
-        readouts.append(w_readout)
-        test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
+# calculate the network kernel
+s_mean = np.mean(signals, axis=0)
+s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
+C_inv = np.linalg.inv(np.mean(cs, axis=0))
+w = C_inv @ s_mean
+K = s_mean.T @ w
+G = s_var.T @ w
 
-    # calculate the kernel variance
-    kernel_var = np.sum(np.abs(G.flatten()))
+# calculate the prediction performance for concrete targets
+train_predictions = []
+test_predictions = []
+for target in targets:
+    train_predictions.append(K @ target)
+    w_readout = w @ target
+    test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
-    # calculate the kernel quality
-    K_shifted = np.zeros_like(K)
-    for j in range(K.shape[0]):
-        K_shifted[j, :] = np.roll(K[j, :], shift=int(K.shape[1] / 2) - j)
-    K_mean = np.mean(K_shifted, axis=0)
-    K_var = np.var(K_shifted, axis=0)
-    K_diag = np.diag(K)
+# calculate the kernel variance
+kernel_var = np.sum(np.abs(G.flatten()))
 
-    # store results
-    hf = h5py.File(f, 'r+')
-    g = hf.create_group(f"{i}")
-    results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
-               "input_indices": inp_indices, "dimensionality": np.mean(dims),
-               "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
-               "kernel_variance": kernel_var, "test_predictions": test_predictions,
-               "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-               "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag}
-    for key, val in results.items():
-        g.create_dataset(key, data=val)
-    hf.close()
+# calculate the kernel quality
+K_shifted = np.zeros_like(K)
+for j in range(K.shape[0]):
+    K_shifted[j, :] = np.roll(K[j, :], shift=int(K.shape[1] / 2) - j)
+K_mean = np.mean(K_shifted, axis=0)
+K_var = np.var(K_shifted, axis=0)
+K_diag = np.diag(K)
 
-    t1 = time.perf_counter()
-    print(f"Finished {(i+1)} of {len(alphas)} jobs after {t1-t0}s.")
+# store results
+hf = h5py.File(f, 'r+')
+g = hf.create_group(f"data")
+results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
+           "input_indices": inp_indices, "dimensionality": np.mean(dims),
+           "alpha": alpha, "train_predictions": train_predictions, "test_predictions": test_predictions,
+           "targets": targets, "train_phases": train_phases, "test_phases": test_phases,
+           "kernel_variance": kernel_var, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag,
+           }
+for key, val in results.items():
+    g.create_dataset(key, data=val)
+hf.close()
 
-    # plot results
-    # _, axes = plt.subplots(nrows=2, figsize=(12, 5))
-    # s_all = np.concatenate(signals, axis=1)
-    # inp_all = np.concatenate(inputs, axis=0)
-    # s_all /= np.max(s_all)
-    # inp_all /= np.max(inp_all)
-    # ax = axes[0]
-    # ax.plot(np.mean(s_all, axis=0), label="s")
-    # ax.plot(inp_all, label="I_ext")
-    # ax.legend()
-    # ax.set_xlabel("time")
-    # ax.set_title("Mean signal")
-    # ax = axes[1]
-    # im = ax.imshow(s_all, aspect="auto", interpolation="none")
-    # plt.colorbar(im, ax=ax, shrink=0.4)
-    # ax.set_xlabel('time')
-    # ax.set_ylabel('neurons')
-    # ax.set_title(f"Seq = {np.mean(seqs)}, Dim = {np.mean(dims)}")
-    # plt.tight_layout()
-    #
-    # _, axes = plt.subplots(ncols=2, figsize=(12, 6))
-    # ax = axes[0]
-    # ax.plot(target_1, label="target")
-    # ax.plot(train_predictions[0], label="prediction")
-    # ax.set_xlabel("time")
-    # ax.set_title(f"T1")
-    # ax.legend()
-    # ax = axes[1]
-    # ax.plot(target_2, label="target")
-    # ax.plot(train_predictions[1], label="prediction")
-    # ax.set_xlabel("time")
-    # ax.set_title(f"T2")
-    # ax.legend()
-    # plt.tight_layout()
-    #
-    # examples = [(0, 0), (0, 1), (1, 0), (1, 1)]
-    # fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
-    # for i, ex in enumerate(examples):
-    #     ax = axes[i]
-    #     ax.plot(test_predictions[ex[0]][ex[1]], label="prediction")
-    #     ax.plot(targets[ex[0]], label="target")
-    #     ax.legend()
-    #     ax.set_xlabel("time")
-    #     ax.set_ylabel("s")
-    #     ax.set_title(f"Stimulation phase: {test_onsets[ex[1]]}")
-    # plt.tight_layout()
-    # plt.show()
+t1 = time.perf_counter()
+print(f"Finished job after {t1-t0}s.")
+
+# plot results
+_, axes = plt.subplots(nrows=2, figsize=(12, 5))
+s_all = np.concatenate(signals, axis=1)
+inp_all = np.concatenate(inputs, axis=0)
+s_all /= np.max(s_all)
+inp_all /= np.max(inp_all)
+ax = axes[0]
+ax.plot(np.mean(s_all, axis=0), label="s")
+ax.plot(inp_all, label="I_ext")
+ax.legend()
+ax.set_xlabel("time")
+ax.set_title("Mean signal")
+ax = axes[1]
+im = ax.imshow(s_all, aspect="auto", interpolation="none")
+plt.colorbar(im, ax=ax, shrink=0.4)
+ax.set_xlabel('time')
+ax.set_ylabel('neurons')
+ax.set_title(f"Dim = {np.mean(dims)}")
+plt.tight_layout()
+
+_, axes = plt.subplots(ncols=2, figsize=(12, 6))
+ax = axes[0]
+ax.plot(target_1, label="target")
+ax.plot(train_predictions[0], label="prediction")
+ax.set_xlabel("time")
+ax.set_title(f"T1")
+ax.legend()
+ax = axes[1]
+ax.plot(target_2, label="target")
+ax.plot(train_predictions[1], label="prediction")
+ax.set_xlabel("time")
+ax.set_title(f"T2")
+ax.legend()
+plt.tight_layout()
+
+examples = [(0, 0), (0, 1), (1, 0), (1, 1)]
+fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
+for i, ex in enumerate(examples):
+    ax = axes[i]
+    ax.plot(test_predictions[ex[0]][ex[1]], label="prediction")
+    ax.plot(targets[ex[0]], label="target")
+    ax.legend()
+    ax.set_xlabel("time")
+    ax.set_ylabel("s")
+    ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
+plt.tight_layout()
+plt.show()

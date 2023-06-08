@@ -117,12 +117,12 @@ def pca(X: np.ndarray) -> tuple:
 
 # condition
 cond = "het"
-alpha = 45.0
+alpha = 50.0
 Delta = 1.0
 
 # training and testing
 n_stims = 20
-n_tests = 5
+n_tests = 3
 
 # working directory
 wdir = "config"
@@ -165,7 +165,7 @@ idx = np.argmin(np.abs(deltas - Delta))
 freq = freqs[idx]
 T = 1e3/freq
 cycle_steps = int(T/dt)
-stim_onsets = np.linspace(0, T/3, num=n_stims+1)[:-1]
+stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
 stim_onsets = [int(onset/dt) for onset in stim_onsets]
 stim_width = int(20.0/dt)
 n_inputs = int(p_in*N)
@@ -191,6 +191,7 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
+gamma = 1e-4
 
 # initial simulation
 ####################
@@ -250,7 +251,7 @@ y0 = net.state
 signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
 dims = []
-seqs = []
+# seqs = []
 cs = []
 for s in signals:
 
@@ -259,23 +260,19 @@ for s in signals:
     eigs = np.abs(np.linalg.eigvals(corr_net))
     dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
 
-    # calculate the network sequentiality
-    seqs.append(sequentiality(s, neighborhood=seq_range, max_lag=margin))
+    # # calculate the network sequentiality
+    # seqs.append(sequentiality(s, neighborhood=seq_range, max_lag=margin))
 
     # calculate the network covariance matrices
-    cs.append(get_c(s, alpha=1e-4))
+    cs.append(get_c(s, alpha=gamma))
 
 # calculate the network kernel
 s_mean = np.mean(signals, axis=0)
 s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
 C_inv = np.linalg.inv(np.mean(cs, axis=0))
-C_inv2 = np.linalg.inv(s_mean @ s_mean.T + alpha*np.eye(s_mean.shape[0]) + 1/n_stims * s_var @ s_var.T)
-w1 = C_inv @ s_mean
-w2 = C_inv2 @ s_mean
-K1 = s_mean.T @ w1
-G1 = s_var.T @ w1
-K2 = s_mean.T @ w2
-G2 = s_var.T @ w2
+w = C_inv @ s_mean
+K = s_mean.T @ w
+G = s_var.T @ w
 
 # calculate the network response on test data
 test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=n_tests)
@@ -287,34 +284,28 @@ train_distortions = []
 test_predictions = []
 readouts = []
 for target in targets:
-    train_predictions.append(K2 @ target)
-    train_distortions.append(G2 @ target)
-    w_readout = w2 @ target
+    train_predictions.append(K @ target)
+    train_distortions.append(G @ target)
+    w_readout = w @ target
     readouts.append(w_readout)
     test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
 # calculate the network kernel basis functions
-# K_funcs = np.zeros((K.shape[0] - 2 * K_width, K_width))
-# for j in range(K_funcs.shape[0]):
-#     rows = np.arange(K_width + j, 2 * K_width + j)
-#     cols = rows[::-1]
-#     K_funcs[j, :] = K[rows, cols]
-K_shifted = np.zeros_like(K2)
-for j in range(K2.shape[0]):
-    K_shifted[j, :] = np.roll(K2[j, :], shift=int(K2.shape[1]/2)-j)
-v_explained, pcs = pca(K_shifted)
-pc1_proj = K_shifted @ pcs[:, 0]
+K_shifted = np.zeros_like(K)
+for j in range(K.shape[0]):
+    K_shifted[j, :] = np.roll(K[j, :], shift=int(K.shape[1]/2)-j)
+K_mean = np.mean(K_shifted, axis=0)
+K_var = np.var(K_shifted, axis=0)
+K_diag = np.diag(K)
 
 # store results
 hf = h5py.File(f, 'r+')
 g = hf.create_group(f"data")
 results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
-           "input_indices": inp_indices, "dimensionality": np.mean(dims), "sequentiality": np.mean(seqs),
-           "alpha": alpha, "train_predictions": train_predictions, "targets": targets,
-           "distortions": train_distortions, "test_predictions": test_predictions,
-           "test_onsets": np.round(dt * 2.0 * np.pi * test_onsets / T, decimals=2),
-           "v_explained": v_explained, "pc1_projection": pc1_proj, "pcs": pcs, "s": test_signals, "K": K2,
-           "K_shifted": K_shifted, }
+           "input_indices": inp_indices, "dimensionality": np.mean(dims), "alpha": alpha,
+           "train_predictions": train_predictions, "targets": targets,
+           "test_predictions": test_predictions, "test_onsets": np.round(dt*2.0*np.pi*test_onsets / T, decimals=2),
+           "s": test_signals, "K": K, "K_shifted": K_shifted, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag}
 for key, val in results.items():
     g.create_dataset(key, data=val)
 hf.close()
@@ -336,7 +327,7 @@ im = ax.imshow(s_all, aspect="auto", interpolation="none")
 plt.colorbar(im, ax=ax, shrink=0.4)
 ax.set_xlabel('time')
 ax.set_ylabel('neurons')
-ax.set_title(f"Seq = {np.mean(seqs)}, Dim = {np.mean(dims)}")
+ax.set_title(f"Dim = {np.mean(dims)}")
 plt.tight_layout()
 
 _, axes = plt.subplots(ncols=2, figsize=(12, 6))
@@ -354,8 +345,8 @@ ax.set_title(f"T2")
 ax.legend()
 plt.tight_layout()
 
-examples = [(0, 0), (0, 1), (1, 0), (1, 1)]
-fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
+examples = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)]
+fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 9))
 for i, ex in enumerate(examples):
     ax = axes[i]
     ax.plot(test_predictions[ex[0]][ex[1]], label="prediction")
@@ -366,19 +357,28 @@ for i, ex in enumerate(examples):
     ax.set_title(f"Stimulation phase: {test_onsets[ex[1]]}")
 plt.tight_layout()
 
-fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
+_, axes = plt.subplots(ncols=2, figsize=(12, 6))
 ax = axes[0]
-im = ax.imshow(K1, interpolation="none", aspect="auto")
+im = ax.imshow(K, interpolation="none", aspect="auto")
 plt.colorbar(im, ax=ax, shrink=0.8)
 ax.set_title("K")
 ax = axes[1]
-im = ax.imshow(K2, interpolation="none", aspect="auto")
+im = ax.imshow(K_shifted, interpolation="none", aspect="auto")
 plt.colorbar(im, ax=ax, shrink=0.8)
-ax.set_title("K2")
+ax.set_title("K_shifted")
+plt.tight_layout()
+
+_, axes = plt.subplots(nrows=3, figsize=(12, 9))
+ax = axes[0]
+ax.plot(K_mean)
+ax.set_title("K_mean")
+ax = axes[1]
+ax.plot(K_var)
+ax.set_title("K_var")
 ax = axes[2]
-im = ax.imshow(C_inv - C_inv2, interpolation="none", aspect="auto")
-plt.colorbar(im, ax=ax, shrink=0.8)
-ax.set_title("K - K2")
+ax.plot(K_diag)
+ax.set_title("K_diag")
+plt.tight_layout()
 
 # saving
 plt.show()
