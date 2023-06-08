@@ -1,7 +1,7 @@
 from rectipy import Network, circular_connectivity
 import sys
-# cond, wdir, tdir = sys.argv[-3:]
-# sys.path.append(wdir)
+cond, wdir, tdir = sys.argv[-3:]
+sys.path.append(wdir)
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
@@ -112,9 +112,9 @@ n_stims = 50
 n_tests = 5
 
 # working directory
-wdir = "config"
-tdir = "results"
-cond = 181
+# wdir = "config"
+# tdir = "results"
+# cond = 181
 
 # model parameters
 N = 1000
@@ -214,7 +214,7 @@ y0 = net.state
 ################################
 
 # stimulation parameters
-alpha = 40.0
+alpha = 50.0
 p_in = 0.2
 T = 1/freq
 cycle_steps = int(T/dt)
@@ -318,50 +318,50 @@ hf.close()
 t1 = time.perf_counter()
 print(f"Finished job after {t1-t0}s.")
 
-# plot results
-_, axes = plt.subplots(nrows=2, figsize=(12, 5))
-s_all = np.concatenate(signals, axis=1)
-inp_all = np.concatenate(inputs, axis=0)
-s_all /= np.max(s_all)
-inp_all /= np.max(inp_all)
-ax = axes[0]
-ax.plot(np.mean(s_all, axis=0), label="s")
-ax.plot(inp_all, label="I_ext")
-ax.legend()
-ax.set_xlabel("time")
-ax.set_title("Mean signal")
-ax = axes[1]
-im = ax.imshow(s_all, aspect="auto", interpolation="none")
-plt.colorbar(im, ax=ax, shrink=0.4)
-ax.set_xlabel('time')
-ax.set_ylabel('neurons')
-ax.set_title(f"Dim = {np.mean(dims)}")
-plt.tight_layout()
-
-_, axes = plt.subplots(ncols=2, figsize=(12, 6))
-ax = axes[0]
-ax.plot(target_1, label="target")
-ax.plot(train_predictions[0], label="prediction")
-ax.set_xlabel("time")
-ax.set_title(f"T1")
-ax.legend()
-ax = axes[1]
-ax.plot(target_2, label="target")
-ax.plot(train_predictions[1], label="prediction")
-ax.set_xlabel("time")
-ax.set_title(f"T2")
-ax.legend()
-plt.tight_layout()
-
-examples = [(0, 0), (0, 1), (1, 0), (1, 1)]
-fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
-for i, ex in enumerate(examples):
-    ax = axes[i]
-    ax.plot(test_predictions[ex[0]][ex[1]], label="prediction")
-    ax.plot(targets[ex[0]], label="target")
-    ax.legend()
-    ax.set_xlabel("time")
-    ax.set_ylabel("s")
-    ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
-plt.tight_layout()
-plt.show()
+# # plot results
+# _, axes = plt.subplots(nrows=2, figsize=(12, 5))
+# s_all = np.concatenate(signals, axis=1)
+# inp_all = np.concatenate(inputs, axis=0)
+# s_all /= np.max(s_all)
+# inp_all /= np.max(inp_all)
+# ax = axes[0]
+# ax.plot(np.mean(s_all, axis=0), label="s")
+# ax.plot(inp_all, label="I_ext")
+# ax.legend()
+# ax.set_xlabel("time")
+# ax.set_title("Mean signal")
+# ax = axes[1]
+# im = ax.imshow(s_all, aspect="auto", interpolation="none")
+# plt.colorbar(im, ax=ax, shrink=0.4)
+# ax.set_xlabel('time')
+# ax.set_ylabel('neurons')
+# ax.set_title(f"Dim = {np.mean(dims)}")
+# plt.tight_layout()
+#
+# _, axes = plt.subplots(ncols=2, figsize=(12, 6))
+# ax = axes[0]
+# ax.plot(target_1, label="target")
+# ax.plot(train_predictions[0], label="prediction")
+# ax.set_xlabel("time")
+# ax.set_title(f"T1")
+# ax.legend()
+# ax = axes[1]
+# ax.plot(target_2, label="target")
+# ax.plot(train_predictions[1], label="prediction")
+# ax.set_xlabel("time")
+# ax.set_title(f"T2")
+# ax.legend()
+# plt.tight_layout()
+#
+# examples = [(0, 0), (0, 1), (1, 0), (1, 1)]
+# fig, axes = plt.subplots(nrows=len(examples), figsize=(12, 6))
+# for i, ex in enumerate(examples):
+#     ax = axes[i]
+#     ax.plot(test_predictions[ex[0]][ex[1]], label="prediction")
+#     ax.plot(targets[ex[0]], label="target")
+#     ax.legend()
+#     ax.set_xlabel("time")
+#     ax.set_ylabel("s")
+#     ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
+# plt.tight_layout()
+# plt.show()
