@@ -209,7 +209,7 @@ s_init /= np.max(s_init)
 peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
 troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
 freq = len(peaks)/(T_init-wash_out)
-stop = int(troughs[-1]*sr)
+stop = int(troughs[-1]*sr + wash_out/(dt*sr))
 
 # perform additional wash-out simulation to obtain a common initial state
 net.run(inputs=inp[:stop], sampling_steps=stop, verbose=False, enable_grad=False)
@@ -243,7 +243,7 @@ target_1[delay] = 1.0
 target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
 t = np.linspace(0, T*1e-3, steps)
 f1 = 5.0
-f2 = 20.0
+f2 = 12.0
 target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]
 

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks
 import h5py
 
 
@@ -117,12 +118,12 @@ def pca(X: np.ndarray) -> tuple:
 
 # condition
 cond = "het"
-alpha = 50.0
 Delta = 1.0
+alpha = 40.0
 
 # training and testing
-n_stims = 20
-n_tests = 3
+n_stims = 40
+n_tests = 5
 
 # working directory
 wdir = "config"
@@ -157,32 +158,9 @@ device = "cuda:0"
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # simulation parameters
-T_init = 2000.0
+T_init = 6000.0
 dt = 1e-2
 sr = 10
-p_in = 0.2
-idx = np.argmin(np.abs(deltas - Delta))
-freq = freqs[idx]
-T = 1e3/freq
-cycle_steps = int(T/dt)
-stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
-stim_onsets = [int(onset/dt) for onset in stim_onsets]
-stim_width = int(20.0/dt)
-n_inputs = int(p_in*N)
-center = int(N*0.5)
-inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-
-# create two target signals to fit
-delay = 2000
-steps = int(np.round(cycle_steps / sr))
-target_1 = np.zeros((steps,))
-target_1[delay] = 1.0
-target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
-t = np.linspace(0, T*1e-3, steps)
-f1 = 5.0
-f2 = 20.0
-target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
-targets = [target_1, target_2]
 
 # other analysis parameters
 K_width = 100
@@ -212,11 +190,55 @@ net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", t
                     node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                     verbose=False, clear=True)
 
-# perform initial wash-out simulation
+# perform simulation to determine intrinsic oscillation frequency
 init_steps = int(T_init/dt)
 inp = np.zeros((init_steps, 1))
-net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
+
+# infer intrinsic oscillation frequency of network
+wash_out = 1000.0
+init_obs = net.run(inputs=inp, sampling_steps=sr, verbose=False, enable_grad=False)
+s_init = np.mean(init_obs.to_numpy("out")[int(wash_out/(dt*sr)):, :], axis=1)
+s_init -= np.min(s_init)
+s_init /= np.max(s_init)
+peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
+troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
+freq = len(peaks)/(T_init-wash_out)
+stop = int(troughs[-1]*sr + wash_out/(dt*sr))
+
+# perform additional wash-out simulation to obtain a common initial state
+net.run(inputs=inp[:stop], sampling_steps=stop, verbose=False, enable_grad=False)
 y0 = net.state
+
+# condition-dependent parameters
+################################
+
+# stimulation parameters
+p_in = 0.2
+T = 1/freq
+cycle_steps = int(T/dt)
+stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
+stim_phases = 2.0*np.pi*stim_onsets/T
+stim_onsets = [int(onset/dt) for onset in stim_onsets]
+stim_width = int(20.0/dt)
+n_inputs = int(p_in*N)
+center = int(N*0.5)
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+test_trials = list(np.arange(0, n_stims, n_tests))
+train_trials = list(np.arange(0, n_stims))
+for t in test_trials:
+    train_trials.pop(train_trials.index(t))
+
+# create two target signals to fit
+delay = 2000
+steps = int(np.round(cycle_steps / sr))
+target_1 = np.zeros((steps,))
+target_1[delay] = 1.0
+target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
+t = np.linspace(0, T*1e-3, steps)
+f1 = 5.0
+f2 = 12.0
+target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
+targets = [target_1, target_2]
 
 # main simulation
 #################
@@ -233,7 +255,6 @@ hf.close()
 signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
 dims = []
-# seqs = []
 cs = []
 for s in signals:
 
@@ -241,9 +262,6 @@ for s in signals:
     corr_net = np.cov(s)
     eigs = np.abs(np.linalg.eigvals(corr_net))
     dims.append(np.sum(eigs) ** 2 / np.sum(eigs ** 2))
-
-    # # calculate the network sequentiality
-    # seqs.append(sequentiality(s, neighborhood=seq_range, max_lag=margin))
 
     # calculate the network covariance matrices
     cs.append(get_c(s, alpha=gamma))
