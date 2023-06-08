@@ -229,24 +229,6 @@ for key, val in {"Delta": Delta, "alpha": alpha}.items():
     g.create_dataset(key, data=val)
 hf.close()
 
-# define connectivity
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
-pdfs /= np.sum(pdfs)
-W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
-
-# initialize model
-net = Network(dt=dt, device="cuda:0")
-net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                    verbose=False, clear=True)
-
-# perform initial wash-out simulation
-init_steps = int(T_init / dt)
-inp = np.zeros((init_steps, 1))
-net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
-y0 = net.state
-
 # get signals for each stimulation onset
 signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
