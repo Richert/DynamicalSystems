@@ -119,10 +119,10 @@ def pca(X: np.ndarray) -> tuple:
 # condition
 cond = "het"
 Delta = 1.0
-alpha = 40.0
+alpha = 50.0
 
 # training and testing
-n_stims = 40
+n_stims = 50
 n_tests = 5
 
 # working directory
@@ -254,6 +254,13 @@ hf.close()
 # get signals for each stimulation onset
 signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
+# extract results for training and testing
+train_signals = [signals[idx] for idx in train_trials]
+test_signals = [signals[idx] for idx in test_trials]
+train_phases = [stim_phases[idx] for idx in train_trials]
+test_phases = [stim_phases[idx] for idx in test_trials]
+
+# calculate network dimensionality and covariance
 dims = []
 cs = []
 for s in signals:
@@ -273,10 +280,6 @@ C_inv = np.linalg.inv(np.mean(cs, axis=0))
 w = C_inv @ s_mean
 K = s_mean.T @ w
 G = s_var.T @ w
-
-# calculate the network response on test data
-test_onsets = np.random.randint(low=np.min(stim_onsets), high=np.max(stim_onsets), size=n_tests)
-test_signals, _ = get_signals(list(test_onsets), cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
 
 # calculate the prediction performance for concrete targets
 train_predictions = []
@@ -303,9 +306,9 @@ hf = h5py.File(f, 'r+')
 g = hf.create_group(f"data")
 results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
            "input_indices": inp_indices, "dimensionality": np.mean(dims), "alpha": alpha,
-           "train_predictions": train_predictions, "targets": targets,
-           "test_predictions": test_predictions, "test_onsets": np.round(dt*2.0*np.pi*test_onsets / T, decimals=2),
-           "s": test_signals, "K": K, "K_shifted": K_shifted, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag}
+           "train_predictions": train_predictions, "targets": targets, "s": test_signals,
+           "test_predictions": test_predictions, "test_phases": test_phases, "train_phases": train_phases,
+           "K": K, "G": G, "K_shifted": K_shifted, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag}
 for key, val in results.items():
     g.create_dataset(key, data=val)
 hf.close()
@@ -321,7 +324,7 @@ ax.plot(np.mean(s_all, axis=0), label="s")
 ax.plot(inp_all, label="I_ext")
 ax.legend()
 ax.set_xlabel("time")
-ax.set_title("Mean signal")
+ax.set_title(f"Mean signal (f = {np.round(freq*1e3, decimals=1)} Hz)")
 ax = axes[1]
 im = ax.imshow(s_all, aspect="auto", interpolation="none")
 plt.colorbar(im, ax=ax, shrink=0.4)
@@ -354,7 +357,7 @@ for i, ex in enumerate(examples):
     ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("s")
-    ax.set_title(f"Stimulation phase: {test_onsets[ex[1]]}")
+    ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
 plt.tight_layout()
 
 _, axes = plt.subplots(ncols=2, figsize=(12, 6))

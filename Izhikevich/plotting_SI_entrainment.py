@@ -27,18 +27,19 @@ examples["delta"] = np.round(np.asarray(g["Delta"]), decimals=1)
 g = data["data"]
 examples["alpha"] = np.round(np.asarray(g["alpha"]), decimals=1)
 examples["s"] = np.asarray(g["s"])
-examples["onsets"] = np.asarray(g["test_onsets"])
-examples["pc1"] = np.asarray(g["pcs"])[:, 0]
-examples["K"] = np.asarray(g["K"])
-examples["pc1_projection"] = np.asarray(g["pc1_projection"])
 examples["target"] = np.asarray(g["targets"])
-examples["prediction"] = np.asarray(g["test_predictions"])
+examples["test_prediction"] = np.asarray(g["test_predictions"])
 examples["train_prediction"] = np.asarray(g["train_predictions"])
-examples["train_variance"] = np.asarray(g["distortions"])
+# examples["train_phases"] = np.asarray(g["train_phases"])
+# examples["test_phases"] = np.asarray(g["test_phases"])
 examples["dt"] = np.asarray(g["dt"])
 examples["sr"] = np.asarray(g["sr"])
 examples["input_indices"] = np.asarray(g["input_indices"])
 examples["dim"] = np.round(np.asarray(g["dimensionality"]), decimals=1)
+examples["K"] = np.asarray(g["K"])
+examples["K_mean"] = np.asarray(g["K_mean"])
+examples["K_var"] = np.asarray(g["K_var"])
+examples["K_diag"] = np.asarray(g["K_diag"])
 
 ############
 # plotting #
@@ -68,6 +69,8 @@ ax = fig.add_subplot(grid_highlvl[0, 0])
 s = examples["s"]
 s_all = np.concatenate(s, axis=1)
 s_all /= np.max(s_all)
+phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1])*np.pi*2.0/s[0].shape[1], decimals=2)
+phase_ticks = np.arange(0, len(phases), 1190)
 im = ax.imshow(s_all, aspect="auto", interpolation="none", cmap="Greys")
 plt.sca(ax)
 dur = 0
@@ -76,7 +79,8 @@ for n in range(len(s)):
                       x2=[width + dur for _ in range(len(indices))], color='red', alpha=0.5)
     dur += len(s[n, 0])
     ax.axvline(x=dur, color="blue", linestyle="solid")
-ax.set_xlabel('time')
+ax.set_xticks(phase_ticks, labels=phases[phase_ticks])
+ax.set_xlabel('phase')
 ax.set_ylabel('neurons')
 ax.set_title(fr"(A) Network dynamics for all test trials")
 
@@ -100,18 +104,22 @@ ax.set_title(fr"(C) Neural correlations (dimensionality = {dim})")
 grid = grid_highlvl[2, 0].subgridspec(1, 2)
 xlen = 250
 ax = fig.add_subplot(grid[0, 0])
-pc1 = examples["pc1"]
-center = int(len(pc1)/2)
-ax.plot(pc1[center-xlen:center+xlen], color="black")
-ax.set_xlabel("time")
-ax.set_ylabel("PC coefficient")
-ax.set_title(fr"(D) PC1 of $K$")
-ax = fig.add_subplot(grid[0, 1])
-proj = examples["pc1_projection"]
-ax.plot(proj, color="orange")
+K_mean = examples["K_mean"]
+K_var = examples["K_var"]
+center = int(len(K_mean)/2)
+K_mean = K_mean[center-xlen:center+xlen]
+K_var = K_var[center-xlen:center+xlen]
+ax.plot(K_mean, color="black")
+ax.fill_between(np.arange(len(K_mean)), y1=K_mean - K_var, y2=K_mean + K_var, color="red", alpha=0.5)
 ax.set_xlabel("time")
 ax.set_ylabel("")
-ax.set_title(rf"(E) Projection onto PC1 of $K$")
+ax.set_title(fr"(D) $K_m$")
+ax = fig.add_subplot(grid[0, 1])
+diag = examples["K_diag"]
+ax.plot(diag, color="orange")
+ax.set_xlabel("time")
+ax.set_ylabel("")
+ax.set_title(rf"(E) $diag(K)$")
 
 # predictions
 test_examples = [2, 4]
@@ -123,11 +131,9 @@ for ex, title in zip(test_examples, titles):
     # target 1
     ax = fig.add_subplot(grid[row, 0])
     ax.plot(examples["target"][1], label="target", color="black")
-    dist = examples["train_variance"][1]
     fit = examples["train_prediction"][1]
     ax.plot(fit, label="fit", color="blue")
-    ax.fill_between(np.arange(len(dist)), y1=fit - dist, y2=fit + dist, color="blue", alpha=0.5)
-    ax.plot(examples["prediction"][1][ex], label="prediction", color="orange")
+    ax.plot(examples["test_prediction"][1][ex], label="prediction", color="orange")
     if row == 0:
         ax.set_title(f"(F) Function generation performance on target 1")
     ax.set_xlabel("")
@@ -136,11 +142,9 @@ for ex, title in zip(test_examples, titles):
     # target 2
     ax = fig.add_subplot(grid[row+2, 0])
     ax.plot(examples["target"][0], label="target", color="black")
-    dist = examples["train_variance"][0]
     fit = examples["train_prediction"][0]
     ax.plot(fit, label="fit", color="blue")
-    ax.fill_between(np.arange(len(dist)), y1=fit - dist, y2=fit + dist, color="blue", alpha=0.5)
-    ax.plot(examples["prediction"][0][ex], label="prediction", color="orange")
+    ax.plot(examples["test_prediction"][0][ex], label="prediction", color="orange")
     ax.set_xlabel("")
     ax.set_ylabel("")
     if row == 0:

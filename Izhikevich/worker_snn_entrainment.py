@@ -107,13 +107,8 @@ def get_c(X: np.ndarray, alpha: float = 1e-4):
 # define parameters
 ###################
 
-# TODO: Detect last trough in initial simulation period and use that as initial state.
-# TODO: Calculate network kernel etc twice. Once across all stimulation phases, and once for a half-half split.
-# TODO: Use longer initial simulation time and determine intrinsic oscillation frequency from the resulting signal
-# TODO: Create script for the non-oscillating regime (eta = 70) with a constant freq = 3 Hz for all deltas.
-
 # sweep sizes
-n_stims = 20
+n_stims = 50
 n_tests = 5
 
 # working directory
@@ -219,7 +214,7 @@ y0 = net.state
 ################################
 
 # stimulation parameters
-alpha = 30.0
+alpha = 40.0
 p_in = 0.2
 T = 1/freq
 cycle_steps = int(T/dt)

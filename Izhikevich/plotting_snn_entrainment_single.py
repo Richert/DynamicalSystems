@@ -1,7 +1,4 @@
-import os
 import numpy as np
-import pandas as pd
-import seaborn as sb
 import matplotlib.pyplot as plt
 import h5py
 
@@ -12,43 +9,106 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
     return float(np.mean((x - y)**2))
 
 
-# load data set
-fname = "results/entrainment/snn_entrainment_25.h5"
-data = h5py.File(fname, "r")
+# load data
+###########
 
-res_dict = {"alpha": [], "dim": [], "seq": [], "train_loss_1": [], "train_loss_2": [], "test_loss_1": [],
-            "test_loss_2": [], "kernel_width": [], "kernel_variance": []}
+cond = "hom"
+path = "results/oscillatory"
 
-for i in range(len(data)-1):
+# load examples
+examples = {}
+f = f"SI_oscillations_{cond}.h5"
+data = h5py.File(f"{path}/{f}", "r")
+g = data["sweep"]
+examples["delta"] = np.round(np.asarray(g["Delta"]), decimals=1)
+g = data["data"]
+examples["alpha"] = np.round(np.asarray(g["alpha"]), decimals=1)
+examples["s"] = np.asarray(g["s"])
+examples["target"] = np.asarray(g["targets"])
+examples["test_prediction"] = np.asarray(g["test_predictions"])
+examples["train_prediction"] = np.asarray(g["train_predictions"])
+# examples["train_phases"] = np.asarray(g["train_phases"])
+# examples["test_phases"] = np.asarray(g["test_phases"])
+examples["dt"] = np.asarray(g["dt"])
+examples["sr"] = np.asarray(g["sr"])
+examples["input_indices"] = np.asarray(g["input_indices"])
+examples["dim"] = np.round(np.asarray(g["dimensionality"]), decimals=1)
+examples["K"] = np.asarray(g["K"])
+examples["K_mean"] = np.asarray(g["K_mean"])
+examples["K_var"] = np.asarray(g["K_var"])
+examples["K_diag"] = np.asarray(g["K_diag"])
 
-    g = data[f"{i}"]
-    res_dict["alpha"].append(np.asarray(g["alpha"]))
-    res_dict["dim"].append(np.asarray(g["dimensionality"]))
-    res_dict["seq"].append(np.asarray(g["sequentiality"]))
-    res_dict["train_loss_1"].append(mse(np.asarray(g["targets"][0]), np.asarray(g["train_predictions"][0])))
-    res_dict["train_loss_2"].append(mse(np.asarray(g["targets"][1]), np.asarray(g["train_predictions"][1])))
-    test_losses = [mse(np.asarray(g["targets"][0]), np.asarray(sig)) for sig in g["test_predictions"][0]]
-    res_dict["test_loss_1"].append(np.mean(test_losses))
-    test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
-    res_dict["test_loss_2"].append(np.mean(test_losses))
+############
+# plotting #
+############
 
-print(f"Delta: {float(np.asarray(data['sweep']['Delta']))}")
-fig, axes = plt.subplots(ncols=4, figsize=(12, 4))
-ax = axes[0]
-ax.plot(res_dict["alpha"], res_dict["dim"])
-ax.set_title("dim")
-ax.set_xlabel("alpha")
-ax = axes[1]
-ax.plot(res_dict["alpha"], res_dict["seq"])
-ax.set_title("seq")
-ax.set_xlabel("alpha")
-ax = axes[2]
-ax.plot(res_dict["alpha"], res_dict["train_loss_1"])
-ax.set_title("train loss")
-ax.set_xlabel("alpha")
-ax = axes[3]
-ax.plot(res_dict["alpha"], res_dict["test_loss_1"])
-ax.set_title("test loss")
-ax.set_xlabel("alpha")
-plt.tight_layout()
+# plot settings
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.dpi'] = 200
+plt.rcParams['font.size'] = 10.0
+plt.rcParams['axes.titlesize'] = 10
+plt.rcParams['axes.labelsize'] = 10
+plt.rcParams['lines.linewidth'] = 1.0
+markersize = 6
+ticks = 5
+
+# create figure layout
+fig = plt.figure(figsize=(3, 4), constrained_layout=True)
+grid = fig.add_gridspec(3, 1)
+
+# SNN dynamics
+width = int(20.0/(examples["dt"]*examples["sr"]))
+indices = examples["input_indices"]
+ax = fig.add_subplot(grid[0, 0])
+s = examples["s"][np.arange(0, len(examples["s"]), 4)]
+s_all = np.concatenate(s, axis=1)
+s_all /= np.max(s_all)
+phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1])*np.pi*2.0/s[0].shape[1], decimals=1)
+phase_ticks = np.arange(0, len(phases), 1111)
+im = ax.imshow(s_all, aspect="auto", interpolation="none", cmap="Greys")
+plt.sca(ax)
+dur = 0
+for n in range(len(s)):
+    plt.fill_betweenx(y=indices, x1=[dur for _ in range(len(indices))],
+                      x2=[width + dur for _ in range(len(indices))], color='red', alpha=0.5)
+    dur += len(s[n, 0])
+    ax.axvline(x=dur, color="blue", linestyle="solid")
+ax.set_xticks(phase_ticks, labels=phases[phase_ticks])
+ax.set_xlabel('phase')
+ax.set_ylabel('neurons')
+ax.set_title(fr"(A) Network dynamics for {len(s)} trials")
+
+# predictions
+ex = 1
+
+# target 1
+ax = fig.add_subplot(grid[1, 0])
+ax.plot(examples["target"][1], label="target", color="black")
+ax.plot(examples["train_prediction"][1], label="fit", color="blue")
+ax.plot(examples["test_prediction"][1][ex], label="prediction", color="orange")
+ax.set_title(f"(B) Function generation performance on target 1")
+ax.set_xlabel("")
+ax.set_ylabel("")
+
+# target 2
+ax = fig.add_subplot(grid[2, 0])
+target = examples["target"][0]
+tmax = np.max(target)
+ax.plot(target / tmax, label="target", color="black")
+ax.plot(examples["train_prediction"][0] / tmax, label="fit", color="blue")
+ax.plot(examples["test_prediction"][0][ex] / tmax, label="prediction", color="orange")
+ax.set_xlabel("time")
+ax.set_ylabel("")
+ax.set_title(f"(C) Function generation performance on target 2")
+ax.legend()
+
+# padding
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+
+# saving/plotting
+fig.canvas.draw()
+plt.savefig(f'results/snn_oscillations_single_{cond}.svg')
 plt.show()

@@ -122,7 +122,6 @@ thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 T_init = 2000.0
 dt = 1e-2
 sr = 10
-alpha = 30.0
 p_in = 0.2
 freq = 3.0
 T = 1e3/freq
