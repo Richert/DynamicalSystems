@@ -106,6 +106,11 @@ def get_c(X: np.ndarray, alpha: float = 1e-4):
 # define parameters
 ###################
 
+# TODO: Detect last trough in initial simulation period and use that as initial state.
+# TODO: Calculate network kernel etc twice. Once across all stimulation phases, and once for a half-half split.
+# TODO: Use longer initial simulation time and determine intrinsic oscillation frequency from the resulting signal
+# TODO: Create script for the non-oscillating regime (eta = 70) with a constant freq = 3 Hz for all deltas.
+
 # sweep sizes
 n_stims = 20
 n_tests = 5
@@ -113,7 +118,7 @@ n_tests = 5
 # working directory
 wdir = "config"
 tdir = "results"
-cond = 11
+cond = 181
 
 # load data that maps deltas to frequencies
 data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
