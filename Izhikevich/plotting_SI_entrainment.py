@@ -66,7 +66,7 @@ grid_highlvl = fig.add_gridspec(3, 2)
 width = int(20.0/(examples["dt"]*examples["sr"]))
 indices = examples["input_indices"]
 ax = fig.add_subplot(grid_highlvl[0, 0])
-s = examples["s"]
+s = examples["s"][np.arange(0, len(examples["s"]), 3)]
 s_all = np.concatenate(s, axis=1)
 s_all /= np.max(s_all)
 phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1])*np.pi*2.0/s[0].shape[1], decimals=2)
@@ -85,44 +85,44 @@ ax.set_ylabel('neurons')
 ax.set_title(fr"(A) Network dynamics for all test trials")
 
 # covariance and kernel matrices
-grid = grid_highlvl[1, 0].subgridspec(1, 2)
+grid = grid_highlvl[1:, 0].subgridspec(1, 1)
+# ax = fig.add_subplot(grid[0, 0])
+# sb.heatmap(examples["K"], cbar=True, ax=ax, xticklabels=1500, yticklabels=1500, rasterized=True, cmap="magma_r")
+# ax.set_xlabel(r"T")
+# ax.set_ylabel(r"T")
+# ax.set_title(fr"(B) Network response kernel $K$")
 ax = fig.add_subplot(grid[0, 0])
-sb.heatmap(examples["K"], cbar=True, ax=ax, xticklabels=1500, yticklabels=1500, rasterized=True, cmap="magma_r")
-ax.set_xlabel(r"T")
-ax.set_ylabel(r"T")
-ax.set_title(fr"(B) Network response kernel $K$")
-ax = fig.add_subplot(grid[0, 1])
 dim = examples["dim"]
 C = np.corrcoef(s_all)
 C[np.isnan(C)] = 0.0
-sb.heatmap(C, cbar=True, ax=ax, xticklabels=400, yticklabels=400, rasterized=True)
+sb.heatmap(np.abs(C), cbar=True, ax=ax, xticklabels=400, yticklabels=400, rasterized=True, vmin=0, vmax=1)
 ax.set_xlabel(r"N")
 ax.set_ylabel(r"N")
-ax.set_title(fr"(C) Neural correlations (dimensionality = {dim})")
+ax.set_title(fr"(B) Neural correlations (dimensionality = {dim})")
 
 # PC1 and PC1 projection
-grid = grid_highlvl[2, 0].subgridspec(1, 2)
-xlen = 250
-ax = fig.add_subplot(grid[0, 0])
-K_mean = examples["K_mean"]
-K_var = examples["K_var"]
-center = int(len(K_mean)/2)
-K_mean = K_mean[center-xlen:center+xlen]
-K_var = K_var[center-xlen:center+xlen]
-ax.plot(K_mean, color="black")
-ax.fill_between(np.arange(len(K_mean)), y1=K_mean - K_var, y2=K_mean + K_var, color="red", alpha=0.5)
-ax.set_xlabel("time")
-ax.set_ylabel("")
-ax.set_title(fr"(D) $K_m$")
-ax = fig.add_subplot(grid[0, 1])
-diag = examples["K_diag"]
-ax.plot(diag, color="orange")
-ax.set_xlabel("time")
-ax.set_ylabel("")
-ax.set_title(rf"(E) $diag(K)$")
+# grid = grid_highlvl[2, 0].subgridspec(1, 2)
+# xlen = 250
+# ax = fig.add_subplot(grid[0, 0])
+# K_mean = examples["K_mean"]
+# K_var = examples["K_var"]
+# center = int(len(K_mean)/2)
+# K_mean = K_mean[center-xlen:center+xlen]
+# K_var = K_var[center-xlen:center+xlen]
+# ax.plot(K_mean, color="black")
+# ax.set_xlabel("time")
+# ax.set_ylabel("")
+# ax.set_ylim([0.0, 0.009])
+# ax.set_title(r"(D) $K_{mean}$")
+# ax = fig.add_subplot(grid[0, 1])
+# ax.plot(K_var, color="orange")
+# ax.set_xlabel("time")
+# ax.set_ylabel("")
+# ax.set_ylim([0.0, 7e-6])
+# ax.set_title(r"(E) $K_{var}$")
 
 # predictions
-test_examples = [2, 4]
+test_examples = [0, 6]
 titles = ["F", "G"]
 row = 0
 grid = grid_highlvl[:, 1].subgridspec(4, 1)
@@ -131,24 +131,25 @@ for ex, title in zip(test_examples, titles):
     # target 1
     ax = fig.add_subplot(grid[row, 0])
     ax.plot(examples["target"][1], label="target", color="black")
-    fit = examples["train_prediction"][1]
-    ax.plot(fit, label="fit", color="blue")
+    ax.plot(examples["train_prediction"][1], label="fit", color="blue")
     ax.plot(examples["test_prediction"][1][ex], label="prediction", color="orange")
     if row == 0:
-        ax.set_title(f"(F) Function generation performance on target 1")
+        ax.set_title(f"(C) Function generation performance on target 1")
     ax.set_xlabel("")
     ax.set_ylabel("")
+    ax.set_ylim([-1.2, 1.2])
 
     # target 2
     ax = fig.add_subplot(grid[row+2, 0])
-    ax.plot(examples["target"][0], label="target", color="black")
-    fit = examples["train_prediction"][0]
-    ax.plot(fit, label="fit", color="blue")
-    ax.plot(examples["test_prediction"][0][ex], label="prediction", color="orange")
+    tmax = np.max(examples["target"][0])
+    ax.plot(examples["target"][0] / tmax, label="target", color="black")
+    ax.plot(examples["train_prediction"][0] / tmax, label="fit", color="blue")
+    ax.plot(examples["test_prediction"][0][ex] / tmax, label="prediction", color="orange")
     ax.set_xlabel("")
     ax.set_ylabel("")
+    ax.set_ylim([-0.2, 1.2])
     if row == 0:
-        ax.set_title(f"(G) Function generation performance on target 2")
+        ax.set_title(f"(D) Function generation performance on target 2")
     if row == 1:
         ax.legend()
         ax.set_xlabel("time")
