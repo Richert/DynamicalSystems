@@ -117,9 +117,9 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # condition
-cond = "hom"
-Delta = 0.1
-alpha = 40.0
+cond = "het"
+Delta = 1.0
+alpha = 100.0
 
 # training and testing
 n_stims = 25
@@ -136,7 +136,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 70.0
+eta = 65.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -166,6 +166,35 @@ indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
 gamma = 1e-4
 
+# stimulation parameters
+p_in = 0.2
+freq = 5.0
+T = 1e3/freq
+cycle_steps = int(T/dt)
+stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
+stim_phases = 2.0*np.pi*stim_onsets/T
+stim_onsets = [int(onset/dt) for onset in stim_onsets]
+stim_width = int(20.0/dt)
+n_inputs = int(p_in*N)
+center = int(N*0.5)
+inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
+test_trials = list(np.arange(0, n_stims, n_tests))
+train_trials = list(np.arange(0, n_stims))
+for t in test_trials:
+    train_trials.pop(train_trials.index(t))
+
+# create two target signals to fit
+delay = 1000
+steps = int(np.round(cycle_steps / sr))
+target_1 = np.zeros((steps,))
+target_1[delay] = 1.0
+target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
+t = np.linspace(0, T*1e-3, steps)
+f1 = 7.0
+f2 = 12.0
+target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
+targets = [target_1, target_2]
+
 # initial simulation
 ####################
 
@@ -192,38 +221,6 @@ inp = np.zeros((init_steps, 1))
 # perform additional wash-out simulation to obtain a common initial state
 net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
 y0 = net.state
-
-# condition-dependent parameters
-################################
-
-# stimulation parameters
-p_in = 0.2
-freq = 3.0
-T = 1e3/freq
-cycle_steps = int(T/dt)
-stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
-stim_phases = 2.0*np.pi*stim_onsets/T
-stim_onsets = [int(onset/dt) for onset in stim_onsets]
-stim_width = int(20.0/dt)
-n_inputs = int(p_in*N)
-center = int(N*0.5)
-inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-test_trials = list(np.arange(0, n_stims, n_tests))
-train_trials = list(np.arange(0, n_stims))
-for t in test_trials:
-    train_trials.pop(train_trials.index(t))
-
-# create two target signals to fit
-delay = 2000
-steps = int(np.round(cycle_steps / sr))
-target_1 = np.zeros((steps,))
-target_1[delay] = 1.0
-target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
-t = np.linspace(0, T*1e-3, steps)
-f1 = 5.0
-f2 = 12.0
-target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
-targets = [target_1, target_2]
 
 # main simulation
 #################
