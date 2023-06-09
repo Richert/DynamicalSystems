@@ -68,7 +68,7 @@ def get_c(X: np.ndarray, alpha: float = 1e-4):
 ###################
 
 # sweep sizes
-n_stims = 25
+n_stims = 50
 n_tests = 5
 
 # working directory
@@ -84,7 +84,6 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 Delta = 1.0
-eta = 70.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -130,41 +129,20 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
-gamma = 1e-4
-
-# initial simulation
-####################
+gamma = 1e-3
 
 # define connectivity
 pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
-# collect parameters
-node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
-
-# initialize model
-net = Network(dt=dt, device="cuda:0")
-net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                    verbose=False, clear=True)
-
-# perform simulation to determine intrinsic oscillation frequency
-init_steps = int(T_init/dt)
-inp = np.zeros((init_steps, 1))
-
-# perform additional wash-out simulation to obtain a common initial state
-net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
-y0 = net.state
-
 # condition-dependent parameters
 ################################
 
 # stimulation parameters
+alpha = 80.0
 p_in = 0.2
-freq = 3.0
+freq = 4.0
 T = 1e3/freq
 cycle_steps = int(T/dt)
 stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
@@ -180,32 +158,53 @@ for t in test_trials:
     train_trials.pop(train_trials.index(t))
 
 # create two target signals to fit
-delay = 2000
+delay = 1500
 steps = int(np.round(cycle_steps / sr))
 target_1 = np.zeros((steps,))
 target_1[delay] = 1.0
 target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
 t = np.linspace(0, T*1e-3, steps)
-f1 = 5.0
+f1 = 6.0
 f2 = 12.0
 target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]
 
-# main simulation
-#################
+###############
+# simulations #
+###############
 
-alphas = np.linspace(1.0, 60.0, num=10)
+etas = [45.0, 70.0]
 fname = f"snn_funcgen"
 f = f"{tdir}/{fname}_{cond}.h5"
 hf = h5py.File(f, "w")
-g = hf.create_group("sweep")
-for key, val in {p1: v1, p2: v2}.items():
-    g.create_dataset(key, data=val)
-hf.close()
+for i, eta in enumerate(etas):
 
-for i, alpha in enumerate(alphas):
+    # initial simulation
+    ####################
+
+    # collect parameters
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
+                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+
+    # initialize model
+    net = Network(dt=dt, device="cuda:0")
+    net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                        verbose=False, clear=True)
+
+    # perform simulation to determine intrinsic oscillation frequency
+    init_steps = int(T_init / dt)
+    inp = np.zeros((init_steps, 1))
+
+    # perform additional wash-out simulation to obtain a common initial state
+    net.run(inputs=inp, sampling_steps=init_steps, verbose=False, enable_grad=False)
+    y0 = net.state
 
     t0 = time.perf_counter()
+
+    # main simulation
+    #################
 
     # get signals for each stimulation onset
     signals, inputs = get_signals(stim_onsets, cycle_steps, sr, net, y0, inp_indices, sigma=sigma)
@@ -257,9 +256,9 @@ for i, alpha in enumerate(alphas):
     # store results
     hf = h5py.File(f, 'r+')
     g = hf.create_group(f"{i}")
-    results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
+    results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas, "eta": eta, "alpha": alpha,
                "input_indices": inp_indices, "dimensionality": np.mean(dims),
-               "alpha": alpha, "train_predictions": train_predictions, "test_predictions": test_predictions,
+               "train_predictions": train_predictions, "test_predictions": test_predictions,
                "targets": targets, "train_phases": train_phases, "test_phases": test_phases,
                "kernel_variance": kernel_var, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag,
                }
@@ -268,7 +267,7 @@ for i, alpha in enumerate(alphas):
     hf.close()
 
     t1 = time.perf_counter()
-    print(f"Finished job {i+1} of {len(alphas)} after {t1-t0}s.")
+    print(f"Finished job {i+1} of {len(etas)} after {t1-t0}s.")
 
     # # plot results
     # _, axes = plt.subplots(nrows=2, figsize=(12, 5))
@@ -317,3 +316,9 @@ for i, alpha in enumerate(alphas):
     #     ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
     # plt.tight_layout()
     # plt.show()
+
+# save condition
+g = hf.create_group("sweep")
+for key, val in {p1: v1, p2: v2}.items():
+    g.create_dataset(key, data=val)
+hf.close()

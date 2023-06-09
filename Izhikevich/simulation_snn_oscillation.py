@@ -118,11 +118,11 @@ def pca(X: np.ndarray) -> tuple:
 
 # condition
 cond = "hom"
-Delta = 1.3
-alpha = 50.0
+Delta = 0.1
+alpha = 80.0
 
 # training and testing
-n_stims = 50
+n_stims = 25
 n_tests = 5
 
 # working directory

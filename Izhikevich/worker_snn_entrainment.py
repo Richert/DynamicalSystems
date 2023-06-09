@@ -170,7 +170,7 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
-gamma = 1e-4
+gamma = 1e-3
 
 # initial simulation
 ####################
@@ -214,7 +214,7 @@ y0 = net.state
 ################################
 
 # stimulation parameters
-alpha = 50.0
+alpha = 80.0
 p_in = 0.2
 T = 1/freq
 cycle_steps = int(T/dt)
@@ -231,13 +231,13 @@ for t in test_trials:
     train_trials.pop(train_trials.index(t))
 
 # create two target signals to fit
-delay = 2000
+delay = 1500
 steps = int(np.round(cycle_steps / sr))
 target_1 = np.zeros((steps,))
 target_1[delay] = 1.0
 target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
 t = np.linspace(0, T*1e-3, steps)
-f1 = 5.0
+f1 = 6.0
 f2 = 12.0
 target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]

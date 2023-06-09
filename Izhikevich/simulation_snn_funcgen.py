@@ -119,7 +119,7 @@ def pca(X: np.ndarray) -> tuple:
 # condition
 cond = "het"
 Delta = 1.0
-alpha = 100.0
+alpha = 80.0
 
 # training and testing
 n_stims = 25
@@ -136,7 +136,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 65.0
+eta = 45.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -164,11 +164,11 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
-gamma = 1e-4
+gamma = 1e-3
 
 # stimulation parameters
 p_in = 0.2
-freq = 5.0
+freq = 4.0
 T = 1e3/freq
 cycle_steps = int(T/dt)
 stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
@@ -190,7 +190,7 @@ target_1 = np.zeros((steps,))
 target_1[delay] = 1.0
 target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
 t = np.linspace(0, T*1e-3, steps)
-f1 = 7.0
+f1 = 6.0
 f2 = 12.0
 target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]
