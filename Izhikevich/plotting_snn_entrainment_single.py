@@ -12,17 +12,16 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-cond = "9"
-data_set = "4"
-path = "results/funcgen"
+cond = "101"
+path = "results/oscillatory"
 
 # load examples
 examples = {}
-f = f"snn_funcgen_{cond}.h5"
+f = f"snn_oscillatory_{cond}.h5"
 data = h5py.File(f"{path}/{f}", "r")
 g = data["sweep"]
 delta = np.round(np.asarray(g["Delta"]), decimals=2)
-g = data[data_set]
+g = data["data"]
 alpha = np.round(np.asarray(g["alpha"]), decimals=1)
 # examples["s"] = np.asarray(g["s"])
 examples["target"] = np.asarray(g["targets"])

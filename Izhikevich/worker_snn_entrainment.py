@@ -159,7 +159,7 @@ for param, v in zip([p1, p2], [v1, v2]):
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # simulation parameters
-T_init = 6000.0
+T_init = 10000.0
 dt = 1e-2
 sr = 10
 
@@ -170,7 +170,7 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
-gamma = 1e-3
+gamma = 1e-4
 
 # initial simulation
 ####################
@@ -196,15 +196,20 @@ init_steps = int(T_init/dt)
 inp = np.zeros((init_steps, 1))
 
 # infer intrinsic oscillation frequency of network
-wash_out = 1000.0
+wash_out = 4000.0
 init_obs = net.run(inputs=inp, sampling_steps=sr, verbose=False, enable_grad=False)
 s_init = np.mean(init_obs.to_numpy("out")[int(wash_out/(dt*sr)):, :], axis=1)
 s_init -= np.min(s_init)
 s_init /= np.max(s_init)
 peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
 troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
+# _, ax = plt.subplots(figsize=(10, 4))
+# ax.plot(s_init)
+# for t in troughs:
+#     ax.axvline(x=t, color="blue", linestyle="solid")
+# plt.show()
 freq = len(peaks)/(T_init-wash_out)
-stop = int(troughs[-1]*sr + wash_out/(dt*sr))
+stop = int(troughs[0]*sr + wash_out/(dt*sr))
 
 # perform additional wash-out simulation to obtain a common initial state
 net.run(inputs=inp[:stop], sampling_steps=stop, verbose=False, enable_grad=False)

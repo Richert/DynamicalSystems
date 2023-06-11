@@ -184,7 +184,7 @@ titles = ["E", "F"]
 Cs = []
 for i, s in enumerate(examples["s"]):
     ax = fig.add_subplot(grid_examples[0, i*2:(i+1)*2])
-    s_tmp = s[np.arange(0, len(examples["s"]), 3)]
+    s_tmp = s[np.arange(0, len(s), 3)]
     s_all = np.concatenate(s_tmp, axis=1)
     s_all /= np.max(s_all)
     C = np.corrcoef(s_all)

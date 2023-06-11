@@ -129,7 +129,7 @@ margin = 100
 seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
-gamma = 1e-3
+gamma = 1e-4
 
 # define connectivity
 pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
