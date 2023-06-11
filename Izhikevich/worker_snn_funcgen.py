@@ -74,7 +74,7 @@ n_tests = 5
 # working directory
 # wdir = "config"
 # tdir = "results"
-# cond = 101
+# cond = 109
 
 # model parameters
 N = 1000
@@ -177,6 +177,10 @@ etas = [45.0, 70.0]
 fname = f"snn_funcgen"
 f = f"{tdir}/{fname}_{cond}.h5"
 hf = h5py.File(f, "w")
+group = hf.create_group("sweep")
+for key, val in {p1: v1, p2: v2}.items():
+    group.create_dataset(key, data=val)
+hf.close()
 for i, eta in enumerate(etas):
 
     # initial simulation
@@ -316,9 +320,3 @@ for i, eta in enumerate(etas):
     #     ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
     # plt.tight_layout()
     # plt.show()
-
-# save condition
-group = hf.create_group("sweep")
-for key, val in {p1: v1, p2: v2}.items():
-    group.create_dataset(key, data=val)
-hf.close()

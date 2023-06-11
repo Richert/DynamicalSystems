@@ -4,7 +4,6 @@ sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
 from scipy.stats import cauchy
 import matplotlib.pyplot as plt
-import pickle
 from scipy.stats import rv_discrete
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
@@ -117,22 +116,17 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # condition
-cond = "hom"
-Delta = 0.1
+cond = "het"
+Delta = 1.0
 alpha = 80.0
 
 # training and testing
-n_stims = 25
+n_stims = 50
 n_tests = 5
 
 # working directory
 wdir = "config"
 tdir = "results/oscillatory"
-
-# load data that maps deltas to frequencies
-data = pickle.load(open(f"{wdir}/fre_oscillations.pkl", "rb"))
-deltas = data["deltas"]
-freqs = data["freqs"]
 
 # model parameters
 N = 1000
@@ -229,13 +223,13 @@ for t in test_trials:
     train_trials.pop(train_trials.index(t))
 
 # create two target signals to fit
-delay = 2000
+delay = 1500
 steps = int(np.round(cycle_steps / sr))
 target_1 = np.zeros((steps,))
 target_1[delay] = 1.0
 target_1 = gaussian_filter1d(target_1, sigma=int(delay*0.1))
 t = np.linspace(0, T*1e-3, steps)
-f1 = 5.0
+f1 = 6.0
 f2 = 12.0
 target_2 = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]
