@@ -255,7 +255,7 @@ for i, eta in enumerate(etas):
 
     # store results
     hf = h5py.File(f, 'r+')
-    g = hf.create_group(f"{i}")
+    group = hf.create_group(f"{i}")
     results = {"T": T, "dt": float(dt), "sr": int(sr), "p": p, "thetas": np.asarray(thetas), "eta": float(eta),
                "alpha": float(alpha), "input_indices": np.asarray(inp_indices), "dimensionality": np.mean(dims),
                "train_predictions": train_predictions, "test_predictions": test_predictions,
@@ -263,7 +263,7 @@ for i, eta in enumerate(etas):
                "kernel_variance": kernel_var, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag,
                }
     for key, val in results.items():
-        g.create_dataset(key, data=val)
+        group.create_dataset(key, data=val)
     hf.close()
 
     t1 = time.perf_counter()
@@ -318,7 +318,7 @@ for i, eta in enumerate(etas):
     # plt.show()
 
 # save condition
-g = hf.create_group("sweep")
+group = hf.create_group("sweep")
 for key, val in {p1: v1, p2: v2}.items():
-    g.create_dataset(key, data=val)
+    group.create_dataset(key, data=val)
 hf.close()
