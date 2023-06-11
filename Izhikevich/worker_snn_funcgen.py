@@ -256,8 +256,8 @@ for i, eta in enumerate(etas):
     # store results
     hf = h5py.File(f, 'r+')
     g = hf.create_group(f"{i}")
-    results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas, "eta": eta, "alpha": alpha,
-               "input_indices": inp_indices, "dimensionality": np.mean(dims),
+    results = {"T": T, "dt": float(dt), "sr": int(sr), "p": p, "thetas": np.asarray(thetas), "eta": float(eta),
+               "alpha": float(alpha), "input_indices": np.asarray(inp_indices), "dimensionality": np.mean(dims),
                "train_predictions": train_predictions, "test_predictions": test_predictions,
                "targets": targets, "train_phases": train_phases, "test_phases": test_phases,
                "kernel_variance": kernel_var, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag,
