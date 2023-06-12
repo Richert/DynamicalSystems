@@ -12,7 +12,7 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-cond = "101"
+cond = "35"
 path = "results/oscillatory"
 
 # load examples

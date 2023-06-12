@@ -138,17 +138,16 @@ grid = grid_highlvl[:3].subgridspec(1, 4)
 
 # dimensionality
 ax = fig.add_subplot(grid[0, 0])
-dim = df.pivot(index="delta", columns="test_phase", values="dim")
-sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel("phase")
-ax.set_ylabel(r"$\Delta$")
+dim = df.pivot(index="delta", columns="test_phase", values="dim").mean(axis=1)
+ax.plot(dim)
+ax.set_ylabel("$d$")
+ax.set_xlabel(r"$\Delta$")
 ax.set_title("(A) Dimensionality")
-ax.invert_yaxis()
 
 # test loss
 ax = fig.add_subplot(grid[0, 1])
 test_loss = df.pivot(index="delta", columns="test_phase", values="test_loss")
-sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True, vmax=0.3)
 ax.set_xlabel(r"phase")
 ax.set_ylabel(r"$\Delta$")
 ax.set_title("(B) MSE (test data)")
@@ -156,12 +155,11 @@ ax.invert_yaxis()
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 2])
-k = df.pivot(index="delta", columns="test_phase", values="kernel_quality")
-sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"phase")
-ax.set_ylabel(r"$\Delta$")
+k = df.pivot(index="delta", columns="test_phase", values="kernel_quality").mean(axis=1)
+ax.plot(k)
+ax.set_xlabel(r"$q$")
+ax.set_xlabel(r"$\Delta$")
 ax.set_title("(C) Kernel quality")
-ax.invert_yaxis()
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 3])
@@ -170,7 +168,6 @@ ax.plot(mean_loss)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"MSE")
 ax.set_title("(D) Average test loss")
-ax.invert_yaxis()
 
 # 1D plots
 ##########
