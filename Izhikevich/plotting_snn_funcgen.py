@@ -128,12 +128,10 @@ grid = grid_highlvl[:3].subgridspec(1, 4)
 
 # dimensionality
 ax = fig.add_subplot(grid[0, 0])
-# dim = df.pivot(index="eta", columns="delta", values="dim")
 sb.lineplot(df, x="delta", y="dim", hue="eta", ax=ax)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$d$")
 ax.set_title("(A) Dimensionality")
-ax.invert_yaxis()
 
 # test loss
 ax = fig.add_subplot(grid[0, 1])
@@ -141,7 +139,6 @@ sb.lineplot(df, x="delta", y="test_loss", hue="eta", ax=ax)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"mse")
 ax.set_title("(B) MSE (test data)")
-ax.invert_yaxis()
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 2])
@@ -149,16 +146,14 @@ sb.lineplot(df, x="delta", y="kernel_variance", hue="eta", ax=ax)
 ax.set_xlabel(r"$\Delta$")
 ax.set_ylabel(r"$q$")
 ax.set_title("(C) Kernel variation over time")
-ax.invert_yaxis()
 
-# kernel variance
-# ax = fig.add_subplot(grid[0, 3])
-# k = df.pivot(index="alpha", columns="delta", values="phase_variance")
-# sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-# ax.set_xlabel(r"$\Delta$")
-# ax.set_ylabel(r"$\alpha$")
-# ax.set_title("(D) Kernel variation over stimulation phases")
-# ax.invert_yaxis()
+# phase variance
+ax = fig.add_subplot(grid[0, 3])
+sb.lineplot(df, x="delta", y="phase_variance", hue="eta", ax=ax)
+ax.set_xlabel(r"$\Delta$")
+ax.set_ylabel(r"$\theta_v$")
+ax.set_title("(D) Kernel variation over phases")
+
 
 # 1D plots
 ##########

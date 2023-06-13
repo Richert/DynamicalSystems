@@ -33,8 +33,8 @@ for f in fns:
     g = data["data"]
     examples["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
     examples["s"].append(np.asarray(g["s"]))
-    examples["train_phases"].append(np.asarray(g["train_phases"]))
-    examples["test_phases"].append(np.asarray(g["test_phases"]))
+    examples["train_phases"].append(np.round(np.asarray(g["train_phases"]), decimals=2))
+    examples["test_phases"].append(np.round(np.asarray(g["test_phases"]), decimals=2))
     examples["targets"].append(np.asarray(g["targets"]))
     examples["train_predictions"].append(np.asarray(g["train_predictions"]))
     examples["test_predictions"].append(np.asarray(g["test_predictions"]))
@@ -59,7 +59,7 @@ for f in os.listdir(path):
         # extract data
         g = data[f"data"]
         test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
-        test_phases = np.asarray(g["test_phases"])
+        test_phases = np.round(np.asarray(g["test_phases"]), decimals=2)
         k_mean = np.asarray(g["K_mean"])
         k_var = np.asarray(g["K_var"])
         alpha = np.round(np.asarray(g["alpha"]), decimals=1)
@@ -71,7 +71,7 @@ for f in os.listdir(path):
         for loss, phase in zip(test_losses, test_phases):
 
             # calculate kernel quality
-            kernel_quality = (1 - np.max(k_mean))*np.sum(k_var)
+            kernel_quality = np.sum(k_var)
 
             # collect simulation data
             res_dict["alpha"].append(alpha)

@@ -162,11 +162,11 @@ s_init -= np.min(s_init)
 s_init /= np.max(s_init)
 peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
 troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
-_, ax = plt.subplots(figsize=(10, 4))
-ax.plot(s_init)
-for t in troughs:
-    ax.axvline(x=t, color="blue", linestyle="solid")
-freq = len(peaks)/(T_init-wash_out)
+# _, ax = plt.subplots(figsize=(10, 4))
+# ax.plot(s_init)
+# for t in troughs:
+#     ax.axvline(x=t, color="blue", linestyle="solid")
+freq = np.minimum(5.0, np.maximum(2.5, 1e3*len(peaks)/(T_init-wash_out)))
 stop = int(troughs[0]*sr + wash_out/(dt*sr))
 
 # perform additional wash-out simulation to obtain a common initial state
@@ -180,7 +180,7 @@ y0 = net.state
 # stimulation parameters
 alpha = 80.0
 p_in = 0.2
-T = 1/freq
+T = 1e3/freq
 cycle_steps = int(T/dt)
 stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
 stim_phases = 2.0*np.pi*stim_onsets/T
