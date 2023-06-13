@@ -100,24 +100,12 @@ def get_c(X: np.ndarray, alpha: float = 1e-4):
     return X @ X.T + alpha*np.eye(X.shape[0])
 
 
-def pca(X: np.ndarray) -> tuple:
-    X = X - X.mean()
-    Z = X / X.std()
-    C = Z.T @ Z
-    eigvals, eigvecs = np.linalg.eig(C)
-    if np.abs(np.min(eigvecs[:, 0])) > np.abs(np.max(eigvecs[:, 0])):
-        eigvecs[:, 0] *= -1
-    vals_abs = np.abs(eigvals)
-    sort_idx = np.argsort(vals_abs)[::-1]
-    return eigvals[sort_idx]/np.sum(vals_abs), eigvecs[:, sort_idx]
-
-
 # define parameters
 ###################
 
 # condition
 cond = "het"
-Delta = 1.0
+Delta = 0.1
 alpha = 80.0
 
 # training and testing
@@ -152,15 +140,12 @@ device = "cuda:0"
 thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # simulation parameters
-T_init = 6000.0
+T_init = 10000.0
 dt = 1e-2
 sr = 10
 
 # other analysis parameters
-K_width = 100
 sigma = 10
-margin = 100
-seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
 gamma = 1e-4
@@ -183,23 +168,29 @@ net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", t
                     input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                     node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                     verbose=False, clear=True)
+y0 = net.state
 
 # perform simulation to determine intrinsic oscillation frequency
 init_steps = int(T_init/dt)
 inp = np.zeros((init_steps, 1))
 
 # infer intrinsic oscillation frequency of network
-wash_out = 1000.0
+wash_out = 4000.0
 init_obs = net.run(inputs=inp, sampling_steps=sr, verbose=False, enable_grad=False)
 s_init = np.mean(init_obs.to_numpy("out")[int(wash_out/(dt*sr)):, :], axis=1)
 s_init -= np.min(s_init)
 s_init /= np.max(s_init)
 peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
 troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
+_, ax = plt.subplots(figsize=(10, 4))
+ax.plot(s_init)
+for t in troughs:
+    ax.axvline(x=t, color="blue", linestyle="solid")
 freq = len(peaks)/(T_init-wash_out)
-stop = int(troughs[-1]*sr + wash_out/(dt*sr))
+stop = int(troughs[0]*sr + wash_out/(dt*sr))
 
 # perform additional wash-out simulation to obtain a common initial state
+net.reset(y0)
 net.run(inputs=inp[:stop], sampling_steps=stop, verbose=False, enable_grad=False)
 y0 = net.state
 
@@ -257,7 +248,7 @@ test_phases = [stim_phases[idx] for idx in test_trials]
 # calculate network dimensionality and covariance
 dims = []
 cs = []
-for s in signals:
+for s in train_signals:
 
     # calculate the network dimensionality
     corr_net = np.cov(s)
@@ -268,8 +259,8 @@ for s in signals:
     cs.append(get_c(s, alpha=gamma))
 
 # calculate the network kernel
-s_mean = np.mean(signals, axis=0)
-s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
+s_mean = np.mean(train_signals, axis=0)
+s_var = np.mean([s_i - s_mean for s_i in train_signals], axis=0)
 C_inv = np.linalg.inv(np.mean(cs, axis=0))
 w = C_inv @ s_mean
 K = s_mean.T @ w

@@ -21,7 +21,7 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 path = "results/funcgen"
 
 # load examples
-examples = {"s": [], "target": [], "delta": [], "alpha": [], "dt": 0.0, "sr": 1,
+examples = {"s": [], "target": [], "delta": [], "eta": [], "dt": 0.0, "sr": 1,
             "test_prediction": [], "train_prediction": [], "train_phases": [], "test_phases": [],
             "input_indices": [], "K": [], "dim": [], "K_mean": [], "K_var": []
             }
@@ -29,9 +29,9 @@ fns = ["SI_funcgen_hom.h5", "SI_funcgen_het.h5"]
 for f in fns:
     data = h5py.File(f"{path}/{f}", "r")
     g = data["sweep"]
-    examples["delta"].append(np.round(np.asarray(g["Delta"]), decimals=1))
+    examples["delta"].append(np.round(np.asarray(g["Delta"]), decimals=2))
     g = data["data"]
-    examples["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
+    # examples["eta"].append(np.round(np.asarray(g["eta"]), decimals=0))
     examples["s"].append(np.asarray(g["s"]))
     examples["K"].append(np.asarray(g["K"]))
     examples["target"].append(np.asarray(g["targets"]))
@@ -47,7 +47,7 @@ for f in fns:
         examples["input_indices"] = np.asarray(g["input_indices"])
 
 # load parameter sweep data
-res_dict = {"alpha": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "phase_variance": [],
+res_dict = {"eta": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "phase_variance": [],
             "kernel_variance": []}
 for f in os.listdir(path):
 
@@ -60,7 +60,7 @@ for f in os.listdir(path):
 
             # collect simulation data
             g = data[f"{i}"]
-            res_dict["alpha"].append(np.round(np.asarray(g["alpha"]), decimals=1))
+            res_dict["eta"].append(np.round(np.asarray(g["eta"]), decimals=0))
             res_dict["dim"].append(np.asarray(g["dimensionality"]))
             test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
             res_dict["test_loss"].append(np.mean(test_losses))
@@ -80,19 +80,21 @@ res_df = pd.DataFrame.from_dict(res_dict)
 # average across trials
 #######################
 
-alphas_unique = np.unique(res_dict["alpha"])
+etas_unique = np.unique(res_dict["eta"])
 deltas_unique = np.unique(res_dict["delta"])
-res_dict_final = {key: [] for key in res_dict.keys()}
-for alpha in alphas_unique:
+res_dict_final = {key: [] for key in res_dict.keys() if key not in ["trial"]}
+for eta in etas_unique:
     for delta in deltas_unique:
-        alpha_idx = (res_dict["alpha"] - alpha) < 1e-3
+        eta_idx = (res_dict["eta"] - eta) < 1e-3
         delta_idx = (res_dict["delta"] - delta) < 1e-4
-        idx = list(np.argwhere(alpha_idx*delta_idx > 1e-2).squeeze())
+        idx = list(np.argwhere(eta_idx*delta_idx > 1e-2).squeeze())
         for key in res_dict_final.keys():
-            if key == "alpha":
-                res_dict_final["alpha"].append(alpha)
+            if key == "trial":
+                pass
             elif key == "delta":
                 res_dict_final["delta"].append(delta)
+            elif key == "eta":
+                res_dict_final["eta"].append(eta)
             else:
                 res_dict_final[key].append(np.mean(res_df.loc[idx, key].values))
 
@@ -126,39 +128,37 @@ grid = grid_highlvl[:3].subgridspec(1, 4)
 
 # dimensionality
 ax = fig.add_subplot(grid[0, 0])
-dim = df.pivot(index="alpha", columns="delta", values="dim")
-sb.heatmap(dim, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+# dim = df.pivot(index="eta", columns="delta", values="dim")
+sb.lineplot(df, x="delta", y="dim", hue="eta", ax=ax)
 ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
+ax.set_ylabel(r"$d$")
 ax.set_title("(A) Dimensionality")
 ax.invert_yaxis()
 
 # test loss
 ax = fig.add_subplot(grid[0, 1])
-test_loss = df.pivot(index="alpha", columns="delta", values="test_loss")
-sb.heatmap(test_loss, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+sb.lineplot(df, x="delta", y="test_loss", hue="eta", ax=ax)
 ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
+ax.set_ylabel(r"mse")
 ax.set_title("(B) MSE (test data)")
 ax.invert_yaxis()
 
 # kernel variance
 ax = fig.add_subplot(grid[0, 2])
-k = df.pivot(index="alpha", columns="delta", values="kernel_variance")
-sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+sb.lineplot(df, x="delta", y="kernel_variance", hue="eta", ax=ax)
 ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
+ax.set_ylabel(r"$q$")
 ax.set_title("(C) Kernel variation over time")
 ax.invert_yaxis()
 
 # kernel variance
-ax = fig.add_subplot(grid[0, 3])
-k = df.pivot(index="alpha", columns="delta", values="phase_variance")
-sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_xlabel(r"$\Delta$")
-ax.set_ylabel(r"$\alpha$")
-ax.set_title("(D) Kernel variation over stimulation phases")
-ax.invert_yaxis()
+# ax = fig.add_subplot(grid[0, 3])
+# k = df.pivot(index="alpha", columns="delta", values="phase_variance")
+# sb.heatmap(k, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
+# ax.set_xlabel(r"$\Delta$")
+# ax.set_ylabel(r"$\alpha$")
+# ax.set_title("(D) Kernel variation over stimulation phases")
+# ax.invert_yaxis()
 
 # 1D plots
 ##########

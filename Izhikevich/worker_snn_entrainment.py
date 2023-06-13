@@ -33,45 +33,6 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: fl
         raise ValueError("Invalid method.")
 
 
-def _sequentiality(signals: np.ndarray, max_lag: int, threshold: float = 1e-6) -> tuple:
-    N = signals.shape[0]
-    sym = 0
-    asym = 0
-    padding = list(np.zeros((max_lag,)))
-    lags = np.arange(1, max_lag+1)
-    for n1 in range(N):
-        s1 = np.asarray(padding + list(signals[n1]) + padding)
-        for n2 in range(N):
-            s2 = signals[n2]
-            if np.max(s1) > threshold and np.max(s2) > threshold:
-                cc = np.correlate(s1, s2, mode="valid")
-                cc_pos = cc[max_lag+lags]
-                cc_neg = cc[max_lag-lags]
-                sym += np.sum((cc_pos - cc_neg) ** 2)
-                asym += np.sum((cc_pos + cc_neg) ** 2)
-    return sym, asym
-
-
-def sequentiality(signals: np.ndarray, max_lag: int, neighborhood: int, overlap: float = 0.5) -> float:
-    N = signals.shape[0]
-    sym, asym = [], []
-    idx = 0
-    while idx < N:
-
-        # select part of network that we will calculate the sequentiality for
-        start = np.maximum(0, idx-int(overlap*neighborhood))
-        stop = np.minimum(N, start+neighborhood)
-        idx = stop
-
-        # calculate sequentiality
-        res = _sequentiality(signals[start:stop], max_lag=max_lag)
-        if res[1] > 1e-8:
-            sym.append(res[0])
-            asym.append(res[1])
-
-    return np.mean([np.sqrt(s/a) for s, a in zip(sym, asym)]).squeeze()
-
-
 def get_signals(stim_onsets: list, cycle_steps: int, sr: int, net: Network, y0: dict, inp_indices: np.ndarray,
                 sigma: float = 10.0):
 
@@ -114,7 +75,7 @@ n_tests = 5
 # working directory
 # wdir = "config"
 # tdir = "results"
-# cond = 181
+# cond = 151
 
 # model parameters
 N = 1000
@@ -164,10 +125,7 @@ dt = 1e-2
 sr = 10
 
 # other analysis parameters
-K_width = 100
 sigma = 10
-margin = 100
-seq_range = 50
 indices = np.arange(0, N, dtype=np.int32)
 conn_pow = 0.75
 gamma = 1e-4
@@ -190,6 +148,7 @@ net.add_diffeq_node("rs", node=f"{wdir}/ik_snn/rs", weights=W, source_var="s", t
                     input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
                     node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
                     verbose=False, clear=True)
+y0 = net.state
 
 # perform simulation to determine intrinsic oscillation frequency
 init_steps = int(T_init/dt)
@@ -203,15 +162,15 @@ s_init -= np.min(s_init)
 s_init /= np.max(s_init)
 peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
 troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
-# _, ax = plt.subplots(figsize=(10, 4))
-# ax.plot(s_init)
-# for t in troughs:
-#     ax.axvline(x=t, color="blue", linestyle="solid")
-# plt.show()
+_, ax = plt.subplots(figsize=(10, 4))
+ax.plot(s_init)
+for t in troughs:
+    ax.axvline(x=t, color="blue", linestyle="solid")
 freq = len(peaks)/(T_init-wash_out)
 stop = int(troughs[0]*sr + wash_out/(dt*sr))
 
 # perform additional wash-out simulation to obtain a common initial state
+net.reset(y0)
 net.run(inputs=inp[:stop], sampling_steps=stop, verbose=False, enable_grad=False)
 y0 = net.state
 
@@ -281,8 +240,8 @@ for s in train_signals:
     cs.append(get_c(s, alpha=gamma))
 
 # calculate the network kernel
-s_mean = np.mean(signals, axis=0)
-s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
+s_mean = np.mean(train_signals, axis=0)
+s_var = np.mean([s_i - s_mean for s_i in train_signals], axis=0)
 C_inv = np.linalg.inv(np.mean(cs, axis=0))
 w = C_inv @ s_mean
 K = s_mean.T @ w
