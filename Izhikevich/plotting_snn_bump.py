@@ -22,7 +22,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (6, 8)
+plt.rcParams['figure.figsize'] = (6, 6)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -109,7 +109,7 @@ results = pd.DataFrame.from_dict(results_final)
 
 # create figure layout
 fig = plt.figure(1)
-grid = GridSpec(nrows=8, ncols=2, figure=fig)
+grid = GridSpec(nrows=6, ncols=2, figure=fig)
 
 # meta parameters
 example_id = 0
@@ -141,34 +141,37 @@ for idx, cond, title in zip(subplots, conditions, titles):
     if idx == 1:
         ax.set_xlabel("time (ms)")
         # ax.set_ylabel("neuron id")
-    ax.set_xticks([0, 10000, 20000], labels=["0", "1000", "2000"])
+        ax.set_xticks([0, 10000, 20000], labels=["0", "1000", "2000"])
+    else:
+        ax.set_xticks([0, 10000, 20000], labels=["", "", ""])
     ax.set_title(title)
 
 # plot example bumps over p_in
-titles = [r"(D) Example bump for $\Delta_{rs} = 0.2$ mV",
-          r"(E) Example bump for $\Delta_{rs} = 1.5$ mV"]
+# titles = [r"(D) Example bump for $\Delta_{rs} = 0.2$ mV",
+#           r"(E) Example bump for $\Delta_{rs} = 1.5$ mV"]
+# p_in_ticks = [0.02, 0.1, 0.5]
+# for i, val in enumerate(example_condition[p1]):
+#     ax = fig.add_subplot(grid[2:4, i])
+#     example = pd.DataFrame.from_dict({key: np.asarray(v) for key, v in examples_single[val].items()})
+#     data = example.pivot(index=p2, columns="neuron_id", values="s")
+#     sb.heatmap(data, cbar=True, ax=ax, xticklabels=100*ticks, yticklabels=ticks, rasterized=True)
+#     lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
+#     ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
+#     for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
+#         ax.plot([lb, lb], [j, j+1], color="blue", linewidth=1)
+#         ax.plot([ub, ub], [j, j+1], color="blue", linewidth=1)
+#     ax.set_title(titles[i])
+#     ax.set_xlabel("neuron id")
+#     ax.set_ylabel(r"$p_{in}$")
+#     ylocs = [np.argmin(np.abs(data.index - tick)).squeeze() for tick in p_in_ticks]
+#     ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
+
+# plot average bumps over p_in
+titles = [r"(D) Average bump for $\Delta_{rs} = 0.2$ mV",
+          r"(E) Average bump for $\Delta_{rs} = 1.5$ mV"]
 p_in_ticks = [0.02, 0.1, 0.5]
 for i, val in enumerate(example_condition[p1]):
     ax = fig.add_subplot(grid[2:4, i])
-    example = pd.DataFrame.from_dict({key: np.asarray(v) for key, v in examples_single[val].items()})
-    data = example.pivot(index=p2, columns="neuron_id", values="s")
-    sb.heatmap(data, cbar=True, ax=ax, xticklabels=100*ticks, yticklabels=ticks, rasterized=True)
-    lbs = example.pivot(index=p2, columns="neuron_id", values="target_lb").iloc[:, 0]
-    ubs = example.pivot(index=p2, columns="neuron_id", values="target_ub").iloc[:, 0]
-    for j, (lb, ub) in enumerate(zip(lbs.values, ubs.values)):
-        ax.plot([lb, lb], [j, j+1], color="blue", linewidth=1)
-        ax.plot([ub, ub], [j, j+1], color="blue", linewidth=1)
-    ax.set_title(titles[i])
-    ax.set_xlabel("neuron id")
-    ax.set_ylabel(r"$p_{in}$")
-    ylocs = [np.argmin(np.abs(data.index - tick)).squeeze() for tick in p_in_ticks]
-    ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
-
-# plot average bumps over p_in
-titles = [r"(F) Average bump for $\Delta_{rs} = 0.2$ mV",
-          r"(G) Average bump for $\Delta_{rs} = 1.5$ mV"]
-for i, val in enumerate(example_condition[p1]):
-    ax = fig.add_subplot(grid[4:6, i])
     example_dict = {}
     for key, v in examples_avg[val].items():
         v_mean = np.mean(v, axis=0)
@@ -194,10 +197,10 @@ for i, val in enumerate(example_condition[p1]):
     ax.set_yticks(ylocs, labels=[str(tick) for tick in p_in_ticks])
 
 # plot within-bump distance
-ax = fig.add_subplot(grid[6:, 0])
+ax = fig.add_subplot(grid[4:, 0])
 within_dist = results.pivot(index=p2, columns=p1, values="within_bump_dist")
 sb.heatmap(within_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
-ax.set_title("(H) RMSE (input, bump)")
+ax.set_title("(F) RMSE (input, bump)")
 ax.set_ylabel(r"$p_{in}$")
 ax.set_xlabel(r"$\Delta_{rs}$")
 ylocs = [np.argmin(np.abs(within_dist.index - tick)).squeeze() for tick in p_in_ticks]
@@ -211,11 +214,11 @@ ax.plot([x_pos1-0.25, x_pos1+0.25], [y_pos, y_pos], color="white", linewidth=1)
 ax.plot([x_pos2-0.25, x_pos2+0.25], [y_pos, y_pos], color="blue", linewidth=1)
 
 # plot outside-bump distance
-ax = fig.add_subplot(grid[6:, 1])
+ax = fig.add_subplot(grid[4:, 1])
 outside_dist = results.pivot(index=p2, columns=p1, values="outside_bump_dist")
 sb.heatmap(outside_dist, cbar=True, ax=ax, xticklabels=ticks, yticklabels=ticks, rasterized=True)
 ax.set_xlim([0, 19])
-ax.set_title("(I) Average outside-bump activity")
+ax.set_title("(G) Average outside-bump activity")
 ax.set_ylabel(r"$p_{in}$")
 ax.set_xlabel(r"$\Delta_{rs}$")
 ylocs = [np.argmin(np.abs(outside_dist.index - tick)).squeeze() for tick in p_in_ticks]
