@@ -131,20 +131,20 @@ ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"MSE")
 ax.set_title("(B) Average MSE across test trials")
 
-# kernel variance
-ax = fig.add_subplot(grid[1, 0])
-sb.lineplot(df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette)
-ax.set_xlabel(r"$\Delta_{rs}$")
-ax.set_ylabel(r"$q$")
-ax.set_title("(C) Kernel variation over trials")
-
 # dimensionality
-ax = fig.add_subplot(grid[1, 1])
+ax = fig.add_subplot(grid[1, 0])
 sb.lineplot(df, x="delta", y="dim", hue="eta", ax=ax, palette=palette)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"$d$")
-ax.set_title("(D) Dimensionality")
+ax.set_title("(C) Dimensionality")
 colors = [l.get_color() for l in ax.get_lines()]
+
+# kernel variance
+ax = fig.add_subplot(grid[1, 1])
+sb.lineplot(df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette)
+ax.set_xlabel(r"$\Delta_{rs}$")
+ax.set_ylabel(r"$q$")
+ax.set_title("(D) Response variance over trials")
 
 # plot bifurcation diagram
 ax = fig.add_subplot(grid[0, 0])

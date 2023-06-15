@@ -122,7 +122,7 @@ ax.set_title(fr"(B) Neural correlations (dimensionality = {dim})")
 # ax.set_title(r"(E) $K_{var}$")
 
 # predictions
-test_examples = [0, 6]
+test_examples = [0, 4]
 titles = ["F", "G"]
 row = 0
 grid = grid_highlvl[:, 1].subgridspec(4, 1)

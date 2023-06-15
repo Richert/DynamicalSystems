@@ -29,11 +29,12 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
 
 
 # load data
-fn = "results/fre_at_het.pkl"
+fn = "results/fre_at_hom.pkl"
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data
-alphas = data["alphas"]
+p1 = "alpha"
+v1s = data[f"{p1}s"]
 omegas = data["omegas"]*1e3
 res = data["res"]
 res_map = data["map"]
@@ -59,13 +60,13 @@ f_cutoff = 10000
 # plt.show()
 
 # compute phase locking values and coherences
-coherences = np.zeros((len(alphas), len(omegas)))
+coherences = np.zeros((len(v1s), len(omegas)))
 plvs = np.zeros_like(coherences)
 for key in res_map.index:
 
     # extract and scale data
     omega = res_map.at[key, 'omega'] * 1e3
-    alpha = res_map.at[key, 'alpha']
+    v1 = res_map.at[key, p1]
     ik = res["rs"][key].values.squeeze()
     ik -= np.min(ik)
     ik /= np.max(ik)
@@ -94,7 +95,7 @@ for key in res_map.index:
     # plt.show()
 
     # find matrix position that corresponds to these parameters
-    idx_r = np.argmin(np.abs(alphas - alpha))
+    idx_r = np.argmin(np.abs(v1s - v1))
     idx_c = np.argmin(np.abs(omegas - omega))
 
     # store coherence value at driving frequency
@@ -102,6 +103,6 @@ for key in res_map.index:
     coherences[idx_r, idx_c] = coh
 
 # save results
-data["coherence"] = pd.DataFrame(index=np.round(alphas, decimals=2), columns=np.round(omegas, decimals=2),
+data["coherence"] = pd.DataFrame(index=np.round(v1s, decimals=2), columns=np.round(omegas, decimals=2),
                                  data=coherences)
 pickle.dump(data, open(fn, "wb"))
