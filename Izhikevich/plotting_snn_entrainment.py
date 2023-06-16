@@ -24,9 +24,9 @@ examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions":
             "K": [], "K_mean": [], "K_var": [], "K_diag": []
             }
 fns = [
-    "results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
+    #"results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
     #"results/funcgen/SI_async_low_hom.h5", "results/funcgen/SI_async_low_het.h5",
-    #"results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
+    "results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
        ]
 for f in fns:
     data = h5py.File(f, "r")
