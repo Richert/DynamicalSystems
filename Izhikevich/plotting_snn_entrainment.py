@@ -53,6 +53,7 @@ for f in fns:
 ############
 
 # plot settings
+plt.switch_backend("TkAgg")
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
