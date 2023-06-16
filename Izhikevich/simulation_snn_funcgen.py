@@ -117,8 +117,8 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # condition
-cond = "het"
-Delta = 1.0
+cond = "hom"
+Delta = 0.1
 alpha = 80.0
 
 # training and testing
