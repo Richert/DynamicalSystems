@@ -136,7 +136,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 70.0
+eta = 45.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -225,7 +225,7 @@ y0 = net.state
 # main simulation
 #################
 
-fname = f"SI_async_high_{cond}"
+fname = f"SI_async_low_{cond}"
 f = f"{tdir}/{fname}.h5"
 hf = h5py.File(f, "w")
 g = hf.create_group("sweep")
