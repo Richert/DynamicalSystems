@@ -1,12 +1,11 @@
 import os
+import matplotlib
+matplotlib.use('tkagg')
 import numpy as np
 import pandas as pd
 import seaborn as sb
 import matplotlib.pyplot as plt
 import h5py
-from matplotlib.gridspec import GridSpec
-from scipy.signal import find_peaks
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def mse(x: np.ndarray, y: np.ndarray) -> float:
@@ -53,7 +52,6 @@ for f in fns:
 ############
 
 # plot settings
-plt.switch_backend("tkagg")
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
