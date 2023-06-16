@@ -105,7 +105,7 @@ def get_c(X: np.ndarray, alpha: float = 1e-4):
 
 # condition
 cond = "het"
-Delta = 0.1
+Delta = 1.0
 alpha = 80.0
 
 # training and testing
@@ -182,10 +182,10 @@ s_init -= np.min(s_init)
 s_init /= np.max(s_init)
 peaks, _ = find_peaks(s_init, prominence=0.5, width=5)
 troughs, _ = find_peaks(1 - s_init, prominence=0.5, width=5)
-_, ax = plt.subplots(figsize=(10, 4))
-ax.plot(s_init)
-for t in troughs:
-    ax.axvline(x=t, color="blue", linestyle="solid")
+# _, ax = plt.subplots(figsize=(10, 4))
+# ax.plot(s_init)
+# for t in troughs:
+#     ax.axvline(x=t, color="blue", linestyle="solid")
 freq = len(peaks)/(T_init-wash_out)
 stop = int(troughs[0]*sr + wash_out/(dt*sr))
 
