@@ -245,7 +245,7 @@ test_phases = [stim_phases[idx] for idx in test_trials]
 # calculate network dimensionality and covariance
 dims = []
 cs = []
-for s in signals:
+for s in train_signals:
 
     # calculate the network dimensionality
     corr_net = np.cov(s)
@@ -256,8 +256,8 @@ for s in signals:
     cs.append(get_c(s, alpha=gamma))
 
 # calculate the network kernel
-s_mean = np.mean(signals, axis=0)
-s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
+s_mean = np.mean(train_signals, axis=0)
+s_var = np.mean([s_i - s_mean for s_i in train_signals], axis=0)
 C_inv = np.linalg.inv(np.mean(cs, axis=0))
 w = C_inv @ s_mean
 K = s_mean.T @ w
