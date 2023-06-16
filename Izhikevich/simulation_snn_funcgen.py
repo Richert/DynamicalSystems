@@ -267,6 +267,7 @@ G = s_var.T @ w
 train_predictions = []
 train_distortions = []
 test_predictions = []
+mses = []
 readouts = []
 for target in targets:
     train_predictions.append(K @ target)
@@ -274,6 +275,7 @@ for target in targets:
     w_readout = w @ target
     readouts.append(w_readout)
     test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
+    mses.append([mse(target, test_sig) for test_sig in test_signals])
 
 # calculate the network kernel basis functions
 K_shifted = np.zeros_like(K)
@@ -339,7 +341,7 @@ for i, ex in enumerate(examples):
     ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("s")
-    ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}")
+    ax.set_title(f"Stimulation phase: {test_phases[ex[1]]}, MSE: {mses[ex[0]][ex[1]]}")
 plt.tight_layout()
 
 _, axes = plt.subplots(ncols=2, figsize=(12, 6))

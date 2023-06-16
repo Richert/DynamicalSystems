@@ -24,9 +24,9 @@ examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions":
             "K": [], "K_mean": [], "K_var": [], "K_diag": []
             }
 fns = [
-    #"results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
-    # "results/funcgen/SI_async_low_hom.h5", "results/funcgen/SI_async_low_het.h5",
-    "results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
+    "results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
+    #"results/funcgen/SI_async_low_hom.h5", "results/funcgen/SI_async_low_het.h5",
+    #"results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
        ]
 for f in fns:
     data = h5py.File(f, "r")
@@ -128,18 +128,20 @@ for C, title, grid in zip(CVs, titles, grids):
 
 # predictions
 grid = grid_examples[3:, :].subgridspec(2, 2)
-test_example = 2
+test_example = 1
 titles = ["G", "H"]
 for i, pred in enumerate(examples["test_predictions"]):
     ax = fig.add_subplot(grid[0, i])
-    ax.plot(examples["targets"][i][1], label="target", color="black")
+    target = examples["targets"][i][1]
+    ax.plot(target, label="target", color="black")
     fit = examples["train_predictions"][i][1]
     ax.plot(fit, label="fit", color="blue")
     ax.plot(pred[1][test_example], label="prediction", color="orange")
     ax.set_xlabel("")
     ax.set_ylabel("")
-    ax.set_title(fr"({titles[i]}) Function generation performance")
+    ax.set_title(fr"MSE = {mse(target, pred[1][test_example])}")
     ax = fig.add_subplot(grid[1, i])
+    target = examples["targets"][i][0]
     ax.plot(examples["targets"][i][0], label="target", color="black")
     fit = examples["train_predictions"][i][0]
     ax.plot(fit, label="fit", color="blue")
@@ -148,6 +150,7 @@ for i, pred in enumerate(examples["test_predictions"]):
         ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("")
+    ax.set_title(fr"MSE = {mse(target, pred[0][test_example])}")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
