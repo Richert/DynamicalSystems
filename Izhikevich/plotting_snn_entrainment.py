@@ -1,12 +1,11 @@
 import os
+import matplotlib
+matplotlib.use('tkagg')
 import numpy as np
 import pandas as pd
 import seaborn as sb
 import matplotlib.pyplot as plt
 import h5py
-from matplotlib.gridspec import GridSpec
-from scipy.signal import find_peaks
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 
 def mse(x: np.ndarray, y: np.ndarray) -> float:
@@ -24,9 +23,9 @@ examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions":
             "K": [], "K_mean": [], "K_var": [], "K_diag": []
             }
 fns = [
-    "results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
+    #"results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
     #"results/funcgen/SI_async_low_hom.h5", "results/funcgen/SI_async_low_het.h5",
-    #"results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
+    "results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
        ]
 for f in fns:
     data = h5py.File(f, "r")

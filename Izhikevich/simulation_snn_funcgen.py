@@ -117,8 +117,8 @@ def pca(X: np.ndarray) -> tuple:
 ###################
 
 # condition
-cond = "het"
-Delta = 1.0
+cond = "hom"
+Delta = 0.1
 alpha = 80.0
 
 # training and testing
@@ -136,7 +136,7 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 70.0
+eta = 45.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -225,7 +225,7 @@ y0 = net.state
 # main simulation
 #################
 
-fname = f"SI_async_high_{cond}"
+fname = f"SI_async_low_{cond}"
 f = f"{tdir}/{fname}.h5"
 hf = h5py.File(f, "w")
 g = hf.create_group("sweep")
@@ -245,7 +245,7 @@ test_phases = [stim_phases[idx] for idx in test_trials]
 # calculate network dimensionality and covariance
 dims = []
 cs = []
-for s in signals:
+for s in train_signals:
 
     # calculate the network dimensionality
     corr_net = np.cov(s)
@@ -256,8 +256,8 @@ for s in signals:
     cs.append(get_c(s, alpha=gamma))
 
 # calculate the network kernel
-s_mean = np.mean(signals, axis=0)
-s_var = np.mean([s_i - s_mean for s_i in signals], axis=0)
+s_mean = np.mean(train_signals, axis=0)
+s_var = np.mean([s_i - s_mean for s_i in train_signals], axis=0)
 C_inv = np.linalg.inv(np.mean(cs, axis=0))
 w = C_inv @ s_mean
 K = s_mean.T @ w

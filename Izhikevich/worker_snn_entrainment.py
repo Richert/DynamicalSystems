@@ -255,8 +255,9 @@ for target in targets:
     w_readout = w @ target
     test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
-# calculate the kernel variance
+# calculate the variance across trials
 kernel_var = np.sum(np.abs(G.flatten()))
+corr_var = np.sum(np.var(cs, axis=0).flatten())
 
 # calculate the kernel quality
 K_shifted = np.zeros_like(K)
@@ -272,7 +273,7 @@ g = hf.create_group(f"data")
 results = {"T": T, "dt": dt, "sr": sr, "p": p, "thetas": thetas,
            "input_indices": inp_indices, "dimensionality": np.mean(dims),
            "alpha": alpha, "train_predictions": train_predictions, "test_predictions": test_predictions,
-           "targets": targets, "train_phases": train_phases, "test_phases": test_phases,
+           "targets": targets, "train_phases": train_phases, "test_phases": test_phases, "corr_variance": corr_var,
            "kernel_variance": kernel_var, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag,
            }
 for key, val in results.items():
