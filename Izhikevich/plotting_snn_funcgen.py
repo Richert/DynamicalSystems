@@ -18,8 +18,8 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 
 # load data from asynchronous regimes
 path = "results/funcgen"
-res_dict = {"eta": [], "trial": [], "delta": [], "dim": [], "test_loss": [], "phase_variance": [],
-            "kernel_variance": []}
+res_dict = {"eta": [], "trial": [], "delta": [], "dim": [], "test_loss_1": [], "test_loss_2": [], "phase_variance": [],
+            "kernel_variance": [], "test_var_1": [], "test_var_2": [],}
 for f in os.listdir(path):
 
     if "snn_funcgen_" in f:
@@ -31,19 +31,22 @@ for f in os.listdir(path):
 
             # collect simulation data
             g = data[f"{i}"]
-            res_dict["eta"].append(np.round(np.asarray(g["eta"]), decimals=0))
-            res_dict["dim"].append(np.asarray(g["dimensionality"]))
-            test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
-            res_dict["test_loss"].append(np.mean(test_losses))
-            trial_var = np.asarray(g["kernel_variance"])
+            res_dict["eta"].append(np.round(g["eta"][()], decimals=0))
+            res_dict["dim"].append(g["dimensionality"][()])
+            test_losses_1 = [mse(np.asarray(g["targets"][0]), np.asarray(sig)) for sig in g["test_predictions"][0]]
+            res_dict["test_loss_1"].append(np.mean(test_losses_1))
+            res_dict["test_var_1"].append(np.var(test_losses_1))
+            test_losses_2 = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
+            res_dict["test_loss_2"].append(np.mean(test_losses_2))
+            res_dict["test_var_2"].append(np.var(test_losses_2))
             K_var = np.asarray(g["K_var"])
             res_dict["kernel_variance"].append(np.sum(K_var))
-            res_dict["phase_variance"].append(trial_var)
+            res_dict["phase_variance"].append(g["kernel_variance"][()])
 
             # collect sweep results
             g = data["sweep"]
-            res_dict["trial"].append(np.asarray(g["trial"]))
-            res_dict["delta"].append(np.round(np.asarray(g["Delta"]), decimals=2))
+            res_dict["trial"].append(g["trial"][()])
+            res_dict["delta"].append(np.round(g["Delta"][()], decimals=2))
 
 # load data from oscillatory regime
 path2 = "results/oscillatory"
@@ -57,44 +60,24 @@ for f in os.listdir(path2):
         # collect simulation data
         g = data[f"data"]
         res_dict["eta"].append(55.0)
-        res_dict["dim"].append(np.asarray(g["dimensionality"]))
-        test_losses = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
-        res_dict["test_loss"].append(np.mean(test_losses))
-        trial_var = np.asarray(g["kernel_variance"])
+        res_dict["dim"].append(g["dimensionality"][()])
+        test_losses_1 = [mse(np.asarray(g["targets"][0]), np.asarray(sig)) for sig in g["test_predictions"][0]]
+        res_dict["test_loss_1"].append(np.mean(test_losses_1))
+        res_dict["test_var_1"].append(np.var(test_losses_1))
+        test_losses_2 = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
+        res_dict["test_loss_2"].append(np.mean(test_losses_2))
+        res_dict["test_var_2"].append(np.var(test_losses_2))
         K_var = np.asarray(g["K_var"])
         res_dict["kernel_variance"].append(np.sum(K_var))
-        res_dict["phase_variance"].append(trial_var)
+        res_dict["phase_variance"].append(g["kernel_variance"][()])
 
         # collect sweep results
         g = data["sweep"]
-        res_dict["trial"].append(np.asarray(g["trial"]))
-        res_dict["delta"].append(np.round(np.asarray(g["Delta"]), decimals=2))
+        res_dict["trial"].append(g["trial"][()])
+        res_dict["delta"].append(np.round(g["Delta"][()], decimals=2))
 
 # turn dictionary into dataframe
 res_df = pd.DataFrame.from_dict(res_dict)
-
-# average across trials
-#######################
-
-etas_unique = np.unique(res_dict["eta"])
-deltas_unique = np.unique(res_dict["delta"])
-res_dict_final = {key: [] for key in res_dict.keys() if key not in ["trial"]}
-for eta in etas_unique:
-    for delta in deltas_unique:
-        eta_idx = (res_dict["eta"] - eta) < 1e-3
-        delta_idx = (res_dict["delta"] - delta) < 1e-4
-        idx = list(np.argwhere(eta_idx*delta_idx > 1e-2).squeeze())
-        for key in res_dict_final.keys():
-            if key == "trial":
-                pass
-            elif key == "delta":
-                res_dict_final["delta"].append(delta)
-            elif key == "eta":
-                res_dict_final["eta"].append(eta)
-            else:
-                res_dict_final[key].append(np.mean(res_df.loc[idx, key].values))
-
-df = pd.DataFrame.from_dict(res_dict_final)
 
 # load pyauto data
 auto_dir = "~/PycharmProjects/auto-07p"
@@ -119,6 +102,8 @@ ticks = 6
 cmap = sb.crayon_palette(["Midnight Blue", "Indigo", "Wild Blue Yonder"])
 etas = [45.0, 55.0, 70.0]
 palette = {eta: c for eta, c in zip(etas, cmap)}
+err_style = "bars"
+err_type = "sd"
 
 # create figure layout
 fig = plt.figure(figsize=(6, 4), constrained_layout=True)
@@ -126,14 +111,19 @@ grid = fig.add_gridspec(2, 2)
 
 # test loss
 ax = fig.add_subplot(grid[0, 1])
-sb.lineplot(df, x="delta", y="test_loss", hue="eta", ax=ax, palette=palette)
+# res_df.loc[:, "test_loss_1"] /= np.max(res_df.loc[:, "test_loss_1"])
+# res_df.loc[:, "test_loss_2"] /= np.max(res_df.loc[:, "test_loss_2"])
+# sb.lineplot(res_df, x="delta", y="test_loss_1", hue="eta", ax=ax2, palette=palette, linestyle="dotted",
+#             errorbar=err_type, err_style=err_style)
+sb.lineplot(res_df, x="delta", y="test_loss_2", hue="eta", ax=ax, palette=palette, linestyle="solid", legend=False,
+            errorbar=err_type, err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"MSE")
-ax.set_title("(B) Average MSE across test trials")
+ax.set_title("(B) Averaged MSE across test trials")
 
 # dimensionality
 ax = fig.add_subplot(grid[1, 0])
-sb.lineplot(df, x="delta", y="dim", hue="eta", ax=ax, palette=palette)
+sb.lineplot(res_df, x="delta", y="dim", hue="eta", ax=ax, palette=palette, errorbar=err_type, err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"$d$")
 ax.set_title("(C) Dimensionality")
@@ -141,7 +131,11 @@ colors = [l.get_color() for l in ax.get_lines()]
 
 # kernel variance
 ax = fig.add_subplot(grid[1, 1])
-sb.lineplot(df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette)
+for eta in etas:
+    idx = np.abs(res_df.loc[:, "eta"].values - eta) < 1e-3
+    res_df.loc[idx, "phase_variance"] /= np.max(res_df.loc[idx, "phase_variance"])
+sb.lineplot(res_df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette, errorbar=err_type,
+            err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"$q$")
 ax.set_title("(D) Response variance over trials")
