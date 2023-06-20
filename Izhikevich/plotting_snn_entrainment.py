@@ -22,8 +22,7 @@ res_dir = "oscillatory"
 
 # load examples
 examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions": [], "test_predictions": [],
-            "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [],
-            "K": [], "K_mean": [], "K_var": [], "K_diag": []
+            "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [], "G": []
             }
 fns = [f"results/{res_dir}/SI_{cond}_hom.h5", f"results/{res_dir}/SI_{cond}_het.h5"]
 for f in fns:
@@ -37,10 +36,7 @@ for f in fns:
     examples["targets"].append(np.asarray(g["targets"]))
     examples["train_predictions"].append(np.asarray(g["train_predictions"]))
     examples["test_predictions"].append(np.asarray(g["test_predictions"]))
-    examples["K"].append(np.asarray(g["K"]))
-    examples["K_mean"].append(np.asarray(g["K_mean"]))
-    examples["K_var"].append(np.asarray(g["K_var"]))
-    examples["K_diag"].append(np.asarray(g["K_diag"]))
+    examples["G"].append(np.asarray(g["G"]))
     if examples["dt"] == 0.0:
         examples["dt"] = np.asarray(g["dt"])
         examples["sr"] = np.asarray(g["sr"])
@@ -92,8 +88,7 @@ for i, s in enumerate(examples["s"]):
         s_flattened.append(signal.flatten())
     s_flattened = np.asarray(s_flattened)
     Cs.append(np.mean(Cs_tmp, axis=0))
-    CV = s_flattened @ s_flattened.T
-    CVs.append(CV / np.max(CV.flatten()))
+    CVs.append(np.corrcoef(s_flattened))
     phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1]) * np.pi * 2.0 / s[0].shape[1], decimals=2)
     phase_ticks = np.arange(0, len(phases), 1190)
     im = ax.imshow(s_all, aspect="auto", interpolation="none", cmap="Greys")
@@ -115,23 +110,19 @@ titles = ["C", "E"]
 for C, title, grid in zip(Cs, titles, grids):
     ax = fig.add_subplot(grid[0, 0])
     sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
-    ax.set_xlabel(r"N")
-    ax.set_ylabel(r"N")
+    ax.set_xlabel(r"neuron ID")
+    ax.set_ylabel(r"neuron ID")
     ax.set_title(fr"({title}) Neural correlations")
     ax.invert_yaxis()
 grids = [grid_examples[1:3, 1].subgridspec(1, 1), grid_examples[1:3, 3].subgridspec(1, 1)]
 titles = ["D", "F"]
-vmax = np.max([np.max(C.flatten()) for C in CVs])
-vmin = np.min([np.min(C.flatten()) for C in CVs])
-for CV, C, title, grid in zip(CVs, Cs, titles, grids):
+for CV, G, title, grid in zip(CVs, examples["G"], titles, grids):
     ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(CV, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=vmax, vmin=vmin,
-               cmap="rocket")
-    ax.set_xlabel(r"N")
-    ax.set_ylabel(r"N")
-    CV[np.arange(0, CV.shape[0]), np.arange(0, CV.shape[1])] = 0.0
-    q = np.mean(CV.flatten()**2)
-    ax.set_title(fr"({title}) Variance across trials (q = {np.round(q, decimals=4)})")
+    sb.heatmap(CV, cbar=True, ax=ax, xticklabels=10, yticklabels=10, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
+    ax.set_xlabel(r"trial ID")
+    ax.set_ylabel(r"trial ID")
+    q = np.log(np.sum(np.abs(G.flatten())))
+    ax.set_title(fr"({title}) Trial correlations ($q = {np.round(q, decimals=0)}$)")
     ax.invert_yaxis()
 
 # predictions

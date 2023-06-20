@@ -41,7 +41,7 @@ for f in os.listdir(path):
             res_dict["test_var_2"].append(np.var(test_losses_2))
             K_var = np.asarray(g["K_var"])
             res_dict["kernel_variance"].append(np.sum(K_var))
-            res_dict["phase_variance"].append(g["kernel_variance"][()])
+            res_dict["phase_variance"].append(np.log(g["kernel_variance"][()]))
 
             # collect sweep results
             g = data["sweep"]
@@ -69,7 +69,7 @@ for f in os.listdir(path2):
         res_dict["test_var_2"].append(np.var(test_losses_2))
         K_var = np.asarray(g["K_var"])
         res_dict["kernel_variance"].append(np.sum(K_var))
-        res_dict["phase_variance"].append(g["kernel_variance"][()])
+        res_dict["phase_variance"].append(np.log(g["kernel_variance"][()]))
 
         # collect sweep results
         g = data["sweep"]
@@ -137,8 +137,8 @@ ax = fig.add_subplot(grid[1, 1])
 sb.lineplot(res_df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette, errorbar=err_type,
             err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
-ax.set_ylabel(r"$q$")
-ax.set_title("(D) Response variance over trials")
+ax.set_ylabel(r"$\log(q)$")
+ax.set_title("(D) Variance of Function generation capacity")
 
 # plot bifurcation diagram
 ax = fig.add_subplot(grid[0, 0])
