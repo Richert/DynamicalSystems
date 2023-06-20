@@ -17,16 +17,15 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
+cond = "async_low"
+res_dir = "funcgen"
+
 # load examples
 examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions": [], "test_predictions": [],
             "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [],
             "K": [], "K_mean": [], "K_var": [], "K_diag": []
             }
-fns = [
-    #"results/oscillatory/SI_oscillations_hom.h5", "results/oscillatory/SI_oscillations_het.h5",
-    #"results/funcgen/SI_async_low_hom.h5", "results/funcgen/SI_async_low_het.h5",
-    "results/funcgen/SI_async_high_hom.h5", "results/funcgen/SI_async_high_het.h5"
-       ]
+fns = [f"results/{res_dir}/SI_{cond}_hom.h5", f"results/{res_dir}/SI_{cond}_het.h5"]
 for f in fns:
     data = h5py.File(f, "r")
     g = data["sweep"]
@@ -86,9 +85,11 @@ for i, s in enumerate(examples["s"]):
     Cs_tmp = []
     for signal in s_tmp:
         C = np.corrcoef(signal)
-        C[np.isnan(C)] = 0.0
+        idx = np.sum(signal, axis=1) < 1e-6
+        C[idx, :] = 0.0
+        C[:, idx] = 0.0
         Cs_tmp.append(C)
-    Cs.append(np.abs(np.mean(Cs_tmp, axis=0)))
+    Cs.append(np.mean(Cs_tmp, axis=0))
     CVs.append(np.var(Cs_tmp, axis=0))
     phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1]) * np.pi * 2.0 / s[0].shape[1], decimals=2)
     phase_ticks = np.arange(0, len(phases), 1190)
@@ -110,20 +111,23 @@ grids = [grid_examples[1:3, 0].subgridspec(1, 1), grid_examples[1:3, 2].subgrids
 titles = ["C", "E"]
 for C, title, grid in zip(Cs, titles, grids):
     ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=1, vmin=0)
+    sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
     ax.set_xlabel(r"N")
     ax.set_ylabel(r"N")
     ax.set_title(fr"({title}) Neural correlations")
+    ax.invert_yaxis()
 grids = [grid_examples[1:3, 1].subgridspec(1, 1), grid_examples[1:3, 3].subgridspec(1, 1)]
 titles = ["D", "F"]
 vmax = np.max([np.max(C.flatten()) for C in CVs])
 vmin = np.min([np.min(C.flatten()) for C in CVs])
 for C, title, grid in zip(CVs, titles, grids):
     ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=vmax, vmin=vmin)
+    sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=vmax, vmin=vmin,
+               cmap="rocket")
     ax.set_xlabel(r"N")
     ax.set_ylabel(r"N")
     ax.set_title(fr"({title}) Variance across trials")
+    ax.invert_yaxis()
 
 # predictions
 grid = grid_examples[3:, :].subgridspec(2, 2)
@@ -156,5 +160,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/SI_asynch_high.svg')
+plt.savefig(f'results/SI_{cond}.svg')
 plt.show()
