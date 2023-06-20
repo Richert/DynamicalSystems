@@ -17,8 +17,8 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-cond = "async_low"
-res_dir = "funcgen"
+cond = "oscillations"
+res_dir = "oscillatory"
 
 # load examples
 examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions": [], "test_predictions": [],
@@ -82,15 +82,18 @@ for i, s in enumerate(examples["s"]):
     s_tmp = s[np.arange(0, len(s), 3)]
     s_all = np.concatenate(s_tmp, axis=1)
     s_all /= np.max(s_all)
-    Cs_tmp = []
-    for signal in s_tmp:
+    Cs_tmp, s_flattened = [], []
+    for signal in s:
         C = np.corrcoef(signal)
         idx = np.sum(signal, axis=1) < 1e-6
         C[idx, :] = 0.0
         C[:, idx] = 0.0
         Cs_tmp.append(C)
+        s_flattened.append(signal.flatten())
+    s_flattened = np.asarray(s_flattened)
     Cs.append(np.mean(Cs_tmp, axis=0))
-    CVs.append(np.var(Cs_tmp, axis=0))
+    CV = s_flattened @ s_flattened.T
+    CVs.append(CV / np.max(CV.flatten()))
     phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1]) * np.pi * 2.0 / s[0].shape[1], decimals=2)
     phase_ticks = np.arange(0, len(phases), 1190)
     im = ax.imshow(s_all, aspect="auto", interpolation="none", cmap="Greys")
@@ -120,13 +123,15 @@ grids = [grid_examples[1:3, 1].subgridspec(1, 1), grid_examples[1:3, 3].subgrids
 titles = ["D", "F"]
 vmax = np.max([np.max(C.flatten()) for C in CVs])
 vmin = np.min([np.min(C.flatten()) for C in CVs])
-for C, title, grid in zip(CVs, titles, grids):
+for CV, C, title, grid in zip(CVs, Cs, titles, grids):
     ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=vmax, vmin=vmin,
+    sb.heatmap(CV, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=vmax, vmin=vmin,
                cmap="rocket")
     ax.set_xlabel(r"N")
     ax.set_ylabel(r"N")
-    ax.set_title(fr"({title}) Variance across trials")
+    CV[np.arange(0, CV.shape[0]), np.arange(0, CV.shape[1])] = 0.0
+    q = np.mean(CV.flatten()**2)
+    ax.set_title(fr"({title}) Variance across trials (q = {np.round(q, decimals=4)})")
     ax.invert_yaxis()
 
 # predictions

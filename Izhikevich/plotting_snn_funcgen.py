@@ -131,9 +131,9 @@ colors = [l.get_color() for l in ax.get_lines()]
 
 # kernel variance
 ax = fig.add_subplot(grid[1, 1])
-for eta in etas:
-    idx = np.abs(res_df.loc[:, "eta"].values - eta) < 1e-3
-    res_df.loc[idx, "phase_variance"] /= np.max(res_df.loc[idx, "phase_variance"])
+# for eta in etas:
+#     idx = np.abs(res_df.loc[:, "eta"].values - eta) < 1e-3
+#     res_df.loc[idx, "phase_variance"] /= np.max(res_df.loc[idx, "phase_variance"])
 sb.lineplot(res_df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette, errorbar=err_type,
             err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
