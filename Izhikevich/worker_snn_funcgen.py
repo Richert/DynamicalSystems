@@ -242,7 +242,7 @@ for i, eta in enumerate(etas):
     test_predictions = []
     for target in targets:
         train_predictions.append(K @ target)
-        w_readout = w @ target
+        w_readout = target @ w
         test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
     # calculate the variance across trials
