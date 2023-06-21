@@ -232,11 +232,10 @@ for i, eta in enumerate(etas):
 
     # calculate the network kernel
     s_mean = np.mean(train_signals, axis=0)
-    s_var = np.mean([s_i - s_mean for s_i in train_signals], axis=0)
     C_inv = np.linalg.inv(np.mean(cs, axis=0))
-    w = C_inv @ s_mean
-    K = s_mean.T @ w
-    G = s_var.T @ w
+    w = s_mean.T @ C_inv
+    K = w @ s_mean
+    G = np.mean([w @ (s_i - s_mean) for s_i in train_signals], axis=0)
 
     # calculate the prediction performance for concrete targets
     train_predictions = []

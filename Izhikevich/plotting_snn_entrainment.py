@@ -22,7 +22,7 @@ res_dir = "oscillatory"
 
 # load examples
 examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions": [], "test_predictions": [],
-            "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [], "G": []
+            "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [], "G": [], "dim": []
             }
 fns = [f"results/{res_dir}/SI_{cond}_hom.h5", f"results/{res_dir}/SI_{cond}_het.h5"]
 for f in fns:
@@ -37,6 +37,7 @@ for f in fns:
     examples["train_predictions"].append(np.asarray(g["train_predictions"]))
     examples["test_predictions"].append(np.asarray(g["test_predictions"]))
     examples["G"].append(np.asarray(g["G"]))
+    examples["dim"].append(g["dimensionality"][()])
     if examples["dt"] == 0.0:
         examples["dt"] = np.asarray(g["dt"])
         examples["sr"] = np.asarray(g["sr"])
@@ -58,7 +59,7 @@ plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 ticks = 6
-
+color = cmap = sb.crayon_palette(["Indigo"])[0]
 # create figure layout
 fig = plt.figure(figsize=(12, 9), constrained_layout=True)
 
@@ -90,7 +91,8 @@ for i, s in enumerate(examples["s"]):
     Cs.append(np.mean(Cs_tmp, axis=0))
     CVs.append(np.corrcoef(s_flattened))
     phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1]) * np.pi * 2.0 / s[0].shape[1], decimals=2)
-    phase_ticks = np.arange(0, len(phases), 1190)
+    phases[phases == 6.28] = 0.0
+    phase_ticks = np.arange(0, len(phases), int(s[0].shape[-1]/2))
     im = ax.imshow(s_all, aspect="auto", interpolation="none", cmap="Greys")
     plt.sca(ax)
     dur = 0
@@ -107,26 +109,27 @@ for i, s in enumerate(examples["s"]):
 # Kernel
 grids = [grid_examples[1:3, 0].subgridspec(1, 1), grid_examples[1:3, 2].subgridspec(1, 1)]
 titles = ["C", "E"]
-for C, title, grid in zip(Cs, titles, grids):
+for C, title, grid, dim in zip(Cs, titles, grids, examples["dim"]):
     ax = fig.add_subplot(grid[0, 0])
     sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
     ax.set_xlabel(r"neuron ID")
     ax.set_ylabel(r"neuron ID")
-    ax.set_title(fr"({title}) Neural correlations")
+    ax.set_title(fr"({title}) Neural correlations ($d = {np.round(dim, decimals=1)}$)")
     ax.invert_yaxis()
 grids = [grid_examples[1:3, 1].subgridspec(1, 1), grid_examples[1:3, 3].subgridspec(1, 1)]
 titles = ["D", "F"]
 for CV, G, title, grid in zip(CVs, examples["G"], titles, grids):
     ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(CV, cbar=True, ax=ax, xticklabels=10, yticklabels=10, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
+    sb.heatmap(CV, cbar=True, ax=ax, xticklabels=3, yticklabels=3, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
     ax.set_xlabel(r"trial ID")
     ax.set_ylabel(r"trial ID")
     q = np.log(np.sum(np.abs(G.flatten())))
-    ax.set_title(fr"({title}) Trial correlations ($q = {np.round(q, decimals=0)}$)")
+    ax.set_title(fr"({title}) Trial correlations ($q = {np.round(q, decimals=1)}$)")
     ax.invert_yaxis()
 
 # predictions
 grid = grid_examples[3:, :].subgridspec(2, 2)
+grid.set
 test_example = 1
 titles = ["G", "H"]
 for i, pred in enumerate(examples["test_predictions"]):
@@ -134,22 +137,23 @@ for i, pred in enumerate(examples["test_predictions"]):
     target = examples["targets"][i][1]
     ax.plot(target, label="target", color="black")
     fit = examples["train_predictions"][i][1]
-    ax.plot(fit, label="fit", color="blue")
+    ax.plot(fit, label="fit", color=color)
     ax.plot(pred[1][test_example], label="prediction", color="orange")
     ax.set_xlabel("")
     ax.set_ylabel("")
-    ax.set_title(fr"MSE = {mse(target, pred[1][test_example])}")
+    ax.set_title(fr"MSE = {np.round(mse(target, pred[1][test_example]), decimals=2)}")
     ax = fig.add_subplot(grid[1, i])
     target = examples["targets"][i][0]
-    ax.plot(examples["targets"][i][0], label="target", color="black")
+    tmax = np.max(target)
+    ax.plot(target / tmax, label="target", color="black")
     fit = examples["train_predictions"][i][0]
-    ax.plot(fit, label="fit", color="blue")
-    ax.plot(pred[0][test_example], label="prediction", color="orange")
+    ax.plot(fit / tmax, label="fit", color=color)
+    ax.plot(pred[0][test_example] / tmax, label="prediction", color="orange")
     if i == 1:
         ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("")
-    ax.set_title(fr"MSE = {mse(target, pred[0][test_example])}")
+    ax.set_title(fr"MSE = {np.round(mse(target / tmax, pred[0][test_example] / tmax), decimals=2)}")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
