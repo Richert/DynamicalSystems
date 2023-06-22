@@ -18,7 +18,7 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 
 # load data from asynchronous regimes
 path = "results/funcgen"
-res_dict = {"eta": [], "trial": [], "delta": [], "dim": [], "test_loss_1": [], "test_loss_2": [], "phase_variance": [],
+res_dict = {"eta": [], "trial": [], "delta": [], "dim": [], "test_loss_1": [], "test_loss_2": [], "corr_variance": [],
             "kernel_variance": [], "test_var_1": [], "test_var_2": [],}
 for f in os.listdir(path):
 
@@ -39,9 +39,8 @@ for f in os.listdir(path):
             test_losses_2 = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
             res_dict["test_loss_2"].append(np.mean(test_losses_2))
             res_dict["test_var_2"].append(np.var(test_losses_2))
-            K_var = np.asarray(g["K_var"])
-            res_dict["kernel_variance"].append(np.sum(K_var))
-            res_dict["phase_variance"].append(np.log(g["kernel_variance"][()]))
+            res_dict["kernel_variance"].append(np.log(g["kernel_variance"][()]))
+            res_dict["corr_variance"].append(g["corr_variance"][()])
 
             # collect sweep results
             g = data["sweep"]
@@ -67,9 +66,8 @@ for f in os.listdir(path2):
         test_losses_2 = [mse(np.asarray(g["targets"][1]), np.asarray(sig)) for sig in g["test_predictions"][1]]
         res_dict["test_loss_2"].append(np.mean(test_losses_2))
         res_dict["test_var_2"].append(np.var(test_losses_2))
-        K_var = np.asarray(g["K_var"])
-        res_dict["kernel_variance"].append(np.sum(K_var))
-        res_dict["phase_variance"].append(np.log(g["kernel_variance"][()]))
+        res_dict["kernel_variance"].append(np.log(g["kernel_variance"][()]))
+        res_dict["corr_variance"].append(g["corr_variance"][()])
 
         # collect sweep results
         g = data["sweep"]
@@ -134,7 +132,7 @@ ax = fig.add_subplot(grid[1, 1])
 # for eta in etas:
 #     idx = np.abs(res_df.loc[:, "eta"].values - eta) < 1e-3
 #     res_df.loc[idx, "phase_variance"] /= np.max(res_df.loc[idx, "phase_variance"])
-sb.lineplot(res_df, x="delta", y="phase_variance", hue="eta", ax=ax, palette=palette, errorbar=err_type,
+sb.lineplot(res_df, x="delta", y="kernel_variance", hue="eta", ax=ax, palette=palette, errorbar=err_type,
             err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"$\log(q)$")

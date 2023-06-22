@@ -17,8 +17,8 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-cond = "oscillations"
-res_dir = "oscillatory"
+cond = "async_high"
+res_dir = "funcgen"
 
 # load examples
 examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions": [], "test_predictions": [],
@@ -121,10 +121,10 @@ titles = ["D", "F"]
 for CV, G, title, grid in zip(CVs, examples["G"], titles, grids):
     ax = fig.add_subplot(grid[0, 0])
     sb.heatmap(CV, cbar=True, ax=ax, xticklabels=3, yticklabels=3, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
-    ax.set_xlabel(r"trial ID")
-    ax.set_ylabel(r"trial ID")
+    ax.set_xlabel(r"time")
+    ax.set_ylabel(r"time")
     q = np.log(np.sum(np.abs(G.flatten())))
-    ax.set_title(fr"({title}) Trial correlations ($q = {np.round(q, decimals=1)}$)")
+    ax.set_title(fr"({title}) Network response kernel ($q = {np.round(q, decimals=1)}$)")
     ax.invert_yaxis()
 
 # predictions
