@@ -246,7 +246,7 @@ for i, eta in enumerate(etas):
         test_predictions.append([w_readout @ test_sig for test_sig in test_signals])
 
     # calculate the variance across trials
-    kernel_var = np.sum(np.abs(G.flatten()))
+    kernel_var = np.sum(G.flatten()**2)
     corr_var = np.sum(np.var(cs, axis=0).flatten())
 
     # calculate the kernel quality
