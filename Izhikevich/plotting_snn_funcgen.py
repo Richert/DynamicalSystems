@@ -104,11 +104,11 @@ err_style = "bars"
 err_type = "sd"
 
 # create figure layout
-fig = plt.figure(figsize=(6, 4), constrained_layout=True)
-grid = fig.add_gridspec(2, 2)
+fig = plt.figure(figsize=(6, 6), constrained_layout=True)
+grid = fig.add_gridspec(3, 2)
 
 # test loss
-ax = fig.add_subplot(grid[0, 1])
+ax = fig.add_subplot(grid[1, 1])
 # res_df.loc[:, "test_loss_1"] /= np.max(res_df.loc[:, "test_loss_1"])
 # res_df.loc[:, "test_loss_2"] /= np.max(res_df.loc[:, "test_loss_2"])
 # sb.lineplot(res_df, x="delta", y="test_loss_1", hue="eta", ax=ax2, palette=palette, linestyle="dotted",
@@ -117,18 +117,18 @@ sb.lineplot(res_df, x="delta", y="test_loss_2", hue="eta", ax=ax, palette=palett
             errorbar=err_type, err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"MSE")
-ax.set_title("(B) Averaged MSE across test trials")
+ax.set_title("(C) Averaged MSE across test trials")
 
 # dimensionality
-ax = fig.add_subplot(grid[1, 0])
+ax = fig.add_subplot(grid[2, 0])
 sb.lineplot(res_df, x="delta", y="dim", hue="eta", ax=ax, palette=palette, errorbar=err_type, err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"$d$")
-ax.set_title("(C) Dimensionality")
+ax.set_title("(D) Dimensionality")
 colors = [l.get_color() for l in ax.get_lines()]
 
 # kernel variance
-ax = fig.add_subplot(grid[1, 1])
+ax = fig.add_subplot(grid[2, 1])
 # for eta in etas:
 #     idx = np.abs(res_df.loc[:, "eta"].values - eta) < 1e-3
 #     res_df.loc[idx, "phase_variance"] /= np.max(res_df.loc[idx, "phase_variance"])
@@ -136,10 +136,10 @@ sb.lineplot(res_df, x="delta", y="kernel_variance", hue="eta", ax=ax, palette=pa
             err_style=err_style)
 ax.set_xlabel(r"$\Delta_{rs}$")
 ax.set_ylabel(r"$\log(q)$")
-ax.set_title("(D) Variance of Function generation capacity")
+ax.set_title("(E) Variance of Function generation capacity")
 
 # plot bifurcation diagram
-ax = fig.add_subplot(grid[0, 0])
+ax = fig.add_subplot(grid[1, 0])
 a_rs.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb1', ax=ax, line_color_stable='#148F77',
                        line_color_unstable='#148F77', line_style_unstable='solid')
 a_rs.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp3', ax=ax, line_color_stable='#5D6D7E',
@@ -148,13 +148,19 @@ a_rs.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_st
                        line_color_unstable='#5D6D7E', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{rs}$ (pA)')
-ax.set_title(r'(A) RS: $\kappa_{rs} = 100.0$ pA')
+ax.set_title(r'(B) RS: $\kappa_{rs} = 100.0$ pA')
 ax.set_ylim([0.0, 1.7])
 ax.set_xlim([30.0, 80.0])
 ax.axvline(x=45.0, color=colors[0], alpha=0.5, linestyle='--', linewidth=0.5, label="node, low FR")
 ax.axvline(x=55.0, color=colors[1], alpha=0.5, linestyle='--', linewidth=0.5, label="limit cycle")
 ax.axvline(x=70.0, color=colors[2], alpha=0.5, linestyle='--', linewidth=0.5, label="node, high FR")
 ax.legend()
+
+# empty space for RC sketch
+ax = fig.add_subplot(grid[0, :])
+ax.set_title("(A) Function generation via linear readouts from neural reservoirs")
+ax.set_xlabel(r"$w$  target output ")
+ax.set_ylabel("input time network dynamics")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)

@@ -29,7 +29,7 @@ def coherence(x_phase: np.ndarray, y_phase: np.ndarray, x_env: np.ndarray, y_env
 
 
 # load data
-fn = "results/fre_at_hom.pkl"
+fn = "results/fre_at_het.pkl"
 data = pickle.load(open(fn, "rb"))
 
 # extract relevant stuff from data

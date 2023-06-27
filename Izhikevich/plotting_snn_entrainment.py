@@ -17,12 +17,12 @@ def mse(x: np.ndarray, y: np.ndarray) -> float:
 # load data
 ###########
 
-cond = "async_high"
-res_dir = "funcgen"
+cond = "oscillations"
+res_dir = "oscillatory"
 
 # load examples
 examples = {"s": [], "train_phases": [], "test_phases": [], "train_predictions": [], "test_predictions": [],
-            "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [], "G": [], "dim": []
+            "targets": [],  "delta": [], "dt": 0.0, "sr": 1, "input_indices": [], "G": [], "dim": [], "K": [],
             }
 fns = [f"results/{res_dir}/SI_{cond}_hom.h5", f"results/{res_dir}/SI_{cond}_het.h5"]
 for f in fns:
@@ -37,6 +37,7 @@ for f in fns:
     examples["train_predictions"].append(np.asarray(g["train_predictions"]))
     examples["test_predictions"].append(np.asarray(g["test_predictions"]))
     examples["G"].append(np.asarray(g["G"]))
+    examples["K"].append(np.asarray(g["K"]))
     examples["dim"].append(g["dimensionality"][()])
     if examples["dt"] == 0.0:
         examples["dt"] = np.asarray(g["dt"])
@@ -66,30 +67,27 @@ fig = plt.figure(figsize=(12, 9), constrained_layout=True)
 # 1D plots
 ##########
 
-grid_examples = fig.add_gridspec(5, 4)
+grid_examples = fig.add_gridspec(9, 4)
 
 # SNN dynamics
 width = int(20.0/(examples["dt"]*examples["sr"]))
 indices = examples["input_indices"]
 titles = ["A", "B"]
 delta_str = "\Delta_{rs}"
-Cs, CVs = [], []
+Cs = []
 for i, s in enumerate(examples["s"]):
-    ax = fig.add_subplot(grid_examples[0, i*2:(i+1)*2])
+    ax = fig.add_subplot(grid_examples[:2, i*2:(i+1)*2])
     s_tmp = s[np.arange(0, len(s), 3)]
     s_all = np.concatenate(s_tmp, axis=1)
     s_all /= np.max(s_all)
-    Cs_tmp, s_flattened = [], []
+    Cs_tmp = []
     for signal in s:
         C = np.corrcoef(signal)
         idx = np.sum(signal, axis=1) < 1e-6
         C[idx, :] = 0.0
         C[:, idx] = 0.0
         Cs_tmp.append(C)
-        s_flattened.append(signal.flatten())
-    s_flattened = np.asarray(s_flattened)
     Cs.append(np.mean(Cs_tmp, axis=0))
-    CVs.append(np.corrcoef(s_flattened))
     phases = np.round(np.mod(np.arange(0, s_all.shape[1]), s[0].shape[1]) * np.pi * 2.0 / s[0].shape[1], decimals=2)
     phases[phases == 6.28] = 0.0
     phase_ticks = np.arange(0, len(phases), int(s[0].shape[-1]/2))
@@ -107,29 +105,28 @@ for i, s in enumerate(examples["s"]):
     ax.set_title(fr"({titles[i]}) Network dynamics (${delta_str} = {examples['delta'][i]}$ mV)")
 
 # Kernel
-grids = [grid_examples[1:3, 0].subgridspec(1, 1), grid_examples[1:3, 2].subgridspec(1, 1)]
+grid_kernels = grid_examples[2:5, :].subgridspec(1, 4)
+grids = [grid_kernels[0, 0], grid_kernels[0, 2]]
 titles = ["C", "E"]
 for C, title, grid, dim in zip(Cs, titles, grids, examples["dim"]):
-    ax = fig.add_subplot(grid[0, 0])
+    ax = fig.add_subplot(grid)
     sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
     ax.set_xlabel(r"neuron ID")
     ax.set_ylabel(r"neuron ID")
     ax.set_title(fr"({title}) Neural correlations ($d = {np.round(dim, decimals=1)}$)")
     ax.invert_yaxis()
-grids = [grid_examples[1:3, 1].subgridspec(1, 1), grid_examples[1:3, 3].subgridspec(1, 1)]
+grids = [grid_kernels[0, 1], grid_kernels[0, 3]]
 titles = ["D", "F"]
-for CV, G, title, grid in zip(CVs, examples["G"], titles, grids):
-    ax = fig.add_subplot(grid[0, 0])
-    sb.heatmap(CV, cbar=True, ax=ax, xticklabels=3, yticklabels=3, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
-    ax.set_xlabel(r"time")
-    ax.set_ylabel(r"time")
+for K, G, title, grid in zip(examples["K"], examples["G"], titles, grids):
+    ax = fig.add_subplot(grid)
+    sb.heatmap(K, cbar=True, ax=ax, xticklabels=600, yticklabels=600, rasterized=True, cmap="icefire")
+    ax.set_xlabel(r"time step")
+    ax.set_ylabel(r"time step")
     q = np.log(np.sum(np.abs(G.flatten())))
-    ax.set_title(fr"({title}) Network response kernel ($q = {np.round(q, decimals=1)}$)")
-    ax.invert_yaxis()
+    ax.set_title(fr"({title}) Network response kernel ($\log(q) = {np.round(q, decimals=1)}$)")
 
 # predictions
-grid = grid_examples[3:, :].subgridspec(2, 2)
-grid.set
+grid = grid_examples[5:, :].subgridspec(2, 2)
 test_example = 1
 titles = ["G", "H"]
 for i, pred in enumerate(examples["test_predictions"]):
