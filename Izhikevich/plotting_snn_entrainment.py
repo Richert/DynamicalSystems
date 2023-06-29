@@ -62,21 +62,27 @@ markersize = 6
 ticks = 6
 color = cmap = sb.crayon_palette(["Indigo"])[0]
 # create figure layout
-fig = plt.figure(figsize=(12, 9), constrained_layout=True)
+fig = plt.figure(figsize=(6, 5), constrained_layout=True)
 
 # 1D plots
 ##########
 
-grid_examples = fig.add_gridspec(9, 4)
+grid_examples = fig.add_gridspec(7, 2)
+
+# empty space for RC sketch
+ax = fig.add_subplot(grid_examples[0:3, :])
+ax.set_title("(A) Function generation via linear readouts from neural reservoirs")
+ax.set_xlabel(r"$w$  target output ")
+ax.set_ylabel("input time network dynamics")
 
 # SNN dynamics
 width = int(20.0/(examples["dt"]*examples["sr"]))
 indices = examples["input_indices"]
-titles = ["A", "B"]
+titles = ["B", "C"]
 delta_str = "\Delta_{rs}"
 Cs = []
 for i, s in enumerate(examples["s"]):
-    ax = fig.add_subplot(grid_examples[:2, i*2:(i+1)*2])
+    ax = fig.add_subplot(grid_examples[3:5, i])
     s_tmp = s[np.arange(0, len(s), 3)]
     s_all = np.concatenate(s_tmp, axis=1)
     s_all /= np.max(s_all)
@@ -104,58 +110,26 @@ for i, s in enumerate(examples["s"]):
     ax.set_ylabel('neurons')
     ax.set_title(fr"({titles[i]}) Network dynamics (${delta_str} = {examples['delta'][i]}$ mV)")
 
-# Kernel
-grid_kernels = grid_examples[2:5, :].subgridspec(1, 4)
-grids = [grid_kernels[0, 0], grid_kernels[0, 2]]
-titles = ["C", "E"]
-for C, title, grid, dim in zip(Cs, titles, grids, examples["dim"]):
-    ax = fig.add_subplot(grid)
-    sb.heatmap(C, cbar=True, ax=ax, xticklabels=300, yticklabels=300, rasterized=True, vmax=1, vmin=-1, cmap="icefire")
-    ax.set_xlabel(r"neuron ID")
-    ax.set_ylabel(r"neuron ID")
-    ax.set_title(fr"({title}) Neural correlations ($d = {np.round(dim, decimals=1)}$)")
-    ax.invert_yaxis()
-grids = [grid_kernels[0, 1], grid_kernels[0, 3]]
-titles = ["D", "F"]
-for K, G, title, grid in zip(examples["K"], examples["G"], titles, grids):
-    ax = fig.add_subplot(grid)
-    sb.heatmap(K, cbar=True, ax=ax, xticklabels=600, yticklabels=600, rasterized=True, cmap="icefire")
-    ax.set_xlabel(r"time step")
-    ax.set_ylabel(r"time step")
-    q = np.log(np.sum(np.abs(G.flatten())))
-    ax.set_title(fr"({title}) Network response kernel ($\log(q) = {np.round(q, decimals=1)}$)")
-
 # predictions
-grid = grid_examples[5:, :].subgridspec(2, 2)
 test_example = 1
-titles = ["G", "H"]
 for i, pred in enumerate(examples["test_predictions"]):
-    ax = fig.add_subplot(grid[0, i])
+    ax = fig.add_subplot(grid_examples[5:, i])
     target = examples["targets"][i][1]
     ax.plot(target, label="target", color="black")
     fit = examples["train_predictions"][i][1]
     ax.plot(fit, label="fit", color=color)
     ax.plot(pred[1][test_example], label="prediction", color="orange")
-    ax.set_xlabel("")
     ax.set_ylabel("")
     ax.set_title(fr"MSE = {np.round(mse(target, pred[1][test_example]), decimals=2)}")
-    ax = fig.add_subplot(grid[1, i])
-    target = examples["targets"][i][0]
-    tmax = np.max(target)
-    ax.plot(target / tmax, label="target", color="black")
-    fit = examples["train_predictions"][i][0]
-    ax.plot(fit / tmax, label="fit", color=color)
-    ax.plot(pred[0][test_example] / tmax, label="prediction", color="orange")
     if i == 1:
         ax.legend()
     ax.set_xlabel("time")
     ax.set_ylabel("")
-    ax.set_title(fr"MSE = {np.round(mse(target / tmax, pred[0][test_example] / tmax), decimals=2)}")
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/SI_{cond}.svg')
+plt.savefig(f'results/snn_oscillations.svg')
 plt.show()
