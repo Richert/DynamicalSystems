@@ -90,8 +90,8 @@ ticks = 5
 # plot first example bumps over p_in
 example_id = 0
 titles = [r"(A) Example bumps for $\Delta_{rs} = 0.2$ mV",
-          r"(B) Example bumps for $\Delta_{rs} = 0.2$ mV",
-          r"(C) Example bumps for $\Delta_{rs} = 1.5$ mV"]
+          r"(B) Example bumps for $\Delta_{rs} = 0.8$ mV",
+          r"(C) Example bumps for $\Delta_{rs} = 1.6$ mV"]
 p_in_ticks = [0.02, 0.1, 0.5]
 for i, val in enumerate(example_condition[p1]):
     ax = fig.add_subplot(grid[0, i])
