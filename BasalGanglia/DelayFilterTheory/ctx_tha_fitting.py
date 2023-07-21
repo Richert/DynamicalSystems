@@ -3,10 +3,36 @@ import matplotlib.pyplot as plt
 from rectipy import FeedbackNetwork, random_connectivity
 
 
+def training_data(stim_amp: float, stim_dur: float, f1: float, f2: float, n: int, min_isi: int, max_isi: int,
+                  dt: float = 1e-2) -> tuple:
+
+    # create time variables
+    T = 2.0/f1
+    steps = int(T/dt)
+    t = np.arange(0, steps) * dt
+
+    # create single input-target pair
+    target = np.sin(2.0*np.pi*f1*t) * np.sin(2.0*np.pi*f2*t)
+    inp = np.zeros((steps, 1))
+    inp[:int(stim_dur/dt), 0] = stim_amp
+
+    # create multi-trial input-target vectors
+    starts = np.random.randint(low=min_isi, high=max_isi, size=(n,))
+    inputs = np.zeros((int(n*steps + np.sum(starts)), 1))
+    targets = np.zeros((int(n*steps + np.sum(starts)),))
+    for i in range(n):
+        start = i * steps + starts[i]
+        stop = (i+1) * steps + starts[i]
+        inputs[start:stop] = inp
+        targets[start:stop] = target
+
+    return inputs, targets
+
+
 # network parameters
 n_ctx = 200
 n_tha = 20
-n_in = 5
+n_in = 1
 p = 0.2
 k = 2.0
 dt = 1e-2
@@ -62,3 +88,12 @@ ax.plot(np.mean(obs.to_numpy("out"), axis=1))
 ax.set_title("ctx")
 ax.set_ylabel("s")
 plt.show()
+
+# train network to generate a target function
+#############################################
+
+# get inputs and targets
+inputs, targets = training_data(40.0, 10.0, 0.006, 0.012, 40, 10000, 50000, dt)
+
+# perform weight optimization
+obs = net.fit_bptt(inputs, targets)
