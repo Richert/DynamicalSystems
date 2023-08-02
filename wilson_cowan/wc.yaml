@@ -1,0 +1,54 @@
+%YAML 1.2
+---
+
+# operator templates
+####################
+
+wc_e:
+  base: OperatorTemplate
+  equations:
+    - "r = sigmoid(lam*(s+u_in-phi)) - sigmoid(-lam*phi)"
+    - "u' = (-u + (1 - u)*r) / tau"
+  variables:
+    u: output(0.0)
+    r: variable
+    u_in: input(0.0)
+    s: input(0.0)
+    lam: 1.3
+    phi: 4.0
+    tau: 1.0
+
+wc_i:
+  base: wc_e
+  variables:
+    lam: 2.0
+    phi: 3.7
+    tau: 4.0
+    s: 1.35
+
+# node templates
+################
+
+E:
+  base: NodeTemplate
+  operators:
+    - wc_e
+
+I:
+  base: NodeTemplate
+  operators:
+    - wc_i
+
+# circuit templates
+###################
+
+wc:
+  base: CircuitTemplate
+  nodes:
+    E: E
+    I: I
+  edges:
+    - [E/wc_e/u, E/wc_e/u_in, null, {weight: 16.0}]
+    - [E/wc_e/u, I/wc_i/u_in, null, {weight: 12.0}]
+    - [I/wc_i/u, E/wc_e/u_in, null, {weight: -15.0}]
+    - [I/wc_i/u, I/wc_i/u_in, null, {weight: -3.0}]

@@ -98,7 +98,7 @@ net.add_edge("ctx", "out", weights=np.random.rand(n_ctx, n_out))
 #############################################
 
 # get inputs and targets
-inputs, targets = training_data(40.0, 10.0, 0.006, 0.012, 40, 10000, 50000, dt)
+inputs, targets = training_data(40.0, 10.0, 0.006, 0.012, 10, 10000, 50000, dt)
 
 # choose sampling rate
 sr = 10
