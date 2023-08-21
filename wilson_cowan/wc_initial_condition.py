@@ -4,11 +4,11 @@ from pyrates import CircuitTemplate
 
 
 # initialize pyrates model
-net = CircuitTemplate.from_yaml("wc/wc")
+net = CircuitTemplate.from_yaml("wc/wc2")
 
 # define extrinsic input for numerical simulation
 dt = 1e-4
-T = 100.0
+T = 200.0
 steps = int(T/dt)
 inp = np.zeros((steps,))
 
@@ -35,5 +35,5 @@ plt.savefig("wc_initial_condition.pdf")
 plt.show()
 
 # generate pycobi files with initial condition
-net.get_run_func(func_name="wc_rhs", file_name="wc", step_size=dt, auto=True, backend="fortran",
+net.get_run_func(func_name="wc_rhs", file_name="wc2", step_size=dt, auto=True, backend="fortran",
                  solver='scipy', vectorize=False, float_precision='float64', in_place=False)
