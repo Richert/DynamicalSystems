@@ -9,8 +9,8 @@ from scipy.ndimage import gaussian_filter1d
 # define model parameters
 #########################
 
-d_rs = 100.0
-Delta_rs = 0.2
+d_rs = 10.0
+Delta_rs = 0.5
 Delta_fs = 2.0
 
 # define inputs
@@ -19,7 +19,7 @@ cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
 I_rs = np.zeros((int(T/dt),)) + 60.0
-I_fs = np.zeros((int(T/dt),)) + 43.0
+I_fs = np.zeros((int(T/dt),)) + 45.0
 # I_fs[:int(cutoff*0.5/dt)] += 15.0
 I_fs[int(750/dt):int(2000/dt)] -= 20.0
 I_fs = gaussian_filter1d(I_fs, sigma=1000)
