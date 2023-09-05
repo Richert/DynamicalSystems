@@ -83,7 +83,8 @@ ode.run(starting_point="UZ1", origin="s_e:ss", name="s_i:ss", ICP="I/wc_i/s", IP
 # perform third 1D parameter continuation in S_e for isolated WC oscillator
 ode.run(name="s_e:ss:3", starting_point="UZ1", origin="s_i:ss", ICP="E/wc_e/s", IPS=1, ILP=1, ISP=2,
         ISW=1, RL0=-1.0, RL1=8.0, bidirectional=True, STOP=[], UZR={})
-ode.run(starting_point="HB1", origin="s_e:ss:3", name="s_e:lc:3", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP2"})
+ode.run(starting_point="HB1", origin="s_e:ss:3", name="s_e:lc:3", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP2"},
+        reduce_limit_cycle=True)
 
 # change value of S_i for chain WC oscillator
 ode.run(starting_point="UZ1", origin="e:ss", name="s_i:ss:2", ICP="I/wc_i/s", IPS=1, ILP=1, ISP=2, ISW=1, RL0=-1.0,
@@ -92,16 +93,17 @@ ode.run(starting_point="UZ1", origin="e:ss", name="s_i:ss:2", ICP="I/wc_i/s", IP
 # perform fourth 1D parameter continuation in S_e for chain WC oscillator
 ode.run(name="s_e:ss:4", starting_point="UZ1", origin="s_i:ss:2", ICP="E/wc_e/s", IPS=1, ILP=1, ISP=2,
         ISW=1, RL0=-5.0, RL1=18.0, bidirectional=True, STOP=[], UZR={})
-ode.run(starting_point="HB1", origin="s_e:ss:4", name="s_e:lc:4", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP4"})
+ode.run(starting_point="HB1", origin="s_e:ss:4", name="s_e:lc:4", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP4"},
+        reduce_limit_cycle=True)
 
 # post-processing and plotting
 ##############################
 
 # save results as csv
-# ode.get_summary("s_e:ss").to_csv("steady_state_1.csv")
-# ode.get_summary("s_e:ss:2").to_csv("steady_state_2.csv")
-# ode.get_summary("s_e:lc").to_csv("limit_cycle_1.csv")
-# ode.get_summary("s_e:lc:2").to_csv("limit_cycle_2.csv")
+ode.get_summary("s_e:ss:3").to_csv("steady_state_3.csv")
+ode.get_summary("s_e:ss:4").to_csv("steady_state_3.csv")
+ode.get_summary("s_e:lc:3").to_csv("limit_cycle_3.csv")
+ode.get_summary("s_e:lc:4").to_csv("limit_cycle_4.csv")
 
 ode.close_session(clear_files=True)
 
