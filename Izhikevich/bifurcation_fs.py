@@ -17,10 +17,10 @@ auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjec
 # config
 n_dim = 4
 n_params = 20
-a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
+a = ODESystem("fs", working_dir="config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time (to converge to fixed point)
-t_sols, t_cont = a.run(e='fs', c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NDIM=n_dim, NPAR=n_params,
+t_sols, t_cont = a.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NDIM=n_dim, NPAR=n_params,
                        EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 500.0}, STOP={'UZ1'})
 
 ########################
@@ -55,3 +55,4 @@ a.run(starting_point='HB1', c='qif2', ICP=[6, 16], name='D/I:hb1', origin=f'I:{t
 fname = '../results/fs.pkl'
 kwargs = {'D': vals, 'target': target}
 a.to_file(fname, **kwargs)
+a.close_session(clear_files=True)

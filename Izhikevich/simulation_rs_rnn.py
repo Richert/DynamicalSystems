@@ -12,7 +12,7 @@ import pickle
 
 # model parameters
 N = 2000
-p = 0.1
+p = 0.2
 C = 100.0
 k = 0.7
 v_r = -60.0
@@ -21,7 +21,7 @@ Delta = 0.5
 eta = 0.0
 a = 0.03
 b = -2.0
-d = 10.0
+d = 100.0
 g = 15.0
 E_r = 0.0
 tau_s = 6.0
