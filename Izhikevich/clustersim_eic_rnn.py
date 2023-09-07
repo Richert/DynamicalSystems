@@ -100,10 +100,10 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-ve_spike = 40.0  # unit: mV
-ve_reset = -60.0  # unit: mV
-Delta_e = 1.0  # unit: mV
-de = 20.0
+ve_spike = 1000.0  # unit: mV
+ve_reset = -1000.0  # unit: mV
+Delta_e = 0.5  # unit: mV
+de = 10.0
 ae = 0.03
 be = -2.0
 
@@ -112,8 +112,8 @@ Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-vi_spike = 40.0  # unit: mV
-vi_reset = -60.0  # unit: mV
+vi_spike = 1000.0  # unit: mV
+vi_reset = -1000.0  # unit: mV
 Delta_i = deltas[idx]
 di = 0.0
 ai = 0.2
@@ -132,8 +132,8 @@ k_ie = 4.0
 k_ii = 4.0
 
 # define lorentzian of etas
-spike_thresholds_e = lorentzian(N, eta=ve_t, delta=Delta_e, lb=ve_r, ub=ve_r-ve_t)
-spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=vi_r-vi_t)
+spike_thresholds_e = lorentzian(N, eta=ve_t, delta=Delta_e, lb=ve_r, ub=2*ve_t-ve_r)
+spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=2*vi_t-vi_r)
 
 # define inputs
 ts = 10.0
