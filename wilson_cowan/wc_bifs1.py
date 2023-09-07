@@ -82,7 +82,7 @@ ode.run(starting_point="HB1", origin="s_e:ss", name="s_e/s_i:hb1", ICP=["I/wc_i/
         IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
 ode.run(starting_point="HB1", origin="s_e:ss:2", name="s_e/s_i:hb2", ICP=["I/wc_i/s", "E/wc_e/s"],
         IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
-ode.run(starting_point="LP1", origin="s_e:ss", name="s_e/s_i:lp1", ICP=["I/wc_i/s", "E/wc_e/s"],
+ode.run(starting_point="LP2", origin="s_e:ss", name="s_e/s_i:lp1", ICP=["I/wc_i/s", "E/wc_e/s"],
         IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
 ode.run(starting_point="LP1", origin="s_e:ss:2", name="s_e/s_i:lp2", ICP=["I/wc_i/s", "E/wc_e/s"],
         IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)

@@ -52,8 +52,8 @@ ode = ODESystem(eq_file="wc", auto_dir="~/PycharmProjects/auto-07p", init_cont=F
                 state_vars=list(state_vars))
 
 # define the standard auto parameters
-algorithm_params = {"NTST": 400, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT": 0, "NMX": 8000, "NPR": 5,
-                    "MXBF": 7, "IID": 2, "ITMX": 40, "ITNW": 40, "NWTN": 12, "JAC": 0, "EPSL": 1e-8, "EPSU": 1e-8,
+algorithm_params = {"NTST": 100, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT": 0, "NMX": 8000, "NPR": 5,
+                    "MXBF": 5, "IID": 2, "ITMX": 10, "ITNW": 5, "NWTN": 3, "JAC": 0, "EPSL": 1e-8, "EPSU": 1e-8,
                     "EPSS": 1e-9, "DS": 1e-3, "DSMIN": 1e-12, "DSMAX": 5e-2, "IADS": 1, "THL": {}, "THU": {}}
 
 # perform bifurcation analysis for S_i = 1.35
@@ -87,7 +87,7 @@ ode.run(starting_point="HB1", origin="s_e:ss", name="s_e/s_i:hb1", ICP=["I/wc_i/
 ode.run(starting_point="HB1", origin="s_e:ss:2", name="s_e/s_i:hb2", ICP=["I/wc_i/s", "E/wc_e/s"],
         IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
 ode.run(starting_point="LP2", origin="s_e:ss", name="s_e/s_i:lp1", ICP=["I/wc_i/s", "E/wc_e/s"],
-        IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
+        IPS=1, ISP=0, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
 ode.run(starting_point="LP1", origin="s_e:ss:2", name="s_e/s_i:lp2", ICP=["I/wc_i/s", "E/wc_e/s"],
         IPS=1, ISP=2, ILP=0, ISW=2, IPLT=9, RL0=-2.0, RL1=4.0, bidirectional=True)
 
@@ -116,7 +116,7 @@ ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:lc", ax=ax, color="black
 ax.set_title("Equilibria in I as a function of S_e")
 ax.set_xlabel("S_e")
 ax.set_ylabel("I")
-plt.suptitle("S_i = 1.5, a = 36, e = 55")
+plt.suptitle("S_i = 2.0, a = 36, e = 55")
 plt.tight_layout()
 fig.canvas.draw()
 plt.savefig("wc_codim1_3.pdf")
@@ -150,7 +150,7 @@ ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:lp1", ax=ax, color="
                       line_style_unstable="solid")
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:lp2", ax=ax, color="blue", ignore=["UZ"],
                       line_style_unstable="solid")
-ax.set_title("a = 16, e = 15")
+ax.set_title("a = 36, e = 55")
 ax.set_xlabel("S_e")
 ax.set_ylabel("S_i")
 plt.tight_layout()
