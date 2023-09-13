@@ -73,9 +73,9 @@ n_bins = 50
 # results
 results = {"lorentz": {"rate_dist": [], "spikes": []}, "gauss": {"rate_dist": [], "spikes": []}, "Deltas": Deltas}
 
-########################
+############
 # analysis #
-########################
+############
 
 # load data
 mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
