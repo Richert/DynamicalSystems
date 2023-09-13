@@ -1,9 +1,7 @@
-from scipy.special import rel_entr
-import numpy as np
-from scipy.stats import cauchy, norm
-from scipy.optimize import minimize_scalar
 import matplotlib.pyplot as plt
 import pickle
+import numpy as np
+from scipy.stats import cauchy, norm
 plt.rc('text', usetex=True)
 
 
@@ -27,58 +25,23 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
     return samples
 
 
-def kld_normal_cauchy(delta: float, mu: float, sd: float, x: np.ndarray):
-    pdf_g = norm.pdf(x, loc=mu, scale=sd)
-    pdf_c = cauchy.pdf(x, loc=mu, scale=delta)
-    pdf_g /= np.sum(pdf_g)
-    pdf_c /= np.sum(pdf_c)
-    return np.sum(rel_entr(pdf_c, pdf_g))
+################
+# preparations #
+################
 
-
-def sample_sd_cauchy(delta: float, mu: float, sd: float, n_samples: int, lb: float, ub: float):
-    samples_c = lorentzian(n_samples, eta=mu, delta=delta, lb=lb, ub=ub)
-    samples_g = gaussian(n_samples, mu=mu, sd=sd, lb=lb, ub=ub)
-    return (np.std(samples_c) - np.std(samples_g))**2
-
-
-def repeated_sampling(delta, n: int, *args):
-    return np.mean([sample_sd_cauchy(delta, *args) for _ in range(n)])
-
+# load data
+results = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
+sds = results["norm"]
+deltas = results["lorentz"]
+sd_examples = results["norm_examples"]
+errors = results["errors"]
+deltas_v = results["var"]
 
 # parameters
 mu = -40.0
 lb = -70
 ub = -10
-n = 10000
-n_reps = 10
-sds = np.linspace(1.0, 6.0, 50)
-bounds = [np.min(sds)*0.05, np.max(sds)+2.0]
-
-# fit deltas to SDs
-deltas = []
-deltas_var = []
-for sd in sds:
-    deltas_tmp = []
-    for _ in range(n_reps):
-        delta = minimize_scalar(repeated_sampling, bounds=bounds, args=(1, mu, sd, n, lb, ub), method='bounded',
-                                options={'maxiter': 1000, 'disp': True})
-        deltas_tmp.append(delta.x)
-    deltas.append(np.mean(deltas_tmp))
-    deltas_var.append(np.var(deltas_tmp))
-
-# calculate errors for two target SDs
-sd_examples = [2.5, 5.0]
-errors = {key: [] for key in sd_examples}
-for sd in sd_examples:
-    deltas1 = np.linspace(0.01, sd, num=100)
-    errors_tmp = []
-    for _ in range(n_reps):
-        errors_tmp.append(np.asarray([repeated_sampling(delta, 1, mu, sd, n, lb, ub) for delta in deltas]))
-    errors[sd] = (np.mean(errors_tmp, axis=0), np.var(errors_tmp, axis=1))
-
-# save results
-pickle.dump({"norm": sds, "lorentz": deltas, "norm_examples": sd_examples, "errors": errors, "var": deltas_var},
-            open("results/norm_lorentz_fit.pkl", "wb"))
+bounds = [0.01, np.max(sds)+2.0]
 
 ############
 # plotting #
@@ -114,7 +77,7 @@ ax.set_title(r"Fitted widths $\Delta_v$")
 # plot error landscape for the two example SDs
 ax = fig.add_subplot(grid[0, 1])
 for sd in sd_examples:
-    ax.plot(np.round(deltas, decimals=1), errors[sd][0], label=fr"$\sigma_v = {sd}$ mV")
+    ax.plot(np.round(deltas, decimals=1), errors[sd], label=fr"$\sigma_v = {sd}$ mV")
 ax.set_xlabel(r"$\Delta_v$ (mV)")
 ax.set_ylabel("error")
 ax.set_title("Squared error between sample SDs")
@@ -143,4 +106,3 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'results/lorentz_gauss_fitting.svg')
 plt.show()
-
