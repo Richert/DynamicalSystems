@@ -26,6 +26,7 @@ cutoff = 1000
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
@@ -115,9 +116,9 @@ for idx, SD, spikes in zip([(0, 2), (2, 4)], results["SDs"], results["gauss"]["s
     ax.set_title(fr"$\sigma_v = {SD}$")
 
 # padding
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0, wspace=0)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/lorentz_gauss_comparison.svg')
+plt.savefig(f'results/lorentz_gauss_{neuron_type}.svg')
 plt.show()

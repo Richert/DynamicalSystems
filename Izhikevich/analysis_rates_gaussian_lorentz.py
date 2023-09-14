@@ -45,7 +45,7 @@ def get_fr(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, 
 mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
 
 # choose neuron type
-neuron_type = "lts"
+neuron_type = "rs"
 
 if neuron_type == "rs":
 
@@ -98,6 +98,7 @@ I_ext = np.linspace(50.0, 100.0, num=100)
 v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
+N2 = 100000
 p = 0.2
 SDs = [2.5, 5.0]
 
@@ -126,8 +127,8 @@ results = {"lorentz": {"rate_dist": [], "spikes": []}, "gauss": {"rate_dist": []
 for Delta, SD in zip(Deltas, SDs):
 
     # define lorentzian of etas
-    thetas_l = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
-    thetas_g = gaussian(N, mu=v_t, sd=SD, lb=v_r, ub=2*v_t-v_r)
+    thetas_l = lorentzian(N2, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
+    thetas_g = gaussian(N2, mu=v_t, sd=SD, lb=v_r, ub=2*v_t-v_r)
 
     for key, thetas in zip(["lorentz", "gauss"], [thetas_l, thetas_g]):
 
@@ -154,6 +155,10 @@ for Delta, SD in zip(Deltas, SDs):
     # define input
     steps = int(T/dt)
     inp = np.zeros((steps, N))
+
+    # define lorentzian of etas
+    thetas_l = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
+    thetas_g = gaussian(N, mu=v_t, sd=SD, lb=v_r, ub=2 * v_t - v_r)
 
     # get connectivity
     W = random_connectivity(N, N, p, normalize=True)
@@ -187,6 +192,7 @@ pickle.dump(results, open(f"results/norm_lorentz_{neuron_type}.pkl", "wb"))
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
@@ -240,5 +246,4 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/lorentz_gauss_{neuron_type}.svg')
 plt.show()

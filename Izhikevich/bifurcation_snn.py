@@ -43,7 +43,7 @@ if neuron_type == "rs":
     k = 0.7
     v_r = -60.0
     v_t = -40.0
-    eta = 50.0
+    eta = 0.0
     a = 0.03
     b = -2.0
     d = 10.0
@@ -57,7 +57,7 @@ elif neuron_type == "fs":
     k = 1.0
     v_r = -55.0
     v_t = -40.0
-    eta = 70.0
+    eta = 0.0
     a = 0.2
     b = 0.025
     d = 0.0
@@ -71,7 +71,7 @@ elif neuron_type == "lts":
     k = 1.0
     v_r = -56.0
     v_t = -42.0
-    eta = 150.0
+    eta = 0.0
     a = 0.03
     b = 8.0
     d = 20.0
