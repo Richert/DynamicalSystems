@@ -101,6 +101,7 @@ dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), 1))
 inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
+inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)
