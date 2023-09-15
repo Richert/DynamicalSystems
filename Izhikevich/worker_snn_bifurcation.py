@@ -61,7 +61,7 @@ elif neuron_type == "fs":
     k = 1.0
     v_r = -55.0
     v_t = -40.0
-    eta = 0.0
+    eta = 30.0
     a = 0.2
     b = 0.025
     d = 0.0
@@ -77,7 +77,7 @@ elif neuron_type == "lts":
     k = 1.0
     v_r = -56.0
     v_t = -42.0
-    eta = 0.0
+    eta = 100.0
     a = 0.03
     b = 8.0
     d = 20.0
@@ -107,8 +107,11 @@ cutoff = 100.0*ts
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), 1))
-inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
-inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
+if neuron_type == "rs":
+    inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
+    inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
+else:
+    inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 100.0, num=int(2000 * ts / dt))
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)
