@@ -31,10 +31,14 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 # parameters #
 ##############
 
-# choose neuron type
-neuron_type = "lts"
-distribution_type = "gauss"
+# extract arguments passed to the script
+path = str(sys.argv[-1])
+distribution_type = str(sys.argv[-2])
+neuron_type = str(sys.argv[-3])
+idx = int(sys.argv[-4])
+n = int(sys.argv[-5])
 
+# choose neuron type
 if neuron_type == "rs":
 
     C = 100.0
@@ -48,6 +52,8 @@ if neuron_type == "rs":
     g = 15.0
     E_r = 0.0
     tau_s = 6.0
+    SDs = np.linspace(0.1, 6.0, num=n)
+    Deltas = np.linspace(0.1, 2.0, num=n)
 
 elif neuron_type == "fs":
 
@@ -55,13 +61,15 @@ elif neuron_type == "fs":
     k = 1.0
     v_r = -55.0
     v_t = -40.0
-    eta = 25.0
+    eta = 0.0
     a = 0.2
     b = 0.025
     d = 0.0
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
+    SDs = np.linspace(0.1, 4.0, num=n)
+    Deltas = np.linspace(0.1, 1.0, num=n)
 
 elif neuron_type == "lts":
 
@@ -69,13 +77,15 @@ elif neuron_type == "lts":
     k = 1.0
     v_r = -56.0
     v_t = -42.0
-    eta = 100.0
+    eta = 0.0
     a = 0.03
     b = 8.0
     d = 20.0
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
+    SDs = np.linspace(0.1, 4.0, num=n)
+    Deltas = np.linspace(0.1, 1.0, num=n)
 
 else:
 
@@ -87,10 +97,9 @@ v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
 p = 0.2
-idx = 1
-SD = 0.5
-Delta = 0.1
-print(f"Condition: {neuron_type}, {distribution_type}, Delta = {Delta}, sigma = {SD}")
+idx = int(sys.argv[-1])
+SD = SDs[idx]
+Delta = Deltas[idx]
 
 # define inputs
 ts = 10.0
@@ -99,8 +108,8 @@ cutoff = 100.0*ts
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), 1))
-inp[int(100*ts/dt):int(2100*ts/dt), 0] += np.linspace(0.0, 100.0, num=int(2000*ts/dt))
-# inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(100.0, 0.0, num=int(1000*ts/dt))
+inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
+inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)
@@ -116,7 +125,7 @@ else:
 ##############
 
 try:
-    results = pickle.load(open(f"results/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
+    results = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
 except FileNotFoundError:
     results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD}
 
@@ -137,17 +146,4 @@ obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=Fal
 results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)
 
 # save results
-pickle.dump(results, open(f"results/bifurcations_{neuron_type}_{idx}.p", "wb"))
-
-############
-# plotting #
-############
-
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(results[distribution_type], label=rf"$\Delta_v = {Delta}$ mV, $\sigma_v = {SD}$")
-ax.set_xlabel("time")
-ax.set_ylabel("s")
-ax.legend()
-ax.set_title(distribution_type)
-plt.tight_layout()
-plt.show()
+pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.p", "wb"))

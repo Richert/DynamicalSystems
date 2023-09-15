@@ -22,6 +22,7 @@ lts = ODESystem.from_file(f"results/lts.pkl", auto_dir="~/PycharmProjects/auto-0
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
