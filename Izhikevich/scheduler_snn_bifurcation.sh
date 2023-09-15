@@ -5,11 +5,11 @@ p1="rs"
 p2="lorentz"
 path="/media/richard/data/snn_bifurcation"
 n=20
-batch_size=1
+batch_size=4
 range_end=$(($n-1))
 
 # limit amount of threads that each Python process can work with
-n_threads=4
+n_threads=10
 export OMP_NUM_THREADS=$n_threads
 export OPENBLAS_NUM_THREADS=$n_threads
 export MKL_NUM_THREADS=$n_threads
