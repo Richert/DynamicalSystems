@@ -97,7 +97,6 @@ v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
 p = 0.2
-idx = int(sys.argv[-1])
 SD = SDs[idx]
 Delta = Deltas[idx]
 
