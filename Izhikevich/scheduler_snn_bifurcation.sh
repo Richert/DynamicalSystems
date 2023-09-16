@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set condition
-p1="lts"
+p1="rs"
 p2="lorentz"
 path="/media/richard/data/snn_bifurcation"
 n=20
