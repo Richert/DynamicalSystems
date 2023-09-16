@@ -10,9 +10,13 @@ sys.path.append('../')
 # load data #
 #############
 
+# mean-field bifurcation analysis
 rs = ODESystem.from_file(f"results/rs.pkl", auto_dir="~/PycharmProjects/auto-07p")
 fs = ODESystem.from_file(f"results/fs.pkl", auto_dir="~/PycharmProjects/auto-07p")
 lts = ODESystem.from_file(f"results/lts.pkl", auto_dir="~/PycharmProjects/auto-07p")
+
+# snn bifurcations
+
 
 ############
 # plotting #

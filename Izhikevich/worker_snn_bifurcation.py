@@ -129,7 +129,7 @@ else:
 try:
     results = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
 except FileNotFoundError:
-    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD}
+    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[::int(dts/dt), 0]}
 
 # collect parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,

@@ -2,8 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pycobi import ODESystem
 from pyrates import CircuitTemplate
-import pickle
-
+import pandas as pd
 
 # initialize PyCoBi with steady-state solution
 ##############################################
@@ -82,5 +81,6 @@ for i in range(n):
 # save results
 ##############
 
-pickle.dump(results, open("wc_2d_periods.pkl", "wb"))
+df = pd.DataFrame.from_dict(results)
+df.to_csv("wc_2d_periods.csv")
 ode.close_session(clear_files=True)
