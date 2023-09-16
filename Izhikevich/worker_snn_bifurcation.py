@@ -105,7 +105,7 @@ ts = 10.0
 T = 2100.0*ts
 dt = 1e-2
 dts = 1e-1
-cutoff = int(100.0*ts)/dt
+cutoff = int(100.0*ts/dt)
 inp = np.zeros((int(T/dt), 1))
 if neuron_type == "rs":
     inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
