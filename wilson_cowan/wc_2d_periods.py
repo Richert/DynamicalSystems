@@ -82,5 +82,5 @@ for i in range(n):
 # save results
 ##############
 
-pickle.dump(results, open("results/wc_2d_periods.pkl", "wb"))
+pickle.dump(results, open("wc_2d_periods.pkl", "wb"))
 ode.close_session(clear_files=True)
