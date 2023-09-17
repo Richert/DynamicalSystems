@@ -44,7 +44,7 @@ sigma_lowpass = 50
 for key in ["lorentz", "gauss"]:
 
     # filter data
-    filtered = gaussian_filter1d(data[key].squeeze(), sigma=sigma_lowpass)
+    filtered = gaussian_filter1d(data[key], sigma=sigma_lowpass)
 
     # find fold bifurcation points
     lps, props = find_peaks(-1.0 * filtered, width=1000, prominence=0.02)
