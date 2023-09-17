@@ -31,11 +31,10 @@ data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.p", "rb"))
 I_ext = data["I_ext"]
 
 # analysis parameters
-cutoff = 10000
 n_cycles = 3
 hopf_diff = 3000
 hopf_len = 5000
-hopf_start = 100000
+hopf_start = 100
 sigma_lowpass = 50
 
 # detect bifurcations in time series
@@ -52,6 +51,7 @@ for key in ["lorentz", "gauss"]:
         I_r = I_ext[lps[0] - int(0.5 * props['widths'][0])]
         I_l = I_ext[lps[-1]]
         data[f"{key}_fold"] = (I_l, I_r)
+        data["fold_width"] = props["width"][0]
     else:
         data[f"{key}_fold"] = ()
 
@@ -77,18 +77,19 @@ pickle.dump(data, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
 # plotting
 ##########
 
-fig, ax = plt.subplots(nrows=2)
-ax[0].plot(filtered)
-for i in range(len(hb_peaks)):
-    p = hb_peaks[i]
-    print(f"I_hb{i} = {data['I'][p+offset]}")
-    ax[0].axvline(x=p, color='orange', linestyle='--')
-try:
-    print(f"I_lp1 = {data['I'][lp_peaks[0] - int(properties['widths'][0]) + offset]}")
-    print(f"I_lp2 = {data['I'][lp_peaks[-1] + offset]}")
-    ax[0].axvline(x=lp_peaks[0] - 0.5*int(properties['widths'][0]), color='green', linestyle='--')
-    ax[0].axvline(x=lp_peaks[-1], color='green', linestyle='--')
-except IndexError:
-    pass
-ax[1].plot(data['I'])
+fig, ax = plt.subplots(figsize=(12, 4))
+
+ax.plot(data["lorentz"], color="black")
+if data[f"{key}_fold"]:
+    x1 = data[f"{key}_fold"][0] - int(0.5*data['fold_width'])
+    x2 = data[f"{key}_fold"][-1]
+    ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data['I_ext'][x1]}")
+    ax.axvline(x=x2, color='green', linestyle='--', label=f"I_lp2 = {data['I_ext'][x2]}")
+if data[f"{key}_hopf"]:
+    x1 = data[f"{key}_hopf"][0]
+    x2 = data[f"{key}_hopf"][-1]
+    ax.axvline(x=x1, color='red', linestyle='--', label=f"I_hb1 = {data['I_ext'][x1]}")
+    ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data['I_ext'][x2]}")
+ax.set_xlabel("time")
+ax.set_ylabel("s")
 plt.show()
