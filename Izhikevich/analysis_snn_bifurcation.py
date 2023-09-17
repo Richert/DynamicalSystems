@@ -27,7 +27,7 @@ neuron_type = str(sys.argv[-2])
 path = str(sys.argv[-1])
 
 # load data
-data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
+data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.p", "rb"))
 I_ext = data["I_ext"]
 
 # analysis parameters
