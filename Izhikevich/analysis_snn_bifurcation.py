@@ -68,6 +68,8 @@ for key in ["lorentz", "gauss"]:
                 data[f"{key}_hopf"] = (I_l, I_r)
             else:
                 data[f"{key}_hopf"] = ()
+    else:
+        data[f"{key}_hopf"] = ()
 
 # save results
 ##############
