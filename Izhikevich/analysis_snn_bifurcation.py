@@ -77,19 +77,22 @@ pickle.dump(data, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
 # plotting
 ##########
 
-fig, ax = plt.subplots(figsize=(12, 4))
+fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
 
-ax.plot(data["lorentz"], color="black")
-if data[f"{key}_fold"]:
-    x1 = data[f"{key}_fold"][0] - int(0.5*data['fold_width'])
-    x2 = data[f"{key}_fold"][-1]
-    ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data['I_ext'][x1]}")
-    ax.axvline(x=x2, color='green', linestyle='--', label=f"I_lp2 = {data['I_ext'][x2]}")
-if data[f"{key}_hopf"]:
-    x1 = data[f"{key}_hopf"][0]
-    x2 = data[f"{key}_hopf"][-1]
-    ax.axvline(x=x1, color='red', linestyle='--', label=f"I_hb1 = {data['I_ext'][x1]}")
-    ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data['I_ext'][x2]}")
-ax.set_xlabel("time")
-ax.set_ylabel("s")
+for ax, key in zip(axes, ["lorentz", "gauss"]):
+    ax.plot(data["lorentz"], color="black")
+    if data[f"{key}_fold"]:
+        x1 = data[f"{key}_fold"][0] - int(0.5*data['fold_width'])
+        x2 = data[f"{key}_fold"][-1]
+        ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data['I_ext'][x1]}")
+        ax.axvline(x=x2, color='green', linestyle='--', label=f"I_lp2 = {data['I_ext'][x2]}")
+    if data[f"{key}_hopf"]:
+        x1 = data[f"{key}_hopf"][0]
+        x2 = data[f"{key}_hopf"][-1]
+        ax.axvline(x=x1, color='red', linestyle='--', label=f"I_hb1 = {data['I_ext'][x1]}")
+        ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data['I_ext'][x2]}")
+    ax.set_xlabel("time")
+    ax.set_ylabel("s")
+    ax.set_title(key)
+plt.tight_layout()
 plt.show()
