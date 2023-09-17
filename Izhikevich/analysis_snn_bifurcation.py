@@ -73,3 +73,22 @@ for key in ["lorentz", "gauss"]:
 ##############
 
 pickle.dump(data, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
+
+# plotting
+##########
+
+fig, ax = plt.subplots(nrows=2)
+ax[0].plot(filtered)
+for i in range(len(hb_peaks)):
+    p = hb_peaks[i]
+    print(f"I_hb{i} = {data['I'][p+offset]}")
+    ax[0].axvline(x=p, color='orange', linestyle='--')
+try:
+    print(f"I_lp1 = {data['I'][lp_peaks[0] - int(properties['widths'][0]) + offset]}")
+    print(f"I_lp2 = {data['I'][lp_peaks[-1] + offset]}")
+    ax[0].axvline(x=lp_peaks[0] - 0.5*int(properties['widths'][0]), color='green', linestyle='--')
+    ax[0].axvline(x=lp_peaks[-1], color='green', linestyle='--')
+except IndexError:
+    pass
+ax[1].plot(data['I'])
+plt.show()
