@@ -32,22 +32,26 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 ##############
 
 # choose neuron type
-neuron_type = "lts"
-distribution_type = "gauss"
+neuron_type = "fs"
+distribution_type = "lorentz"
 
+# choose neuron type
+n = 20
 if neuron_type == "rs":
 
     C = 100.0
     k = 0.7
     v_r = -60.0
     v_t = -40.0
-    eta = 0.0
+    eta = -20.0
     a = 0.03
     b = -2.0
     d = 10.0
     g = 15.0
     E_r = 0.0
     tau_s = 6.0
+    SDs = np.linspace(0.1, 6.0, num=n)
+    Deltas = np.linspace(0.1, 2.0, num=n)
 
 elif neuron_type == "fs":
 
@@ -55,13 +59,15 @@ elif neuron_type == "fs":
     k = 1.0
     v_r = -55.0
     v_t = -40.0
-    eta = 25.0
+    eta = 30.0
     a = 0.2
     b = 0.025
     d = 0.0
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
+    SDs = np.linspace(0.1, 4.0, num=n)
+    Deltas = np.linspace(0.1, 1.0, num=n)
 
 elif neuron_type == "lts":
 
@@ -76,31 +82,35 @@ elif neuron_type == "lts":
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
+    SDs = np.linspace(0.1, 4.0, num=n)
+    Deltas = np.linspace(0.1, 1.0, num=n)
 
 else:
 
     raise ValueError("Wrong neuron type")
 
 # network parameters
-I_ext = np.linspace(50.0, 100.0, num=100)
 v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
 p = 0.2
-idx = 1
-SD = 0.5
-Delta = 0.1
+idx = 5
+SD = SDs[idx]
+Delta = Deltas[idx]
 print(f"Condition: {neuron_type}, {distribution_type}, Delta = {Delta}, sigma = {SD}")
 
 # define inputs
 ts = 10.0
 T = 2100.0*ts
-cutoff = 100.0*ts
 dt = 1e-2
 dts = 1e-1
+cutoff = 100.0*ts
 inp = np.zeros((int(T/dt), 1))
-inp[int(100*ts/dt):int(2100*ts/dt), 0] += np.linspace(0.0, 100.0, num=int(2000*ts/dt))
-# inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(100.0, 0.0, num=int(1000*ts/dt))
+if neuron_type == "rs":
+    inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 100.0, num=int(1000*ts/dt))
+    inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(100.0, 0.0, num=int(1000*ts/dt))
+else:
+    inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 100.0, num=int(2000 * ts / dt))
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)
@@ -118,7 +128,7 @@ else:
 try:
     results = pickle.load(open(f"results/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
 except FileNotFoundError:
-    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD}
+    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0]}
 
 # collect parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
@@ -134,7 +144,7 @@ net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_
 obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False)
 
 # store results
-results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)
+results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
 
 # save results
 pickle.dump(results, open(f"results/bifurcations_{neuron_type}_{idx}.p", "wb"))
