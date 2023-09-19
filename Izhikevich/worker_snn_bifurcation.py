@@ -105,7 +105,7 @@ ts = 10.0
 T = 2100.0*ts
 dt = 1e-2
 dts = 1e-1
-cutoff = int(100.0*ts/dt)
+cutoff = 100.0*ts
 inp = np.zeros((int(T/dt), 1))
 if neuron_type == "rs":
     inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
@@ -126,7 +126,7 @@ else:
 # simulation #
 ##############
 
-results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[cutoff::int(dts/dt), 0]}
+results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0]}
 try:
     results.update(pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb")))
 except FileNotFoundError:
@@ -146,7 +146,7 @@ net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_
 obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False)
 
 # store results
-results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[cutoff::]
+results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
 
 # save results
 pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))

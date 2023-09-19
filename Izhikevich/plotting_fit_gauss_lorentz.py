@@ -103,6 +103,7 @@ for i, sd in enumerate(sd_examples):
     ax.set_ylabel(r"$p$")
     ax.set_xlabel(r"$v_{\theta}$")
     ax.set_xlim([-60.0, -20.0])
+    ax.set_yscale("log")
     ax.legend()
 
 # padding

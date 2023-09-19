@@ -22,13 +22,19 @@ snn_results = {key1: {key2: {"folds": [], "hopfs": [], "delta": []} for key2 in 
 _, _, fnames = next(walk("results/snn_bifurcations"), (None, None, []))
 for f in fnames:
     data = pickle.load(open(f"results/snn_bifurcations/{f}", "rb"))
-    neuron_type = f.split("_")[0]
+    neuron_type = f.split("_")[1]
     deltas = {"lorentz": data["Delta"], "gauss": data["SD"]}
     for distribution_type in ["lorentz", "gauss"]:
-        folds = data[f"{distribution_type}_fold"]["I_ext"]
-        snn_results[neuron_type][distribution_type]["folds"].append(folds)
-        hopfs = data[f"{distribution_type}_hopf"]["I_ext"]
-        snn_results[neuron_type][distribution_type]["hopfs"].append(hopfs)
+        try:
+            folds = data[f"{distribution_type}_fold"]["I_ext"]
+            snn_results[neuron_type][distribution_type]["folds"].append(folds)
+        except KeyError:
+            pass
+        try:
+            hopfs = data[f"{distribution_type}_hopf"]["I_ext"]
+            snn_results[neuron_type][distribution_type]["hopfs"].append(hopfs)
+        except KeyError:
+            pass
         snn_results[neuron_type][distribution_type]["delta"].append(deltas[distribution_type])
 
 ############
@@ -55,15 +61,16 @@ grid = fig.add_gridspec(ncols=2, nrows=2)
 ax = fig.add_subplot(grid[0, 0])
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp2", ignore=["UZ"], line_style_unstable="solid", ax=ax)
-fold_left = [fold[0] for fold in snn_results["rs"]["lorentz"]["folds"]]
-fold_right = [fold[1] for fold in snn_results["rs"]["lorentz"]["folds"]]
-ax.scatter(snn_results["rs"]["lorentz"]["delta"], fold_left, marker="+", color="grey")
-ax.scatter(snn_results["rs"]["lorentz"]["delta"], fold_right, marker="+", color="grey")
+fold_left = [fold[0] for fold in snn_results["rs"]["gauss"]["folds"]]
+fold_right = [fold[1] for fold in snn_results["rs"]["gauss"]["folds"]]
+deltas = snn_results["rs"]["gauss"]["delta"]
+ax.scatter(fold_left, deltas, marker="+", color="grey")
+ax.scatter(fold_right, deltas, marker="+", color="grey")
 ax.set_xlabel(r"$I_{rs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{rs}$ (mV)")
 ax.set_title(r"Regular Spiking Neurons: $\kappa_{rs} = 10$ pA")
-ax.set_xlim([0, 80])
-ax.set_ylim([0, 2.0])
+# ax.set_xlim([0, 80])
+# ax.set_ylim([0, 2.0])
 ax.legend([])
 ax = fig.add_subplot(grid[0, 1])
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp3", ignore=["UZ"], line_style_unstable="solid", ax=ax)

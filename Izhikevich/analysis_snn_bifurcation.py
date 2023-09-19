@@ -1,6 +1,6 @@
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 import sys
@@ -22,12 +22,12 @@ def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
 ##############
 
 # define condition
-idx = int(sys.argv[-3])
-neuron_type = str(sys.argv[-2])
-path = str(sys.argv[-1])
+idx = 0 #int(sys.argv[-3])
+neuron_type = "rs" #str(sys.argv[-2])
+path = "results/snn_bifurcations" #str(sys.argv[-1])
 
 # load data
-data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.p", "rb"))
+data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
 I_ext = data["I_ext"]
 
 # analysis parameters
@@ -81,25 +81,25 @@ pickle.dump(data, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
 # plotting
 ##########
 
-# fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
-#
-# for ax, key in zip(axes, ["lorentz", "gauss"]):
-#     ax.plot(data[key], color="black")
-#     if data[f"{key}_fold"]:
-#         bf = f"{key}_fold"
-#         x1 = data[bf]["idx"][0]
-#         x2 = data[bf]["idx"][-1]
-#         ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data[bf]['I_ext'][0]}")
-#         ax.axvline(x=x2, color='red', linestyle='--', label=f"I_lp2 = {data[bf]['I_ext'][-1]}")
-#     if data[f"{key}_hopf"]:
-#         bf = f"{key}_hopf"
-#         x1 = data[bf]["idx"][0]
-#         x2 = data[bf]["idx"][-1]
-#         ax.axvline(x=x1, color='green', linestyle='--', label=f"I_hb1 = {data[bf]['I_ext'][0]}")
-#         ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data[bf]['I_ext'][-1]}")
-#     ax.set_xlabel("time")
-#     ax.set_ylabel("s")
-#     ax.legend()
-#     ax.set_title(key)
-# plt.tight_layout()
-# plt.show()
+fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+
+for ax, key in zip(axes, ["lorentz", "gauss"]):
+    ax.plot(data[key], color="black")
+    if data[f"{key}_fold"]:
+        bf = f"{key}_fold"
+        x1 = data[bf]["idx"][0]
+        x2 = data[bf]["idx"][-1]
+        ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data[bf]['I_ext'][0]}")
+        ax.axvline(x=x2, color='red', linestyle='--', label=f"I_lp2 = {data[bf]['I_ext'][-1]}")
+    if data[f"{key}_hopf"]:
+        bf = f"{key}_hopf"
+        x1 = data[bf]["idx"][0]
+        x2 = data[bf]["idx"][-1]
+        ax.axvline(x=x1, color='green', linestyle='--', label=f"I_hb1 = {data[bf]['I_ext'][0]}")
+        ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data[bf]['I_ext'][-1]}")
+    ax.set_xlabel("time")
+    ax.set_ylabel("s")
+    ax.legend()
+    ax.set_title(key)
+plt.tight_layout()
+plt.show()
