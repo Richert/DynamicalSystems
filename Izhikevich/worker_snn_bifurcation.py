@@ -149,4 +149,4 @@ obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=Fal
 results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[cutoff::]
 
 # save results
-pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.p", "wb"))
+pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
