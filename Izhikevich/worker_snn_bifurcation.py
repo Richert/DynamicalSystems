@@ -126,10 +126,11 @@ else:
 # simulation #
 ##############
 
+results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[cutoff::int(dts/dt), 0]}
 try:
-    results = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
+    results.update(pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb")))
 except FileNotFoundError:
-    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[cutoff::int(dts/dt), 0]}
+    pass
 
 # collect parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set condition
-p1="rs"
-p2="gauss"
+p1="fs"
+p2="lorentz"
 path="/media/richard/data/snn_bifurcation"
 n=20
 batch_size=4
