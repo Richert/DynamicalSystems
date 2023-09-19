@@ -22,9 +22,9 @@ def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
 ##############
 
 # define condition
-idx = 0 #int(sys.argv[-3])
+idx = 5 #int(sys.argv[-3])
 neuron_type = "rs" #str(sys.argv[-2])
-path = "results/snn_bifurcations" #str(sys.argv[-1])
+path = "results" #str(sys.argv[-1])
 
 # load data
 data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
@@ -35,8 +35,9 @@ n_cycles = 3
 hopf_diff = 3000
 hopf_len = 5000
 hopf_start = 100
+fold_delay = 10000
 sigma_lowpass = 100
-threshold = 0.1
+threshold = 0.12
 
 # detect bifurcations in time series
 ####################################
@@ -49,10 +50,10 @@ for key in ["lorentz", "gauss"]:
     # find fold bifurcation points
     indices = np.argwhere(filtered > threshold)
     if len(indices) > 1:
-        idx_l = indices[0]
+        idx_l = indices[0] - fold_delay
         idx_r = indices[-1]
-        I_r = I_ext[idx_l]
         I_l = I_ext[idx_r]
+        I_r = I_ext[idx_l]
         data[f"{key}_fold"] = {"idx": (idx_l, idx_r), "I_ext": (I_l, I_r)}
     else:
         data[f"{key}_fold"] = {}

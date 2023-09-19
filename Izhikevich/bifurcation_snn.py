@@ -32,7 +32,7 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 ##############
 
 # choose neuron type
-neuron_type = "fs"
+neuron_type = "rs"
 distribution_type = "lorentz"
 
 # choose neuron type
@@ -128,7 +128,7 @@ else:
 try:
     results = pickle.load(open(f"results/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
 except FileNotFoundError:
-    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0]}
+    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0] + eta}
 
 # collect parameters
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
@@ -147,7 +147,7 @@ obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=Fal
 results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
 
 # save results
-pickle.dump(results, open(f"results/bifurcations_{neuron_type}_{idx}.p", "wb"))
+pickle.dump(results, open(f"results/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
 
 ############
 # plotting #
