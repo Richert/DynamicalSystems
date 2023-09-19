@@ -94,7 +94,7 @@ v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
 p = 0.2
-idx = 5
+idx = 15
 SD = SDs[idx]
 Delta = Deltas[idx]
 print(f"Condition: {neuron_type}, {distribution_type}, Delta = {Delta}, sigma = {SD}")

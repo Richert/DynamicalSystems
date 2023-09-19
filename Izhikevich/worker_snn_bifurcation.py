@@ -126,7 +126,7 @@ else:
 # simulation #
 ##############
 
-results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0]}
+results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0] + eta}
 try:
     results.update(pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb")))
 except FileNotFoundError:

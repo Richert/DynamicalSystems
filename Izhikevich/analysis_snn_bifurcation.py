@@ -22,7 +22,7 @@ def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
 ##############
 
 # define condition
-idx = 5 #int(sys.argv[-3])
+idx = 15 #int(sys.argv[-3])
 neuron_type = "rs" #str(sys.argv[-2])
 path = "results" #str(sys.argv[-1])
 
