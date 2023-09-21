@@ -46,8 +46,8 @@ grid = GridSpec(nrows=4, ncols=4,
 for idx, Delta, rate_dist in zip([0, 2], results["Deltas"], results["lorentz"]["rate_dist"]):
 
     ax = plt.subplot(grid[0, idx])
-    sb.heatmap(np.log(np.asarray(rate_dist).T), ax=ax, cmap=plt.get_cmap('Reds'))
-    # im = ax.imshow(, cmap=plt.get_cmap('Reds'), aspect="auto", origin='lower')
+    d = np.log(np.asarray(rate_dist))
+    sb.heatmap(d, ax=ax, cmap=plt.get_cmap('Reds'), mask=d < -100.0)
     ax.set_xlabel(r"$I$ (pA)")
     ax.set_ylabel(r"$r_i$")
     ax.set_title(fr"$\Delta_v = {Delta}$")
@@ -78,13 +78,11 @@ for idx, Delta, spikes in zip([1, 3], results["Deltas"], results["lorentz"]["spi
 # plot the firing rate distributions for the Gaussian
 for idx, SD, rate_dist in zip([0, 2], results["SDs"], results["gauss"]["rate_dist"]):
     ax = plt.subplot(grid[2, idx])
-    sb.heatmap(np.log(np.asarray(rate_dist).T), ax=ax, cmap=plt.get_cmap('Reds'))
-    # im = ax.imshow(np.log(np.asarray(rate_dist).T), cmap=plt.get_cmap('Reds'), aspect='auto', origin='lower')
+    d = np.log(np.asarray(rate_dist))
+    sb.heatmap(d, ax=ax, cmap=plt.get_cmap('Reds'), mask=d < -100.0)
     ax.set_xlabel(r"$I$ (pA)")
     ax.set_ylabel(r"$r_i$")
     ax.set_title(fr"$\sigma_v = {SD}$")
-    # ax = plt.subplot(grid[2, idx + 1])
-    # Colorbar(mappable=im, ax=ax)
 
 # plot the spike rate distribution for the coupled Gaussian
 for idx, SD, spikes in zip([1, 3], results["SDs"], results["gauss"]["spikes"]):
