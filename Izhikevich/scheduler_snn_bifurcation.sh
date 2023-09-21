@@ -2,7 +2,7 @@
 
 # set condition
 p1="fs"
-p2="lorentz"
+p2="gauss"
 path="/media/richard/data/snn_bifurcation"
 n=20
 batch_size=4
