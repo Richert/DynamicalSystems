@@ -28,14 +28,15 @@ for f in fnames:
         try:
             folds = data[f"{distribution_type}_fold"]["I_ext"]
             snn_results[neuron_type][distribution_type]["folds"].append(folds)
+            snn_results[neuron_type][distribution_type]["delta"].append(deltas[distribution_type])
         except KeyError:
             pass
         try:
             hopfs = data[f"{distribution_type}_hopf"]["I_ext"]
             snn_results[neuron_type][distribution_type]["hopfs"].append(hopfs)
+            snn_results[neuron_type][distribution_type]["delta"].append(deltas[distribution_type])
         except KeyError:
             pass
-        snn_results[neuron_type][distribution_type]["delta"].append(deltas[distribution_type])
 
 ############
 # plotting #
@@ -57,21 +58,24 @@ markersize = 6
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(ncols=2, nrows=2)
 
-# plot rs bifurcation diagrams
+# plot rs bifurcation diagram for kappa = 10
 ax = fig.add_subplot(grid[0, 0])
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp2", ignore=["UZ"], line_style_unstable="solid", ax=ax)
-fold_left = [fold[0] for fold in snn_results["rs"]["gauss"]["folds"]]
-fold_right = [fold[1] for fold in snn_results["rs"]["gauss"]["folds"]]
-deltas = snn_results["rs"]["gauss"]["delta"]
-ax.scatter(fold_left, deltas, marker="+", color="grey")
-ax.scatter(fold_right, deltas, marker="+", color="grey")
+for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
+    fold_left = [fold[0] for fold in snn_results["rs"][dist]["folds"]]
+    fold_right = [fold[1] for fold in snn_results["rs"][dist]["folds"]]
+    deltas = snn_results["rs"][dist]["delta"]
+    ax.scatter(fold_left, deltas, marker="+", color=color)
+    ax.scatter(fold_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{rs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{rs}$ (mV)")
 ax.set_title(r"Regular Spiking Neurons: $\kappa_{rs} = 10$ pA")
 # ax.set_xlim([0, 80])
 # ax.set_ylim([0, 2.0])
 ax.legend([])
+
+# plot rs bifurcation diagram for kappa = 100
 ax = fig.add_subplot(grid[0, 1])
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp3", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp4", ignore=["UZ"], line_style_unstable="solid", ax=ax)
@@ -85,6 +89,12 @@ ax.set_ylim([0, 2.0])
 # plot fs bifurcation diagram
 ax = fig.add_subplot(grid[1, 0])
 fs.plot_continuation("PAR(16)", "PAR(6)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
+for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
+    fold_left = [fold[0] for fold in snn_results["fs"][dist]["hopfs"]]
+    fold_right = [fold[1] for fold in snn_results["fs"][dist]["hopfs"]]
+    deltas = snn_results["fs"][dist]["delta"]
+    ax.scatter(fold_left, deltas, marker="+", color=color)
+    ax.scatter(fold_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{fs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
 ax.set_title(r"Fast Spiking Neurons")
