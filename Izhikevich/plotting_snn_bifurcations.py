@@ -66,14 +66,14 @@ for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
     fold_left = [fold[0] for fold in snn_results["rs"][dist]["folds"]]
     fold_right = [fold[1] for fold in snn_results["rs"][dist]["folds"]]
     deltas = snn_results["rs"][dist]["delta"]
-    ax.scatter(fold_left, deltas, marker="+", color=color)
+    ax.scatter(fold_left, deltas, marker="+", color=color, label=dist)
     ax.scatter(fold_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{rs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{rs}$ (mV)")
 ax.set_title(r"Regular Spiking Neurons: $\kappa_{rs} = 10$ pA")
 # ax.set_xlim([0, 80])
 # ax.set_ylim([0, 2.0])
-ax.legend([])
+ax.legend()
 
 # plot rs bifurcation diagram for kappa = 100
 ax = fig.add_subplot(grid[0, 1])
@@ -90,25 +90,33 @@ ax.set_ylim([0, 2.0])
 ax = fig.add_subplot(grid[1, 0])
 fs.plot_continuation("PAR(16)", "PAR(6)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
-    fold_left = [fold[0] for fold in snn_results["fs"][dist]["hopfs"]]
-    fold_right = [fold[1] for fold in snn_results["fs"][dist]["hopfs"]]
+    hopf_left = [fold[0] for fold in snn_results["fs"][dist]["hopfs"]]
+    hopf_right = [fold[1] for fold in snn_results["fs"][dist]["hopfs"]]
     deltas = snn_results["fs"][dist]["delta"]
-    ax.scatter(fold_left, deltas, marker="+", color=color)
-    ax.scatter(fold_right, deltas, marker="+", color=color)
+    ax.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
+    ax.scatter(hopf_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{fs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
 ax.set_title(r"Fast Spiking Neurons")
-ax.set_ylim([0, 1.0])
-ax.set_xlim([0, 200])
+# ax.set_ylim([0, 1.0])
+ax.set_xlim([0, 140])
+ax.legend()
 
 # plot lts bifurcation diagram
 ax = fig.add_subplot(grid[1, 1])
 lts.plot_continuation("PAR(16)", "PAR(6)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
+for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
+    hopf_left = [fold[0] for fold in snn_results["lts"][dist]["hopfs"]]
+    hopf_right = [fold[1] for fold in snn_results["lts"][dist]["hopfs"]]
+    deltas = snn_results["lts"][dist]["delta"]
+    ax.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
+    ax.scatter(hopf_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{lts}$ (pA)")
 ax.set_ylabel(r"$\Delta_{lts}$ (mV)")
 ax.set_title(r"Low Threshold Spiking Neurons")
-ax.set_ylim([0, 1.0])
-ax.set_xlim([100, 300])
+# ax.set_ylim([0, 1.0])
+ax.set_xlim([100, 220])
+ax.legend()
 
 # padding
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)

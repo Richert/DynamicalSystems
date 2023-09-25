@@ -29,12 +29,14 @@ path = str(sys.argv[-1])
 # load data
 data = pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
 I_ext = data["I_ext"]
+delta = data["Delta"]
+sd = data["SD"]
 
 # analysis parameters
 n_cycles = 5
 hopf_start = 100
-hopf_width = 50
-hopf_height = 0.05
+hopf_width = 30
+hopf_height = 0.1
 sigma_lowpass = 20
 threshold = 0.12
 
@@ -62,8 +64,8 @@ for key in ["lorentz", "gauss"]:
     hbs = hbs[hbs >= hopf_start]
     if len(hbs) > n_cycles:
         idx_l, idx_r = hbs[0], hbs[-1]
-        I_r = I_ext[idx_l]
-        I_l = I_ext[idx_r]
+        I_r = I_ext[idx_r]
+        I_l = I_ext[idx_l]
         data[f"{key}_hopf"] = {"idx": (idx_l, idx_r), "I_ext": (I_l, I_r)}
     else:
         data[f"{key}_hopf"] = {}
@@ -104,5 +106,6 @@ for ax, key, alpha in zip(axes[:2], ["lorentz", "gauss"], [1.0, 0.5]):
     ax.set_ylabel("s")
     ax.legend()
     ax.set_title(key)
+plt.suptitle(rf"$\Delta = {delta}$, $\sigma = {sd}$")
 plt.tight_layout()
 plt.show()
