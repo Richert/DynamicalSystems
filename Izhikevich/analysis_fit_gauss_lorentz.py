@@ -47,10 +47,10 @@ def repeated_sampling(delta, n: int, *args):
 
 # parameters
 mu = -40.0
-lb = -70
-ub = -10
+lb = -60
+ub = -20.0
 n = 10000
-n_reps = 10
+n_reps = 5
 sds = np.linspace(1.0, 6.0, 50)
 bounds = [np.min(sds)*0.05, np.max(sds)+2.0]
 
@@ -141,6 +141,4 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/lorentz_gauss_fitting.svg')
 plt.show()
-
