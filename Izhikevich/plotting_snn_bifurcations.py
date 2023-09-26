@@ -19,9 +19,9 @@ lts = ODESystem.from_file(f"results/lts.pkl", auto_dir="~/PycharmProjects/auto-0
 # snn bifurcations
 snn_results = {key1: {key2: {"folds": [], "hopfs": [], "delta": []} for key2 in ["gauss", "lorentz"]}
                for key1 in ["rs", "fs", "lts"]}
-_, _, fnames = next(walk("results/snn_bifurcations"), (None, None, []))
+_, _, fnames = next(walk("results/snn_bifurcations2"), (None, None, []))
 for f in fnames:
-    data = pickle.load(open(f"results/snn_bifurcations/{f}", "rb"))
+    data = pickle.load(open(f"results/snn_bifurcations2/{f}", "rb"))
     neuron_type = f.split("_")[1]
     deltas = {"lorentz": data["Delta"], "gauss": data["SD"]}
     for distribution_type in ["lorentz", "gauss"]:

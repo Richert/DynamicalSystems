@@ -31,12 +31,14 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 # parameters #
 ##############
 
+# load data
+mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
+
 # extract arguments passed to the script
 path = str(sys.argv[-1])
-distribution_type = str(sys.argv[-2])
-neuron_type = str(sys.argv[-3])
-idx = int(sys.argv[-4])
-n = int(sys.argv[-5])
+neuron_type = str(sys.argv[-2])
+idx = int(sys.argv[-3])
+n = int(sys.argv[-4])
 
 # choose neuron type
 if neuron_type == "rs":
@@ -52,8 +54,7 @@ if neuron_type == "rs":
     g = 15.0
     E_r = 0.0
     tau_s = 6.0
-    SDs = np.linspace(0.1, 4.0, num=n)
-    Deltas = np.linspace(0.1, 2.0, num=n)
+    Deltas = np.linspace(0.1, 4.0, num=n)
 
 elif neuron_type == "fs":
 
@@ -68,7 +69,6 @@ elif neuron_type == "fs":
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
-    SDs = np.linspace(0.1, 2.0, num=n)
     Deltas = np.linspace(0.1, 1.0, num=n)
 
 elif neuron_type == "lts":
@@ -84,7 +84,6 @@ elif neuron_type == "lts":
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
-    SDs = np.linspace(0.1, 2.0, num=n)
     Deltas = np.linspace(0.1, 1.0, num=n)
 
 else:
@@ -97,8 +96,8 @@ v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
 p = 0.2
-SD = SDs[idx]
 Delta = Deltas[idx]
+SD = mapping["norm"][np.argmin(np.abs(mapping["lorentz"] - Delta))]
 
 # define inputs
 ts = 10.0
@@ -117,36 +116,32 @@ else:
 W = random_connectivity(N, N, p, normalize=True)
 
 # get thetas
-if distribution_type == "lorentz":
-    thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
-else:
-    thetas = gaussian(N, mu=v_t, sd=SD, lb=v_r, ub=2*v_t-v_r)
+thetas_l = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
+thetas_g = gaussian(N, mu=v_t, sd=SD, lb=v_r, ub=2*v_t-v_r)
 
 ##############
 # simulation #
 ##############
 
 results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0] + eta}
-try:
-    results.update(pickle.load(open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "rb")))
-except FileNotFoundError:
-    pass
 
-# collect parameters
-node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
-             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+for distribution_type, thetas in zip(["lorentz", "gauss"], [thetas_l, thetas_g]):
 
-# initialize network
-net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                    node_vars=node_vars, op="rs_op", spike_reset=v_reset, spike_threshold=v_spike)
+    # collect parameters
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
+                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
-# run simulation
-obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False)
+    # initialize network
+    net = Network(dt=dt, device="cuda:1")
+    net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
+                        node_vars=node_vars, op="rs_op", spike_reset=v_reset, spike_threshold=v_spike)
 
-# store results
-results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
+    # run simulation
+    obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False)
+
+    # store results
+    results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
 
 # save results
 pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
