@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set condition
-p1="rs"
+p1="lts"
 p2="gauss"
 path="/media/richard/data/snn_bifurcation"
 n=20
