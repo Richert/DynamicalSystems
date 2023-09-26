@@ -99,11 +99,11 @@ for i, sd in enumerate(sd_examples):
     samples_g = gaussian(n_samples, mu=mu, sd=sd, lb=lb, ub=ub)
     ax.hist(samples_l, bins=100, density=True, color="dimgrey", label="Lorentzian")
     ax.hist(samples_g, bins=100, density=True, color="firebrick", label="Gaussian", alpha=0.6)
-    ax.set_title(fr"$\sigma_v = {sd}$ mV, $Delta_v$ = {np.round(delta, decimals=1)}")
+    ax.set_title(fr"$\sigma_v = {sd}$ mV, $\Delta_v$ = {np.round(delta, decimals=1)}")
     ax.set_ylabel(r"$p$")
     ax.set_xlabel(r"$v_{\theta}$")
     ax.set_xlim([-60.0, -20.0])
-    ax.set_yscale("log")
+    # ax.set_yscale("log")
     ax.legend()
 
 # padding

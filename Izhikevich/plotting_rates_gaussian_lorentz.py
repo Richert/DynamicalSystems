@@ -13,7 +13,7 @@ sys.path.append('../')
 ################
 
 # choose neuron type
-neuron_type = "lts"
+neuron_type = "rs"
 
 # load data
 results = pickle.load(open(f"results/norm_lorentz_{neuron_type}.pkl", "rb"))

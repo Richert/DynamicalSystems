@@ -100,7 +100,7 @@ v_spike = 1000.0
 N = 1000
 N2 = 100000
 p = 0.2
-SDs = [2.5, 5.0]
+SDs = [2.0, 4.0]
 
 # find deltas corresponding to SDs
 Deltas = []
