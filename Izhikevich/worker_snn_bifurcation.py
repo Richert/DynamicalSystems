@@ -1,14 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-
 import torch
-
 sys.path.append('../')
 import pickle
 from scipy.stats import cauchy, norm
 from rectipy import Network, random_connectivity
-from torch import tensor
+
+# GPU memory settings
+torch.cuda.set_per_process_memory_fraction(0.75, 1)
+torch.cuda.empty_cache()
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -115,7 +116,7 @@ if neuron_type == "rs":
     inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
 else:
     inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 120.0, num=int(2000 * ts / dt))
-inp = tensor(inp, device="cuda:1", dtype=torch.float64)
+inp = torch.tensor(inp, device="cuda:1", dtype=torch.float64)
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)

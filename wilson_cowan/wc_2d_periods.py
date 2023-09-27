@@ -52,13 +52,14 @@ ode = ODESystem(eq_file="wc", auto_dir="~/PycharmProjects/auto-07p", init_cont=F
 # define the standard auto parameters
 algorithm_params = {"NTST": 400, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT": 0, "NMX": 8000, "NPR": 5,
                     "MXBF": 7, "IID": 2, "ITMX": 40, "ITNW": 40, "NWTN": 12, "JAC": 0, "EPSL": 1e-8, "EPSU": 1e-8,
-                    "EPSS": 1e-9, "DSMIN": 1e-12, "DSMAX": 5e-2, "IADS": 1, "THL": {}, "THU": {}}
+                    "EPSS": 1e-9, "DSMIN": 1e-12, "DSMAX": 2e-2, "IADS": 1, "THL": {}, "THU": {}}
 
 # get limit cycle periods in S_e/S_i space
 ##########################################
 
 n = 60
-s_i_vals = np.linspace(-2.0, 4.0, num=n)
+s_i_vals = np.round(np.linspace(-2.0, 4.0, num=n), decimals=2)
+s_e_vals = np.round(np.linspace(1.0, 5.5, num=n), decimals=2)
 results = {"period": [], "S_e": [], "S_i": []}
 
 # change value of S_i for isolated WC oscillator
@@ -68,15 +69,18 @@ ode.run(c="ivp", name="s_i:ss", ICP="I/wc_i/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=
 # perform a 1D parameter continuation in S_e for each user point in S_i
 for i in range(n):
     res, s = ode.run(starting_point=f"UZ{i+1}", origin="s_i:ss", bidirectional=False, name=f"s_e:ss:{i+1}",
-                     ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL1=8.0, NPR=50, DS=1e-3, UZR={})
+                     ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL1=8.0, NPR=50, DS=1e-3, UZR={}, STOP={"BP1"})
     if "HB" in res["bifurcation"].values:
-        res2, _ = ode.run(starting_point="HB1", origin=s, name=f"s_e:lc:{i+1}", ISW=-1, IPS=2, ISP=2,
-                          STOP={"BP1", "LP3"}, NPR=10, DSMAX=0.1, NMX=2000, get_period=True, variables=[],
-                          params=["E/wc_e/s", "I/wc_i/s"])
+        res2, _ = ode.run(starting_point="HB1", origin=s, name=f"s_e:lc:{i+1}", ICP="E/wc_e/s", ISW=-1, IPS=2, ISP=2,
+                          STOP={"BP1", "LP3"}, NPR=10, NMX=2000, get_period=True, variables=[],
+                          params=["E/wc_e/s", "I/wc_i/s"], UZR={"E/wc_e/s": s_e_vals})
         for point in res2.index:
-            results["period"].append(res2.at[point, "period"])
-            results["S_e"].append(res2.at[point, "E/wc_e/s"])
-            results["S_i"].append(res2.at[point, "I/wc_i/s"])
+            if res2.at[point, "bifurcation"] == "UZ":
+                results["period"].append(res2.at[point, "period"])
+                s_e = res2.at[point, "E/wc_e/s"]
+                s_i = res2.at[point, "I/wc_i/s"]
+                results["S_e"].append(s_e_vals[np.argmin(np.abs(s_e_vals - s_e))])
+                results["S_i"].append(s_i_vals[np.argmin(np.abs(s_i_vals - s_i))])
 
 # save results
 ##############
