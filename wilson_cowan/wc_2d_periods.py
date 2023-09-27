@@ -17,8 +17,8 @@ steps = int(T/dt)
 inp = np.zeros((steps,))
 
 net.update_var(node_vars={"E/wc_e/s": 0.0, "I/wc_i/s": 1.1},
-               edge_vars=[("E/wc_e/u", "E/wc_e/u_in", {"weight": 36.0}),
-                          ("I/wc_i/u", "E/wc_e/u_in", {"weight": -55.0})]
+               # edge_vars=[("E/wc_e/u", "E/wc_e/u_in", {"weight": 36.0}),
+               #            ("I/wc_i/u", "E/wc_e/u_in", {"weight": -55.0})]
                )
 
 # perform numerical simulation to receive well-defined initial condition
@@ -61,13 +61,13 @@ algorithm_params = {"NTST": 400, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT
 ##########################################
 
 n = 40
-s_i_vals = np.round(np.linspace(-2.0, 4.0, num=n), decimals=2)
-s_e_vals = np.round(np.linspace(0.5, 16.0, num=n), decimals=2)
+s_i_vals = np.round(np.linspace(-1.9, 3.9, num=n), decimals=2)
+s_e_vals = np.round(np.linspace(0.9, 5.6, num=n), decimals=2)
 results = {"period": [], "S_e": [], "S_i": []}
 
 # change value of S_i for isolated WC oscillator
 ode.run(c="ivp", name="s_e:ss", ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=-2.0,
-        RL1=18.0, UZR={"E/wc_e/s": s_e_vals}, DS=1e-3, **algorithm_params)
+        RL1=6.0, UZR={"E/wc_e/s": s_e_vals}, DS=1e-3, **algorithm_params)
 
 # perform a 1D parameter continuation in S_e for each user point in S_i
 for i in range(n):
@@ -89,5 +89,5 @@ for i in range(n):
 ##############
 
 df = pd.DataFrame.from_dict(results)
-df.to_csv("wc_2d_periods_2.csv")
+df.to_csv("wc_2d_periods.csv")
 ode.close_session(clear_files=True)

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 
 # read data
-df = read_csv("wc_2d_periods_2.csv")
+df = read_csv("wc_2d_periods.csv")
 df = df.drop(columns=["Unnamed: 0"])
 
 # transform data into 2D format
