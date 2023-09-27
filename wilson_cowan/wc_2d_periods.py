@@ -16,7 +16,10 @@ T = 100.0
 steps = int(T/dt)
 inp = np.zeros((steps,))
 
-net.update_var(node_vars={"E/wc_e/s": 0.0, "I/wc_i/s": 1.0})
+net.update_var(node_vars={"E/wc_e/s": 0.0, "I/wc_i/s": 1.1},
+               edge_vars=[("E/wc_e/u", "E/wc_e/u_in", {"weight": 36.0}),
+                          ("I/wc_i/u", "E/wc_e/u_in", {"weight": -55.0})]
+               )
 
 # perform numerical simulation to receive well-defined initial condition
 res = net.run(simulation_time=T, step_size=dt, inputs={"E/wc_e/s": inp},
@@ -57,14 +60,14 @@ algorithm_params = {"NTST": 400, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT
 # get limit cycle periods in S_e/S_i space
 ##########################################
 
-n = 60
+n = 50
 s_i_vals = np.round(np.linspace(-2.0, 4.0, num=n), decimals=2)
-s_e_vals = np.round(np.linspace(1.0, 5.5, num=n), decimals=2)
+s_e_vals = np.round(np.linspace(0.5, 16.0, num=n), decimals=2)
 results = {"period": [], "S_e": [], "S_i": []}
 
 # change value of S_i for isolated WC oscillator
-ode.run(c="ivp", name="s_e:ss", ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=0.0,
-        RL1=6.0, UZR={"E/wc_e/s": s_e_vals}, DS=1e-3, **algorithm_params)
+ode.run(c="ivp", name="s_e:ss", ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=-2.0,
+        RL1=18.0, UZR={"E/wc_e/s": s_e_vals}, DS=1e-3, **algorithm_params)
 
 # perform a 1D parameter continuation in S_e for each user point in S_i
 for i in range(n):
@@ -72,13 +75,13 @@ for i in range(n):
                      ICP="I/wc_i/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=-2.0, RL1=4.0, NPR=50, DS=1e-3, UZR={})
     if "HB" in res["bifurcation"].values:
         res2, _ = ode.run(starting_point="HB1", origin=s, name=f"s_i:lc:{i+1}", ICP="I/wc_i/s", ISW=-1, IPS=2, ISP=2,
-                          STOP={"BP1", "LP3"}, NPR=10, NMX=2000, get_period=True, variables=[],
+                          STOP={"BP1", "LP2"}, NPR=10, NMX=2000, get_period=True, variables=[], ILP=1,
                           params=["E/wc_e/s", "I/wc_i/s"], UZR={"I/wc_i/s": s_i_vals})
         for point in res2.index:
             if res2.at[point, "bifurcation"] == "UZ" and res2.at[point, "stability"]:
                 results["period"].append(res2.at[point, "period"])
-                s_e = res2.at[point, "E/wc_e/s"]
-                s_i = res2.at[point, "I/wc_i/s"]
+                s_e = np.round(res2.at[point, "E/wc_e/s"], decimals=2)
+                s_i = np.round(res2.at[point, "I/wc_i/s"], decimals=2)
                 results["S_e"].append(s_e)
                 results["S_i"].append(s_i)
 
@@ -86,5 +89,5 @@ for i in range(n):
 ##############
 
 df = pd.DataFrame.from_dict(results)
-df.to_csv("wc_2d_periods.csv")
+df.to_csv("wc_2d_periods_2.csv")
 ode.close_session(clear_files=True)

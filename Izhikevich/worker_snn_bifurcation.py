@@ -1,15 +1,9 @@
 import numpy as np
 import sys
-import torch
 import pickle
 from scipy.stats import cauchy, norm
 from rectipy import Network, random_connectivity
-import gc
 sys.path.append('../')
-
-
-# GPU memory settings
-torch.cuda.set_per_process_memory_fraction(0.75, 1)
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -116,7 +110,6 @@ if neuron_type == "rs":
     inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
 else:
     inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 120.0, num=int(2000 * ts / dt))
-inp = torch.tensor(inp, device="cuda:1", dtype=torch.float64)
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)
@@ -138,7 +131,7 @@ for distribution_type, thetas in zip(["lorentz", "gauss"], [thetas_l, thetas_g])
                  "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
     # initialize network
-    net = Network(dt=dt, device="cuda:1")
+    net = Network(dt=dt, device="cpu")
     net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
                         node_vars=node_vars, op="rs_op", spike_reset=v_reset, spike_threshold=v_spike)
@@ -148,11 +141,6 @@ for distribution_type, thetas in zip(["lorentz", "gauss"], [thetas_l, thetas_g])
 
     # store results
     results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
-
-    # free GPU memory
-    del net, obs
-    gc.collect()
-    torch.cuda.empty_cache()
 
 # save results
 pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
