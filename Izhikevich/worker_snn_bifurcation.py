@@ -1,15 +1,15 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import sys
 import torch
-sys.path.append('../')
 import pickle
 from scipy.stats import cauchy, norm
 from rectipy import Network, random_connectivity
+import gc
+sys.path.append('../')
+
 
 # GPU memory settings
 torch.cuda.set_per_process_memory_fraction(0.75, 1)
-torch.cuda.empty_cache()
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -148,6 +148,11 @@ for distribution_type, thetas in zip(["lorentz", "gauss"], [thetas_l, thetas_g])
 
     # store results
     results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
+
+    # free GPU memory
+    del net, obs
+    gc.collect()
+    torch.cuda.empty_cache()
 
 # save results
 pickle.dump(results, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))

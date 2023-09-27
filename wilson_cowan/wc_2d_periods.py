@@ -16,7 +16,7 @@ T = 100.0
 steps = int(T/dt)
 inp = np.zeros((steps,))
 
-net.update_var(node_vars={"E/wc_e/s": -2.1, "I/wc_i/s": 4.1})
+net.update_var(node_vars={"E/wc_e/s": 0.0, "I/wc_i/s": 1.0})
 
 # perform numerical simulation to receive well-defined initial condition
 res = net.run(simulation_time=T, step_size=dt, inputs={"E/wc_e/s": inp},
@@ -63,24 +63,24 @@ s_e_vals = np.round(np.linspace(1.0, 5.5, num=n), decimals=2)
 results = {"period": [], "S_e": [], "S_i": []}
 
 # change value of S_i for isolated WC oscillator
-ode.run(c="ivp", name="s_i:ss", ICP="I/wc_i/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=-2.1,
-        RL1=4.1, UZR={"I/wc_i/s": s_i_vals}, DS="-", **algorithm_params)
+ode.run(c="ivp", name="s_e:ss", ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=0.0,
+        RL1=6.0, UZR={"E/wc_e/s": s_e_vals}, DS=1e-3, **algorithm_params)
 
 # perform a 1D parameter continuation in S_e for each user point in S_i
 for i in range(n):
-    res, s = ode.run(starting_point=f"UZ{i+1}", origin="s_i:ss", bidirectional=False, name=f"s_e:ss:{i+1}",
-                     ICP="E/wc_e/s", IPS=1, ILP=0, ISP=2, ISW=1, RL1=8.0, NPR=50, DS=1e-3, UZR={}, STOP={"BP1"})
+    res, s = ode.run(starting_point=f"UZ{i+1}", origin="s_e:ss", bidirectional=True, name=f"s_i:ss:{i+1}", STOP={"BP1"},
+                     ICP="I/wc_i/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=-2.0, RL1=4.0, NPR=50, DS=1e-3, UZR={})
     if "HB" in res["bifurcation"].values:
-        res2, _ = ode.run(starting_point="HB1", origin=s, name=f"s_e:lc:{i+1}", ICP="E/wc_e/s", ISW=-1, IPS=2, ISP=2,
+        res2, _ = ode.run(starting_point="HB1", origin=s, name=f"s_i:lc:{i+1}", ICP="I/wc_i/s", ISW=-1, IPS=2, ISP=2,
                           STOP={"BP1", "LP3"}, NPR=10, NMX=2000, get_period=True, variables=[],
-                          params=["E/wc_e/s", "I/wc_i/s"], UZR={"E/wc_e/s": s_e_vals})
+                          params=["E/wc_e/s", "I/wc_i/s"], UZR={"I/wc_i/s": s_i_vals})
         for point in res2.index:
-            if res2.at[point, "bifurcation"] == "UZ":
+            if res2.at[point, "bifurcation"] == "UZ" and res2.at[point, "stability"]:
                 results["period"].append(res2.at[point, "period"])
                 s_e = res2.at[point, "E/wc_e/s"]
                 s_i = res2.at[point, "I/wc_i/s"]
-                results["S_e"].append(s_e_vals[np.argmin(np.abs(s_e_vals - s_e))])
-                results["S_i"].append(s_i_vals[np.argmin(np.abs(s_i_vals - s_i))])
+                results["S_e"].append(s_e)
+                results["S_i"].append(s_i)
 
 # save results
 ##############
