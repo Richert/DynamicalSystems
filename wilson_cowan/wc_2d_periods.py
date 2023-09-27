@@ -60,7 +60,7 @@ algorithm_params = {"NTST": 400, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT
 # get limit cycle periods in S_e/S_i space
 ##########################################
 
-n = 50
+n = 40
 s_i_vals = np.round(np.linspace(-2.0, 4.0, num=n), decimals=2)
 s_e_vals = np.round(np.linspace(0.5, 16.0, num=n), decimals=2)
 results = {"period": [], "S_e": [], "S_i": []}
@@ -75,7 +75,7 @@ for i in range(n):
                      ICP="I/wc_i/s", IPS=1, ILP=0, ISP=2, ISW=1, RL0=-2.0, RL1=4.0, NPR=50, DS=1e-3, UZR={})
     if "HB" in res["bifurcation"].values:
         res2, _ = ode.run(starting_point="HB1", origin=s, name=f"s_i:lc:{i+1}", ICP="I/wc_i/s", ISW=-1, IPS=2, ISP=2,
-                          STOP={"BP1", "LP2"}, NPR=10, NMX=2000, get_period=True, variables=[], ILP=1,
+                          STOP={"BP1", "LP3"}, NPR=10, NMX=2000, get_period=True, variables=[], ILP=1,
                           params=["E/wc_e/s", "I/wc_i/s"], UZR={"I/wc_i/s": s_i_vals})
         for point in res2.index:
             if res2.at[point, "bifurcation"] == "UZ" and res2.at[point, "stability"]:
