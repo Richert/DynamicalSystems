@@ -19,9 +19,9 @@ lts = ODESystem.from_file(f"results/lts.pkl", auto_dir="~/PycharmProjects/auto-0
 # snn bifurcations
 snn_results = {key1: {key2: {"folds": [], "hopfs": [], "delta": []} for key2 in ["gauss", "lorentz"]}
                for key1 in ["rs", "fs", "lts"]}
-_, _, fnames = next(walk("results/snn_bifurcations2"), (None, None, []))
+_, _, fnames = next(walk("results/snn_bifurcations"), (None, None, []))
 for f in fnames:
-    data = pickle.load(open(f"results/snn_bifurcations2/{f}", "rb"))
+    data = pickle.load(open(f"results/snn_bifurcations/{f}", "rb"))
     neuron_type = f.split("_")[1]
     deltas = {"lorentz": data["Delta"], "gauss": data["SD"]}
     for distribution_type in ["lorentz", "gauss"]:
@@ -62,14 +62,16 @@ grid = fig.add_gridspec(ncols=2, nrows=2)
 ax = fig.add_subplot(grid[0, 0])
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp2", ignore=["UZ"], line_style_unstable="solid", ax=ax)
-for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
+ax2 = ax.twinx()
+for dist, color, axis in zip(["lorentz", "gauss"], ["grey", "red"], [ax, ax2]):
     fold_left = [fold[0] for fold in snn_results["rs"][dist]["folds"]]
     fold_right = [fold[1] for fold in snn_results["rs"][dist]["folds"]]
     deltas = snn_results["rs"][dist]["delta"]
-    ax.scatter(fold_left, deltas, marker="+", color=color, label=dist)
-    ax.scatter(fold_right, deltas, marker="+", color=color)
+    axis.scatter(fold_left, deltas, marker="+", color=color, label=dist)
+    axis.scatter(fold_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{rs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{rs}$ (mV)")
+ax2.set_ylabel(r"$\sigma_{rs}$ (mV)")
 ax.set_title(r"Regular Spiking Neurons: $\kappa_{rs} = 10$ pA")
 # ax.set_xlim([0, 80])
 # ax.set_ylim([0, 2.0])

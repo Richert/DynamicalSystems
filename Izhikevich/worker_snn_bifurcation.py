@@ -55,6 +55,21 @@ if neuron_type == "rs":
     tau_s = 6.0
     Deltas = np.linspace(0.1, 4.0, num=n)
 
+elif neuron_type == "rs2":
+
+    C = 100.0
+    k = 0.7
+    v_r = -60.0
+    v_t = -40.0
+    eta = 0.0
+    a = 0.03
+    b = -2.0
+    d = 100.0
+    g = 15.0
+    E_r = 0.0
+    tau_s = 6.0
+    Deltas = np.linspace(0.1, 4.0, num=n)
+
 elif neuron_type == "fs":
 
     C = 20.0
@@ -108,6 +123,8 @@ inp = np.zeros((int(T/dt), 1))
 if neuron_type == "rs":
     inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
     inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
+elif neuron_type == "rs2":
+    inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 80.0, num=int(2000 * ts / dt))
 else:
     inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 120.0, num=int(2000 * ts / dt))
 

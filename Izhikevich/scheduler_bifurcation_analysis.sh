@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set condition
-p1="lts"
-path="results/snn_bifurcations2"
+p1="rs"
+path="results/snn_bifurcations"
 n=20
 batch_size=4
 range_end=$(($n-1))
