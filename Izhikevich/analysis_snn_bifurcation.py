@@ -78,34 +78,34 @@ pickle.dump(data, open(f"{path}/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
 # plotting
 ##########
 
-# fig, axes = plt.subplots(nrows=3, figsize=(12, 6))
-# ax1 = axes[2]
-# ax1.plot(I_ext)
-# ax1.set_xlabel("time")
-# ax1.set_ylabel("I")
-# ax1.set_title("input")
-# for ax, key, alpha in zip(axes[:2], ["lorentz", "gauss"], [1.0, 0.5]):
-#     ax.plot(data[key], color="black")
-#     if data[f"{key}_fold"]:
-#         bf = f"{key}_fold"
-#         x1 = data[bf]["idx"][0]
-#         x2 = data[bf]["idx"][-1]
-#         ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data[bf]['I_ext'][0]}")
-#         ax.axvline(x=x2, color='red', linestyle='--', label=f"I_lp2 = {data[bf]['I_ext'][-1]}")
-#         ax1.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data[bf]['I_ext'][0]}", alpha=alpha)
-#         ax1.axvline(x=x2, color='red', linestyle='--', label=f"I_lp2 = {data[bf]['I_ext'][-1]}", alpha=alpha)
-#     if data[f"{key}_hopf"]:
-#         bf = f"{key}_hopf"
-#         x1 = data[bf]["idx"][0]
-#         x2 = data[bf]["idx"][-1]
-#         ax.axvline(x=x1, color='green', linestyle='--', label=f"I_hb1 = {data[bf]['I_ext'][0]}")
-#         ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data[bf]['I_ext'][-1]}")
-#         ax1.axvline(x=x1, color='green', linestyle='--', label=f"I_hb1 = {data[bf]['I_ext'][0]}", alpha=alpha)
-#         ax1.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data[bf]['I_ext'][-1]}", alpha=alpha)
-#     ax.set_xlabel("time")
-#     ax.set_ylabel("s")
-#     ax.legend()
-#     ax.set_title(key)
-# plt.suptitle(rf"$\Delta = {delta}$, $\sigma = {sd}$")
-# plt.tight_layout()
-# plt.show()
+fig, axes = plt.subplots(nrows=3, figsize=(12, 6))
+ax1 = axes[2]
+ax1.plot(I_ext)
+ax1.set_xlabel("time")
+ax1.set_ylabel("I")
+ax1.set_title("input")
+for ax, key, alpha in zip(axes[:2], ["lorentz", "gauss"], [1.0, 0.5]):
+    ax.plot(data[key], color="black")
+    if data[f"{key}_fold"]:
+        bf = f"{key}_fold"
+        x1 = data[bf]["idx"][0]
+        x2 = data[bf]["idx"][-1]
+        ax.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data[bf]['I_ext'][0]}")
+        ax.axvline(x=x2, color='red', linestyle='--', label=f"I_lp2 = {data[bf]['I_ext'][-1]}")
+        ax1.axvline(x=x1, color='red', linestyle='--', label=f"I_lp1 = {data[bf]['I_ext'][0]}", alpha=alpha)
+        ax1.axvline(x=x2, color='red', linestyle='--', label=f"I_lp2 = {data[bf]['I_ext'][-1]}", alpha=alpha)
+    if data[f"{key}_hopf"]:
+        bf = f"{key}_hopf"
+        x1 = data[bf]["idx"][0]
+        x2 = data[bf]["idx"][-1]
+        ax.axvline(x=x1, color='green', linestyle='--', label=f"I_hb1 = {data[bf]['I_ext'][0]}")
+        ax.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data[bf]['I_ext'][-1]}")
+        ax1.axvline(x=x1, color='green', linestyle='--', label=f"I_hb1 = {data[bf]['I_ext'][0]}", alpha=alpha)
+        ax1.axvline(x=x2, color='green', linestyle='--', label=f"I_hb2 = {data[bf]['I_ext'][-1]}", alpha=alpha)
+    ax.set_xlabel("time")
+    ax.set_ylabel("s")
+    ax.legend()
+    ax.set_title(key)
+plt.suptitle(rf"$\Delta = {delta}$, $\sigma = {sd}$")
+plt.tight_layout()
+plt.show()

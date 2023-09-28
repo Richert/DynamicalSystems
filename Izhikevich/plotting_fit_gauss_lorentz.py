@@ -33,9 +33,10 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 results = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
 sds = np.asarray(results["norm"])
 deltas = np.asarray(results["lorentz"])
-sd_examples = results["norm_examples"]
+delta_examples = results["delta_examples"]
 errors = results["errors"]
-deltas_v = np.asarray(results["var"])
+sd_var = np.asarray(results["var"])
+sd_errors = np.linspace(0.01, 8.0, num=100)
 
 # parameters
 mu = -40.0
@@ -65,41 +66,41 @@ grid = fig.add_gridspec(nrows=2, ncols=2)
 
 # plot fitted deltas against sds
 ax = fig.add_subplot(grid[0, 0])
-ax.plot(sds, deltas, color="black")
-# ax.fill_between(sds, deltas-deltas_v, deltas+deltas_v, alpha=0.5, color="black")
+ax.plot(deltas, sds, color="black")
+ax.fill_between(deltas, sds-np.sqrt(sd_var), sds+np.sqrt(sd_var), alpha=0.2, facecolor="black", edgecolor="none")
 colors = ["royalblue", "darkorange"]
-for sd, c in zip(sd_examples, colors):
-    idx = np.argmin(np.abs(sds - sd))
-    delta = deltas[idx]
-    ax.hlines(y=delta, xmin=np.min(sds), xmax=sd, color=c, linestyles="--")
-    ax.vlines(x=sd, ymin=np.min(deltas), ymax=delta, color=c, linestyles="--")
-ax.set_ylabel(r"$\Delta_v$ (mV)")
-ax.set_xlabel(r"$\sigma_v$ (mV)")
-ax.set_title(r"Fitted widths $\Delta_v$")
+for delta, c in zip(delta_examples, colors):
+    idx = np.argmin(np.abs(deltas - delta))
+    sd = sds[idx]
+    ax.hlines(y=sd, xmin=np.min(deltas), xmax=delta, color=c, linestyles="--")
+    ax.vlines(x=delta, ymin=np.min(sds), ymax=sd, color=c, linestyles="--")
+ax.set_xlabel(r"$\Delta_v$ (mV)")
+ax.set_ylabel(r"$\sigma_v$ (mV)")
+ax.set_title(r"Fitted SDs $\sigma_v$")
 
 # plot error landscape for the two example SDs
 ax = fig.add_subplot(grid[0, 1])
 colors = ["royalblue", "darkorange"]
-for sd, c in zip(sd_examples, colors):
-    ax.plot(np.round(deltas, decimals=1), errors[sd][0], "x", label=fr"$\sigma_v = {sd}$ mV", color=c)
+for delta, c in zip(delta_examples, colors):
+    ax.plot(np.round(sd_errors, decimals=2), errors[delta][0], "x", label=fr"$\Delta_v = {delta}$ mV", color=c)
     # for x, y, y_v in zip(deltas, errors[sd][0], errors[sd][1]):
     #     ax.vlines(x=x, ymin=y-y_v, ymax=y+y_v, color=c)
-ax.set_xlabel(r"$\Delta_v$ (mV)")
+ax.set_xlabel(r"$\sigma_v$ (mV)")
 ax.set_ylabel("error")
 ax.set_title("Squared error between sample SDs")
 ax.legend()
 
 # plot the histograms for the two examples
 n_samples = 10000
-for i, sd in enumerate(sd_examples):
+for i, delta in enumerate(delta_examples):
     ax = fig.add_subplot(grid[1, i])
-    idx = np.argmin(np.abs(sds - sd))
-    delta = deltas[idx]
+    idx = np.argmin(np.abs(deltas - delta))
+    sd = sds[idx]
     samples_l = lorentzian(n_samples, eta=mu, delta=delta, lb=lb, ub=ub)
     samples_g = gaussian(n_samples, mu=mu, sd=sd, lb=lb, ub=ub)
     ax.hist(samples_l, bins=100, density=True, color="dimgrey", label="Lorentzian")
     ax.hist(samples_g, bins=100, density=True, color="firebrick", label="Gaussian", alpha=0.6)
-    ax.set_title(fr"$\sigma_v = {sd}$ mV, $\Delta_v$ = {np.round(delta, decimals=1)}")
+    ax.set_title(fr"$\sigma_v = {np.round(sd, decimals=1)}$ mV, $\Delta_v$ = {np.round(delta, decimals=1)}")
     ax.set_ylabel(r"$p$")
     ax.set_xlabel(r"$v_{\theta}$")
     ax.set_xlim([-60.0, -20.0])

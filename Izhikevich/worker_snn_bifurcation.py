@@ -83,7 +83,7 @@ elif neuron_type == "fs":
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
-    Deltas = np.linspace(0.1, 1.0, num=n)
+    Deltas = np.linspace(0.01, 1.0, num=n)
 
 elif neuron_type == "lts":
 
@@ -98,7 +98,7 @@ elif neuron_type == "lts":
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
-    Deltas = np.linspace(0.1, 1.0, num=n)
+    Deltas = np.linspace(0.01, 1.0, num=n)
 
 else:
 

@@ -35,14 +35,14 @@ def kld_normal_cauchy(delta: float, mu: float, sd: float, x: np.ndarray):
     return np.sum(rel_entr(pdf_c, pdf_g))
 
 
-def sample_sd_cauchy(delta: float, mu: float, sd: float, n_samples: int, lb: float, ub: float):
+def sample_sd_cauchy(sd: float, mu: float, delta: float, n_samples: int, lb: float, ub: float):
     samples_c = lorentzian(n_samples, eta=mu, delta=delta, lb=lb, ub=ub)
     samples_g = gaussian(n_samples, mu=mu, sd=sd, lb=lb, ub=ub)
     return (np.std(samples_c) - np.std(samples_g))**2
 
 
-def repeated_sampling(delta, n: int, *args):
-    return np.mean([sample_sd_cauchy(delta, *args) for _ in range(n)])
+def repeated_sampling(sd: float, n: int, *args):
+    return np.mean([sample_sd_cauchy(sd, *args) for _ in range(n)])
 
 
 # parameters
@@ -51,34 +51,35 @@ lb = -60
 ub = -20.0
 n = 10000
 n_reps = 5
-sds = np.linspace(1.0, 6.0, 50)
-bounds = [np.min(sds)*0.05, np.max(sds)+2.0]
+n_deltas = 100
+deltas = np.linspace(0.01, 4.0, num=n_deltas)
+bounds = [np.min(deltas), np.max(deltas)*3.0]
 
 # fit deltas to SDs
-deltas = []
-deltas_var = []
-for sd in sds:
-    deltas_tmp = []
+sds = []
+sds_var = []
+for delta in deltas:
+    sds_tmp = []
     for _ in range(n_reps):
-        delta = minimize_scalar(repeated_sampling, bounds=bounds, args=(1, mu, sd, n, lb, ub), method='bounded',
-                                options={'maxiter': 1000, 'disp': True})
-        deltas_tmp.append(delta.x)
-    deltas.append(np.mean(deltas_tmp))
-    deltas_var.append(np.var(deltas_tmp))
+        sd = minimize_scalar(repeated_sampling, bounds=bounds, args=(1, mu, delta, n, lb, ub), method='bounded',
+                             options={'maxiter': 1000, 'disp': True})
+        sds_tmp.append(sd.x)
+    sds.append(np.mean(sds_tmp))
+    sds_var.append(np.var(sds_tmp))
 
 # calculate errors for two target SDs
-sd_examples = [2.5, 5.0]
-errors = {key: [] for key in sd_examples}
-for sd in sd_examples:
-    deltas1 = np.linspace(0.01, sd, num=100)
+delta_examples = [0.3, 1.3]
+errors = {key: [] for key in delta_examples}
+sds_e = np.linspace(0.01, 8.0, num=n_deltas)
+for delta in delta_examples:
     errors_tmp = []
     for _ in range(n_reps):
-        errors_tmp.append(np.asarray([repeated_sampling(delta, 1, mu, sd, n, lb, ub) for delta in deltas]))
-    errors[sd] = (np.mean(errors_tmp, axis=0), np.var(errors_tmp, axis=1))
+        errors_tmp.append(np.asarray([repeated_sampling(sd, 1, mu, delta, n, lb, ub) for sd in sds_e]))
+    errors[delta] = (np.mean(errors_tmp, axis=0), np.var(errors_tmp, axis=1))
 
 # save results
-pickle.dump({"norm": sds, "lorentz": deltas, "norm_examples": sd_examples, "errors": errors, "var": deltas_var},
-            open("results/norm_lorentz_fit.pkl", "wb"))
+pickle.dump({"norm": np.asarray(sds), "lorentz": deltas, "delta_examples": delta_examples, "errors": errors,
+             "var": sds_var, "norm_errors": sds_e}, open("results/norm_lorentz_fit.pkl", "wb"))
 
 ############
 # plotting #
@@ -102,30 +103,30 @@ grid = fig.add_gridspec(nrows=2, ncols=2)
 # plot fitted deltas against sds
 ax = fig.add_subplot(grid[0, 0])
 ax.plot(sds, deltas, color="black")
-for sd in sd_examples:
-    idx = np.argmin(np.abs(sds - sd))
-    delta = deltas[idx]
-    ax.hlines(y=delta, xmin=np.min(sds), xmax=sd, color="red", linestyles="--")
-    ax.vlines(x=sd, ymin=np.min(deltas), ymax=delta, color="red", linestyles="--")
-ax.set_ylabel(r"$\Delta_v$ (mV)")
-ax.set_xlabel(r"$\sigma_v$ (mV)")
-ax.set_title(r"Fitted widths $\Delta_v$")
+for delta in delta_examples:
+    idx = np.argmin(np.abs(np.asarray(deltas) - delta))
+    sd = sds[idx]
+    ax.hlines(y=sd, xmin=np.min(deltas), xmax=delta, color="red", linestyles="--")
+    ax.vlines(x=delta, ymin=np.min(sds), ymax=sd, color="red", linestyles="--")
+ax.set_xlabel(r"$\Delta_v$ (mV)")
+ax.set_ylabel(r"$\sigma_v$ (mV)")
+ax.set_title(r"Fitted SDs $\sigma_v$")
 
 # plot error landscape for the two example SDs
 ax = fig.add_subplot(grid[0, 1])
-for sd in sd_examples:
-    ax.plot(np.round(deltas, decimals=1), errors[sd][0], label=fr"$\sigma_v = {sd}$ mV")
-ax.set_xlabel(r"$\Delta_v$ (mV)")
-ax.set_ylabel("error")
+for delta in delta_examples:
+    ax.plot(np.round(sds, decimals=2), errors[delta][0], label=fr"$\Delta_v = {delta}$ mV")
+ax.set_ylabel(r"$\Delta_v$ (mV)")
+ax.set_xlabel("error")
 ax.set_title("Squared error between sample SDs")
 ax.legend()
 
 # plot the histograms for the two examples
 n_samples = 10000
-for i, sd in enumerate(sd_examples):
+for i, delta in enumerate(delta_examples):
     ax = fig.add_subplot(grid[1, i])
-    idx = np.argmin(np.abs(sds - sd))
-    delta = deltas[idx]
+    idx = np.argmin(np.abs(np.asarray(deltas) - delta))
+    sd = sds[idx]
     samples_l = lorentzian(n_samples, eta=mu, delta=delta, lb=lb, ub=ub)
     samples_g = gaussian(n_samples, mu=mu, sd=sd, lb=lb, ub=ub)
     ax.hist(samples_l, bins=100, density=True, color="blue", label="Lorentzian")
