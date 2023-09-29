@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set condition
-p1="fs"
+p1="rs"
 path="results/snn_bifurcations"
 n=50
 batch_size=4

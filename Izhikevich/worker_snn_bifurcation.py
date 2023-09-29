@@ -87,7 +87,7 @@ elif neuron_type == "fs":
 
 elif neuron_type == "lts":
 
-    C = 10.0
+    C = 100.0
     k = 1.0
     v_r = -56.0
     v_t = -42.0
