@@ -91,14 +91,16 @@ ax.set_ylim([0, 2.0])
 # plot fs bifurcation diagram
 ax = fig.add_subplot(grid[1, 0])
 fs.plot_continuation("PAR(16)", "PAR(6)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
-for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
-    hopf_left = [fold[0] for fold in snn_results["fs"][dist]["hopfs"]]
-    hopf_right = [fold[1] for fold in snn_results["fs"][dist]["hopfs"]]
+ax2 = ax.twinx()
+for dist, color, axis in zip(["lorentz", "gauss"], ["grey", "red"], [ax, ax2]):
+    fold_left = [fold[0] for fold in snn_results["fs"][dist]["hopfs"]]
+    fold_right = [fold[1] for fold in snn_results["fs"][dist]["hopfs"]]
     deltas = snn_results["fs"][dist]["delta"]
-    ax.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
-    ax.scatter(hopf_right, deltas, marker="+", color=color)
+    axis.scatter(fold_left, deltas, marker="+", color=color, label=dist)
+    axis.scatter(fold_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{fs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
+ax2.set_ylabel(r"$\sigma_{fs}$ (mV)")
 ax.set_title(r"Fast Spiking Neurons")
 # ax.set_ylim([0, 1.0])
 ax.set_xlim([0, 140])

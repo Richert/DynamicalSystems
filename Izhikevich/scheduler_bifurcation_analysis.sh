@@ -3,7 +3,7 @@
 # set condition
 p1="fs"
 path="results/snn_bifurcations"
-n=20
+n=50
 batch_size=4
 range_end=$(($n-1))
 
