@@ -36,7 +36,7 @@ deltas = np.asarray(results["lorentz"])
 delta_examples = results["delta_examples"]
 errors = results["errors"]
 sd_var = np.asarray(results["var"])
-sd_errors = np.linspace(0.01, 8.0, num=100)
+sd_errors = np.asarray(results["norm_errors"])
 
 # parameters
 mu = -40.0
