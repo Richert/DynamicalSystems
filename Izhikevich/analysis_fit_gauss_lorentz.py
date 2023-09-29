@@ -51,8 +51,8 @@ lb = -60
 ub = -20.0
 n = 10000
 n_reps = 5
-n_deltas = 100
-deltas = np.linspace(0.01, 4.0, num=n_deltas)
+deltas = np.arange(0.01, 4.0, 0.02)
+n_deltas = len(deltas)
 bounds = [np.min(deltas), np.max(deltas)*3.0]
 
 # fit deltas to SDs
@@ -68,7 +68,7 @@ for delta in deltas:
     sds_var.append(np.var(sds_tmp))
 
 # calculate errors for two target SDs
-delta_examples = [0.3, 1.3]
+delta_examples = [0.4, 2.0]
 errors = {key: [] for key in delta_examples}
 sds_e = np.linspace(0.01, 8.0, num=n_deltas)
 for delta in delta_examples:

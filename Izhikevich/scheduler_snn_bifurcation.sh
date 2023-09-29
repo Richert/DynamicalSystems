@@ -3,7 +3,7 @@
 # set condition
 neuron="fs"
 path="/media/richard/data/snn_bifurcation"
-n=20
+n=50
 batch_size=4
 range_end=$(($n-1))
 
