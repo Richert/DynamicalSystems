@@ -104,6 +104,11 @@ else:
 
     raise ValueError("Wrong neuron type")
 
+# get SDs corresponding to Deltas
+sd_min = Deltas[0]
+sd_max = mapping["norm"][np.argmin(np.abs(mapping["lorentz"] - Deltas[-1]))]
+SDs = np.linspace(sd_min, sd_max, num=n)
+
 # network parameters
 I_ext = np.linspace(50.0, 100.0, num=100)
 v_reset = -1000.0
@@ -111,7 +116,7 @@ v_spike = 1000.0
 N = 1000
 p = 0.2
 Delta = Deltas[idx]
-SD = mapping["norm"][np.argmin(np.abs(mapping["lorentz"] - Delta))]
+SD = SDs[idx]
 
 # define inputs
 ts = 10.0
