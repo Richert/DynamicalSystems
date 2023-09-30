@@ -55,7 +55,7 @@ for key in ["lorentz", "gauss"]:
         idx_r = indices[-1]
         I_l = I_ext[idx_r]
         I_r = I_ext[idx_l]
-        data[f"{key}_fold"] = {"idx": (idx_l, idx_r), "I_ext": (I_l, I_r)}
+        data[f"{key}_fold"] = {"idx": (idx_l, idx_r), "I_ext": (I_l, I_r), "delta": delta, "sd": sd}
     else:
         data[f"{key}_fold"] = {}
 
@@ -66,7 +66,7 @@ for key in ["lorentz", "gauss"]:
         idx_l, idx_r = hbs[0], hbs[-1]
         I_r = I_ext[idx_r]
         I_l = I_ext[idx_l]
-        data[f"{key}_hopf"] = {"idx": (idx_l, idx_r), "I_ext": (I_l, I_r)}
+        data[f"{key}_hopf"] = {"idx": (idx_l, idx_r), "I_ext": (I_l, I_r), "delta": delta, "sd": sd}
     else:
         data[f"{key}_hopf"] = {}
 

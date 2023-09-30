@@ -17,24 +17,28 @@ fs = ODESystem.from_file(f"results/fs.pkl", auto_dir="~/PycharmProjects/auto-07p
 lts = ODESystem.from_file(f"results/lts.pkl", auto_dir="~/PycharmProjects/auto-07p")
 
 # snn bifurcations
-snn_results = {key1: {key2: {"folds": [], "hopfs": [], "delta": []} for key2 in ["gauss", "lorentz"]}
+snn_results = {key1: {key2: {"folds": [], "hopfs": [], "delta_hopf": [], "delta_fold": []} for key2 in ["gauss", "lorentz"]}
                for key1 in ["rs", "fs", "lts"]}
 _, _, fnames = next(walk("results/snn_bifurcations"), (None, None, []))
 for f in fnames:
     data = pickle.load(open(f"results/snn_bifurcations/{f}", "rb"))
     neuron_type = f.split("_")[1]
-    deltas = {"lorentz": data["Delta"], "gauss": data["SD"]}
     for distribution_type in ["lorentz", "gauss"]:
-        try:
-            folds = data[f"{distribution_type}_fold"]["I_ext"]
-            snn_results[neuron_type][distribution_type]["folds"].append(folds)
-            snn_results[neuron_type][distribution_type]["delta"].append(deltas[distribution_type])
-        except KeyError:
-            pass
+        if neuron_type == "rs":
+            try:
+                folds = data[f"{distribution_type}_fold"]["I_ext"]
+                delta = data[f"{distribution_type}_fold"]["delta"] if distribution_type == "lorentz" \
+                    else data[f"{distribution_type}_fold"]["sd"]
+                snn_results[neuron_type][distribution_type]["folds"].append(folds)
+                snn_results[neuron_type][distribution_type]["delta_fold"].append(delta)
+            except KeyError:
+                pass
         try:
             hopfs = data[f"{distribution_type}_hopf"]["I_ext"]
+            delta = data[f"{distribution_type}_hopf"]["delta"] if distribution_type == "lorentz" \
+                else data[f"{distribution_type}_hopf"]["sd"]
             snn_results[neuron_type][distribution_type]["hopfs"].append(hopfs)
-            snn_results[neuron_type][distribution_type]["delta"].append(deltas[distribution_type])
+            snn_results[neuron_type][distribution_type]["delta_hopf"].append(delta)
         except KeyError:
             pass
 
@@ -66,7 +70,7 @@ ax2 = ax.twinx()
 for dist, color, axis in zip(["lorentz", "gauss"], ["grey", "red"], [ax, ax2]):
     fold_left = [fold[0] for fold in snn_results["rs"][dist]["folds"]]
     fold_right = [fold[1] for fold in snn_results["rs"][dist]["folds"]]
-    deltas = snn_results["rs"][dist]["delta"]
+    deltas = snn_results["rs"][dist]["delta_fold"]
     axis.scatter(fold_left, deltas, marker="+", color=color, label=dist)
     axis.scatter(fold_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{rs}$ (pA)")
@@ -93,11 +97,11 @@ ax = fig.add_subplot(grid[1, 0])
 fs.plot_continuation("PAR(16)", "PAR(6)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 ax2 = ax.twinx()
 for dist, color, axis in zip(["lorentz", "gauss"], ["grey", "red"], [ax, ax2]):
-    fold_left = [fold[0] for fold in snn_results["fs"][dist]["hopfs"]]
-    fold_right = [fold[1] for fold in snn_results["fs"][dist]["hopfs"]]
-    deltas = snn_results["fs"][dist]["delta"]
-    axis.scatter(fold_left, deltas, marker="+", color=color, label=dist)
-    axis.scatter(fold_right, deltas, marker="+", color=color)
+    hopf_left = [h[0] for h in snn_results["fs"][dist]["hopfs"]]
+    hopf_right = [h[1] for h in snn_results["fs"][dist]["hopfs"]]
+    deltas = snn_results["fs"][dist]["delta_hopf"]
+    axis.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
+    axis.scatter(hopf_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{fs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
 ax2.set_ylabel(r"$\sigma_{fs}$ (mV)")
@@ -109,14 +113,16 @@ ax.legend()
 # plot lts bifurcation diagram
 ax = fig.add_subplot(grid[1, 1])
 lts.plot_continuation("PAR(16)", "PAR(6)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
-for dist, color in zip(["lorentz", "gauss"], ["grey", "red"]):
-    hopf_left = [fold[0] for fold in snn_results["lts"][dist]["hopfs"]]
-    hopf_right = [fold[1] for fold in snn_results["lts"][dist]["hopfs"]]
-    deltas = snn_results["lts"][dist]["delta"]
-    ax.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
-    ax.scatter(hopf_right, deltas, marker="+", color=color)
-ax.set_xlabel(r"$I_{lts}$ (pA)")
-ax.set_ylabel(r"$\Delta_{lts}$ (mV)")
+ax2 = ax.twinx()
+for dist, color, axis in zip(["lorentz", "gauss"], ["grey", "red"], [ax, ax2]):
+    hopf_left = [h[0] for h in snn_results["lts"][dist]["hopfs"]]
+    hopf_right = [h[1] for h in snn_results["lts"][dist]["hopfs"]]
+    deltas = snn_results["lts"][dist]["delta_hopf"]
+    axis.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
+    axis.scatter(hopf_right, deltas, marker="+", color=color)
+ax.set_xlabel(r"$I_{fs}$ (pA)")
+ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
+ax2.set_ylabel(r"$\sigma_{fs}$ (mV)")
 ax.set_title(r"Low Threshold Spiking Neurons")
 # ax.set_ylim([0, 1.0])
 ax.set_xlim([100, 220])

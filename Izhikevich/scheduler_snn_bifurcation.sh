@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set condition
-neuron="lts"
+neuron="rs2"
 path="/media/richard/data/snn_bifurcation"
 n=50
 batch_size=4
