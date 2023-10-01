@@ -18,13 +18,13 @@ lts = ODESystem.from_file(f"results/lts.pkl", auto_dir="~/PycharmProjects/auto-0
 
 # snn bifurcations
 snn_results = {key1: {key2: {"folds": [], "hopfs": [], "delta_hopf": [], "delta_fold": []} for key2 in ["gauss", "lorentz"]}
-               for key1 in ["rs", "fs", "lts"]}
+               for key1 in ["rs", "fs", "lts", "rs2"]}
 _, _, fnames = next(walk("results/snn_bifurcations"), (None, None, []))
 for f in fnames:
     data = pickle.load(open(f"results/snn_bifurcations/{f}", "rb"))
     neuron_type = f.split("_")[1]
     for distribution_type in ["lorentz", "gauss"]:
-        if neuron_type == "rs":
+        if "rs" in neuron_type:
             try:
                 folds = data[f"{distribution_type}_fold"]["I_ext"]
                 delta = data[f"{distribution_type}_fold"]["delta"] if distribution_type == "lorentz" \
@@ -56,7 +56,7 @@ plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
-markersize = 6
+markersize = 4
 
 # create figure
 fig = plt.figure(figsize=(12, 6))
@@ -77,8 +77,9 @@ ax.set_xlabel(r"$I_{rs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{rs}$ (mV)")
 ax2.set_ylabel(r"$\sigma_{rs}$ (mV)")
 ax.set_title(r"Regular Spiking Neurons: $\kappa_{rs} = 10$ pA")
-# ax.set_xlim([0, 80])
-# ax.set_ylim([0, 2.0])
+ax.set_xlim([0, 80])
+ax.set_ylim([0, 3.0])
+ax2.set_ylim([0.0, 6.0])
 ax.legend()
 
 # plot rs bifurcation diagram for kappa = 100
@@ -86,11 +87,20 @@ ax = fig.add_subplot(grid[0, 1])
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp3", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:lp4", ignore=["UZ"], line_style_unstable="solid", ax=ax)
 rs.plot_continuation("PAR(8)", "PAR(5)", cont="D/I:hb1", ignore=["UZ"], line_style_unstable="solid", ax=ax)
+ax2 = ax.twinx()
+for dist, color, axis in zip(["lorentz", "gauss"], ["grey", "red"], [ax, ax2]):
+    hopf_left = [fold[0] for fold in snn_results["rs2"][dist]["hopfs"]]
+    hopf_right = [fold[1] for fold in snn_results["rs2"][dist]["hopfs"]]
+    deltas = snn_results["rs2"][dist]["delta_hopf"]
+    axis.scatter(hopf_left, deltas, marker="+", color=color, label=dist)
+    axis.scatter(hopf_right, deltas, marker="+", color=color)
 ax.set_xlabel(r"$I_{rs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{rs}$ (mV)")
+ax2.set_ylabel(r"$\sigma_{rs}$ (mV)")
 ax.set_title(r"Regular Spiking Neurons: $\kappa_{rs} = 100$ pA")
 ax.set_xlim([30, 80])
 ax.set_ylim([0, 2.0])
+ax2.set_ylim([0.0, 4.0])
 
 # plot fs bifurcation diagram
 ax = fig.add_subplot(grid[1, 0])
@@ -106,7 +116,8 @@ ax.set_xlabel(r"$I_{fs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
 ax2.set_ylabel(r"$\sigma_{fs}$ (mV)")
 ax.set_title(r"Fast Spiking Neurons")
-# ax.set_ylim([0, 1.0])
+ax.set_ylim([0, 0.8])
+ax2.set_ylim([0.0, 1.6])
 ax.set_xlim([0, 140])
 ax.legend()
 
@@ -124,7 +135,8 @@ ax.set_xlabel(r"$I_{fs}$ (pA)")
 ax.set_ylabel(r"$\Delta_{fs}$ (mV)")
 ax2.set_ylabel(r"$\sigma_{fs}$ (mV)")
 ax.set_title(r"Low Threshold Spiking Neurons")
-# ax.set_ylim([0, 1.0])
+ax.set_ylim([0, 0.6])
+ax2.set_ylim([0.0, 1.2])
 ax.set_xlim([100, 220])
 ax.legend()
 
