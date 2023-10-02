@@ -1,13 +1,11 @@
-from rectipy import Network, circular_connectivity, random_connectivity
+from rectipy import Network, random_connectivity
 from pyrates import CircuitTemplate, NodeTemplate
 import sys
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
 import numpy as np
-from scipy.stats import cauchy, rv_discrete
+from scipy.stats import cauchy
 import matplotlib.pyplot as plt
-from matplotlib import colors
 import pickle
-from scipy.signal import find_peaks
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -18,15 +16,6 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
             s = cauchy.rvs(loc=eta, scale=delta)
         samples[i] = s
     return samples
-
-
-def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: float = 1.0) -> float:
-    if method == "inverse":
-        return 1/x**inverse_pow if x > 0 else zero_val
-    if method == "exp":
-        return np.exp(-x) if x > 0 else zero_val
-    else:
-        raise ValueError("Invalid method.")
 
 
 # define parameters
@@ -134,7 +123,7 @@ eic.add_edges_from_matrix("ik_op/s", "ik_op/s_e", weight=W_ie * k_ie,
 model = Network(dt=dt, device="cuda:0")
 model.add_diffeq_node("eic", node=eic, input_var="I_ext", output_var="s",
                       spike_var="spike", spike_def="v", spike_reset=v_reset,
-                      spike_threshold=v_spike, verbose=True, clear=True, op="ik_op")
+                      spike_threshold=v_spike, verbose=True, clear=False, op="ik_op")
 # model.add_edge("fs", "rs", weights=W_ei * k_ei, train=None, feedback=False)
 # model.add_edge("rs", "fs", weights=W_ie * k_ie, train=None, feedback=True)
 

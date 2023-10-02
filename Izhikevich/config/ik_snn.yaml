@@ -33,7 +33,7 @@ ik_op:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
-    - "u' = (b*(mean(v)-v_r) - u) / tau_u + kappa*mean(spike)"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
     - "s' = -s/tau_s + spike + s_ext"
   variables:
     s: output(0.0)
@@ -58,6 +58,35 @@ ik_op:
     I_ext: input(0.0)
     s_ext: input(0.0)
 
+# operator for regular-spiking IK neurons
+fs_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
+    - "u' = (b*(mean(v)-v_r) - u) / tau_u"
+    - "s' = -s/tau_s + spike + s_ext"
+  variables:
+    s: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    C: 20.0
+    k: 1.0
+    v_r: -55.0
+    v_theta: -40.0
+    eta: 0.0
+    g_e: 1.0
+    E_e: 0.0
+    g_i: 1.0
+    E_i: -60.0
+    b: 0.025
+    tau_u: 5.0
+    tau_s: 8.0
+    spike: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+    I_ext: input(0.0)
+    s_ext: input(0.0)
+
 # population of regular-spiking neurons
 rs:
   base: NodeTemplate
@@ -69,3 +98,9 @@ ik:
   base: NodeTemplate
   operators:
     - ik_op
+
+# population of fast-spiking neurons
+fs:
+  base: NodeTemplate
+  operators:
+    - fs_op
