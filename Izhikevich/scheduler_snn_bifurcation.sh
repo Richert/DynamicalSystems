@@ -16,7 +16,8 @@ export NUMEXPR_NUM_THREADS=$n_threads
 export VECLIB_MAXIMUM_THREADS=$n_threads
 
 # execute python scripts in batches of batch_size
-for IDX in `seq 0 $range_end`; do
+#for IDX in `seq 0 $range_end`; do
+for IDX in `seq 4 7`; do
 
   # python calls
   (
