@@ -22,8 +22,8 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # general parameters
-N = 2000
-p = 0.2
+N = 100
+p = 1.0
 v_spike = 1e3
 v_reset = -1e3
 
@@ -66,15 +66,6 @@ spike_thresholds_e = lorentzian(N, eta=ve_t, delta=Delta_e, lb=ve_r, ub=2*ve_t -
 spike_thresholds_i = lorentzian(N, eta=vi_t, delta=Delta_i, lb=vi_r, ub=2*vi_t - vi_r)
 
 # define connectivity
-# indices = np.arange(0, N, dtype=np.int32)
-# e_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=1.5) for idx in indices])
-# e_pdfs /= np.sum(e_pdfs)
-# i_pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=0.0) for idx in indices])
-# i_pdfs /= np.sum(i_pdfs)
-# W_ee = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, e_pdfs)), homogeneous_weights=False)
-# W_ie = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
-# W_ei = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
-# W_ii = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, i_pdfs)), homogeneous_weights=False)
 W_ee = random_connectivity(N, N, p, normalize=True)
 W_ie = random_connectivity(N, N, p, normalize=True)
 W_ei = random_connectivity(N, N, p, normalize=True)
@@ -85,47 +76,38 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt), 2*N))
-inp[:int(0.5*cutoff/dt), N:] += 20.0
-inp[int(750/dt):int(2000/dt), N:] -= 20.0
+inp = np.zeros((int(T/dt), N))
+inp[:int(0.5*cutoff/dt), :] += 20.0
+inp[int(750/dt):int(2000/dt), :] -= 20.0
 
 # run the model
 ###############
 
-# initialize nodes
-e_vars = {"C": Ce, "k": ke, "v_r": ve_r, "v_theta": spike_thresholds_e, "eta": Ie, "tau_u": 1/ae, "b": be, "kappa": de,
-          "g_e": g_ampa, "E_e": E_ampa, "g_i": g_gaba, "E_i": E_gaba, "tau_s": tau_ampa, "v": ve_t}
-i_vars = {"C": Ci, "k": ki, "v_r": vi_r, "v_theta": spike_thresholds_i, "eta": Ii, "tau_u": 1/ai, "b": bi, "kappa": di,
-          "g_e": g_ampa, "E_e": E_ampa, "g_i": g_gaba, "E_i": E_gaba, "tau_s": tau_gaba, "v": vi_t}
-rs = NodeTemplate.from_yaml("config/ik_snn/ik")
-fs = NodeTemplate.from_yaml("config/ik_snn/ik")
+# initialize EIC node
+eic_vars = {"C_e": Ce, "ke": ke, "v_r_e": ve_r, "v_theta_e": spike_thresholds_e, "eta_e": Ie, "tau_u_e": 1/ae, "be": be,
+            "kappa": de, "g_e": g_ampa, "E_e": E_ampa, "g_i": g_gaba, "E_i": E_gaba, "tau_s_e": tau_ampa, "ve": ve_t,
+            "C_i": Ci, "ki": ki, "v_r_i": vi_r, "v_theta_i": spike_thresholds_i, "eta_i": Ii, "tau_u_i": 1/ai, "bi": bi,
+            "tau_s_i": tau_gaba, "vi": vi_t}
 
-# construct rs and fs circuits
-rs_neurons = {f'rs_{i}': rs for i in range(N)}
-rs_net = CircuitTemplate("rs", nodes=rs_neurons)
-rs_net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W_ee * k_ee,
-                             source_nodes=list(rs_neurons.keys()))
-rs_net.update_var(node_vars={f"all/ik_op/{key}": val for key, val in e_vars.items()})
-fs_neurons = {f'fs_{i}': fs for i in range(N)}
-fs_net = CircuitTemplate("fs", nodes=fs_neurons)
-fs_net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i", weight=W_ii * k_ii,
-                             source_nodes=list(fs_neurons.keys()))
-fs_net.update_var(node_vars={f"all/ik_op/{key}": val for key, val in i_vars.items()})
-
-# connect RS and FS into a single circuit
-eic = CircuitTemplate("eic", circuits={"rs": rs_net, "fs": fs_net})
-eic.add_edges_from_matrix("ik_op/s", "ik_op/s_i", weight=W_ei * k_ei,
-                          source_nodes=[f"fs/fs_{i}" for i in range(N)], target_nodes=[f"rs/rs_{i}" for i in range(N)])
-eic.add_edges_from_matrix("ik_op/s", "ik_op/s_e", weight=W_ie * k_ie,
-                          source_nodes=[f"rs/rs_{i}" for i in range(N)], target_nodes=[f"fs/fs_{i}" for i in range(N)])
+# construct EI circuit
+neurons = {}
+for i in range(N):
+    eic = NodeTemplate.from_yaml("config/ik_snn/eic")
+    for key, val in eic_vars.items():
+        eic.update_var("eic_op", key, val if type(val) is float else val[i])
+    neurons[f'eic_{i}'] = eic
+neuron_keys = list(neurons.keys())
+net = CircuitTemplate("eic", nodes=neurons)
+net.add_edges_from_matrix(source_var="eic_op/se", target_var="eic_op/s_ee", weight=W_ee*k_ee, source_nodes=neuron_keys)
+net.add_edges_from_matrix(source_var="eic_op/se", target_var="eic_op/s_ie", weight=W_ie*k_ie, source_nodes=neuron_keys)
+net.add_edges_from_matrix(source_var="eic_op/si", target_var="eic_op/s_ei", weight=W_ei*k_ei, source_nodes=neuron_keys)
+net.add_edges_from_matrix(source_var="eic_op/si", target_var="eic_op/s_ii", weight=W_ii*k_ii, source_nodes=neuron_keys)
 
 # initialize rectipy model
 model = Network(dt=dt, device="cuda:0")
-model.add_diffeq_node("eic", node=eic, input_var="I_ext", output_var="s",
-                      spike_var="spike", spike_def="v", spike_reset=v_reset,
-                      spike_threshold=v_spike, verbose=True, clear=False, op="ik_op")
-# model.add_edge("fs", "rs", weights=W_ei * k_ei, train=None, feedback=False)
-# model.add_edge("rs", "fs", weights=W_ie * k_ie, train=None, feedback=True)
+model.add_diffeq_node("eic_net", node=net, input_var="I_ext_i", output_var="se",
+                      spike_var=["spike_e", "spike_i"], spike_def=["ve", "vi"], spike_reset=v_reset,
+                      spike_threshold=v_spike, verbose=True, clear=False, op="eic_op", N=N)
 
 # perform simulation
 obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=True)

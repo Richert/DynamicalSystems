@@ -6,6 +6,7 @@ from pyrecu import RNN
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy
+from typing import Union, Callable
 plt.rcParams['backend'] = 'TkAgg'
 
 
@@ -19,7 +20,8 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
-def ik_ei_ata(y: np.ndarray, N: int, inp: np.ndarray, ve_r: float, vi_r: float, ve_t: np.ndarray, vi_t: np.ndarray,
+def ik_ei_ata(t: Union[int, float], y: np.ndarray, N: int, rates: np.ndarray, infunc: Callable, inargs: tuple,
+              ve_r: float, vi_r: float, ve_t: np.ndarray, vi_t: np.ndarray,
               ke: float, ki: float, Ce: float, Ci: float, ae: float, ai:float, be: float, bi: float, de: float,
               di:float, ve_spike: float, vi_spike: float, ve_reset: float, vi_reset: float, g_ampa: float,
               g_gaba: float, E_ampa: float, E_gaba: float, tau_ampa: float, tau_gaba: float, k_ee: float, k_ei: float,
@@ -40,10 +42,8 @@ def ik_ei_ata(y: np.ndarray, N: int, inp: np.ndarray, ve_r: float, vi_r: float, 
     inp_e, inp_i = inp[0], inp[1]
 
     # calculate network firing rates
-    spikes_e = ve >= ve_spike
-    rates_e = np.mean(spikes_e / dt)
-    spikes_i = vi >= vi_spike
-    rates_i = np.mean(spikes_i / dt)
+    rates_e = rates[:N]
+    rates_i = rates[N:]
 
     # calculate vector field of the system
     ######################################
@@ -86,7 +86,7 @@ def ik_ei_ata(y: np.ndarray, N: int, inp: np.ndarray, ve_r: float, vi_r: float, 
 # define parameters
 ###################
 
-N = 10000
+N = 1000
 
 # define model parameters
 #########################
@@ -96,21 +96,21 @@ Ce = 100.0   # unit: pF
 ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
-ve_spike = 50.0  # unit: mV
-ve_reset = -100.0  # unit: mV
-Delta_e = 1.0  # unit: mV
-de = 20.0
+ve_spike = 1000.0  # unit: mV
+ve_reset = -1000.0  # unit: mV
+Delta_e = 0.5  # unit: mV
+de = 100.0
 ae = 0.03
 be = -2.0
 
-# IB neuron parameters
+# FS neuron parameters
 Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-vi_spike = 50.0  # unit: mV
-vi_reset = -100.0  # unit: mV
-Delta_i = 0.3  # unit: mV
+vi_spike = 1000.0  # unit: mV
+vi_reset = -1000.0  # unit: mV
+Delta_i = 2.0  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -142,6 +142,10 @@ I_ext[:, 1] += 20.0
 I_ext[int(1500/dt):int(3500/dt), 1] += 10.0
 I_ext[int(2500/dt):int(3500/dt), 1] += 10.0
 
+# collect function arguments
+eic_args = (ve_r, vi_r, ve_t, vi_t, ke, ki, Ce, Ci, ae, ai, be, bi, de, di, ve_spike, vi_spike, ve_reset, vi_reset,
+            g_ampa, g_gaba, E_ampa, E_gaba, tau_ampa, tau_gaba, k_ee, k_ei, k_ie, k_ii)
+
 # run the model
 ###############
 
@@ -149,10 +153,7 @@ I_ext[int(2500/dt):int(3500/dt), 1] += 10.0
 u_init = np.zeros((2*N+6,))
 u_init[:N] -= 60.0
 u_init[N:2*N] -= 60.0
-model = RNN(N, 2*N+6, ik_ei_ata, Ce=Ce, Ci=Ci, ke=ke, ki=ki, ve_r=ve_r, vi_r=vi_r, ve_t=spike_thresholds_e,
-            vi_t=spike_thresholds_i, ve_spike=ve_spike, vi_spike=vi_spike, ve_reset=ve_reset, vi_reset=vi_reset,
-            de=de, di=di, ae=ae, ai=ai, be=be, bi=bi, g_ampa=g_ampa, g_gaba=g_gaba, E_ampa=E_ampa, E_gaba=E_gaba,
-            tau_ampa=tau_ampa, tau_gaba=tau_gaba, k_ee=k_ee, k_ei=k_ei, k_ie=k_ie, k_ii=k_ii, u_init=u_init)
+model = RNN(N, 2*N+6, ik_ei_ata, eic_args, u_init=u_init)
 
 # define outputs
 outputs = {'se': {'idx': np.asarray([2*N+2]), 'avg': False}, 'si': {'idx': np.asarray([2*N+3]), 'avg': False}}
@@ -171,4 +172,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/eic_rnn_correct.p", "wb"))
+pickle.dump({'results': res}, open("results/eic_rnn_correct.pkl", "wb"))
