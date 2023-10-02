@@ -1,4 +1,4 @@
-from rectipy import FeedbackNetwork, circular_connectivity, random_connectivity
+from rectipy import Network, circular_connectivity, random_connectivity
 from pyrates import CircuitTemplate, NodeTemplate
 import sys
 sys.path.append("~/PycharmProjects/DynamicalSystems/reservoir_computing")
@@ -33,8 +33,8 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: fl
 ###################
 
 # general parameters
-N = 1000
-p = 0.5
+N = 2000
+p = 0.2
 v_spike = 1e3
 v_reset = -1e3
 
@@ -44,7 +44,7 @@ ke = 0.7  # unit: None
 ve_r = -60.0  # unit: mV
 ve_t = -40.0  # unit: mV
 Delta_e = 0.5  # unit: mV
-de = 10.0
+de = 100.0
 ae = 0.03
 be = -2.0
 Ie = 60.0
@@ -58,7 +58,7 @@ Delta_i = 2.0  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
-Ii = 35.0
+Ii = 45.0
 
 # synaptic parameters
 g_ampa = 1.0
@@ -96,17 +96,9 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt), N))
-# p_in = 0.5
-# n_inputs = int(p_in*N)
-# center = int(N*0.5)
-# inp_indices = np.arange(center-int(0.5*n_inputs), center+int(0.5*n_inputs))
-# inp[:int(0.5*cutoff/dt), :N] -= 20.0
-# inp[:int(0.5*cutoff/dt), N:] += 20.0
-# inp[int(1000/dt):int(1500/dt), inp_indices] += 30.0
-# inp[int(2500/dt):int(3000/dt), N + inp_indices] += 30.0
-# inp[:int(0.5*cutoff/dt), :N] += 0.2
-# inp[int(750.0/dt):int(2000/dt), N:] -= 0.2
+inp = np.zeros((int(T/dt), 2*N))
+inp[:int(0.5*cutoff/dt), N:] += 20.0
+inp[int(750/dt):int(2000/dt), N:] -= 20.0
 
 # run the model
 ###############
@@ -131,80 +123,38 @@ fs_net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i", weigh
                              source_nodes=list(fs_neurons.keys()))
 fs_net.update_var(node_vars={f"all/ik_op/{key}": val for key, val in i_vars.items()})
 
-# combine the rs and fs populations into a single circuit
-# net = CircuitTemplate("eic", circuits={"rs": rs_net, "fs": fs_net})
-# net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W_ie * k_ie,
-#                           source_nodes=[f"rs/rs_{i}" for i in range(N)], target_nodes=[f"fs/fs_{i}" for i in range(N)])
-# net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i", weight=W_ei * k_ei,
-#                           source_nodes=[f"fs/fs_{i}" for i in range(N)], target_nodes=[f"rs/rs_{i}" for i in range(N)])
+# connect RS and FS into a single circuit
+eic = CircuitTemplate("eic", circuits={"rs": rs_net, "fs": fs_net})
+eic.add_edges_from_matrix("ik_op/s", "ik_op/s_i", weight=W_ei * k_ei,
+                          source_nodes=[f"fs/fs_{i}" for i in range(N)], target_nodes=[f"rs/rs_{i}" for i in range(N)])
+eic.add_edges_from_matrix("ik_op/s", "ik_op/s_e", weight=W_ie * k_ie,
+                          source_nodes=[f"rs/rs_{i}" for i in range(N)], target_nodes=[f"fs/fs_{i}" for i in range(N)])
 
 # initialize rectipy model
-model = FeedbackNetwork(dt=dt, device="cuda:0")
-model.add_diffeq_node("rs", node=rs_net, input_var="s_i", output_var="s",
+model = Network(dt=dt, device="cuda:0")
+model.add_diffeq_node("eic", node=eic, input_var="I_ext", output_var="s",
                       spike_var="spike", spike_def="v", spike_reset=v_reset,
                       spike_threshold=v_spike, verbose=True, clear=True, op="ik_op")
-model.add_diffeq_node("fs", node=fs_net, input_var="s_e", output_var="s",
-                      spike_var="spike", spike_def="v", spike_reset=v_reset,
-                      spike_threshold=v_spike, verbose=True, clear=True, op="ik_op")
-model.add_edge("fs", "rs", weights=W_ei * k_ei, train=None, feedback=False)
-model.add_edge("rs", "fs", weights=W_ie * k_ie, train=None, feedback=True)
+# model.add_edge("fs", "rs", weights=W_ei * k_ei, train=None, feedback=False)
+# model.add_edge("rs", "fs", weights=W_ie * k_ie, train=None, feedback=True)
 
 # perform simulation
-obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=False, verbose=True,
-                record_vars=[("rs", "out", False), ("fs", "out", False)])
-rs_res = obs.to_numpy(("rs", "out"))
-fs_res = obs.to_numpy(("fs", "out"))
-
-# identify spikes
-rs_rates, fs_rates = [], []
-for neuron in range(rs_res.shape[1]):
-    signal = rs_res[int(cutoff*dts/dt):, neuron]
-    signal = signal / np.max(signal)
-    peaks, _ = find_peaks(signal, height=0.5, width=5)
-    rs_rates.append(len(peaks)*1e3/(T-cutoff))
-for neuron in range(fs_res.shape[1]):
-    signal = fs_res[int(cutoff*dts/dt):, neuron]
-    signal = signal / np.max(signal)
-    peaks, _ = find_peaks(signal, height=0.5, width=5)
-    fs_rates.append(len(peaks)*1e3/(T-cutoff))
+obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=True)
+res = obs.to_numpy("out")
+rs_res = np.mean(res[:, :N], axis=1)
+fs_res = np.mean(res[:, N:], axis=1)
 
 # plot results
-fig = plt.figure(figsize=(6, 6))
-grid = fig.add_gridspec(nrows=4, ncols=2)
-
-ax = fig.add_subplot(grid[0, :])
-ax.plot(np.mean(rs_res, axis=1), label="RS", color="royalblue")
-ax.plot(np.mean(fs_res, axis=1), label="FS", color="darkorange")
+fig = plt.figure(figsize=(10, 4))
+ax = fig.add_subplot()
+ax.plot(rs_res, color="royalblue", label="rs")
+ax.plot(fs_res, color="darkorange", label="fs")
 ax.set_ylabel(r'$s(t)$')
 ax.set_xlabel('time (ms)')
 ax.set_title('mean-field dynamics')
-
-ax = fig.add_subplot(grid[1, :])
-ax.imshow(rs_res.T, interpolation="none", aspect="auto", cmap="Greys")
-ax.set_xlabel("time")
-ax.set_ylabel("neuron id")
-ax.set_title("RS spiking dynamics")
-
-ax = fig.add_subplot(grid[2, :])
-ax.imshow(fs_res.T, interpolation="none", aspect="auto", cmap="Greys")
-ax.set_xlabel("time")
-ax.set_ylabel("neuron id")
-ax.set_title("FS spiking dynamics")
-
-ax = fig.add_subplot(grid[3, 0])
-ax.hist(rs_rates, density=False, rwidth=0.75)
-ax.set_xlabel("spike rate")
-ax.set_ylabel("count")
-ax.set_title("RS spike rate histogram")
-
-ax = fig.add_subplot(grid[3, 1])
-ax.hist(fs_rates, density=False, rwidth=0.75)
-ax.set_xlabel("spike rate")
-ax.set_ylabel("count")
-ax.set_title("FS spike rate histogram")
-
+ax.legend()
 plt.show()
 
 # save results
-pickle.dump({'rs_results': rs_res, 'fs_results': fs_res, 'rs_rates': rs_rates, 'fs_rates': fs_rates},
-            open("results/eic_snn_het_fs_bistable.p", "wb"))
+pickle.dump({'rs_results': rs_res, 'fs_results': fs_res},
+            open("results/eic_snn_het_fs_oscillatory.p", "wb"))
