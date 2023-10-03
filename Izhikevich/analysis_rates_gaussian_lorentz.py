@@ -45,7 +45,7 @@ def get_fr(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, 
 mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
 
 # choose neuron type
-neuron_type = "rs"
+neuron_type = "lts"
 
 if neuron_type == "rs":
 
@@ -100,7 +100,7 @@ v_spike = 1000.0
 N = 1000
 N2 = 100000
 p = 0.2
-SDs = [2.0, 4.0]
+SDs = [2.3, 4.8]
 
 # find deltas corresponding to SDs
 Deltas = []
