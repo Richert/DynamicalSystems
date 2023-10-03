@@ -72,13 +72,15 @@ titles = [
     r"(L) RS-FS: $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$"
           ]
 subplots = [2, 3, 4, 5]
-ticks = [25, 10, 200, 100]
+ticks = [25, 15, 40, 30]
 for cond, title, idx, ytick in zip(conditions, titles, subplots, ticks):
     data = pickle.load(open(f"results/{cond}.p", "rb"))["results"]
+    snn_data = pickle.load(open(f"results/snn_{cond}.p", "rb"))["rs_results"]
     ax = fig.add_subplot(grid[idx], sharex=ax_init[0])
     rs, fs = data["rs"], data["fs"]
-    ax.plot(rs, label="RS", color="royalblue")
-    ax.plot(fs, label="FS", color="darkorange")
+    ax.plot(rs.index, snn_data[5000:]/6.0, label="spiking network", color="black")
+    ax.plot(rs, label="mean-field", color="darkorange")
+    # ax.plot(fs, label="FS", color="darkorange")
     ax.set_yticks([0.0, ytick*1e-3])
     ax.set_yticklabels(['0', str(ytick)])
     if idx == 2:
@@ -158,8 +160,8 @@ ax.axvline(x=25.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 ax = fig.add_subplot(grid[2, 0])
 a_eic.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb1', ax=ax, line_color_stable='#148F77',
                         line_color_unstable='#148F77', line_style_unstable='solid')
-a_eic.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb2', ax=ax, line_color_stable='#148F77',
-                        line_color_unstable='#148F77', line_style_unstable='solid')
+# a_eic.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb2', ax=ax, line_color_stable='#148F77',
+#                         line_color_unstable='#148F77', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title(r'(I) RS-FS: $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')

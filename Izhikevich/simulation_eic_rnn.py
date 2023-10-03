@@ -126,4 +126,4 @@ plt.show()
 
 # save results
 pickle.dump({'rs_results': rs_res, 'fs_results': fs_res},
-            open("results/eic_snn_hom_fs_oscillatory.p", "wb"))
+            open("results/snn_eic_hom_high_sfa.p", "wb"))
