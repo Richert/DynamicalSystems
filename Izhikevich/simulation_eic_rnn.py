@@ -22,8 +22,8 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # general parameters
-N = 100
-p = 1.0
+N = 2000
+p = 0.2
 v_spike = 1e3
 v_reset = -1e3
 
@@ -43,7 +43,7 @@ Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-Delta_i = 2.0  # unit: mV
+Delta_i = 0.2  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -72,13 +72,14 @@ W_ei = random_connectivity(N, N, p, normalize=True)
 W_ii = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
-T = 2500.0
-cutoff = 500.0
+t_scale = 1.0
+T = 2500.0 * t_scale
+cutoff = 500.0 * t_scale
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
 inp[:int(0.5*cutoff/dt), :] += 20.0
-inp[int(750/dt):int(2000/dt), :] -= 20.0
+inp[int(750*t_scale/dt):int(2000*t_scale/dt), :] -= 20.0
 
 # run the model
 ###############
@@ -90,14 +91,11 @@ eic_vars = {"C_e": Ce, "ke": ke, "v_r_e": ve_r, "v_theta_e": spike_thresholds_e,
             "tau_s_i": tau_gaba, "vi": vi_t}
 
 # construct EI circuit
-neurons = {}
-for i in range(N):
-    eic = NodeTemplate.from_yaml("config/ik_snn/eic")
-    for key, val in eic_vars.items():
-        eic.update_var("eic_op", key, val if type(val) is float else val[i])
-    neurons[f'eic_{i}'] = eic
+eic = NodeTemplate.from_yaml("config/ik_snn/eic")
+neurons = {f"eic_{i}": eic for i in range(N)}
 neuron_keys = list(neurons.keys())
 net = CircuitTemplate("eic", nodes=neurons)
+net.update_var(node_vars={f"all/eic_op/{key}": val for key, val in eic_vars.items()})
 net.add_edges_from_matrix(source_var="eic_op/se", target_var="eic_op/s_ee", weight=W_ee*k_ee, source_nodes=neuron_keys)
 net.add_edges_from_matrix(source_var="eic_op/se", target_var="eic_op/s_ie", weight=W_ie*k_ie, source_nodes=neuron_keys)
 net.add_edges_from_matrix(source_var="eic_op/si", target_var="eic_op/s_ei", weight=W_ei*k_ei, source_nodes=neuron_keys)
@@ -128,4 +126,4 @@ plt.show()
 
 # save results
 pickle.dump({'rs_results': rs_res, 'fs_results': fs_res},
-            open("results/eic_snn_het_fs_oscillatory.p", "wb"))
+            open("results/eic_snn_hom_fs_oscillatory.p", "wb"))
