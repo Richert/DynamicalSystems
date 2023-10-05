@@ -76,23 +76,24 @@ for delta, c in zip(delta_examples, colors):
     ax.vlines(x=delta, ymin=np.min(sds), ymax=sd, color=c, linestyles="--")
 ax.set_xlabel(r"$\Delta_v$ (mV)")
 ax.set_ylabel(r"$\sigma_v$ (mV)")
-ax.set_title(r"Fitted SDs $\sigma_v$")
+ax.set_title(r"(A) Fitted SDs $\sigma_v$")
 
 # plot error landscape for the two example SDs
 ax = fig.add_subplot(grid[0, 1])
 colors = ["royalblue", "darkorange"]
 for delta, c in zip(delta_examples, colors):
-    ax.plot(np.round(sd_errors, decimals=2), errors[delta][0], "x", label=fr"$\Delta_v = {delta}$ mV", color=c)
+    ax.plot(np.round(sd_errors, decimals=2), errors[delta][0], "+", label=fr"$\Delta_v = {delta}$ mV", color=c,
+            markersize=markersize)
     # for x, y, y_v in zip(deltas, errors[sd][0], errors[sd][1]):
     #     ax.vlines(x=x, ymin=y-y_v, ymax=y+y_v, color=c)
 ax.set_xlabel(r"$\sigma_v$ (mV)")
 ax.set_ylabel("error")
-ax.set_title("Squared error between sample SDs")
+ax.set_title("(B) Squared error between sample SDs")
 ax.legend()
 
 # plot the histograms for the two examples
 n_samples = 10000
-for i, delta in enumerate(delta_examples):
+for i, (delta, cond) in enumerate(zip(delta_examples, ["C", "D"])):
     ax = fig.add_subplot(grid[1, i])
     idx = np.argmin(np.abs(deltas - delta))
     sd = sds[idx]
@@ -100,7 +101,7 @@ for i, delta in enumerate(delta_examples):
     samples_g = gaussian(n_samples, mu=mu, sd=sd, lb=lb, ub=ub)
     ax.hist(samples_l, bins=100, density=True, color="dimgrey", label="Lorentzian")
     ax.hist(samples_g, bins=100, density=True, color="firebrick", label="Gaussian", alpha=0.6)
-    ax.set_title(fr"$\sigma_v = {np.round(sd, decimals=1)}$ mV, $\Delta_v$ = {np.round(delta, decimals=1)}")
+    ax.set_title(fr"({cond}) $\sigma_v = {np.round(sd, decimals=1)}$ mV, $\Delta_v$ = {np.round(delta, decimals=1)}")
     ax.set_ylabel(r"$p$")
     ax.set_xlabel(r"$v_{\theta}$")
     ax.set_xlim([-60.0, -20.0])

@@ -45,7 +45,7 @@ def get_fr(inp: np.ndarray, k: float, C: float, v_reset: float, v_spike: float, 
 mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
 
 # choose neuron type
-neuron_type = "lts"
+neuron_type = "rs"
 
 if neuron_type == "rs":
 
@@ -117,8 +117,9 @@ T = 1000.0
 n_bins = 50
 
 # results
-results = {"lorentz": {"rate_dist": [], "spikes": []}, "gauss": {"rate_dist": [], "spikes": []}, "Deltas": Deltas,
-           "SDs": SDs}
+results = {"lorentz": {"rate_dist": [], "spikes": [], "rate_bins": []},
+           "gauss": {"rate_dist": [], "spikes": [], "rate_bins": []},
+           "Deltas": Deltas, "SDs": SDs}
 
 ############
 # analysis #
@@ -147,6 +148,7 @@ for Delta, SD in zip(Deltas, SDs):
 
         # store results
         results[key]["rate_dist"].append(np.asarray(densities))
+        results[key]["rate_bins"].append(rate_bins)
 
     ###########################
     # spiking data simulation #
