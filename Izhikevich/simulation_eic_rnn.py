@@ -43,7 +43,7 @@ Ci = 20.0   # unit: pF
 ki = 1.0  # unit: None
 vi_r = -55.0  # unit: mV
 vi_t = -40.0  # unit: mV
-Delta_i = 0.2  # unit: mV
+Delta_i = 2.0  # unit: mV
 di = 0.0
 ai = 0.2
 bi = 0.025
@@ -103,21 +103,23 @@ net.add_edges_from_matrix(source_var="eic_op/si", target_var="eic_op/s_ii", weig
 
 # initialize rectipy model
 model = Network(dt=dt, device="cuda:0")
-model.add_diffeq_node("eic_net", node=net, input_var="I_ext_i", output_var="se",
+model.add_diffeq_node("eic_net", node=net, input_var="I_ext_i", output_var="se", record_vars=["si"],
                       spike_var=["spike_e", "spike_i"], spike_def=["ve", "vi"], spike_reset=v_reset,
                       spike_threshold=v_spike, verbose=True, clear=False, op="eic_op", N=N)
 
 # perform simulation
-obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=True)
-res = obs.to_numpy("out")
-rs_res = np.mean(res[:, :N], axis=1)
-fs_res = np.mean(res[:, N:], axis=1)
+obs = model.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=True,
+                record_vars=[("eic_net", "si", False)])
+rs_spikes = obs.to_numpy("out")
+fs_spikes = obs.to_numpy(("eic_net", "si"))
+rs_rate = np.mean(rs_spikes, axis=1)
+fs_rate = np.mean(fs_spikes, axis=1)
 
 # plot results
 fig = plt.figure(figsize=(10, 4))
 ax = fig.add_subplot()
-ax.plot(rs_res, color="royalblue", label="rs")
-ax.plot(fs_res, color="darkorange", label="fs")
+ax.plot(rs_rate, color="royalblue", label="rs")
+ax.plot(fs_rate, color="darkorange", label="fs")
 ax.set_ylabel(r'$s(t)$')
 ax.set_xlabel('time (ms)')
 ax.set_title('mean-field dynamics')
@@ -125,5 +127,5 @@ ax.legend()
 plt.show()
 
 # save results
-pickle.dump({'rs_results': rs_res, 'fs_results': fs_res},
-            open("results/snn_eic_hom_high_sfa.p", "wb"))
+pickle.dump({'rs_results': rs_rate, 'fs_results': fs_rate, 'rs_spikes': rs_spikes, 'fs_spikes': fs_spikes},
+            open("results/snn_eic_het_high_sfa.p", "wb"))

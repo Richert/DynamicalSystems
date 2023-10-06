@@ -1,10 +1,8 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import sys
-sys.path.append('../')
 import pickle
 from scipy.stats import cauchy, norm
 from rectipy import Network, random_connectivity
+import matplotlib.pyplot as plt
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -31,27 +29,44 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 # parameters #
 ##############
 
-# choose neuron type
+# load data
+mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
+
+# extract arguments passed to the script
 neuron_type = "rs"
-distribution_type = "lorentz"
+idx = 20
+n = 50
 
 # choose neuron type
-n = 20
 if neuron_type == "rs":
 
     C = 100.0
     k = 0.7
     v_r = -60.0
     v_t = -40.0
-    eta = -20.0
+    eta = 0.0
     a = 0.03
     b = -2.0
     d = 10.0
     g = 15.0
     E_r = 0.0
     tau_s = 6.0
-    SDs = np.linspace(0.1, 6.0, num=n)
-    Deltas = np.linspace(0.1, 2.0, num=n)
+    Deltas = np.linspace(0.01, 4.0, num=n)
+
+elif neuron_type == "rs2":
+
+    C = 100.0
+    k = 0.7
+    v_r = -60.0
+    v_t = -40.0
+    eta = 0.0
+    a = 0.03
+    b = -2.0
+    d = 100.0
+    g = 15.0
+    E_r = 0.0
+    tau_s = 6.0
+    Deltas = np.linspace(0.01, 1.8, num=n)
 
 elif neuron_type == "fs":
 
@@ -59,19 +74,18 @@ elif neuron_type == "fs":
     k = 1.0
     v_r = -55.0
     v_t = -40.0
-    eta = 30.0
+    eta = 20.0
     a = 0.2
     b = 0.025
     d = 0.0
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
-    SDs = np.linspace(0.1, 4.0, num=n)
-    Deltas = np.linspace(0.1, 1.0, num=n)
+    Deltas = np.linspace(0.01, 0.8, num=n)
 
 elif neuron_type == "lts":
 
-    C = 10.0
+    C = 100.0
     k = 1.0
     v_r = -56.0
     v_t = -42.0
@@ -82,22 +96,25 @@ elif neuron_type == "lts":
     g = 5.0
     E_r = -65.0
     tau_s = 8.0
-    SDs = np.linspace(0.1, 4.0, num=n)
-    Deltas = np.linspace(0.1, 1.0, num=n)
+    Deltas = np.linspace(0.01, 0.6, num=n)
 
 else:
 
     raise ValueError("Wrong neuron type")
 
+# get SDs corresponding to Deltas
+sd_min = Deltas[0]
+sd_max = mapping["norm"][np.argmin(np.abs(mapping["lorentz"] - Deltas[-1]))]
+SDs = np.linspace(sd_min, sd_max, num=n)
+
 # network parameters
+I_ext = np.linspace(50.0, 100.0, num=100)
 v_reset = -1000.0
 v_spike = 1000.0
 N = 1000
 p = 0.2
-idx = 15
-SD = SDs[idx]
 Delta = Deltas[idx]
-print(f"Condition: {neuron_type}, {distribution_type}, Delta = {Delta}, sigma = {SD}")
+SD = SDs[idx]
 
 # define inputs
 ts = 10.0
@@ -107,57 +124,55 @@ dts = 1e-1
 cutoff = 100.0*ts
 inp = np.zeros((int(T/dt), 1))
 if neuron_type == "rs":
-    inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 100.0, num=int(1000*ts/dt))
-    inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(100.0, 0.0, num=int(1000*ts/dt))
+    inp[int(100*ts/dt):int(1100*ts/dt), 0] += np.linspace(0.0, 80.0, num=int(1000*ts/dt))
+    inp[int(1100*ts/dt):int(2100*ts/dt), 0] += np.linspace(80.0, 0.0, num=int(1000*ts/dt))
+elif neuron_type == "rs2":
+    inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 80.0, num=int(2000 * ts / dt))
 else:
-    inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 100.0, num=int(2000 * ts / dt))
+    inp[int(100 * ts / dt):int(2100 * ts / dt), 0] += np.linspace(0.0, 120.0, num=int(2000 * ts / dt))
 
 # get connectivity
 W = random_connectivity(N, N, p, normalize=True)
 
 # get thetas
-if distribution_type == "lorentz":
-    thetas = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
-else:
-    thetas = gaussian(N, mu=v_t, sd=SD, lb=v_r, ub=2*v_t-v_r)
+thetas_l = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
+thetas_g = gaussian(N, mu=v_t, sd=SD, lb=v_r, ub=2*v_t-v_r)
 
 ##############
 # simulation #
 ##############
 
-try:
-    results = pickle.load(open(f"results/bifurcations_{neuron_type}_{idx}.pkl", "rb"))
-except FileNotFoundError:
-    results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0] + eta}
+results = {"lorentz": [], "gauss": [], "Delta": Delta, "SD": SD, "I_ext": inp[int(cutoff/dt)::int(dts/dt), 0] + eta}
 
-# collect parameters
-node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
-             "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
+for distribution_type, thetas in zip(["lorentz", "gauss"], [thetas_l, thetas_g]):
 
-# initialize network
-net = Network(dt=dt, device="cuda:0")
-net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                    input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                    node_vars=node_vars, op="rs_op", spike_reset=v_reset, spike_threshold=v_spike)
+    # collect parameters
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
+                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
-# run simulation
-obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False)
+    # initialize network
+    net = Network(dt=dt, device="cpu")
+    net.add_diffeq_node("ik", "config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
+                        node_vars=node_vars, op="rs_op", spike_reset=v_reset, spike_threshold=v_spike)
 
-# store results
-results[distribution_type] = np.mean(obs.to_numpy("out"), axis=1)[int(cutoff/dts)::]
+    # run simulation
+    obs = net.run(inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False)
+
+    # store results
+    results[distribution_type] = obs.to_numpy("out")[int(cutoff/dts)::, :]
 
 # save results
-pickle.dump(results, open(f"results/bifurcations_{neuron_type}_{idx}.pkl", "wb"))
+pickle.dump(results, open(f"results/spikes_{neuron_type}.pkl", "wb"))
 
 ############
 # plotting #
 ############
 
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(results[distribution_type], label=rf"$\Delta_v = {Delta}$ mV, $\sigma_v = {SD}$")
+fig, axes = plt.subplots(nrows=2, figsize=(12, 5))
+for ax, dist in zip(axes, ["lorentz", "gauss"]):
+    ax.imshow(results[dist].T, aspect="auto", cmap="Greys", interpolation="none")
+    ax.set_title(rf"$\Delta_v = {Delta}$ mV, $\sigma_v = {SD}$")
 ax.set_xlabel("time")
-ax.set_ylabel("s")
-ax.legend()
-ax.set_title(distribution_type)
 plt.tight_layout()
 plt.show()

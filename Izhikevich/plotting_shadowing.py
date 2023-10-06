@@ -1,4 +1,3 @@
-from matplotlib import gridspec
 import matplotlib.pyplot as plt
 from pycobi import ODESystem
 import sys
