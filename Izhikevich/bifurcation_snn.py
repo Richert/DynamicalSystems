@@ -34,7 +34,7 @@ mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
 
 # extract arguments passed to the script
 neuron_type = "lts"
-idx = 20
+idx = 10
 n = 50
 
 # choose neuron type
