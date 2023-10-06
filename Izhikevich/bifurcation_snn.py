@@ -33,7 +33,7 @@ def gaussian(n, mu: float, sd: float, lb: float, ub: float):
 mapping = pickle.load(open("results/norm_lorentz_fit.pkl", "rb"))
 
 # extract arguments passed to the script
-neuron_type = "fs"
+neuron_type = "rs"
 idx = 10
 n = 50
 
