@@ -21,7 +21,7 @@ def get_hopf_area(hbs: np.ndarray, idx: int, cutoff: int):
 ##############
 
 # define condition
-neuron_type = "lts"
+neuron_type = "rs"
 path = "results"
 
 # load data
@@ -94,8 +94,8 @@ colors = ["black", "darkorange"]
 
 # data parameters
 neuron_ds = 10
-bifurcation = "hopf"
-tau = 8.0
+bifurcation = "fold"
+tau = 6.0
 
 # create figure
 fig = plt.figure(figsize=(12, 4))
@@ -103,14 +103,15 @@ grid = fig.add_gridspec(ncols=2, nrows=3, height_ratios=[2, 2, 1])
 
 titles = [rf"Lorentzian heterogeneity with $\Delta_v = {np.round(delta, decimals=1)}$ mV",
           rf"Gaussian heterogeneity with $\sigma_v = {np.round(sd, decimals=1)}$ mV"]
-time_windows = ([40000, 100000], [40000, 100000])
+time_windows = ([30000, 90000], [30000, 90000])
 for idx, key in enumerate(["lorentz", "gauss"]):
 
     # plot spike raster
     ax1 = fig.add_subplot(grid[0, idx])
     spikes = data[key]
+    x = np.linspace(0, spikes.shape[0]/10, spikes.shape[0])
     time = time_windows[idx]
-    ax1.imshow(spikes[time[0]:time[1], ::neuron_ds].T, interpolation="none", aspect="auto", cmap="Greys")
+    ax1.imshow(spikes[time[0]:time[1], ::neuron_ds].T, interpolation="antialiased", aspect="auto", cmap="Greys")
     ax1.set_xlabel("time (ms)")
     ax1.set_ylabel("neuron id")
     ax1.set_title(titles[idx])
@@ -118,24 +119,28 @@ for idx, key in enumerate(["lorentz", "gauss"]):
     # plot average firing rate
     ax2 = fig.add_subplot(grid[1, idx])
     rates = np.mean(data[key], axis=1)*1e3/tau
-    ax2.plot(rates, color="black")
-    ax2.vlines(x=data[f"{key}_{bifurcation}"]["idx"][0], ymin=0, ymax=np.max(rates), linestyle='dashed',
+    ax2.plot(x, rates, color="black")
+    ax2.vlines(x=data[f"{key}_{bifurcation}"]["idx"][0]/10, ymin=0, ymax=np.max(rates), linestyle='dashed',
                color='slateblue')
-    ax2.vlines(x=data[f"{key}_{bifurcation}"]["idx"][-1], ymin=0, ymax=np.max(rates), linestyle='dashed',
+    ax2.vlines(x=data[f"{key}_{bifurcation}"]["idx"][-1]/10, ymin=0, ymax=np.max(rates), linestyle='dashed',
                color='mediumorchid')
-    ax2.set_xlabel("time (ms)")
+    ax2.vlines(x=time[0]/10, ymin=0, ymax=np.max(rates), linestyle='dashed',
+               color='black')
+    ax2.vlines(x=time[1]/10, ymin=0, ymax=np.max(rates), linestyle='dashed',
+               color='black')
+    ax2.set_xlabel("")
     ax2.set_ylabel(r"$r$ (Hz)")
 
     # plot input
     ax3 = fig.add_subplot(grid[2, idx])
-    ax3.plot(I_ext, color="grey")
-    ax3.vlines(x=data[f"{key}_{bifurcation}"]["idx"][0], ymin=0, ymax=data[f"{key}_{bifurcation}"]["I_ext"][0],
+    ax3.plot(x, I_ext, color="grey")
+    ax3.vlines(x=data[f"{key}_{bifurcation}"]["idx"][0]/10, ymin=0, ymax=data[f"{key}_{bifurcation}"]["I_ext"][0],
                linestyle='dashed', color='slateblue')
-    ax3.vlines(x=data[f"{key}_{bifurcation}"]["idx"][-1], ymin=0, ymax=data[f"{key}_{bifurcation}"]["I_ext"][-1],
+    ax3.vlines(x=data[f"{key}_{bifurcation}"]["idx"][-1]/10, ymin=0, ymax=data[f"{key}_{bifurcation}"]["I_ext"][-1],
                linestyle='dashed', color='mediumorchid')
-    ax3.hlines(y=data[f"{key}_{bifurcation}"]["I_ext"][0], xmin=0, xmax=data[f"{key}_{bifurcation}"]["idx"][0],
+    ax3.hlines(y=data[f"{key}_{bifurcation}"]["I_ext"][0], xmin=0, xmax=data[f"{key}_{bifurcation}"]["idx"][0]/10,
                linestyle='dashed', color='slateblue')
-    ax3.hlines(y=data[f"{key}_{bifurcation}"]["I_ext"][-1], xmin=0, xmax=data[f"{key}_{bifurcation}"]["idx"][-1],
+    ax3.hlines(y=data[f"{key}_{bifurcation}"]["I_ext"][-1], xmin=0, xmax=data[f"{key}_{bifurcation}"]["idx"][-1]/10,
                linestyle='dashed', color='mediumorchid')
     ax3.set_xlabel("time (ms)")
     ax3.set_ylabel(r"$I_{ext}$ (pA)")
@@ -145,5 +150,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/{neuron_type}_bifurcation_example.svg')
+plt.savefig(f'results/bifurcation_example_{neuron_type}.svg')
 plt.show()

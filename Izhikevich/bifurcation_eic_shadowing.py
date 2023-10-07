@@ -17,10 +17,10 @@ auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjec
 # config
 n_dim = 8
 n_params = 33
-a = ODESystem("config", auto_dir=auto_dir, init_cont=False)
+a = ODESystem('eic_shadowing', working_dir="config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time (to converge to fixed point)
-t_sols, t_cont = a.run(e='eic_shadowing', c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04,
+t_sols, t_cont = a.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-12, EPSL=1e-06, EPSU=1e-06, EPSS=1e-04,
                        DSMAX=0.1, NMX=50000, UZR={14: 2000.0}, STOP={'UZ1'}, NPR=1000, NDIM=n_dim, NPAR=n_params)
 
 ########################

@@ -49,8 +49,8 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(E) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$')
-    # ax.set_ylim([0.0, 1.7])
-    # ax.set_xlim([10.0, 70.0])
+    ax.set_ylim([0.0, 1.7])
+    ax.set_xlim([20.0, 60.0])
 
     # Delta_fs = 2.0, d_rs = 100.0
     ax = fig.add_subplot(grid[0, col+1])
@@ -61,8 +61,8 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(F) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
-    # ax.set_ylim([0.0, 1.7])
-    # ax.set_xlim([10.0, 70.0])
+    ax.set_ylim([0.0, 2.0])
+    ax.set_xlim([-130.0, 40.0])
 
     # Delta_fs = 0.2, d_rs = 10.0
     ax = fig.add_subplot(grid[1, col])
@@ -73,22 +73,25 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(A) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
-    # ax.set_ylim([0.0, 1.7])
-    # ax.set_xlim([10.0, 70.0])
+    ax.set_ylim([0.0, 2.0])
+    ax.set_xlim([-10.0, 40.0])
 
     # Delta_fs = 0.2, d_rs = 100.0
     ax = fig.add_subplot(grid[1, col + 1])
     a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb1', ax=ax, line_color_stable='#148F77',
                         line_color_unstable='#148F77', line_style_unstable='solid')
-    a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb2', ax=ax, line_color_stable='#148F77',
-                        line_color_unstable='#148F77', line_style_unstable='solid')
+    try:
+        a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:2:hb2', ax=ax, line_color_stable='#148F77',
+                            line_color_unstable='#148F77', line_style_unstable='solid')
+    except KeyError:
+        pass
     a.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:2:lp1', ax=ax, line_color_stable='#5D6D7E',
                         line_color_unstable='#5D6D7E', line_style_unstable='solid')
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(B) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$')
-    # ax.set_ylim([0.0, 1.7])
-    # ax.set_xlim([10.0, 70.0])
+    ax.set_ylim([0.0, 2.0])
+    ax.set_xlim([-130.0, 40.0])
 
 # finishing touches
 ###################
