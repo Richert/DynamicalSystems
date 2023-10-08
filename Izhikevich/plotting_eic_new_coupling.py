@@ -17,7 +17,7 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 4)
+plt.rcParams['figure.figsize'] = (12, 6)
 plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
@@ -50,7 +50,7 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(E) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$')
     ax.set_ylim([0.0, 1.7])
-    ax.set_xlim([20.0, 60.0])
+    ax.set_xlim([10.0, 55.0])
 
     # Delta_fs = 2.0, d_rs = 100.0
     ax = fig.add_subplot(grid[0, col+1])
@@ -61,7 +61,7 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(F) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
-    ax.set_ylim([0.0, 2.0])
+    ax.set_ylim([0.0, 1.7])
     ax.set_xlim([-130.0, 40.0])
 
     # Delta_fs = 0.2, d_rs = 10.0
@@ -73,8 +73,8 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(A) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
-    ax.set_ylim([0.0, 2.0])
-    ax.set_xlim([-10.0, 40.0])
+    ax.set_ylim([0.0, 1.7])
+    ax.set_xlim([10.0, 55.0])
 
     # Delta_fs = 0.2, d_rs = 100.0
     ax = fig.add_subplot(grid[1, col + 1])
@@ -90,7 +90,7 @@ for a, col in zip([a1, a2], [0, 2]):
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
     ax.set_title(r'(B) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$')
-    ax.set_ylim([0.0, 2.0])
+    ax.set_ylim([0.0, 1.7])
     ax.set_xlim([-130.0, 40.0])
 
 # finishing touches

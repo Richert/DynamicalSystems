@@ -68,7 +68,7 @@ a.run(starting_point='HB1', c='qif2', ICP=[6, 26], NPAR=n_params, NDIM=n_dim, na
 r2_sols, r2_cont = a.run(starting_point='UZ2', c='qif', ICP=26, NPAR=n_params, NDIM=n_dim, name='I_fs:2',
                          origin=c3_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=150.0)
 a.run(starting_point='HB1', c='qif2', ICP=[6, 26], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:2:hb1', origin=r2_cont,
-      NMX=8000, DSMAX=0.1, UZR={6: [0.016]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
+      NMX=8000, DSMAX=0.1, UZR={26: [53.02]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
 # a.run(starting_point='HB2', c='qif2', ICP=[6, 26], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:2:hb2', origin=r2_cont,
 #       NMX=8000, DSMAX=0.1, UZR={6: [0.02]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
 a.run(starting_point='UZ1', c='qif', ICP=26, NPAR=n_params, NDIM=n_dim, name='I_fs:2:2', origin='D_rs/I_fs:2:hb1',
@@ -88,7 +88,7 @@ a.run(starting_point='LP2', c='qif2', ICP=[6, 26], NPAR=n_params, NDIM=n_dim, na
 r4_sols, r4_cont = a.run(starting_point='UZ2', c='qif', ICP=26, NPAR=n_params, NDIM=n_dim, name='I_fs:4',
                          origin=c4_cont, NMX=8000, DSMAX=0.1, UZR={}, STOP=[], NPR=100, RL1=200.0)
 a.run(starting_point='HB1', c='qif2', ICP=[6, 26], NPAR=n_params, NDIM=n_dim, name='D_rs/I_fs:4:hb1', origin=r4_cont,
-      NMX=8000, DSMAX=0.1, UZR={26: [25.7]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
+      NMX=8000, DSMAX=0.1, UZR={26: [25.49]}, STOP=['CP2'], NPR=10, RL1=10.0, RL0=0.0, bidirectional=True, EPSS=1e-6)
 a.run(starting_point='UZ1', c='qif', ICP=6, NPAR=n_params, NDIM=n_dim, name='D_rs:4', origin='D_rs/I_fs:4:hb1',
       NMX=8000, DSMAX=0.1, UZR={6: [0.08]}, STOP=[], NPR=100, RL0=0.0, DS="-")
 a.run(starting_point='UZ1', c='qif', ICP=26, NPAR=n_params, NDIM=n_dim, name='I_fs:4:2', origin='D_rs:4',
