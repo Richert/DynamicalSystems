@@ -38,7 +38,8 @@ grid = gridspec.GridSpec(nrows=2, ncols=4, figure=fig)
 # 2D continuations
 ##################
 
-for a, col in zip([a1, a2], [0, 2]):
+titles = [("A", "B", "C", "D"), ("E", "F", "G", "H")]
+for a, col, title in zip([a1, a2], [0, 2], titles):
 
     # Delta_fs = 2.0, d_rs = 10.0
     ax = fig.add_subplot(grid[0, col])
@@ -48,7 +49,7 @@ for a, col in zip([a1, a2], [0, 2]):
                         line_color_unstable='#5D6D7E', line_style_unstable='solid')
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
-    ax.set_title(r'(E) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$')
+    ax.set_title(f'({title[0]}) ' + r'$\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$')
     ax.set_ylim([0.0, 1.7])
     ax.set_xlim([10.0, 55.0])
 
@@ -60,7 +61,7 @@ for a, col in zip([a1, a2], [0, 2]):
                         line_color_unstable='#5D6D7E', line_style_unstable='solid')
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
-    ax.set_title(r'(F) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
+    ax.set_title(f'({title[1]}) ' + r'$\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
     ax.set_ylim([0.0, 1.7])
     ax.set_xlim([-130.0, 40.0])
 
@@ -72,7 +73,7 @@ for a, col in zip([a1, a2], [0, 2]):
     #                     line_color_unstable='#148F77', line_style_unstable='solid')
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
-    ax.set_title(r'(A) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
+    ax.set_title(f'({title[2]}) ' + r'$\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
     ax.set_ylim([0.0, 1.7])
     ax.set_xlim([10.0, 55.0])
 
@@ -89,7 +90,7 @@ for a, col in zip([a1, a2], [0, 2]):
                         line_color_unstable='#5D6D7E', line_style_unstable='solid')
     ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
     ax.set_xlabel(r'$I_{fs}$ (pA)')
-    ax.set_title(r'(B) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$')
+    ax.set_title(f'({title[3]}) ' + r'$\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$')
     ax.set_ylim([0.0, 1.7])
     ax.set_xlim([-130.0, 40.0])
 
