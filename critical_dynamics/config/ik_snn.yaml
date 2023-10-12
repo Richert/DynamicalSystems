@@ -1,0 +1,124 @@
+%YAML 1.2
+---
+
+# operator for regular-spiking IK neurons
+rs_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*s_in*(E_r - v)) / C"
+    - "u' = (b*(mean(v)-v_r) - u) / tau_u + kappa*mean(spike)"
+    - "s' = -s/tau_s + spike + s_ext"
+  variables:
+    s: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_theta: -40.0
+    eta: 0.0
+    g: 1.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 33.33
+    kappa: 10.0
+    tau_s: 6.0
+    spike: input(0.0)
+    s_in: input(0.0)
+    I_ext: input(0.0)
+    s_ext: input(0.0)
+
+# operator for regular-spiking IK neurons
+ik_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
+    - "s' = -s/tau_s + spike + s_ext"
+  variables:
+    s: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_theta: -40.0
+    eta: 0.0
+    g_e: 1.0
+    E_e: 0.0
+    g_i: 1.0
+    E_i: -60.0
+    b: -2.0
+    tau_u: 33.33
+    kappa: 10.0
+    tau_s: 6.0
+    spike: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+    I_ext: input(0.0)
+    s_ext: input(0.0)
+
+# operator for regular-spiking IK neurons
+eic_op:
+  base: OperatorTemplate
+  equations:
+    - "ve' = (ke*(ve-v_r_e)*(ve-v_theta_e) - ue + eta_e + I_ext_e + g_e*s_ee*(E_e - ve) + g_i*s_ei*(E_i - ve)) / C_e"
+    - "ue' = (be*(mean(ve)-v_r_e) - ue) / tau_u_e + kappa*mean(spike_e)"
+    - "se' = -se/tau_s_e + spike_e"
+    - "vi' = (ki*(vi-v_r_i)*(vi-v_theta_i) - ui + eta_i + I_ext_i + g_e*s_ie*(E_e - vi) + g_i*s_ii*(E_i - vi)) / C_i"
+    - "ui' = (bi*(mean(vi)-v_r_i) - ui) / tau_u_i"
+    - "si' = -si/tau_s_i + spike_i"
+  variables:
+    se: output(0.0)
+    ve: variable(-60.0)
+    ue: variable(0.0)
+    C_e: 20.0
+    ke: 1.0
+    v_r_e: -55.0
+    v_theta_e: -40.0
+    eta_e: 0.0
+    g_e: 1.0
+    E_e: 0.0
+    g_i: 1.0
+    E_i: -60.0
+    kappa: 10.0
+    be: 0.025
+    tau_u_e: 5.0
+    tau_s_e: 8.0
+    spike_e: input(0.0)
+    s_ee: input(0.0)
+    s_ei: input(0.0)
+    I_ext_e: input(0.0)
+    si: variable(0.0)
+    vi: variable(-60.0)
+    ui: variable(0.0)
+    C_i: 20.0
+    ki: 1.0
+    v_r_i: -55.0
+    v_theta_i: -40.0
+    eta_i: 0.0
+    bi: 0.025
+    tau_u_i: 5.0
+    tau_s_i: 8.0
+    spike_i: input(0.0)
+    s_ie: input(0.0)
+    s_ii: input(0.0)
+    I_ext_i: input(0.0)
+
+# population of regular-spiking neurons
+rs:
+  base: NodeTemplate
+  operators:
+    - rs_op
+
+# population of generalized Izhikevich neurons
+ik:
+  base: NodeTemplate
+  operators:
+    - ik_op
+
+# population of fast-spiking neurons
+eic:
+  base: NodeTemplate
+  operators:
+    - eic_op
