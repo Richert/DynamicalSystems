@@ -19,9 +19,9 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # general parameters
-n_e = 800
-n_i = 200
-n_t = 100
+n_e = 200
+n_i = 40
+n_t = 20
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
@@ -53,7 +53,7 @@ C_t = 200.0   # unit: pF
 k_t = 1.6  # unit: None
 v_r_t = -60.0  # unit: mV
 v_t_t = -50.0  # unit: mV
-Delta_t = 0.1  # unit: mV
+Delta_t = 0.2  # unit: mV
 d_t = 100.0  # unit: pA
 a_t = 0.1  # unit: 1/ms
 b_t = 15.0  # unit: nS
@@ -68,7 +68,7 @@ tau_ampa = 6.0
 tau_gaba = 8.0
 k_ee = 20.0
 k_ei = 15.0
-k_et = 15.0
+k_et = 10.0
 k_ie = 10.0
 k_ii = 10.0
 k_it = 5.0
@@ -90,14 +90,10 @@ W_te = random_connectivity(n_t, n_e, p, normalize=True)
 
 # define inputs
 t_scale = 1.0
-T = 2500.0 * t_scale
-cutoff = 500.0 * t_scale
-target_idx = np.arange(0, 10, 1) + n_e + n_i
+T = 100.0 * t_scale
+cutoff = 100.0 * t_scale
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt), n_e + n_i + n_t))
-for idx in target_idx:
-    inp[int(1000.0*t_scale/dt):int(2000.0*t_scale/dt), idx] += 50.0
 
 # create the model
 ##################
@@ -142,17 +138,73 @@ net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W
 # initialize rectipy model
 model = Network(dt=dt, device="cuda:0")
 model.add_diffeq_node("net", node=net, input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                      spike_reset=v_reset, spike_threshold=v_spike, op="ik_op", verbose=True, clear=False)
+                      spike_reset=v_reset, spike_threshold=v_spike, op="ik_op", verbose=True, clear=False,
+                      train_params=["weights"])
 
-# perform simulation
-####################
+# perform parameter optimization
+################################
 
-# simulation
-obs = model.run(inputs=inp, sampling_steps=int(dts/dt), enable_grad=False)
+# parameters
+n_readout = 3
+n_epochs = 100
+input_strength = 100.0
+cutoff_steps = int(cutoff/dt)
+inp_steps = int(T/dt)
+trial_steps = cutoff_steps + inp_steps
+update_steps = int(100/dt)
+
+# add a readout layer
+model.add_func_node("readout", n_readout, "softmax")
+model.add_edge("net", "readout", train="gd")
+
+# define input weights
+input_weights = {}
+for i in range(n_readout):
+    input_weights[i] = np.random.rand(n_t)
+inputs, targets = [], []
+for epoch in range(n_epochs):
+
+    # define inputs and targets
+    inp_seq = np.random.permutation(n_readout)
+    inp = np.zeros((int(n_readout*trial_steps), n_e + n_i + n_t))
+    targs = np.zeros((inp.shape[0], n_readout))
+    for i, idx in enumerate(inp_seq):
+        inp[i*trial_steps:i*trial_steps+inp_steps, (n_e + n_i):] = input_weights[idx] * input_strength
+        targs[i*trial_steps:i*trial_steps+inp_steps, idx] = 1.0
+
+    # save inputs and targets
+    inputs.append(inp)
+    targets.append(targs)
+
+# perform initial simulation
+obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False)
+res0 = obs.to_numpy("out")
+w0 = model.get_var("net", "weights")
+
+# perform training
+model.fit_bptt(inputs, targets, loss="mse", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-6}, lr=0.5)
+
+# perform final simulation
+obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False)
+res1 = obs.to_numpy("out")
+w1 = model.get_var("net", "weights")
 
 # plotting
-fig, ax = plt.subplots(figsize=(12, 4))
-sig = obs.to_numpy("out")
+##########
+
+fig = plt.figure(figsize=(12, 7))
+grid = fig.add_gridspec(nrows=3, ncols=2)
+
+ax = fig.add_subplot(grid[0, 0])
+ax.imshow(w0, interpolation="none", aspect="auto")
+ax.set_title("Original intrinsic weights")
+
+ax = fig.add_subplot(grid[0, 1])
+ax.imshow(w1, interpolation="none", aspect="auto")
+ax.set_title("Fitted intrinsic weights")
+
+ax = fig.add_subplot(grid[1, :])
+sig = res0
 pc_rates = np.mean(sig[:, :n_e], axis=1)
 in_rates = np.mean(sig[:, n_e:(n_e+n_i)], axis=1)
 tc_rates = np.mean(sig[:, (n_e+n_i):], axis=1)
@@ -162,5 +214,20 @@ ax.plot(tc_rates, color="forestgreen", label="TC")
 ax.legend()
 ax.set_xlabel("time")
 ax.set_ylabel("s")
+ax.set_title("Original network dynamics")
+
+ax = fig.add_subplot(grid[1, :])
+sig = res1
+pc_rates = np.mean(sig[:, :n_e], axis=1)
+in_rates = np.mean(sig[:, n_e:(n_e+n_i)], axis=1)
+tc_rates = np.mean(sig[:, (n_e+n_i):], axis=1)
+ax.plot(pc_rates, color="royalblue", label="PC")
+ax.plot(in_rates, color="darkorange", label="IN")
+ax.plot(tc_rates, color="forestgreen", label="TC")
+ax.legend()
+ax.set_xlabel("time")
+ax.set_ylabel("s")
+ax.set_title("Fitted network dynamics")
+
 plt.tight_layout()
 plt.show()
