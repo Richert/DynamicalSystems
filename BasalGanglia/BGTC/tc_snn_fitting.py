@@ -3,6 +3,9 @@ from pyrates import CircuitTemplate, NodeTemplate
 from scipy.stats import cauchy
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.nn import MSELoss
+from torch.optim import Adadelta
+from torch import stack, tensor
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -19,12 +22,30 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # general parameters
-n_e = 200
-n_i = 40
-n_t = 20
+device = "cpu"
+epsilon = 0.01
+
+# input parameters
+t_scale = 1.0
+T = 50.0 * t_scale
+cutoff = 50.0 * t_scale
+dt = 1e-2
+dts = 1e-1
+input_strength = 100.0
+cutoff_steps = int(cutoff/dt)
+inp_steps = int(T/dt)
+trial_steps = cutoff_steps + inp_steps
+update_steps = int(100/dt)
+n_epochs = 10
+
+# network parameters
+n_e = 100
+n_i = 20
+n_t = 10
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
+n_readout = 3
 
 # RS neuron parameters
 C_e = 100.0   # unit: pF
@@ -88,13 +109,6 @@ W_ii = random_connectivity(n_i, n_i, p, normalize=True)
 W_it = random_connectivity(n_i, n_t, p, normalize=True)
 W_te = random_connectivity(n_t, n_e, p, normalize=True)
 
-# define inputs
-t_scale = 1.0
-T = 100.0 * t_scale
-cutoff = 100.0 * t_scale
-dt = 1e-2
-dts = 1e-1
-
 # create the model
 ##################
 
@@ -136,26 +150,18 @@ net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W
                           source_nodes=neurons["rs"], target_nodes=neurons["tc"])
 
 # initialize rectipy model
-model = Network(dt=dt, device="cuda:0")
+model = Network(dt=dt, device=device)
 model.add_diffeq_node("net", node=net, input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                      spike_reset=v_reset, spike_threshold=v_spike, op="ik_op", verbose=True, clear=False,
+                      spike_reset=v_reset, spike_threshold=v_spike, op="ik_op", verbose=True, clear=True,
                       train_params=["weights"])
 
 # perform parameter optimization
 ################################
 
-# parameters
-n_readout = 3
-n_epochs = 100
-input_strength = 100.0
-cutoff_steps = int(cutoff/dt)
-inp_steps = int(T/dt)
-trial_steps = cutoff_steps + inp_steps
-update_steps = int(100/dt)
-
 # add a readout layer
 model.add_func_node("readout", n_readout, "softmax")
 model.add_edge("net", "readout", train="gd")
+model.compile()
 
 # define input weights
 input_weights = {}
@@ -179,21 +185,45 @@ for epoch in range(n_epochs):
 # perform initial simulation
 obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False)
 res0 = obs.to_numpy("out")
-w0 = model.get_var("net", "weights")
+w0 = model.get_var("net", "weights").cpu().detach().numpy()
 
-# perform training
-model.fit_bptt(inputs, targets, loss="mse", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-6}, lr=0.5)
+# perform fitting
+loss_fn = MSELoss()
+optim = Adadelta(model.parameters(), lr=0.5, rho=0.9, eps=1e-6)
+loss_hist = []
+for epoch in range(n_epochs):
+
+    # perform forward pass
+    obs = model.run(inputs[epoch], sampling_steps=1, enable_grad=True, verbose=False)
+    predictions = obs["out"]
+
+    # calculate loss
+    loss = loss_fn(stack(predictions), tensor(targets[epoch], device=device))
+
+    # perform weight update
+    optim.zero_grad()
+    loss.backward()
+    optim.step()
+    model.detach(detach_params=True)
+
+    # save stuff for plotting
+    loss_hist.append(loss.item())
+    print(f"Epoch #{epoch} finished. Current loss = {loss_hist[-1]}")
+
+    # convergence criterion
+    if loss_hist[-1] < epsilon:
+        break
 
 # perform final simulation
 obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False)
 res1 = obs.to_numpy("out")
-w1 = model.get_var("net", "weights")
+w1 = model.get_var("net", "weights").cpu().detach().numpy()
 
 # plotting
 ##########
 
-fig = plt.figure(figsize=(12, 7))
-grid = fig.add_gridspec(nrows=3, ncols=2)
+fig = plt.figure(figsize=(12, 8))
+grid = fig.add_gridspec(nrows=4, ncols=2)
 
 ax = fig.add_subplot(grid[0, 0])
 ax.imshow(w0, interpolation="none", aspect="auto")
@@ -216,7 +246,7 @@ ax.set_xlabel("time")
 ax.set_ylabel("s")
 ax.set_title("Original network dynamics")
 
-ax = fig.add_subplot(grid[1, :])
+ax = fig.add_subplot(grid[2, :])
 sig = res1
 pc_rates = np.mean(sig[:, :n_e], axis=1)
 in_rates = np.mean(sig[:, n_e:(n_e+n_i)], axis=1)
@@ -228,6 +258,12 @@ ax.legend()
 ax.set_xlabel("time")
 ax.set_ylabel("s")
 ax.set_title("Fitted network dynamics")
+
+ax = fig.add_subplot(grid[3, :])
+ax.plot(loss_hist)
+ax.set_xlabel("epoch")
+ax.set_ylabel("mse")
+ax.set_title("Training loss")
 
 plt.tight_layout()
 plt.show()
