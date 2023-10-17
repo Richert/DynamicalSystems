@@ -19,9 +19,9 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # general parameters
-n_e = 800
-n_i = 200
-n_t = 100
+n_e = 200
+n_i = 40
+n_t = 20
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3

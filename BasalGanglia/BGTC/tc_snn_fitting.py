@@ -22,16 +22,16 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # general parameters
-device = "cpu"
+device = "cuda:0"
 epsilon = 0.01
 
 # input parameters
 t_scale = 1.0
-T = 50.0 * t_scale
-cutoff = 50.0 * t_scale
+T = 200.0 * t_scale
+cutoff = 200.0 * t_scale
 dt = 1e-2
-dts = 1e-1
-input_strength = 100.0
+dts = 1.0
+input_strength = 50.0
 cutoff_steps = int(cutoff/dt)
 inp_steps = int(T/dt)
 trial_steps = cutoff_steps + inp_steps
@@ -39,9 +39,9 @@ update_steps = int(100/dt)
 n_epochs = 10
 
 # network parameters
-n_e = 100
-n_i = 20
-n_t = 10
+n_e = 200
+n_i = 40
+n_t = 20
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
@@ -56,7 +56,7 @@ Delta_e = 0.5  # unit: mV
 d_e = 400.0  # unit: pA
 a_e = 0.01  # unit: 1/ms
 b_e = 5.0  # unit: nS
-I_e = 60.0  # unit: pA
+I_e = 50.0  # unit: pA
 
 # LTS neuron parameters
 C_i = 100.0   # unit: pF
@@ -67,14 +67,14 @@ Delta_i = 1.0  # unit: mV
 d_i = 20.0  # unit: pA
 a_i = 0.03  # unit: 1/ms
 b_i = 8.0  # unit: nS
-I_i = 80.0  # unit: pA
+I_i = 60.0  # unit: pA
 
 # Tha neuron parameters
 C_t = 200.0   # unit: pF
 k_t = 1.6  # unit: None
 v_r_t = -60.0  # unit: mV
 v_t_t = -50.0  # unit: mV
-Delta_t = 0.2  # unit: mV
+Delta_t = 0.1  # unit: mV
 d_t = 100.0  # unit: pA
 a_t = 0.1  # unit: 1/ms
 b_t = 15.0  # unit: nS
@@ -152,7 +152,7 @@ net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W
 # initialize rectipy model
 model = Network(dt=dt, device=device)
 model.add_diffeq_node("net", node=net, input_var="I_ext", output_var="s", spike_var="spike", spike_def="v",
-                      spike_reset=v_reset, spike_threshold=v_spike, op="ik_op", verbose=True, clear=True,
+                      spike_reset=v_reset, spike_threshold=v_spike, op="ik_op", verbose=True, clear=False,
                       train_params=["weights"])
 
 # perform parameter optimization
@@ -183,8 +183,9 @@ for epoch in range(n_epochs):
     targets.append(targs)
 
 # perform initial simulation
-obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False)
-res0 = obs.to_numpy("out")
+obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, record_vars=[("net", "out", False)],
+                record_output=False)
+res0 = obs.to_numpy(("net", "out"))
 w0 = model.get_var("net", "weights").cpu().detach().numpy()
 
 # perform fitting
@@ -204,7 +205,8 @@ for epoch in range(n_epochs):
     optim.zero_grad()
     loss.backward()
     optim.step()
-    model.detach(detach_params=True)
+    model.detach(detach_params=False, requires_grad=True)
+    model.reset(model.state)
 
     # save stuff for plotting
     loss_hist.append(loss.item())
@@ -215,8 +217,9 @@ for epoch in range(n_epochs):
         break
 
 # perform final simulation
-obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False)
-res1 = obs.to_numpy("out")
+obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, record_vars=[("net", "out", False)],
+                record_output=False)
+res1 = obs.to_numpy(("net", "out"))
 w1 = model.get_var("net", "weights").cpu().detach().numpy()
 
 # plotting
