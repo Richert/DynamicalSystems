@@ -56,7 +56,7 @@ Delta_e = 0.5  # unit: mV
 d_e = 400.0  # unit: pA
 a_e = 0.01  # unit: 1/ms
 b_e = 5.0  # unit: nS
-I_e = 50.0  # unit: pA
+I_e = 80.0  # unit: pA
 
 # LTS neuron parameters
 C_i = 100.0   # unit: pF
@@ -67,7 +67,7 @@ Delta_i = 1.0  # unit: mV
 d_i = 20.0  # unit: pA
 a_i = 0.03  # unit: 1/ms
 b_i = 8.0  # unit: nS
-I_i = 60.0  # unit: pA
+I_i = 50.0  # unit: pA
 
 # Tha neuron parameters
 C_t = 200.0   # unit: pF
@@ -85,15 +85,15 @@ g_ampa = 1.0
 g_gaba = 1.0
 E_ampa = 0.0
 E_gaba = -65.0
-tau_ampa = 6.0
-tau_gaba = 8.0
-k_ee = 20.0
-k_ei = 15.0
+tau_ampa = 10.0
+tau_gaba = 20.0
+k_ee = 10.0
+k_ei = 5.0
 k_et = 10.0
-k_ie = 10.0
-k_ii = 10.0
+k_ie = 5.0
+k_ii = 5.0
 k_it = 5.0
-k_te = 20.0
+k_te = 5.0
 
 # define lorentzian of etas
 spike_thresholds_e = lorentzian(n_e, eta=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e - v_r_e)
@@ -113,12 +113,12 @@ W_te = random_connectivity(n_t, n_e, p, normalize=True)
 ##################
 
 # initialize EIC node
-pc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_theta": spike_thresholds_e, "eta": I_e, "tau_u": 1/a_e,
-           "b": b_e, "kappa": d_e, "tau_s": tau_gaba, "v": v_t_e}
-in_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_theta": spike_thresholds_i, "eta": I_i, "tau_u": 1/a_i,
-           "b": b_i, "kappa": d_i, "tau_s": tau_gaba, "v": v_t_i}
-tc_vars = {"C": C_t, "k": k_t, "v_r": v_r_t, "v_theta": spike_thresholds_t, "eta": I_t, "tau_u": 1/a_t,
-           "b": b_t, "kappa": d_t, "tau_s": tau_gaba, "v": v_t_t}
+pc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_t": v_t_e, "eta": I_e, "a": a_e,
+           "b": b_e, "d": d_e, "tau_s": tau_ampa, "v": v_t_e, "Delta": Delta_e, "E_e": E_ampa, "E_i": E_gaba}
+in_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_t": v_t_i, "eta": I_i, "a": a_i,
+           "b": b_i, "d": d_i, "tau_s": tau_gaba, "v": v_t_i, "Delta": Delta_i, "E_e": E_ampa, "E_i": E_gaba}
+tc_vars = {"C": C_t, "k": k_t, "v_r": v_r_t, "v_t": v_t_t, "eta": I_t, "a": a_t,
+           "b": b_t, "d": d_t, "tau_s": tau_ampa, "v": v_t_t, "Delta": Delta_t, "E_e": E_ampa, "E_i": E_gaba}
 neuron_params = {"rs": pc_vars, "lts": in_vars, "tc": tc_vars}
 
 # construct EI circuit
@@ -160,32 +160,37 @@ model.add_diffeq_node("net", node=net, input_var="I_ext", output_var="s", spike_
 
 # add a readout layer
 model.add_func_node("readout", n_readout, "softmax")
-model.add_edge("net", "readout", train="gd")
+W_out = np.random.randn(n_readout, n_e + n_i + n_t)
+mask = np.zeros_like(W_out)
+mask[:, :n_e] = 1.0
+model.add_edge("net", "readout", train="gd", weights=W_out * mask)
 model.compile()
 
 # define input weights
 input_weights = {}
-for i in range(n_readout):
+n_inp = n_readout - 1
+for i in range(n_inp):
     input_weights[i] = np.random.rand(n_t)
 inputs, targets = [], []
 for epoch in range(n_epochs):
 
     # define inputs and targets
-    inp_seq = np.random.permutation(n_readout)
-    inp = np.zeros((int(n_readout*trial_steps), n_e + n_i + n_t))
+    inp_seq = np.random.permutation(n_inp)
+    inp = np.zeros((int(n_inp*trial_steps), n_e + n_i + n_t))
     targs = np.zeros((inp.shape[0], n_readout))
     for i, idx in enumerate(inp_seq):
         inp[i*trial_steps:i*trial_steps+inp_steps, (n_e + n_i):] = input_weights[idx] * input_strength
         targs[i*trial_steps:i*trial_steps+inp_steps, idx] = 1.0
+        targs[i*trial_steps+inp_steps:i*trial_steps+inp_steps+cutoff_steps, n_inp] = 1.0
 
     # save inputs and targets
     inputs.append(inp)
     targets.append(targs)
 
 # perform initial simulation
-obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, record_vars=[("net", "out", False)],
-                record_output=False)
+obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, record_vars=[("net", "out", False)])
 res0 = obs.to_numpy(("net", "out"))
+out0 = obs.to_numpy("out")
 w0 = model.get_var("net", "weights").cpu().detach().numpy()
 
 # perform fitting
@@ -217,25 +222,28 @@ for epoch in range(n_epochs):
         break
 
 # perform final simulation
-obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, record_vars=[("net", "out", False)],
-                record_output=False)
+obs = model.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, record_vars=[("net", "out", False)])
 res1 = obs.to_numpy(("net", "out"))
+out1 = obs.to_numpy("out")
 w1 = model.get_var("net", "weights").cpu().detach().numpy()
 
 # plotting
 ##########
 
-fig = plt.figure(figsize=(12, 8))
-grid = fig.add_gridspec(nrows=4, ncols=2)
+fig = plt.figure(figsize=(12, 9))
+grid = fig.add_gridspec(nrows=6, ncols=2)
 
+# original connectivity
 ax = fig.add_subplot(grid[0, 0])
 ax.imshow(w0, interpolation="none", aspect="auto")
 ax.set_title("Original intrinsic weights")
 
+# fitted connectivity
 ax = fig.add_subplot(grid[0, 1])
 ax.imshow(w1, interpolation="none", aspect="auto")
 ax.set_title("Fitted intrinsic weights")
 
+# original network dynamics
 ax = fig.add_subplot(grid[1, :])
 sig = res0
 pc_rates = np.mean(sig[:, :n_e], axis=1)
@@ -245,10 +253,10 @@ ax.plot(pc_rates, color="royalblue", label="PC")
 ax.plot(in_rates, color="darkorange", label="IN")
 ax.plot(tc_rates, color="forestgreen", label="TC")
 ax.legend()
-ax.set_xlabel("time")
 ax.set_ylabel("s")
 ax.set_title("Original network dynamics")
 
+# fitted network dynamics
 ax = fig.add_subplot(grid[2, :])
 sig = res1
 pc_rates = np.mean(sig[:, :n_e], axis=1)
@@ -258,11 +266,29 @@ ax.plot(pc_rates, color="royalblue", label="PC")
 ax.plot(in_rates, color="darkorange", label="IN")
 ax.plot(tc_rates, color="forestgreen", label="TC")
 ax.legend()
-ax.set_xlabel("time")
 ax.set_ylabel("s")
 ax.set_title("Fitted network dynamics")
 
+# original readout dynamics
 ax = fig.add_subplot(grid[3, :])
+ax.plot(np.argmax(targets[0], axis=1)[::int(dts/dt)], color="royalblue", label="target")
+ax.plot(np.argmax(out0, axis=1), color="darkorange", label="prediction")
+ax.legend()
+ax.set_xlabel("time")
+ax.set_ylabel("winner")
+ax.set_title("Original readout channel")
+
+# original readout dynamics
+ax = fig.add_subplot(grid[4, :])
+ax.plot(np.argmax(targets[0], axis=1)[::int(dts/dt)], color="royalblue", label="target")
+ax.plot(np.argmax(out1, axis=1), color="darkorange", label="prediction")
+ax.legend()
+ax.set_xlabel("time")
+ax.set_ylabel("winner")
+ax.set_title("Fitted readout channel")
+
+# epoch loss
+ax = fig.add_subplot(grid[5, :])
 ax.plot(loss_hist)
 ax.set_xlabel("epoch")
 ax.set_ylabel("mse")

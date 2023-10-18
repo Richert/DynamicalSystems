@@ -5,8 +5,8 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
+    - "v' = (k*(v-v_r)*(v-v_t) - u + eta + I_ext + s_e*(E_e - v) + s_i*(E_i - v)) / C"
+    - "u' = a*(b*(v-v_r) - u) + d*spike"
     - "s' = -s/tau_s + spike"
   variables:
     s: output(0.0)
@@ -15,15 +15,13 @@ ik_op:
     C: 100.0
     k: 0.7
     v_r: -60.0
-    v_theta: -40.0
+    v_t: -40.0
     eta: 0.0
-    g_e: 1.0
     E_e: 0.0
-    g_i: 1.0
-    E_i: -60.0
+    E_i: -65.0
     b: -2.0
-    tau_u: 33.33
-    kappa: 10.0
+    a: 0.03
+    d: 10.0
     tau_s: 6.0
     spike: input(0.0)
     s_e: input(0.0)
