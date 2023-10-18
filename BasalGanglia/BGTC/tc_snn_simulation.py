@@ -37,7 +37,7 @@ Delta_e = 0.5  # unit: mV
 d_e = 100.0  # unit: pA
 a_e = 0.03  # unit: 1/ms
 b_e = -2.0  # unit: nS
-I_e = 80.0  # unit: pA
+I_e = 70.0  # unit: pA
 
 # LTS neuron parameters
 C_i = 100.0   # unit: pF
@@ -66,13 +66,14 @@ E_ampa = 0.0
 E_gaba = -65.0
 tau_ampa = 10.0
 tau_gaba = 20.0
-k_ee = 10.0
-k_ei = 5.0
-k_et = 10.0
-k_ie = 5.0
-k_ii = 5.0
-k_it = 5.0
-k_te = 5.0
+k = 15.0
+k_ee = 1.0*k
+k_ei = 0.5*k
+k_et = 1.0*k
+k_ie = 0.5*k
+k_ii = 0.5*k
+k_it = 0.5*k
+k_te = 0.5*k
 
 # define lorentzian of etas
 spike_thresholds_e = lorentzian(n_e, eta=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e - v_r_e)
