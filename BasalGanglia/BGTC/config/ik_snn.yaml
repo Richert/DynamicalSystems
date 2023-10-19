@@ -28,8 +28,27 @@ ik_op:
     s_i: input(0.0)
     I_ext: input(0.0)
 
+# operator for rate neurons
+rate_op:
+  base: OperatorTemplate
+  equations:
+    - "s' = -s/tau + k*tanh(s_in+s_rec-s_th)"
+  variables:
+    s: output(0.0)
+    tau: 10.0
+    k: 1.0
+    s_th: 0.0
+    s_in: input(0.0)
+    s_rec: input(0.0)
+
 # population of generalized Izhikevich neurons
 ik:
   base: NodeTemplate
   operators:
     - ik_op
+
+# population of rate neurons
+rate:
+  base: NodeTemplate
+  operators:
+    - rate_op

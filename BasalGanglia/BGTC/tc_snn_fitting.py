@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from torch.nn import MSELoss
 from torch.optim import Adadelta
 from torch import stack, tensor
+from torch import autograd
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -36,7 +37,7 @@ cutoff_steps = int(cutoff/dt)
 inp_steps = int(T/dt)
 trial_steps = cutoff_steps + inp_steps
 update_steps = int(100/dt)
-n_epochs = 10
+n_epochs = 5
 
 # network parameters
 n_e = 200
@@ -49,13 +50,13 @@ n_readout = 3
 
 # RS neuron parameters
 C_e = 100.0   # unit: pF
-k_e = 3.0  # unit: None
+k_e = 0.7  # unit: None
 v_r_e = -60.0  # unit: mV
-v_t_e = -50.0  # unit: mV
+v_t_e = -40.0  # unit: mV
 Delta_e = 0.5  # unit: mV
-d_e = 400.0  # unit: pA
-a_e = 0.01  # unit: 1/ms
-b_e = 5.0  # unit: nS
+d_e = 100.0  # unit: pA
+a_e = 0.03  # unit: 1/ms
+b_e = -2.0  # unit: nS
 I_e = 80.0  # unit: pA
 
 # LTS neuron parameters
@@ -67,7 +68,7 @@ Delta_i = 1.0  # unit: mV
 d_i = 20.0  # unit: pA
 a_i = 0.03  # unit: 1/ms
 b_i = 8.0  # unit: nS
-I_i = 50.0  # unit: pA
+I_i = 40.0  # unit: pA
 
 # Tha neuron parameters
 C_t = 200.0   # unit: pF
@@ -75,25 +76,25 @@ k_t = 1.6  # unit: None
 v_r_t = -60.0  # unit: mV
 v_t_t = -50.0  # unit: mV
 Delta_t = 0.1  # unit: mV
-d_t = 100.0  # unit: pA
+d_t = 10.0  # unit: pA
 a_t = 0.1  # unit: 1/ms
 b_t = 15.0  # unit: nS
 I_t = 100.0  # unit: pA
 
 # synaptic parameters
-g_ampa = 1.0
-g_gaba = 1.0
 E_ampa = 0.0
 E_gaba = -65.0
 tau_ampa = 10.0
 tau_gaba = 20.0
-k_ee = 10.0
-k_ei = 5.0
-k_et = 10.0
-k_ie = 5.0
-k_ii = 5.0
-k_it = 5.0
-k_te = 5.0
+k = 10.0
+k_ee = 0.8*k
+k_ei = 0.5*k
+k_et = 1.0*k
+k_ie = 0.5*k
+k_ii = 0.2*k
+k_it = 0.5*k
+k_te = 0.5*k
+k_tt = 0.1*k
 
 # define lorentzian of etas
 spike_thresholds_e = lorentzian(n_e, eta=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e - v_r_e)
@@ -108,17 +109,18 @@ W_ie = random_connectivity(n_i, n_e, p, normalize=True)
 W_ii = random_connectivity(n_i, n_i, p, normalize=True)
 W_it = random_connectivity(n_i, n_t, p, normalize=True)
 W_te = random_connectivity(n_t, n_e, p, normalize=True)
+W_tt = random_connectivity(n_t, n_t, p, normalize=True)
 
 # create the model
 ##################
 
 # initialize EIC node
-pc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_t": v_t_e, "eta": I_e, "a": a_e,
-           "b": b_e, "d": d_e, "tau_s": tau_ampa, "v": v_t_e, "Delta": Delta_e, "E_e": E_ampa, "E_i": E_gaba}
-in_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_t": v_t_i, "eta": I_i, "a": a_i,
-           "b": b_i, "d": d_i, "tau_s": tau_gaba, "v": v_t_i, "Delta": Delta_i, "E_e": E_ampa, "E_i": E_gaba}
-tc_vars = {"C": C_t, "k": k_t, "v_r": v_r_t, "v_t": v_t_t, "eta": I_t, "a": a_t,
-           "b": b_t, "d": d_t, "tau_s": tau_ampa, "v": v_t_t, "Delta": Delta_t, "E_e": E_ampa, "E_i": E_gaba}
+pc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_t": spike_thresholds_e, "eta": I_e, "a": a_e,
+           "b": b_e, "d": d_e, "tau_s": tau_ampa, "v": v_t_e, "E_e": E_ampa, "E_i": E_gaba}
+in_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_t": spike_thresholds_i, "eta": I_i, "a": a_i,
+           "b": b_i, "d": d_i, "tau_s": tau_gaba, "v": v_t_i, "E_e": E_ampa, "E_i": E_gaba}
+tc_vars = {"C": C_t, "k": k_t, "v_r": v_r_t, "v_t": spike_thresholds_t, "eta": I_t, "a": a_t,
+           "b": b_t, "d": d_t, "tau_s": tau_ampa, "v": v_t_t, "E_e": E_ampa, "E_i": E_gaba}
 neuron_params = {"rs": pc_vars, "lts": in_vars, "tc": tc_vars}
 
 # construct EI circuit
@@ -148,6 +150,8 @@ net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W
                           source_nodes=neurons["tc"], target_nodes=neurons["lts"])
 net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e", weight=W_te*k_te,
                           source_nodes=neurons["rs"], target_nodes=neurons["tc"])
+net.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i", weight=W_tt*k_tt,
+                          source_nodes=neurons["tc"], target_nodes=neurons["tc"])
 
 # initialize rectipy model
 model = Network(dt=dt, device=device)
@@ -163,14 +167,14 @@ model.add_func_node("readout", n_readout, "softmax")
 W_out = np.random.randn(n_readout, n_e + n_i + n_t)
 mask = np.zeros_like(W_out)
 mask[:, :n_e] = 1.0
-model.add_edge("net", "readout", train="gd", weights=W_out * mask)
+model.add_edge("net", "readout", train="gd", weights=W_out, mask=mask)
 model.compile()
 
 # define input weights
 input_weights = {}
 n_inp = n_readout - 1
 for i in range(n_inp):
-    input_weights[i] = np.random.rand(n_t)
+    input_weights[i] = np.random.randn(n_t)
 inputs, targets = [], []
 for epoch in range(n_epochs):
 
@@ -195,8 +199,9 @@ w0 = model.get_var("net", "weights").cpu().detach().numpy()
 
 # perform fitting
 loss_fn = MSELoss()
-optim = Adadelta(model.parameters(), lr=0.5, rho=0.9, eps=1e-6)
+optim = Adadelta(model.parameters(), lr=0.0005, rho=0.9, eps=1e-4)
 loss_hist = []
+# autograd.set_detect_anomaly(True)
 for epoch in range(n_epochs):
 
     # perform forward pass
