@@ -15,8 +15,8 @@ p = 0.2
 
 # simulation parameters
 t_scale = 1.0
-T = 200.0 * t_scale
-cutoff = 200.0 * t_scale
+T = 100.0 * t_scale
+cutoff = 100.0 * t_scale
 dt = 1e-2
 dts = 1.0
 input_strength = 1.0
@@ -86,7 +86,7 @@ out0 = obs.to_numpy("out")
 w0 = net.get_edge("lr", "rnn").weights.cpu().detach().numpy()
 
 # perform fitting
-loss = net.fit_bptt(inputs, targets, loss="mse", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-5},
+loss = net.fit_bptt(inputs, targets, loss="ce", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-5},
                     lr=0.1)
 
 # perform final simulation

@@ -76,7 +76,7 @@ k_t = 1.6  # unit: None
 v_r_t = -60.0  # unit: mV
 v_t_t = -50.0  # unit: mV
 Delta_t = 0.1  # unit: mV
-d_t = 10.0  # unit: pA
+d_t = 100.0  # unit: pA
 a_t = 0.1  # unit: 1/ms
 b_t = 15.0  # unit: nS
 I_t = 100.0  # unit: pA
@@ -94,7 +94,6 @@ k_ie = 0.5*k
 k_ii = 0.2*k
 k_it = 0.5*k
 k_te = 0.5*k
-k_tt = 0.1*k
 
 # define lorentzian of etas
 spike_thresholds_e = lorentzian(n_e, eta=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e - v_r_e)

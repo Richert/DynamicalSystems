@@ -41,6 +41,22 @@ rate_op:
     s_in: input(0.0)
     s_rec: input(0.0)
 
+lif_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = -v/tau + eta + I_ext + s_e + s_i"
+    - "s' = -s/tau_s + spike"
+  variables:
+    s: output(0.0)
+    v: variable(0.0)
+    tau: 10.0
+    tau_s: 5.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_e: input(0.0)
+    s_i: in
+
+
 # population of generalized Izhikevich neurons
 ik:
   base: NodeTemplate
