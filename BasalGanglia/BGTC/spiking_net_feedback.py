@@ -13,12 +13,13 @@ T = 100.0 * t_scale
 cutoff = 100.0 * t_scale
 dt = 5e-3
 dts = 1.0
-input_strength = 10.0
+input_strength = 0.1
 cutoff_steps = int(cutoff/dt)
 inp_steps = int(T/dt)
 trial_steps = cutoff_steps + inp_steps
 update_steps = int(100/dt)
 n_epochs = 10
+n_reps = 2
 
 # model parameters
 node = "neuron_model_templates.spiking_neurons.lif.lif"
@@ -35,7 +36,7 @@ node_vars1 = {"eta": eta, "tau": tau1, "tau_s": tau_s, "k": k}
 node_vars2 = {"eta": eta, "tau": tau2, "tau_s": tau_s, "k": k}
 
 # define connectivity
-n_out = 3
+n_out = 4
 n_in = n_out - 1
 W_in = np.random.randn(N2, n_in)
 J = np.random.randn(N1, N1)
@@ -65,8 +66,10 @@ inputs, targets = [], []
 for epoch in range(n_epochs):
 
     # define inputs and targets
-    inp_seq = np.random.permutation(n_in)
-    inp = np.zeros((int(n_in*trial_steps), n_in))
+    inp_seq = []
+    for _ in range(n_reps):
+        inp_seq.extend(np.random.permutation(n_in).tolist())
+    inp = np.zeros((int(n_in*n_reps*trial_steps), n_in))
     targs = np.zeros((inp.shape[0], n_out))
     for i, idx in enumerate(inp_seq):
         inp[i*trial_steps:i*trial_steps+inp_steps, :] = input_strength
@@ -88,7 +91,7 @@ w2_0 = net.get_edge("lif1", "out").weights.cpu().detach().numpy()
 
 # perform fitting
 loss = net.fit_bptt(inputs, targets, loss="ce", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-5},
-                    lr=0.1)
+                    lr=0.5)
 loss_hist = loss["epoch_loss"]
 
 # perform final simulation
