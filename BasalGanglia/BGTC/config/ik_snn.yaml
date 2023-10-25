@@ -36,7 +36,7 @@ rate_op:
   variables:
     s: output(0.0)
     tau: 10.0
-    k: 1.0
+    k: 1.5
     s_th: 0.0
     s_in: input(0.0)
     s_rec: input(0.0)
