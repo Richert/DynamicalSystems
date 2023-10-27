@@ -9,16 +9,16 @@ from scipy.ndimage import gaussian_filter1d
 device = "cuda:0"
 
 # network parameters
-n_high = 500
+n_high = 200
 n_low = 5
 n_readout = 1
 p = 0.2
 
 # input parameters
-n_epochs = 50
+n_epochs = 40
 alpha = 10.0
 sigma = 10
-freq = 2.0
+freq = 4.0
 T = 1e3/freq
 T_init = 500.0
 dt = 5e-3
@@ -73,12 +73,9 @@ net.add_diffeq_node("lr", "config/ik_snn/rate", input_var="s_in", output_var="s"
 net.add_func_node("readout", n_readout, activation_function="identity")
 
 # add edges
-net.add_edge("lr", "rnn", train="gd", weights=W_hl*k_hl)
-net.add_edge("rnn", "lr", train="gd", weights=W_lh*k_lh, feedback=True)
+net.add_edge("lr", "rnn", train=None, weights=W_hl*k_hl)
+# net.add_edge("rnn", "lr", train="gd", weights=W_lh*k_lh, feedback=True)
 net.add_edge("rnn", "readout", train="gd")
-
-# compile
-net.compile()
 
 # perform training
 ##################
@@ -92,8 +89,8 @@ out0 = obs.to_numpy("out")
 w0 = net.get_edge("lr", "rnn").weights.cpu().detach().numpy()
 
 # perform fitting
-loss = net.fit_bptt(inputs, targets, loss="mse", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-5},
-                    lr=0.01)
+loss = net.fit_bptt(inputs, targets, loss="mse", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-6},
+                    lr=0.1)
 
 # perform final simulation
 obs = net.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, verbose=False,
