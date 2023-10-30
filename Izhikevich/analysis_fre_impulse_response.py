@@ -23,14 +23,14 @@ def get_peaks(x: np.ndarray, stim: int, prominence: float = 0.01, epsilon: float
 ###################
 
 # general parameters
-plot_examples = False
+plot_examples = True
 
 # model parameters
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 49.5
+eta = 50.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -51,7 +51,7 @@ inp[int(stim/dt), 0] += amp
 inp[:, 0] = gaussian_filter1d(inp[:, 0], sigma=sigma)
 
 # define sweep
-deltas = np.arange(0.1, 1.5, 0.1)
+deltas = np.arange(0.1, 1.5, 0.2)
 taus = []
 
 # run parameters sweep

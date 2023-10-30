@@ -12,12 +12,11 @@ device = "cuda:0"
 n_high = 200
 n_low = 5
 n_readout = 1
-p = 0.2
 
 # input parameters
 n_epochs = 40
-alpha = 10.0
-sigma = 10
+alpha = 1000.0
+sigma = 50
 freq = 4.0
 T = 1e3/freq
 T_init = 500.0
@@ -86,11 +85,11 @@ obs = net.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, verbose=
 rnn0 = obs.to_numpy(("rnn", "out"))
 lr0 = obs.to_numpy(("lr", "out"))
 out0 = obs.to_numpy("out")
-w0 = net.get_edge("lr", "rnn").weights.cpu().detach().numpy()
+w0 = net.get_edge("rnn", "readout").weights.cpu().detach().numpy()
 
 # perform fitting
 loss = net.fit_bptt(inputs, targets, loss="mse", optimizer="adadelta", optimizer_kwargs={"rho": 0.9, "eps": 1e-6},
-                    lr=0.1)
+                    lr=1e-3)
 
 # perform final simulation
 obs = net.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, verbose=False,
@@ -98,7 +97,7 @@ obs = net.run(inputs[0], sampling_steps=int(dts/dt), enable_grad=False, verbose=
 rnn1 = obs.to_numpy(("rnn", "out"))
 lr1 = obs.to_numpy(("lr", "out"))
 out1 = obs.to_numpy("out")
-w1 = net.get_edge("lr", "rnn").weights.cpu().detach().numpy()
+w1 = net.get_edge("rnn", "readout").weights.cpu().detach().numpy()
 
 # plotting
 ##########
