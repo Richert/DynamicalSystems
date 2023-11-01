@@ -25,7 +25,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 device = "cpu"
 
 # network parameters
-N = 1000
+N = 800
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
@@ -35,8 +35,8 @@ C_e = 100.0   # unit: pF
 k_e = 0.7  # unit: None
 v_r_e = -60.0  # unit: mV
 v_t_e = -40.0  # unit: mV
-Delta_e = 0.59  # unit: mV
-eta_e = 49.25  # unit: pA
+Delta_e = 0.6  # unit: mV
+eta_e = 49.0  # unit: pA
 d_e = 100.0  # unit: pA
 a_e = 0.03  # unit: 1/ms
 b_e = -2.0  # unit: nS
@@ -58,6 +58,7 @@ k_in = 10.0
 W_in = np.random.randn(N, n_in) * k_in
 W_out = np.random.randn(n_out, N)
 W_ee = random_connectivity(N, N, p, normalize=True) * k_ee
+W_filter = np.eye(N, dtype=np.float64) * 0.9
 
 # simulation parameters
 t_scale = 1.0
@@ -87,7 +88,7 @@ net.add_func_node("out", n_out, activation_function="identity")
 # add network edges
 net.add_edge("inp", "rnn", weights=W_in, train="gd")
 net.add_edge("rnn", "out", weights=W_out, train="gd")
-net.add_edge("rnn", "inp", feedback=True, train="gd")
+net.add_edge("rnn", "inp", feedback=True, train="gd", intrinsic_weights=W_filter)
 
 # compile network
 net.compile()
@@ -99,11 +100,12 @@ net.compile()
 loss_fn = MSELoss()
 
 # setup optimizer
-# optim = Rprop(net.parameters(), lr=0.1, etas=(0.5, 1.2), step_sizes=(1e-3, 100.0))
-optim = Adadelta(net.parameters(), lr=50.0, rho=0.99, eps=1e-6)
+optim = Rprop(net.parameters(), lr=10.0, etas=(0.5, 1.2), step_sizes=(1e-3, 100.0))
+# optim = Adadelta(net.parameters(), lr=50.0, rho=0.99, eps=1e-6)
 
 # run optimization
 y0 = net.state
+y1 = y0
 losses = []
 for epoch in range(n_epochs):
 
