@@ -66,7 +66,7 @@ T_epoch = 500.0 * t_scale
 T_init = [300.0*t_scale, 500.0*t_scale]
 dt = 1e-2
 dts = 1.0
-n_epochs = 100
+n_epochs = 200
 
 # setup model
 #############
@@ -100,8 +100,8 @@ net.compile()
 loss_fn = MSELoss()
 
 # setup optimizer
-optim = Rprop(net.parameters(), lr=10.0, etas=(0.5, 1.2), step_sizes=(1e-3, 100.0))
-# optim = Adadelta(net.parameters(), lr=50.0, rho=0.99, eps=1e-6)
+# optim = Rprop(net.parameters(), lr=10.0, etas=(0.5, 1.2), step_sizes=(1e-3, 100.0))
+optim = Adadelta(net.parameters(), lr=20.0, rho=0.99, eps=1e-6)
 
 # run optimization
 y0 = net.state
@@ -143,8 +143,7 @@ for epoch in range(n_epochs):
     print(f"Epoch #{epoch} finished. Current loss = {losses[-1]}")
 
 # get fitted weights
-ws = [p.detach().cpu().numpy() for p in net.parameters()]
-w1 = ws[0] if ws[0].shape[0] == 1 else ws[1]
+W_fitted = net.get_edge("rnn", "inp").filter.detach().cpu().numpy()
 
 # get fitted model predictions
 results = {"input": [], "target": [], "prediction": [], "rnn": []}
@@ -173,14 +172,15 @@ for idx in range(n_in):
 ##########
 
 # connectivity
-fig, axes = plt.subplots(figsize=(12, 4), nrows=3)
-for ax, w, title in zip(axes, [W_out, w1, w1-W_out], ["original parameters", "fitted parameters", "parameter change"]):
+fig, axes = plt.subplots(figsize=(12, 4), ncols=3)
+for ax, w, title in zip(axes, [W_filter, W_fitted, W_fitted-W_filter],
+                        ["original parameters", "fitted parameters", "parameter change"]):
     ax.imshow(w, aspect="auto", interpolation="none")
     ax.set_title(title)
 plt.tight_layout()
 
 # fitted model predictions
-fig, axes = plt.subplots(figsize=(12, 6), nrows=4)
+fig, axes = plt.subplots(figsize=(12, 7), nrows=4)
 
 ax = axes[0]
 inp = np.vstack(results["input"])
