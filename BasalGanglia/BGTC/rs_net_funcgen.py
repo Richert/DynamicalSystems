@@ -25,7 +25,7 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 device = "cpu"
 
 # network parameters
-N = 800
+N = 500
 p = 0.2
 v_spike = 1e3
 v_reset = -1e3
@@ -59,6 +59,7 @@ W_in = np.random.randn(N, n_in) * k_in
 W_out = np.random.randn(n_out, N)
 W_ee = random_connectivity(N, N, p, normalize=True) * k_ee
 W_filter = np.eye(N, dtype=np.float64) * 0.9
+W_fb = np.random.randn(n_in, N)
 
 # simulation parameters
 t_scale = 1.0
@@ -66,7 +67,7 @@ T_epoch = 500.0 * t_scale
 T_init = [300.0*t_scale, 500.0*t_scale]
 dt = 1e-2
 dts = 1.0
-n_epochs = 200
+n_epochs = 100
 
 # setup model
 #############
@@ -88,7 +89,7 @@ net.add_func_node("out", n_out, activation_function="identity")
 # add network edges
 net.add_edge("inp", "rnn", weights=W_in, train="gd")
 net.add_edge("rnn", "out", weights=W_out, train="gd")
-net.add_edge("rnn", "inp", feedback=True, train="gd", intrinsic_weights=W_filter)
+net.add_edge("rnn", "inp", feedback=True, train="gd", weights=W_fb, delays=np.random.randint(10, 50, size=(N,)))
 
 # compile network
 net.compile()
@@ -100,8 +101,8 @@ net.compile()
 loss_fn = MSELoss()
 
 # setup optimizer
-# optim = Rprop(net.parameters(), lr=10.0, etas=(0.5, 1.2), step_sizes=(1e-3, 100.0))
-optim = Adadelta(net.parameters(), lr=20.0, rho=0.99, eps=1e-6)
+optim = Rprop(net.parameters(), lr=1.0, etas=(0.5, 1.2), step_sizes=(1e-4, 10.0))
+# optim = Adadelta(net.parameters(), lr=1.0, rho=0.99, eps=1e-6)
 
 # run optimization
 y0 = net.state
@@ -143,7 +144,9 @@ for epoch in range(n_epochs):
     print(f"Epoch #{epoch} finished. Current loss = {losses[-1]}")
 
 # get fitted weights
-W_fitted = net.get_edge("rnn", "inp").filter.detach().cpu().numpy()
+ws = list(net.parameters())
+idx = np.argwhere([w.shape == (N, N) for w in ws]).squeeze()
+W_fitted = ws[idx].detach().cpu().numpy()
 
 # get fitted model predictions
 results = {"input": [], "target": [], "prediction": [], "rnn": []}
@@ -172,8 +175,9 @@ for idx in range(n_in):
 ##########
 
 # connectivity
-fig, axes = plt.subplots(figsize=(12, 4), ncols=3)
-for ax, w, title in zip(axes, [W_filter, W_fitted, W_fitted-W_filter],
+fig, axes = plt.subplots(figsize=(12, 4), nrows=3)
+W_target = W_filter
+for ax, w, title in zip(axes, [W_target, W_fitted, W_fitted-W_target],
                         ["original parameters", "fitted parameters", "parameter change"]):
     ax.imshow(w, aspect="auto", interpolation="none")
     ax.set_title(title)

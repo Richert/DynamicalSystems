@@ -1,5 +1,5 @@
 from pyrates import CircuitTemplate, NodeTemplate
-import numpy as np
+from pycobi import ODESystem
 import matplotlib.pyplot as plt
 
 # parameter definition
@@ -36,7 +36,7 @@ Delta_t = 0.2  # unit: mV
 d_t = 10.0  # unit: pA
 a_t = 0.1  # unit: 1/ms
 b_t = 15.0  # unit: nS
-I_t = 200.0  # unit: pA
+I_t = 150.0  # unit: pA
 
 # TRN neuron parameters
 C_r = 40.0   # unit: pF
@@ -60,17 +60,6 @@ a_s = 0.01  # unit: 1/ms
 b_s = -20.0  # unit: nS
 I_s = 0.0  # unit: pA
 
-# SNR neuron parameters
-C_n = 50.0   # unit: pF
-k_n = 0.25  # unit: None
-v_r_n = -55.0  # unit: mV
-v_t_n = -44.0  # unit: mV
-Delta_n = 1.0  # unit: mV
-d_n = 20.0  # unit: pA
-a_n = 1.0  # unit: 1/ms
-b_n = 0.25  # unit: nS
-I_n = 100.0  # unit: pA
-
 # synaptic parameters
 E_ampa = 0.0
 E_gaba = -65.0
@@ -84,7 +73,6 @@ J_i = 0.2*J
 J_t = 0.2*J
 J_r = 0.2*J
 J_s = 0.5*J
-J_n = 0.2*J
 
 # RS inputs
 J_ee = 0.3*J_e
@@ -99,7 +87,7 @@ J_it = 0.4*J_i
 # TC inputs
 J_te = 0.3*J_t
 J_tr = 0.3*J_t
-J_tn = 0.4*J_t
+J_ts = 0.4*J_t
 
 # RN inputs
 J_rt = 0.4*J_r
@@ -110,15 +98,12 @@ J_re = 0.4*J_r
 J_se = 0.6*J_s
 J_st = 0.4*J_s
 
-# SNR inputs
-J_ns = 1.0*J_s
-
 # model initialization
 ######################
 
 # initialize circuit
 node = NodeTemplate.from_yaml("config/ik_mf/ik")
-node_names = ["rs", "lts", "tc", "rn", "spn", "snr"]
+node_names = ["rs", "lts", "tc", "rn", "spn"]
 net = CircuitTemplate("net", nodes={key: node for key in node_names},
                       edges=[("rs/ik_op/s", "rs/ik_op/s_e", None, {"weight": J_ee}),
                              ("rs/ik_op/s", "lts/ik_op/s_e", None, {"weight": J_ie}),
@@ -133,8 +118,7 @@ net = CircuitTemplate("net", nodes={key: node for key in node_names},
                              ("tc/ik_op/s", "spn/ik_op/s_e", None, {"weight": J_st}),
                              ("rn/ik_op/s", "tc/ik_op/s_i", None, {"weight": J_tr}),
                              ("rn/ik_op/s", "rn/ik_op/s_i", None, {"weight": J_rr}),
-                             ("spn/ik_op/s", "snr/ik_op/s_i", None, {"weight": J_ns, "delay": 8.0, "spread": 2.0}),
-                             ("snr/ik_op/s", "tc/ik_op/s_i", None, {"weight": J_tn})
+                             ("spn/ik_op/s", "tc/ik_op/s_i", None, {"weight": J_ts, "delay": 8.0, "spread": 2.0})
                              ])
 
 # update parameters
@@ -148,41 +132,11 @@ rn_vars = {"C": C_r, "k": k_r, "v_r": v_r_r, "v_t": v_t_r, "eta": I_r, "a": a_r,
            "b": b_r, "d": d_r, "tau_s": tau_gaba, "v": v_t_r, "Delta": Delta_r, "E_e": E_ampa, "E_i": E_gaba}
 spn_vars = {"C": C_s, "k": k_s, "v_r": v_r_s, "v_t": v_t_s, "eta": I_s, "a": a_s,
             "b": b_s, "d": d_s, "tau_s": tau_gaba, "v": v_t_s, "Delta": Delta_s, "E_e": E_ampa, "E_i": E_gaba}
-snr_vars = {"C": C_n, "k": k_n, "v_r": v_r_n, "v_t": v_t_n, "eta": I_n, "a": a_n,
-            "b": b_n, "d": d_n, "tau_s": tau_gaba, "v": v_t_n, "Delta": Delta_n, "E_e": E_ampa, "E_i": E_gaba}
-neuron_params = {"rs": pc_vars, "lts": in_vars, "tc": tc_vars, "rn": rn_vars, "spn": spn_vars, "snr": snr_vars}
+neuron_params = {"rs": pc_vars, "lts": in_vars, "tc": tc_vars, "rn": rn_vars, "spn": spn_vars}
 for node in node_names:
     net.update_var(node_vars={f"{node}/ik_op/{var}": val for var, val in neuron_params[node].items()})
 
-# model dynamics
-################
+# generate run function
+#######################
 
-# define model input
-T = 3000.0
-cutoff = 500.0
-dt = 1e-3
-dts = 1.0
-start = 1000.0
-stop = 2000.0
-inp = np.zeros((int(T/dt),))
-inp[int(start/dt):int(stop/dt)] = 100.0
-
-# perform simulation
-res = net.run(simulation_time=T, step_size=dt, sampling_step_size=dts, solver="scipy", method="LSODA", atol=1e-6,
-              rtol=1e-6, inputs={"tc/ik_op/I_ext": inp}, outputs={key: f"{key}/ik_op/r" for key in node_names},
-              clear=True, cutoff=cutoff, in_place=False)
-res = res*1e3
-
-# plotting
-fig, ax = plt.subplots(figsize=(12, 4))
-res.plot(ax=ax)
-ax.set_xlabel("time (ms)")
-ax.set_ylabel("r (Hz)")
-plt.tight_layout()
-plt.show()
-
-# generate fortran run function
-###############################
-
-net.get_run_func(func_name="bgtc_run", file_name="bgtc", step_size=dt, backend="fortran", float_precision="float64",
-                 vectorize=False, auto=True, in_place=False, solver="scipy")
+model = ODESystem.from_template(net, working_dir="config", auto_dir="~/PycharmProjects/auto-07p", init_cont=True)
