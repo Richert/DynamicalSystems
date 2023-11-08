@@ -5,7 +5,7 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "v' = (k*(v-v_r)*(v-v_t) - u + eta + I_ext + s_e*(E_e - v) + s_i*(E_i - v)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - u + eta + I_ext + s_e*(E_e - v) + s_i*(E_i - v)) / C + 2.0*reset*(v_r-v)"
     - "u' = a*(b*(v-v_r) - u) + d*spike"
     - "s' = -s/tau_s + spike"
   variables:
@@ -24,6 +24,7 @@ ik_op:
     d: 10.0
     tau_s: 6.0
     spike: input(0.0)
+    reset: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
     I_ext: input(0.0)
