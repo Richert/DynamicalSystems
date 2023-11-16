@@ -24,7 +24,7 @@ wc_i:
     lam: 2.0
     phi: 3.7
     tau: 4.0
-    s: 2.0
+    s: 1.8
 
 # node templates
 ################

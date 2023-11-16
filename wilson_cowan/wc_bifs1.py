@@ -60,7 +60,8 @@ ode.run(bidirectional=True, name="s_e:ss", c="ivp", ICP="E/wc_e/s", IPS=1, ILP=1
         **algorithm_params, UZR={"E/wc_e/s": 1.0})
 
 # continue the limit cycle solution that must exist at the Hopf bifurcation found in the previous continuation
-ode.run(starting_point="HB1", origin="s_e:ss", name="s_e:lc", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP2"})
+ode.run(starting_point="HB1", origin="s_e:ss", name="s_e:lc", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP2"},
+        NMX=4000)
 
 # perform bifurcation analysis for S_i = 0.0
 ############################################
@@ -73,7 +74,7 @@ ode.run(starting_point="UZ1", origin="s_e:ss", name="s_i:ss", ICP="I/wc_i/s", IP
 ode.run(name="s_e:ss:2", starting_point="UZ1", origin="s_i:ss", ICP="E/wc_e/s", IPS=1, ILP=1, ISP=2,
         ISW=1, RL0=-8.0, RL1=20.0, bidirectional=True, STOP=[], UZR={})
 ode.run(starting_point="HB1", origin="s_e:ss:2", name="s_e:lc:2", ISW=-1, IPS=2, ISP=2, STOP={"BP1", "LP3"},
-        reduce_limit_cycle=True)
+        reduce_limit_cycle=True, NMX=4000)
 
 # 2D bifurcation diagram in S_i and S_e
 ########################################
@@ -98,8 +99,20 @@ ode.run(starting_point="LP1", origin="s_e:ss:2", name="s_e/s_i:lp2", ICP=["I/wc_
 
 ode.close_session(clear_files=True)
 
+# plot settings
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.dpi'] = 400
+plt.rcParams['font.size'] = 24
+plt.rcParams['axes.titlesize'] = 24
+plt.rcParams['axes.labelsize'] = 24
+plt.rcParams['lines.linewidth'] = 1.5
+markersize = 10
+
 # plot the 1D bifurcation diagram for S_I > 0
 fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+
 ax = axes[0]
 ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:ss", ax=ax, color="blue")
 ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:lc", ax=ax, color="black", ignore=["BP"])
@@ -137,7 +150,7 @@ fig.canvas.draw()
 plt.savefig("wc_codim1_2.pdf")
 
 # plot the 2D bifurcation diagram
-fig, ax = plt.subplots(figsize=(12, 6))
+fig, ax = plt.subplots(figsize=(10, 7))
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:hb1", ax=ax, color="red", ignore=["UZ"],
                       line_style_unstable="solid")
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:hb2", ax=ax, color="red", ignore=["UZ"],
@@ -146,9 +159,9 @@ ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:lp1", ax=ax, color="
                       line_style_unstable="solid")
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:lp2", ax=ax, color="blue", ignore=["UZ"],
                       line_style_unstable="solid")
-ax.set_title("a = 16, e = 15")
-ax.set_xlabel("S_e")
-ax.set_ylabel("S_i")
+ax.set_title(r"$a = 16$, $e = 15$")
+ax.set_xlabel(r"$S_E$")
+ax.set_ylabel(r"$S_I$")
 plt.tight_layout()
 fig.canvas.draw()
 plt.savefig("wc_codim2_1.pdf")

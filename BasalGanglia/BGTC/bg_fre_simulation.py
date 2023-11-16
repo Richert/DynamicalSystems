@@ -5,71 +5,71 @@ import matplotlib.pyplot as plt
 # parameter definition
 ######################
 
-# RS neuron parameters
-C_e = 100.0   # unit: pF
-k_e = 0.7  # unit: None
-v_r_e = -60.0  # unit: mV
-v_t_e = -40.0  # unit: mV
-Delta_e = 1.0  # unit: mV
-d_e = 100.0  # unit: pA
-a_e = 0.03  # unit: 1/ms
-b_e = -2.0  # unit: nS
-I_e = 20.0  # unit: pA
+# STN neuron parameters
+C_stn = 100.0   # unit: pF
+k_stn = 0.7  # unit: None
+v_r_stn = -60.0  # unit: mV
+v_t_stn = -40.0  # unit: mV
+Delta_stn = 1.0  # unit: mV
+d_stn = 100.0  # unit: pA
+a_stn = 0.03  # unit: 1/ms
+b_stn = -2.0  # unit: nS
+I_stn = 20.0  # unit: pA
 
-# LTS neuron parameters
-C_i = 100.0   # unit: pF
-k_i = 1.0  # unit: None
-v_r_i = -56.0  # unit: mV
-v_t_i = -42.0  # unit: mV
-Delta_i = 1.0  # unit: mV
-d_i = 20.0  # unit: pA
-a_i = 0.03  # unit: 1/ms
-b_i = 8.0  # unit: nS
-I_i = 60.0  # unit: pA
+# GPe-p neuron parameters
+C_pro = 100.0   # unit: pF
+k_pro = 1.0  # unit: None
+v_r_pro = -56.0  # unit: mV
+v_t_pro = -42.0  # unit: mV
+Delta_pro = 1.0  # unit: mV
+d_pro = 20.0  # unit: pA
+a_pro = 0.03  # unit: 1/ms
+b_pro = 8.0  # unit: nS
+I_pro = 60.0  # unit: pA
 
-# TC neuron parameters
-C_t = 200.0   # unit: pF
-k_t = 1.6  # unit: None
-v_r_t = -60.0  # unit: mV
-v_t_t = -50.0  # unit: mV
-Delta_t = 0.2  # unit: mV
-d_t = 10.0  # unit: pA
-a_t = 0.1  # unit: 1/ms
-b_t = 15.0  # unit: nS
-I_t = 200.0  # unit: pA
+# GPe-a neuron parameters
+C_ark = 200.0   # unit: pF
+k_ark = 1.6  # unit: None
+v_r_ark = -60.0  # unit: mV
+v_t_ark = -50.0  # unit: mV
+Delta_ark = 0.2  # unit: mV
+d_ark = 10.0  # unit: pA
+a_ark = 0.1  # unit: 1/ms
+b_ark = 15.0  # unit: nS
+I_ark = 200.0  # unit: pA
 
-# TRN neuron parameters
-C_r = 40.0   # unit: pF
-k_r = 0.25  # unit: None
-v_r_r = -65.0  # unit: mV
-v_t_r = -45.0  # unit: mV
-Delta_r = 0.4  # unit: mV
-d_r = 50.0  # unit: pA
-a_r = 0.015  # unit: 1/ms
-b_r = 10.0  # unit: nS
-I_r = 60.0  # unit: pA
+# D1-SPN neuron parameters
+C_d1 = 40.0   # unit: pF
+k_d1 = 0.25  # unit: None
+v_r_d1 = -65.0  # unit: mV
+v_t_d1 = -45.0  # unit: mV
+Delta_d1 = 0.4  # unit: mV
+d_d1 = 50.0  # unit: pA
+a_d1 = 0.015  # unit: 1/ms
+b_d1 = 10.0  # unit: nS
+I_d1 = 60.0  # unit: pA
 
-# SPN neuron parameters
-C_s = 15.0   # unit: pF
-k_s = 1.0  # unit: None
-v_r_s = -80.0  # unit: mV
-v_t_s = -30.0  # unit: mV
-Delta_s = 0.4  # unit: mV
-d_s = 90.0  # unit: pA
-a_s = 0.01  # unit: 1/ms
-b_s = -20.0  # unit: nS
-I_s = 0.0  # unit: pA
+# D2-SPN neuron parameters
+C_d2 = 15.0   # unit: pF
+k_d2 = 1.0  # unit: None
+v_r_d2 = -80.0  # unit: mV
+v_t_d2 = -30.0  # unit: mV
+Delta_d2 = 0.4  # unit: mV
+d_d2 = 90.0  # unit: pA
+a_d2 = 0.01  # unit: 1/ms
+b_d2 = -20.0  # unit: nS
+I_d2 = 0.0  # unit: pA
 
-# SNR neuron parameters
-C_n = 50.0   # unit: pF
-k_n = 0.25  # unit: None
-v_r_n = -55.0  # unit: mV
-v_t_n = -44.0  # unit: mV
-Delta_n = 1.0  # unit: mV
-d_n = 20.0  # unit: pA
-a_n = 1.0  # unit: 1/ms
-b_n = 0.25  # unit: nS
-I_n = 100.0  # unit: pA
+# FSI neuron parameters
+C_fsi = 50.0   # unit: pF
+k_fsi = 0.25  # unit: None
+v_r_fsi = -55.0  # unit: mV
+v_t_fsi = -44.0  # unit: mV
+Delta_fsi = 1.0  # unit: mV
+d_fsi = 20.0  # unit: pA
+a_fsi = 1.0  # unit: 1/ms
+b_fsi = 0.25  # unit: nS
+I_fsi = 100.0  # unit: pA
 
 # synaptic parameters
 E_ampa = 0.0
@@ -79,14 +79,14 @@ tau_gaba = 20.0
 
 # population-level coupling strengths
 J = 40.0
-J_e = 1.0*J
-J_i = 0.2*J
-J_t = 0.2*J
-J_r = 0.2*J
-J_s = 0.5*J
-J_n = 0.2*J
+J_stn = 1.0*J
+J_pro = 0.2*J
+J_ark = 0.2*J
+J_d1 = 0.2*J
+J_d2 = 0.5*J
+J_fsi = 0.2*J
 
-# RS inputs
+# STN inputs
 J_ee = 0.3*J_e
 J_ei = 0.4*J_e
 J_et = 0.3*J_e
