@@ -6,151 +6,178 @@ import matplotlib.pyplot as plt
 ######################
 
 # STN neuron parameters
-C_stn = 100.0   # unit: pF
+C_stn = 85.0   # unit: pF (Gillies and Willshaw 2005)
 k_stn = 0.7  # unit: None
-v_r_stn = -60.0  # unit: mV
-v_t_stn = -40.0  # unit: mV
-Delta_stn = 1.0  # unit: mV
-d_stn = 100.0  # unit: pA
-a_stn = 0.03  # unit: 1/ms
-b_stn = -2.0  # unit: nS
-I_stn = 20.0  # unit: pA
+v_r_stn = -75.0  # unit: mV
+v_t_stn = -60.0  # unit: mV
+Delta_stn = 0.5  # unit: mV
+d_stn = 0.05  # unit: pA
+a_stn = 0.003  # unit: 1/ms
+b_stn = 0.3  # unit: nS
+I_stn = 50.0  # unit: pA
 
 # GPe-p neuron parameters
-C_pro = 100.0   # unit: pF
-k_pro = 1.0  # unit: None
-v_r_pro = -56.0  # unit: mV
-v_t_pro = -42.0  # unit: mV
+C_pro = 40.0   # unit: pF
+k_pro = 2.0  # unit: None
+v_r_pro = -60.0  # unit: mV (Shouno et al. 2017)
+v_t_pro = -55.0  # unit: mV (Shouno et al. 2017)
 Delta_pro = 1.0  # unit: mV
-d_pro = 20.0  # unit: pA
-a_pro = 0.03  # unit: 1/ms
-b_pro = 8.0  # unit: nS
-I_pro = 60.0  # unit: pA
+d_pro = 70.0  # unit: pA
+a_pro = 0.05  # unit: 1/ms
+b_pro = 2.5  # unit: nS
+I_pro = 40.0  # unit: pA
 
 # GPe-a neuron parameters
-C_ark = 200.0   # unit: pF
-k_ark = 1.6  # unit: None
+C_ark = 60.0   # unit: pF
+k_ark = 3.0  # unit: None
 v_r_ark = -60.0  # unit: mV
-v_t_ark = -50.0  # unit: mV
-Delta_ark = 0.2  # unit: mV
-d_ark = 10.0  # unit: pA
-a_ark = 0.1  # unit: 1/ms
-b_ark = 15.0  # unit: nS
-I_ark = 200.0  # unit: pA
+v_t_ark = -55.0  # unit: mV
+Delta_ark = 0.6  # unit: mV
+d_ark = 105.0  # unit: pA
+a_ark = 0.05  # unit: 1/ms
+b_ark = 2.5  # unit: nS
+I_ark = 40.0  # unit: pA
 
-# D1-SPN neuron parameters
-C_d1 = 40.0   # unit: pF
-k_d1 = 0.25  # unit: None
-v_r_d1 = -65.0  # unit: mV
-v_t_d1 = -45.0  # unit: mV
-Delta_d1 = 0.4  # unit: mV
-d_d1 = 50.0  # unit: pA
-a_d1 = 0.015  # unit: 1/ms
-b_d1 = 10.0  # unit: nS
-I_d1 = 60.0  # unit: pA
+# D1-SPN neuron parameters (Humphries et al. 2009)
+C_d1 = 15.0   # unit: pF
+k_d1 = 1.0  # unit: None
+v_r_d1 = -78.0  # unit: mV
+v_t_d1 = -40.0  # unit: mV
+Delta_d1 = 0.5  # unit: mV
+d_d1 = 67.0  # unit: pA
+a_d1 = 0.01  # unit: 1/ms
+b_d1 = -20.0  # unit: nS
+I_d1 = 20.0  # unit: pA
 
-# D2-SPN neuron parameters
+# D2-SPN neuron parameters (Humphries et al. 2009)
 C_d2 = 15.0   # unit: pF
 k_d2 = 1.0  # unit: None
 v_r_d2 = -80.0  # unit: mV
-v_t_d2 = -30.0  # unit: mV
-Delta_d2 = 0.4  # unit: mV
-d_d2 = 90.0  # unit: pA
+v_t_d2 = -40.0  # unit: mV
+Delta_d2 = 0.5  # unit: mV
+d_d2 = 91.0  # unit: pA
 a_d2 = 0.01  # unit: 1/ms
 b_d2 = -20.0  # unit: nS
-I_d2 = 0.0  # unit: pA
+I_d2 = 40.0  # unit: pA
 
-# FSI neuron parameters
-C_fsi = 50.0   # unit: pF
-k_fsi = 0.25  # unit: None
-v_r_fsi = -55.0  # unit: mV
-v_t_fsi = -44.0  # unit: mV
-Delta_fsi = 1.0  # unit: mV
-d_fsi = 20.0  # unit: pA
-a_fsi = 1.0  # unit: 1/ms
-b_fsi = 0.25  # unit: nS
-I_fsi = 100.0  # unit: pA
+# FSI neuron parameters (Humphries et al. 2009)
+C_fsi = 80.0   # unit: pF
+k_fsi = 1.0  # unit: None
+v_r_fsi = -65.0  # unit: mV
+v_t_fsi = -50.0  # unit: mV
+Delta_fsi = 0.4  # unit: mV
+d_fsi = 0.0  # unit: pA
+a_fsi = 0.2  # unit: 1/ms
+b_fsi = 0.025  # unit: nS
+I_fsi = 40.0  # unit: pA
+
+# SNR neuron parameters
+C_ret = 80.0   # unit: pF
+k_ret = 1.0  # unit: None
+v_r_ret = -60.0  # unit: mV
+v_t_ret = -55.0  # unit: mV
+Delta_ret = 1.0  # unit: mV
+d_ret = 0.0  # unit: pA
+a_ret = 0.05  # unit: 1/ms
+b_ret = 3.0  # unit: nS
+I_ret = 80.0  # unit: pA
 
 # synaptic parameters
 E_ampa = 0.0
 E_gaba = -65.0
-tau_ampa = 10.0
-tau_gaba = 20.0
+tau_ampa = 6.0
+tau_gaba = 12.0
 
 # population-level coupling strengths
-J = 40.0
-J_stn = 1.0*J
-J_pro = 0.2*J
-J_ark = 0.2*J
-J_d1 = 0.2*J
-J_d2 = 0.5*J
-J_fsi = 0.2*J
+J = 100.0
+J_stn = 0.2*J
+J_pro = 0.6*J
+J_ark = 0.6*J
+J_d1 = 0.9*J
+J_d2 = 0.9*J
+J_fsi = 0.3*J
+J_ret = 0.6*J
 
 # STN inputs
-J_ee = 0.3*J_e
-J_ei = 0.4*J_e
-J_et = 0.3*J_e
+J_sp = 1.0*J_stn
 
-# LTS inputs
-J_ie = 0.4*J_i
-J_ii = 0.2*J_i
-J_it = 0.4*J_i
+# GPe-p inputs
+J_ps = 0.1*J_pro
+J_pp = 0.1*J_pro
+J_p2 = 0.8*J_pro
 
-# TC inputs
-J_te = 0.3*J_t
-J_tr = 0.3*J_t
-J_tn = 0.4*J_t
+# GPe-a inputs
+J_as = 0.05*J_ark
+J_ap = 0.15*J_ark
+J_a2 = 0.8*J_ark
 
-# RN inputs
-J_rt = 0.4*J_r
-J_rr = 0.2*J_r
-J_re = 0.4*J_r
+# D1-SPN inputs
+J_11 = 0.1*J_d1
+J_12 = 0.2*J_d1
+J_1a = 0.3*J_d1
+J_1f = 0.4*J_d1
 
-# SPN inputs
-J_se = 0.6*J_s
-J_st = 0.4*J_s
+# D2-SPN inputs
+J_21 = 0.1*J_d2
+J_22 = 0.2*J_d2
+J_2a = 0.4*J_d2
+J_2f = 0.3*J_d2
 
-# SNR inputs
-J_ns = 1.0*J_s
+# FSI inputs
+J_ff = 0.8*J_fsi
+J_fs = 0.2*J_fsi
+
+# SNr inputs
+J_rs = 0.1*J_ret
+J_rp = 0.3*J_ret
+J_r1 = 0.6*J_ret
 
 # model initialization
 ######################
 
 # initialize circuit
 node = NodeTemplate.from_yaml("config/ik_mf/ik")
-node_names = ["rs", "lts", "tc", "rn", "spn", "snr"]
-net = CircuitTemplate("net", nodes={key: node for key in node_names},
-                      edges=[("rs/ik_op/s", "rs/ik_op/s_e", None, {"weight": J_ee}),
-                             ("rs/ik_op/s", "lts/ik_op/s_e", None, {"weight": J_ie}),
-                             ("rs/ik_op/s", "tc/ik_op/s_e", None, {"weight": J_te}),
-                             ("rs/ik_op/s", "rn/ik_op/s_e", None, {"weight": J_re}),
-                             ("rs/ik_op/s", "spn/ik_op/s_e", None, {"weight": J_se}),
-                             ("lts/ik_op/s", "rs/ik_op/s_i", None, {"weight": J_ei}),
-                             ("lts/ik_op/s", "lts/ik_op/s_i", None, {"weight": J_ii}),
-                             ("tc/ik_op/s", "rs/ik_op/s_e", None, {"weight": J_et}),
-                             ("tc/ik_op/s", "lts/ik_op/s_e", None, {"weight": J_it}),
-                             ("tc/ik_op/s", "rn/ik_op/s_e", None, {"weight": J_rt}),
-                             ("tc/ik_op/s", "spn/ik_op/s_e", None, {"weight": J_st}),
-                             ("rn/ik_op/s", "tc/ik_op/s_i", None, {"weight": J_tr}),
-                             ("rn/ik_op/s", "rn/ik_op/s_i", None, {"weight": J_rr}),
-                             ("spn/ik_op/s", "snr/ik_op/s_i", None, {"weight": J_ns, "delay": 8.0, "spread": 2.0}),
-                             ("snr/ik_op/s", "tc/ik_op/s_i", None, {"weight": J_tn})
+node_names = ["stn", "proto", "arky", "d1", "d2", "fsi", "snr"]
+net = CircuitTemplate("bg", nodes={key: node for key in node_names},
+                      edges=[("proto/ik_op/s", "stn/ik_op/s_i", None, {"weight": J_sp, "delay": 2.0}),
+                             ("stn/ik_op/s", "proto/ik_op/s_e", None, {"weight": J_ps, "delay": 2.0}),
+                             ("proto/ik_op/s", "proto/ik_op/s_i", None, {"weight": J_pp, "delay": 1.0}),
+                             ("d2/ik_op/s", "proto/ik_op/s_i", None, {"weight": J_p2, "delay": 6.0}),
+                             ("stn/ik_op/s", "arky/ik_op/s_e", None, {"weight": J_as, "delay": 2.0}),
+                             ("proto/ik_op/s", "arky/ik_op/s_i", None, {"weight": J_ap, "delay": 1.0}),
+                             ("d2/ik_op/s", "arky/ik_op/s_i", None, {"weight": J_a2, "delay": 6.0}),
+                             ("d1/ik_op/s", "d1/ik_op/s_i", None, {"weight": J_11, "delay": 1.0}),
+                             ("d2/ik_op/s", "d1/ik_op/s_i", None, {"weight": J_12, "delay": 1.0}),
+                             ("arky/ik_op/s", "d1/ik_op/s_i", None, {"weight": J_1a, "delay": 6.0}),
+                             ("fsi/ik_op/s", "d1/ik_op/s_i", None, {"weight": J_1f, "delay": 1.0}),
+                             ("d1/ik_op/s", "d2/ik_op/s_i", None, {"weight": J_12, "delay": 1.0}),
+                             ("d2/ik_op/s", "d2/ik_op/s_i", None, {"weight": J_22, "delay": 1.0}),
+                             ("arky/ik_op/s", "d2/ik_op/s_i", None, {"weight": J_2a, "delay": 6.0}),
+                             ("fsi/ik_op/s", "d2/ik_op/s_i", None, {"weight": J_2f, "delay": 1.0}),
+                             ("stn/ik_op/s", "fsi/ik_op/s_e", None, {"weight": J_fs, "delay": 5.0}),
+                             ("fsi/ik_op/s", "fsi/ik_op/s_i", None, {"weight": J_ff}),
+                             ("stn/ik_op/s", "snr/ik_op/s_e", None, {"weight": J_rs, "delay": 2.0}),
+                             ("proto/ik_op/s", "snr/ik_op/s_i", None, {"weight": J_rp, "delay": 2.0}),
+                             ("d1/ik_op/s", "snr/ik_op/s_i", None, {"weight": J_r1, "delay": 6.0})
                              ])
 
 # update parameters
-pc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_t": v_t_e, "eta": I_e, "a": a_e,
-           "b": b_e, "d": d_e, "tau_s": tau_ampa, "v": v_t_e, "Delta": Delta_e, "E_e": E_ampa, "E_i": E_gaba}
-in_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_t": v_t_i, "eta": I_i, "a": a_i,
-           "b": b_i, "d": d_i, "tau_s": tau_gaba, "v": v_t_i, "Delta": Delta_i, "E_e": E_ampa, "E_i": E_gaba}
-tc_vars = {"C": C_t, "k": k_t, "v_r": v_r_t, "v_t": v_t_t, "eta": I_t, "a": a_t,
-           "b": b_t, "d": d_t, "tau_s": tau_ampa, "v": v_t_t, "Delta": Delta_t, "E_e": E_ampa, "E_i": E_gaba}
-rn_vars = {"C": C_r, "k": k_r, "v_r": v_r_r, "v_t": v_t_r, "eta": I_r, "a": a_r,
-           "b": b_r, "d": d_r, "tau_s": tau_gaba, "v": v_t_r, "Delta": Delta_r, "E_e": E_ampa, "E_i": E_gaba}
-spn_vars = {"C": C_s, "k": k_s, "v_r": v_r_s, "v_t": v_t_s, "eta": I_s, "a": a_s,
-            "b": b_s, "d": d_s, "tau_s": tau_gaba, "v": v_t_s, "Delta": Delta_s, "E_e": E_ampa, "E_i": E_gaba}
-snr_vars = {"C": C_n, "k": k_n, "v_r": v_r_n, "v_t": v_t_n, "eta": I_n, "a": a_n,
-            "b": b_n, "d": d_n, "tau_s": tau_gaba, "v": v_t_n, "Delta": Delta_n, "E_e": E_ampa, "E_i": E_gaba}
-neuron_params = {"rs": pc_vars, "lts": in_vars, "tc": tc_vars, "rn": rn_vars, "spn": spn_vars, "snr": snr_vars}
+stn_vars = {"C": C_stn, "k": k_stn, "v_r": v_r_stn, "v_t": v_t_stn, "eta": I_stn, "a": a_stn,
+            "b": b_stn, "d": d_stn, "tau_s": tau_ampa, "v": v_r_stn, "Delta": Delta_stn, "E_e": E_ampa, "E_i": E_gaba}
+pro_vars = {"C": C_pro, "k": k_pro, "v_r": v_r_pro, "v_t": v_t_pro, "eta": I_pro, "a": a_pro,
+            "b": b_pro, "d": d_pro, "tau_s": tau_gaba, "v": v_r_pro, "Delta": Delta_pro, "E_e": E_ampa, "E_i": E_gaba}
+ark_vars = {"C": C_ark, "k": k_ark, "v_r": v_r_ark, "v_t": v_t_ark, "eta": I_ark, "a": a_ark,
+            "b": b_ark, "d": d_ark, "tau_s": tau_ampa, "v": v_r_ark, "Delta": Delta_ark, "E_e": E_ampa, "E_i": E_gaba}
+d1_vars = {"C": C_d1, "k": k_d1, "v_r": v_r_d1, "v_t": v_t_d1, "eta": I_d1, "a": a_d1,
+           "b": b_d1, "d": d_d1, "tau_s": tau_gaba, "v": v_r_d1, "Delta": Delta_d1, "E_e": E_ampa, "E_i": E_gaba}
+d2_vars = {"C": C_d2, "k": k_d2, "v_r": v_r_d2, "v_t": v_t_d2, "eta": I_d2, "a": a_d2,
+           "b": b_d2, "d": d_d2, "tau_s": tau_gaba, "v": v_r_d2, "Delta": Delta_d2, "E_e": E_ampa, "E_i": E_gaba}
+fsi_vars = {"C": C_fsi, "k": k_fsi, "v_r": v_r_fsi, "v_t": v_t_fsi, "eta": I_fsi, "a": a_fsi,
+            "b": b_fsi, "d": d_fsi, "tau_s": tau_gaba, "v": v_r_fsi, "Delta": Delta_fsi, "E_e": E_ampa, "E_i": E_gaba}
+snr_vars = {"C": C_ret, "k": k_ret, "v_r": v_r_ret, "v_t": v_t_ret, "eta": I_ret, "a": a_ret,
+            "b": b_ret, "d": d_ret, "tau_s": tau_gaba, "v": v_r_ret, "Delta": Delta_ret, "E_e": E_ampa, "E_i": E_gaba}
+neuron_params = {"stn": stn_vars, "proto": pro_vars, "arky": ark_vars, "d1": d1_vars, "d2": d2_vars,
+                 "fsi": fsi_vars, "snr": snr_vars}
 for node in node_names:
     net.update_var(node_vars={f"{node}/ik_op/{var}": val for var, val in neuron_params[node].items()})
 
@@ -158,18 +185,19 @@ for node in node_names:
 ################
 
 # define model input
-T = 3000.0
+T = 2000.0
 cutoff = 500.0
-dt = 1e-3
+dt = 1e-2
 dts = 1.0
 start = 1000.0
-stop = 2000.0
+stop = 1005.0
 inp = np.zeros((int(T/dt),))
-inp[int(start/dt):int(stop/dt)] = 100.0
+inp[int(start/dt):int(stop/dt)] = 350.0
 
 # perform simulation
-res = net.run(simulation_time=T, step_size=dt, sampling_step_size=dts, solver="scipy", method="LSODA", atol=1e-6,
-              rtol=1e-6, inputs={"tc/ik_op/I_ext": inp}, outputs={key: f"{key}/ik_op/r" for key in node_names},
+res = net.run(simulation_time=T, step_size=dt, sampling_step_size=dts, solver="heun",
+              inputs={"d1/ik_op/I_ext": inp, "d2/ik_op/I_ext": inp, "stn/ik_op/I_ext": inp * 0.1},
+              outputs={key: f"{key}/ik_op/r" for key in node_names},
               clear=True, cutoff=cutoff, in_place=False)
 res = res*1e3
 
@@ -184,5 +212,5 @@ plt.show()
 # generate fortran run function
 ###############################
 
-net.get_run_func(func_name="bgtc_run", file_name="bgtc", step_size=dt, backend="fortran", float_precision="float64",
-                 vectorize=False, auto=True, in_place=False, solver="scipy")
+# net.get_run_func(func_name="bgtc_run", file_name="bgtc", step_size=dt, backend="fortran", float_precision="float64",
+#                  vectorize=False, auto=True, in_place=False, solver="scipy")
