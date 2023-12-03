@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 # STN neuron parameters
 C_stn = 85.0   # unit: pF (Gillies and Willshaw 2005)
 k_stn = 0.7  # unit: None
-v_r_stn = -75.0  # unit: mV
-v_t_stn = -60.0  # unit: mV
+v_r_stn = -55.0  # unit: mV (Farries et al. 2010)
+v_t_stn = -43.0  # unit: mV (Farries et al. 2010)
 Delta_stn = 0.5  # unit: mV
 d_stn = 0.05  # unit: pA
 a_stn = 0.003  # unit: 1/ms
@@ -17,10 +17,10 @@ b_stn = 0.3  # unit: nS
 I_stn = 50.0  # unit: pA
 
 # GPe-p neuron parameters
-C_pro = 40.0   # unit: pF
+C_pro = 120.0   # unit: pF (Hernandez et al. 2015)
 k_pro = 2.0  # unit: None
-v_r_pro = -60.0  # unit: mV (Shouno et al. 2017)
-v_t_pro = -55.0  # unit: mV (Shouno et al. 2017)
+v_r_pro = -53.0  # unit: mV (Bugaysen et al. 2010)
+v_t_pro = -44.0  # unit: mV (Bugaysen et al. 2010)
 Delta_pro = 1.0  # unit: mV
 d_pro = 70.0  # unit: pA
 a_pro = 0.05  # unit: 1/ms
@@ -28,10 +28,10 @@ b_pro = 2.5  # unit: nS
 I_pro = 40.0  # unit: pA
 
 # GPe-a neuron parameters
-C_ark = 60.0   # unit: pF
+C_ark = 65.0   # unit: pF (Hernandez et al. 2015)
 k_ark = 3.0  # unit: None
-v_r_ark = -60.0  # unit: mV
-v_t_ark = -55.0  # unit: mV
+v_r_ark = -54.0  # unit: mV (Bugaysen et al. 2010)
+v_t_ark = -42.0  # unit: mV (Bugaysen et al. 2010)
 Delta_ark = 0.6  # unit: mV
 d_ark = 105.0  # unit: pA
 a_ark = 0.05  # unit: 1/ms
