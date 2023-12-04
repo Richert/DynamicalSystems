@@ -5,38 +5,38 @@ import matplotlib.pyplot as plt
 # parameter definition
 ######################
 
-# STN neuron parameters
-C_stn = 85.0   # unit: pF (Gillies and Willshaw 2005)
-k_stn = 0.7  # unit: None
-v_r_stn = -55.0  # unit: mV (Farries et al. 2010)
-v_t_stn = -43.0  # unit: mV (Farries et al. 2010)
+# STN neuron parameters (fitted, see script)
+C_stn = 48.0   # unit: pF
+k_stn = 5.0  # unit: None
+v_r_stn = -56.0  # unit: mV
+v_t_stn = -49.0  # unit: mV
 Delta_stn = 0.5  # unit: mV
-d_stn = 0.05  # unit: pA
-a_stn = 0.003  # unit: 1/ms
-b_stn = 0.3  # unit: nS
-I_stn = 50.0  # unit: pA
+d_stn = 51.0  # unit: pA
+a_stn = 0.017  # unit: 1/ms
+b_stn = -5.6  # unit: nS
+I_stn = 45.0  # unit: pA
 
 # GPe-p neuron parameters
-C_pro = 120.0   # unit: pF (Hernandez et al. 2015)
-k_pro = 2.0  # unit: None
-v_r_pro = -53.0  # unit: mV (Bugaysen et al. 2010)
-v_t_pro = -44.0  # unit: mV (Bugaysen et al. 2010)
+C_pro = 109.0   # unit: pF (fitted, see script)
+k_pro = 4.4  # unit: None
+v_r_pro = -54.0  # unit: mV
+v_t_pro = -49.0  # unit: mV
 Delta_pro = 1.0  # unit: mV
-d_pro = 70.0  # unit: pA
-a_pro = 0.05  # unit: 1/ms
-b_pro = 2.5  # unit: nS
-I_pro = 40.0  # unit: pA
+d_pro = 104.0  # unit: pA
+a_pro = 0.213  # unit: 1/ms
+b_pro = 1.8  # unit: nS
+I_pro = 46.0  # unit: pA
 
-# GPe-a neuron parameters
-C_ark = 65.0   # unit: pF (Hernandez et al. 2015)
-k_ark = 3.0  # unit: None
-v_r_ark = -54.0  # unit: mV (Bugaysen et al. 2010)
-v_t_ark = -42.0  # unit: mV (Bugaysen et al. 2010)
+# GPe-a neuron parameters (fitted, see script)
+C_ark = 76.0   # unit: pF
+k_ark = 0.7  # unit: None
+v_r_ark = -52.0  # unit: mV
+v_t_ark = -47.0  # unit: mV
 Delta_ark = 0.6  # unit: mV
-d_ark = 105.0  # unit: pA
-a_ark = 0.05  # unit: 1/ms
-b_ark = 2.5  # unit: nS
-I_ark = 40.0  # unit: pA
+d_ark = 46.0  # unit: pA
+a_ark = 0.069  # unit: 1/ms
+b_ark = -4.7  # unit: nS
+I_ark = 5.0  # unit: pA
 
 # D1-SPN neuron parameters (Humphries et al. 2009)
 C_d1 = 15.0   # unit: pF
@@ -71,7 +71,7 @@ a_fsi = 0.2  # unit: 1/ms
 b_fsi = 0.025  # unit: nS
 I_fsi = 40.0  # unit: pA
 
-# SNR neuron parameters
+# SNR neuron parameters (fitted, see script)
 C_ret = 80.0   # unit: pF
 k_ret = 1.0  # unit: None
 v_r_ret = -60.0  # unit: mV

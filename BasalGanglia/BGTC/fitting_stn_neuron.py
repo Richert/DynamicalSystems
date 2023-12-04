@@ -1,12 +1,12 @@
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import differential_evolution
 import matplotlib.pyplot as plt
 
 
 # define parameters
 ###################
 
-# parameters to train
+# parameters to train (Gillies and Willshaw 2005, Farries et al. 2010)
 C = [40.0, 80.0]
 k = [0.1, 10.0]
 eta = [0.0, 100.0]
@@ -46,9 +46,9 @@ def ik_run(T, dt, I_ext, C, k, eta, v_r, v_t, a, b, d):
 # perform optimization
 ######################
 
-# inputs and target rates
-inputs = [25.0, 75.0, 100.0, 125.0, 150.0, 175.0]
-target_rates = [25.0, 50.0, 70.0, 100.0, 160.0, 200.0]
+# inputs and target rates (Wilson et al. 2004)
+inputs = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0]
+target_rates = [5.0, 15.0, 20.0, 25.0, 30.0, 40.0, 50.0, 60.0]
 
 # simulation parameters
 T = 1000.0
@@ -71,8 +71,8 @@ params = [C, k, eta, v_r, v_t, a, b, d]
 theta = np.asarray([np.mean(p) for p in params])
 
 # optimization
-res = minimize(loss, theta, bounds=params, args=(target_rates, inputs), method="Nelder-Mead", tol=1e-8,
-               options={"disp": True, "maxiter": 10000})
+res = differential_evolution(loss, bounds=params, args=(target_rates, inputs), maxiter=1000,
+                             strategy="best1exp", tol=1e-8, workers=16, popsize=10)
 
 # final parameters
 param_names = ["C", "k", "eta", "v_r", "v_t", "a", "b", "d"]
@@ -91,7 +91,7 @@ ax.plot(inputs, target_rates, label="targets")
 ax.plot(inputs, rates, label="fit")
 ax.set_xlabel("input (pA)")
 ax.set_ylabel("spike rates (Hz)")
-ax.set_title("Model fit")
+ax.set_title("STN neuron model fit")
 ax.legend()
 plt.tight_layout()
 plt.show()
