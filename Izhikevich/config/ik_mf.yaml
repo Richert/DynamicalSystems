@@ -8,8 +8,8 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
+    - "r' = (Delta*k^2*absv(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
     - "u' = a*(b*(v-v_r) - u) + d*r"
     - "s' = -s/tau_s + r_in"
   variables:
@@ -32,12 +32,43 @@ ik_op:
     I_ext: input(0.0)
     r_in: input(0.0)
 
+# izhikevich operator with threshold adaptation
+sfa_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*k/(pi*C) + r*(k*(2.0*v-v_r-v_t-x) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t-x) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u"
+    - "x' = -x/tau_x + kappa*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
 # izhikevich operator with ampa and gabaa synapses
 ik_ei_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_ampa*s_ampa - g_gabaa*s_gabaa)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + I_ext - u) / C"
+    - "r' = (Delta*k^2*absv(v_r-v)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_ampa*s_ampa - g_gabaa*s_gabaa)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v_r-v)+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + I_ext - u) / C"
     - "u' = a*(b*(v-v_r) - u) + d*r"
     - "s_ampa' = -s_ampa/tau_ampa + r_e"
     - "s_gabaa' = -s_gabaa/tau_gabaa + r_i"
@@ -174,6 +205,12 @@ lts:
   operators:
     - lts_op
 
+# IK neuron population with threshold adaptation
+sfa_pop:
+  base: NodeTemplate
+  operators:
+    - sfa_op
+
 # circuit templates
 ###################
 
@@ -213,3 +250,11 @@ eiic:
     - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 4.0}]
     - [lts/lts_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
     - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
+
+# IK neuron population with threshold adaptation
+sfa:
+  base: CircuitTemplate
+  nodes:
+    p: sfa_pop
+  edges:
+    - [p/sfa_op/s, p/sfa_op/s_in, null, {weight: 1.0}]

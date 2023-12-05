@@ -90,8 +90,8 @@ ax.set_title(r'(F) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$')
 
 # Delta_rs = 0.1, d_rs = 10.0
 ax = fig.add_subplot(grid[4:, 0])
-a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:hb1', ax=ax, line_color_stable='#148F77',
-                    line_color_unstable='#148F77', line_style_unstable='solid')
+# a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:hb1', ax=ax, line_color_stable='#148F77',
+#                     line_color_unstable='#148F77', line_style_unstable='solid')
 a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:lp1', ax=ax, line_color_stable='#5D6D7E',
                     line_color_unstable='#5D6D7E', line_style_unstable='solid')
 a.plot_continuation('PAR(15)', 'PAR(24)', cont=f'D_fs/I_rs:1:lp2', ax=ax, line_color_stable='#5D6D7E',
@@ -105,20 +105,20 @@ ax.set_title(r'(G) $\Delta_{rs} = 0.1$ mV, $\kappa_{rs} = 10.0$')
 # time series
 #############
 
-conditions = ["hom_low_sfa", "het_low_sfa", "hom_high_sfa", "het_high_sfa"]
-titles = [r"(C) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$", r"(D) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$",
-          r"(G) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$", r"(H) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$"]
-subplots = [0, 1, 2, 3]
-for cond, title, idx in zip(conditions, titles, subplots):
-    data = pickle.load(open(f"results/eic_{cond}.p", "rb"))["results"]
-    ax = fig.add_subplot(grid[idx, 2:])
-    ax.plot(data.index, data["rs"], label="RS")
-    ax.plot(data.index, data["fs"], label="FS")
-    if idx == 0:
-        plt.legend()
-    ax.set_xlabel("time (ms)")
-    ax.set_ylabel(r"$r$ (Hz)")
-    ax.set_title(title)
+# conditions = ["hom_low_sfa", "het_low_sfa", "hom_high_sfa", "het_high_sfa"]
+# titles = [r"(C) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$", r"(D) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 10.0$",
+#           r"(G) $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 100.0$", r"(H) $\Delta_{fs} = 2.0$ mV, $\kappa_{rs} = 100.0$"]
+# subplots = [0, 1, 2, 3]
+# for cond, title, idx in zip(conditions, titles, subplots):
+#     data = pickle.load(open(f"results/eic_{cond}.p", "rb"))["results"]
+#     ax = fig.add_subplot(grid[idx, 2:])
+#     ax.plot(data.index, data["rs"], label="RS")
+#     ax.plot(data.index, data["fs"], label="FS")
+#     if idx == 0:
+#         plt.legend()
+#     ax.set_xlabel("time (ms)")
+#     ax.set_ylabel(r"$r$ (Hz)")
+#     ax.set_title(title)
 
 # finishing touches
 ###################

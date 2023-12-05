@@ -24,20 +24,20 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # model parameters
-N = 10000
-C = 100.0   # unit: pF
-k = 0.7  # unit: None
+N = 5000
+C = 200.0   # unit: pF
+k = 3.0  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
-v_spike = 2000.0  # unit: mV
-v_reset = -3000.0  # unit: mV
+v_spike = 1000.0  # unit: mV
+v_reset = -1000.0  # unit: mV
 Delta = 1.0  # unit: mV
-d = 100.0
-a = 0.03
-b = -2.0
+d = 80.0
+a = 0.005
+b = -10.0
 tau_s = 6.0
 J = 1.0
-g = 15.0
+g = 20.0
 E_r = 0.0
 
 # define lorentzian of etas
@@ -46,10 +46,10 @@ spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=v_r-v_t)
 # define inputs
 T = 5500.0
 cutoff = 500.0
-dt = 1e-3
+dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + 40.0
-inp[int(1000/dt):int(5000/dt)] += np.linspace(0.0, 30.0, num=int(4000/dt))
+inp[int(1000/dt):int(5000/dt)] += np.linspace(0.0, 500.0, num=int(4000/dt))
 #inp[int(3000/dt):int(5000/dt)] += np.linspace(30.0, 0.0, num=int(2000/dt))
 
 # run the model
@@ -80,4 +80,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'results': res}, open("results/sfa_rnn2_high.p", "wb"))
+# pickle.dump({'results': res}, open("results/sfa_rnn2_high.p", "wb"))
