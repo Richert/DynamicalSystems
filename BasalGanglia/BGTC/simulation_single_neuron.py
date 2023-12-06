@@ -14,11 +14,11 @@ C = 100.0
 k = 1.0
 v_r = -60.0
 v_t = -40.0
-a = 0.01
-b = -40.0
-d = 20.0
-eta = 300.0
-tau_x = 200.0
+a = 0.02
+b = -10.0
+d = 0.8
+eta = 100.0
+tau_x = 250.0
 
 # function definitions
 ######################
@@ -34,8 +34,8 @@ def ik_run(T, dt, C, k, eta, v_r, v_t, a, b, d, tau_x, tau_r):
     v_hist = []
     r_hist = []
     for step in range(steps):
-        dv = (k * (v - v_r) * (v - v_t + x) + eta - u) / C
-        du = a * (b * (v - v_r) - u)
+        dv = (k * (v - v_r) * (v - v_t) + eta - u) / C
+        du = a * (b * (v - v_r) - u) + x
         dx = -x/tau_x
         dr = -r/tau_r
         v += dt * dv

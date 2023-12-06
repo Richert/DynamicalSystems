@@ -4,7 +4,6 @@ nb.set_num_threads(4)
 import numpy as np
 from rectipy import Network, random_connectivity
 import matplotlib.pyplot as plt
-import pickle
 from scipy.stats import cauchy
 plt.rcParams['backend'] = 'TkAgg'
 
@@ -24,19 +23,19 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 
 # model parameters
 N = 1000
-C = 80.0   # unit: pF
+C = 100.0   # unit: pF
 k = 1.0  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 10.0  # unit: pA
-kappa = 10.0
-tau_u = 40.0
+Delta = 2.0  # unit: pA
+kappa = 0.8
+tau_u = 50.0
 b = -10.0
-tau_s = 20.0
-tau_x = 200.0
-g = 20.0
-E_r = 0.0
+tau_s = 10.0
+tau_x = 250.0
+g = 10.0
+E_r = -65.0
 v_reset = -1000.0
 v_peak = 1000.0
 
@@ -45,11 +44,11 @@ T = 3500.0
 dt = 1e-2
 dts = 1e-1
 cutoff = int(500.0/dt)
-inp = np.zeros((int(T/dt), 1)) + 50.0
-inp[int(1000/dt):int(2000/dt),] += 150.0
+inp = np.zeros((int(T/dt), 1)) + 100.0
+inp[int(1000/dt):int(2000/dt),] -= 50.0
 
 # define lorentzian of etas
-etas = lorentzian(N, eta=eta, delta=Delta, lb=eta-10000.0, ub=eta+10000.0)
+etas = lorentzian(N, eta=eta, delta=Delta, lb=eta-1000.0, ub=eta+1000.0)
 
 # define connectivity
 W = random_connectivity(N, N, 0.2)
