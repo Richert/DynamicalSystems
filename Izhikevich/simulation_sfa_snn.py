@@ -28,14 +28,14 @@ k = 1.0  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 2.0  # unit: pA
-kappa = 0.8
+Delta = 10.0  # unit: pA
+kappa = 2.0
 tau_u = 50.0
-b = -10.0
+b = -2.0
 tau_s = 10.0
 tau_x = 250.0
-g = 10.0
-E_r = -65.0
+g = 5.0
+E_r = 0.0
 v_reset = -1000.0
 v_peak = 1000.0
 
@@ -44,8 +44,8 @@ T = 3500.0
 dt = 1e-2
 dts = 1e-1
 cutoff = int(500.0/dt)
-inp = np.zeros((int(T/dt), 1)) + 100.0
-inp[int(1000/dt):int(2000/dt),] -= 50.0
+inp = np.zeros((int(T/dt), 1)) + 200.0
+inp[int(1000/dt):int(2000/dt),] -= 100.0
 
 # define lorentzian of etas
 etas = lorentzian(N, eta=eta, delta=Delta, lb=eta-1000.0, ub=eta+1000.0)

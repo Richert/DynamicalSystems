@@ -11,13 +11,13 @@ tau_r = 50.0
 
 # neuron parameters
 C = 100.0
-k = 1.0
+k = 0.7
 v_r = -60.0
 v_t = -40.0
 a = 0.02
-b = -10.0
-d = 0.8
-eta = 100.0
+b = -2.0
+d = 2.0
+eta = 200.0
 tau_x = 250.0
 
 # function definitions
