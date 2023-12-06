@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 #######################
 
 # constants
-v_cutoff = 1000.0
-v_reset = -1000.0
+v_cutoff = 100.0
+v_reset = -100.0
 tau_r = 50.0
 
 # neuron parameters
@@ -15,9 +15,9 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 a = 0.02
-b = -2.0
+b = -4.0
 d = 2.0
-eta = 200.0
+eta = 400.0
 tau_x = 250.0
 
 # function definitions

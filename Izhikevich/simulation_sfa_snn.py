@@ -24,17 +24,17 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 # model parameters
 N = 1000
 C = 100.0   # unit: pF
-k = 1.0  # unit: None
+k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 10.0  # unit: pA
+Delta = 5.0  # unit: pA
 kappa = 2.0
-tau_u = 50.0
-b = -2.0
-tau_s = 10.0
+tau_u = 20.0
+b = -20.0
+tau_s = 5.0
 tau_x = 250.0
-g = 5.0
+g = 8.0
 E_r = 0.0
 v_reset = -1000.0
 v_peak = 1000.0
@@ -44,11 +44,11 @@ T = 3500.0
 dt = 1e-2
 dts = 1e-1
 cutoff = int(500.0/dt)
-inp = np.zeros((int(T/dt), 1)) + 200.0
-inp[int(1000/dt):int(2000/dt),] -= 100.0
+inp = np.zeros((int(T/dt), 1)) + 300.0
+inp[int(1000/dt):int(2000/dt),] -= 150.0
 
 # define lorentzian of etas
-etas = lorentzian(N, eta=eta, delta=Delta, lb=eta-1000.0, ub=eta+1000.0)
+bs = lorentzian(N, eta=b, delta=Delta, lb=b-10*Delta, ub=b+10*Delta)
 
 # define connectivity
 W = random_connectivity(N, N, 0.2)
@@ -57,7 +57,7 @@ W = random_connectivity(N, N, 0.2)
 ###############
 
 # initialize model
-node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": tau_u, "b": b, "kappa": kappa,
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": bs, "kappa": kappa,
              "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_r, "tau_x": tau_x}
 
 # initialize model

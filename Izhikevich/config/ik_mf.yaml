@@ -8,8 +8,8 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*absv(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
-    - "v' = (k*v*(v-v_r-v_t) + C*pi*r*(Delta*sign(v-v_r)-pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
+    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
     - "u' = a*(b*(v-v_r) - u) + d*r"
     - "s' = -s/tau_s + r_in"
   variables:
@@ -36,7 +36,7 @@ ik_op:
 sfa_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (Delta*k*(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
     - "x' = -x/tau_x + r"
@@ -67,8 +67,8 @@ sfa_op:
 ik_ei_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*absv(v_r-v)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_ampa*s_ampa - g_gabaa*s_gabaa)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v_r-v)+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + I_ext - u) / C"
+    - "r' = (Delta*k^2*absv(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_ampa*s_ampa - g_gabaa*s_gabaa)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) + C*pi*r*(Delta*sign(v-v_r)-pi*C*r/k) + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + I_ext - u) / C"
     - "u' = a*(b*(v-v_r) - u) + d*r"
     - "s_ampa' = -s_ampa/tau_ampa + r_e"
     - "s_gabaa' = -s_gabaa/tau_gabaa + r_i"

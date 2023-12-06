@@ -63,8 +63,8 @@ sfa_op:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*s_in*(E_r - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + x"
-    - "x' = -x/tau_x + kappa*spike"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "x' = -x/tau_x + spike"
     - "s' = -s/tau_s + spike"
   variables:
     s: output(0.0)

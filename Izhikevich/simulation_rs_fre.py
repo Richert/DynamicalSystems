@@ -14,17 +14,17 @@ from reservoir_computing.utility_funcs import lorentzian
 ###################
 
 # model parameters
-N = 2000
+N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.5
+Delta = 2.5
 eta = 0.0
 a = 0.03
 b = -2.0
-d = 100.0
+d = 10.0
 g = 15.0
 E_r = 0.0
 tau_s = 6.0
@@ -36,9 +36,9 @@ T = 2500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt), 1)) + 32.0
-# inp[:int(cutoff*0.5/dt), 0] -= 15.0
-inp[int(750/dt):int(2000/dt), 0] += 20
+inp = np.zeros((int(T/dt), 1)) + 25.0
+inp[:int(cutoff*0.5/dt), 0] -= 15.0
+inp[int(750/dt):int(2000/dt), 0] += 30
 
 # run the mean-field model
 ##########################
@@ -70,14 +70,15 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
              "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # initialize model
-net = Network.from_yaml(f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="I_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
-                        node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                        dt=dt, verbose=False, clear=True, device="cuda:0")
+net = Network(dt=dt, device="cpu")
+net.add_diffeq_node("snn", f"config/ik_snn/rs", weights=W, source_var="s", target_var="s_in",
+                    input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
+                    node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
+                    verbose=False, clear=True, device="cuda:0")
 
 # perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False)
-res_snn = obs["out"].iloc[int(np.round(cutoff/dts)):, :]
+obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=True, cutoff=int(cutoff/dt))
+res_snn = obs.to_dataframe("out")
 
 # plot results
 fig, ax = plt.subplots(figsize=(12, 4))
@@ -90,4 +91,4 @@ plt.tight_layout()
 plt.show()
 
 # save results
-pickle.dump({'mf': res_mf, "snn": res_snn}, open("results/rs_high_sfa.p", "wb"))
+# pickle.dump({'mf': res_mf, "snn": res_snn}, open("results/rs_high_sfa.p", "wb"))

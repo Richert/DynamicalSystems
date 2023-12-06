@@ -36,14 +36,14 @@ grid_highlvl = fig.add_gridspec(1, 2)
 grid = grid_highlvl[1].subgridspec(6, 1)
 
 # RS conditions
-conditions = ["rs_low_sfa", "rs_high_sfa"]
-titles = [r"(C) RS: $\Delta_{rs} = 0.5$ mV, $\kappa_{rs} = 10.0$",
-          r"(D) RS: $\Delta_{rs} = 0.5$ mV, $\kappa_{rs} = 100.0$",
-          ]
-subplots = [0, 1]
-ticks = [0.2, 0.1]
-tau = 6.0
-ax_init = []
+# conditions = ["rs_low_sfa", "rs_high_sfa"]
+# titles = [r"(C) RS: $\Delta_{rs} = 0.5$ mV, $\kappa_{rs} = 10.0$",
+#           r"(D) RS: $\Delta_{rs} = 0.5$ mV, $\kappa_{rs} = 100.0$",
+#           ]
+# subplots = [0, 1]
+# ticks = [0.2, 0.1]
+# tau = 6.0
+# ax_init = []
 # for cond, title, idx, ytick in zip(conditions, titles, subplots, ticks):
 #     data = pickle.load(open(f"results/{cond}.p", "rb"))
 #     if idx == 0:
@@ -102,8 +102,8 @@ a_rs.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp2', ax=ax, line_color_st
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{rs}$ (pA)')
 ax.set_title(r'(A) RS: $\kappa_{rs} = 10.0$ pA')
-ax.set_ylim([0.0, 4.0])
-ax.set_xlim([10.0, 70.0])
+# ax.set_ylim([0.0, 4.0])
+# ax.set_xlim([10.0, 70.0])
 ax.axhline(y=0.5, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 ax.axvline(x=30.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 ax.axvline(x=50.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
@@ -119,8 +119,8 @@ a_rs.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_st
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{rs}$ (pA)')
 ax.set_title(r'(B) RS: $\kappa_{rs} = 100.0$ pA')
-ax.set_ylim([0.0, 1.7])
-ax.set_xlim([10.0, 70.0])
+# ax.set_ylim([0.0, 1.7])
+# ax.set_xlim([10.0, 70.0])
 ax.axhline(y=0.5, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 ax.axvline(x=32.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 ax.axvline(x=52.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
@@ -159,8 +159,8 @@ ax.axvline(x=25.0, color='black', alpha=0.5, linestyle='--', linewidth=0.5)
 ax = fig.add_subplot(grid[2, 0])
 a_eic.plot_continuation('PAR(26)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb1', ax=ax, line_color_stable='#148F77',
                         line_color_unstable='#148F77', line_style_unstable='solid')
-# a_eic.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb2', ax=ax, line_color_stable='#148F77',
-#                         line_color_unstable='#148F77', line_style_unstable='solid')
+a_eic.plot_continuation('PAR(30)', 'PAR(6)', cont=f'D_rs/I_fs:1:hb2', ax=ax, line_color_stable='#148F77',
+                        line_color_unstable='#148F77', line_style_unstable='solid')
 ax.set_ylabel(r'$\Delta_{rs}$ (mv)')
 ax.set_xlabel(r'$I_{fs}$ (pA)')
 ax.set_title(r'(I) RS-FS: $\Delta_{fs} = 0.2$ mV, $\kappa_{rs} = 10.0$')
