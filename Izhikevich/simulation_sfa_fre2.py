@@ -14,25 +14,23 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 10.0  # unit: pA
-kappa = 2.0
-tau_u = 40.0
-b = -10.0
-tau_s = 5.0
+Delta = 0.5  # unit: pA
+kappa = 0.0
+tau_u = 100.0
+b = -2.0
+tau_s = 6.0
 tau_x = 250.0
-g = 8.0
+g = 15.0
 E_r = 0.0
-
-# mean-field correction parameter
-sigma = 1.0/np.sqrt(tau_u)
 
 # define inputs
 T = 3500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 300.0
-inp[int(1000/dt):int(2000/dt),] -= 150.0
+inp = np.zeros((int(T/dt),)) + 45.0
+inp[:int(cutoff/dt)] -= 30.0
+inp[int(1000/dt):int(2000/dt),] += 100.0
 
 # run the model
 ###############
@@ -42,7 +40,7 @@ ik = CircuitTemplate.from_yaml("config/ik_mf/sfa")
 
 # update parameters
 ik.update_var(node_vars={'p/sfa_op/C': C, 'p/sfa_op/k': k, 'p/sfa_op/v_r': v_r, 'p/sfa_op/v_t': v_t,
-                         'p/sfa_op/Delta': Delta*sigma, 'p/sfa_op/kappa': kappa, 'p/sfa_op/tau_u': tau_u, 'p/sfa_op/b': b,
+                         'p/sfa_op/Delta': Delta, 'p/sfa_op/kappa': kappa, 'p/sfa_op/tau_u': tau_u, 'p/sfa_op/b': b,
                          'p/sfa_op/tau_s': tau_s, 'p/sfa_op/g': g, 'p/sfa_op/E_r': E_r, 'p/sfa_op/tau_x': tau_x,
                          'p/sfa_op/eta': eta})
 

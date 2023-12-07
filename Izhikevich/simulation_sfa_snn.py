@@ -22,19 +22,19 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
 ###################
 
 # model parameters
-N = 2000
+N = 1000
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 10.0  # unit: pA
-kappa = 2.0
-tau_u = 40.0
-b = -10.0
-tau_s = 5.0
+Delta = 0.5  # unit: pA
+kappa = 0.0
+tau_u = 35.0
+b = -2.0
+tau_s = 6.0
 tau_x = 250.0
-g = 8.0
+g = 15.0
 E_r = 0.0
 v_reset = -1000.0
 v_peak = 1000.0
@@ -44,8 +44,9 @@ T = 3500.0
 dt = 1e-2
 dts = 1e-1
 cutoff = int(500.0/dt)
-inp = np.zeros((int(T/dt), 1)) + 300.0
-inp[int(1000/dt):int(2000/dt),] -= 150.0
+inp = np.zeros((int(T/dt), 1)) + 45.0
+inp[:int(cutoff/dt)] -= 30.0
+inp[int(1000/dt):int(2000/dt),] += 100.0
 
 # define lorentzian of etas
 bs = lorentzian(N, eta=b, delta=Delta, lb=b-10*Delta, ub=b+10*Delta)
@@ -62,10 +63,10 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": ta
 
 # initialize model
 net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("sfa", f"config/ik_snn/sfa",
+net.add_diffeq_node("sfa", f"config/ik_snn/sfa", weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=node_vars.copy(), op="sfa_op", spike_reset=v_reset, spike_threshold=v_peak,
-                    verbose=False, clear=True, N=N)
+                    verbose=False, clear=True)
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=cutoff)
