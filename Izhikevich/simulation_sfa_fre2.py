@@ -14,17 +14,17 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 5.0  # unit: pA
+Delta = 10.0  # unit: pA
 kappa = 2.0
-tau_u = 20.0
-b = -20.0
+tau_u = 40.0
+b = -10.0
 tau_s = 5.0
 tau_x = 250.0
 g = 8.0
 E_r = 0.0
 
 # mean-field correction parameter
-sigma = (2.0*np.pi+kappa)/np.sqrt(tau_u)
+sigma = 1.0/np.sqrt(tau_u)
 
 # define inputs
 T = 3500.0
