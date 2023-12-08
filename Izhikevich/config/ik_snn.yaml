@@ -59,12 +59,12 @@ ik_op:
     s_ext: input(0.0)
 
 # operator for IK neurons with threshold adaptation
-sfa_op2:
+sfa_op:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*s_in*(E_r - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + x"
-    - "x' = -x/tau_x + kappa*spike"
+    - "u' = (b*(mean(v)-v_r) - u) / tau_u + x"
+    - "x' = -x/tau_x + kappa*mean(spike)"
     - "s' = -s/tau_s + spike"
   variables:
     s: output(0.0)
@@ -88,7 +88,7 @@ sfa_op2:
     I_ext: input(0.0)
 
 # operator for IK neurons with threshold adaptation
-sfa_op:
+sfa_op2:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*s_in*(E_r - v)) / C"
