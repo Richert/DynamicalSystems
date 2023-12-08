@@ -33,13 +33,12 @@ ik_op:
     r_in: input(0.0)
 
 # izhikevich operator with threshold adaptation
-sfa_op:
+sfa_op0:
   base: OperatorTemplate
   equations:
-    - "sigma = (pi + sqrt(x))*sqrt(absv(v-v_r)/tau_u)"
-    - "r' = (Delta*sigma*k/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + x"
+    - "r' = (Delta*k*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in - u*(v-v_r)/(epsilon + (v-v_r)^2))) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - Delta*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u - x) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u"
     - "x' = -x/tau_x + kappa*r"
     - "s' = -s/tau_s + r"
   variables:
@@ -62,6 +61,7 @@ sfa_op:
     kappa: 10.0
     tau_x: 300.0
     eta: 0.0
+    epsilon: 0.01
     I_ext: input(0.0)
     s_in: input(0.0)
 
@@ -83,6 +83,37 @@ sfa_op2:
     x: variable(0.0)
     s: variable(0.0)
     sigma: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# izhikevich operator with threshold adaptation
+sfa_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*k*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r + (Delta*absv(v-v_r))/pi)/k + g*s_in*(E_r-v) + eta + I_ext - u - x) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u"
+    - "x' = -x/tau_x + kappa*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7

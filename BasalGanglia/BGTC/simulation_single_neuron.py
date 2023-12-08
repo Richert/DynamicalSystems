@@ -9,11 +9,11 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-tau_u = 80.0
-b = -10.0
-d = 2.0
+tau_u = 30.0
+b = -20.0
+d = 120.0
 eta = 200.0
-tau_x = 200.0
+tau_x = 300.0
 
 # constants
 v_cutoff = 100.0
@@ -39,8 +39,8 @@ def ik_run(T, dt, C, k, eta, v_r, v_t, tau_u, b, d, tau_x, tau_r):
     steps = int(T / dt)
     for step in range(steps):
 
-        dv = (k * (v - v_r) * (v - v_t) + eta - u) / C
-        du = (b * (v - v_r) - u) / tau_u + d*x
+        dv = (k * (v - v_r) * (v - v_t) + eta - u - d*x) / C
+        du = (b * (v - v_r) - u) / tau_u
         dx = -x/tau_x
         dr = -r/tau_r
 

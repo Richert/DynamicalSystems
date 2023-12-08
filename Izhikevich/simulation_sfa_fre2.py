@@ -14,12 +14,12 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 2.0  # unit: pA
-kappa = 0.3
-tau_u = 35.0
+Delta = 1.0  # unit: pA
+kappa = 0.0
+tau_u = 200.0
 b = -2.0
 tau_s = 6.0
-tau_x = 250.0
+tau_x = 300.0
 g = 15.0
 E_r = 0.0
 
@@ -28,7 +28,7 @@ T = 3500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 70.0
+inp = np.zeros((int(T/dt),)) + 35.0
 inp[:int(cutoff/dt)] -= 30.0
 inp[int(1000/dt):int(2000/dt),] += 100.0
 
