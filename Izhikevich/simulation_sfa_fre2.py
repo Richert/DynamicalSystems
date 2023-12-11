@@ -28,7 +28,7 @@ T = 3500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 35.0
+inp = np.zeros((int(T/dt),)) + 30.0
 inp[:int(cutoff/dt)] -= 30.0
 inp[int(1000/dt):int(2000/dt),] += 100.0
 
