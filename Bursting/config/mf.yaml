@@ -1,0 +1,201 @@
+%YAML 1.2
+---
+
+# operator templates
+####################
+
+# adIK neurons with distributed eta
+recovery_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u + x"
+    - "x' = -x/tau_x + kappa*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    Delta_u: variable(0.0)
+    Delta_v: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# adIK neurons with distributed b
+recovery_b_op:
+  base: OperatorTemplate
+  equations:
+    - "Delta_u = Delta*absv(v-v_r) + r*pi*C*absv(b)/k"
+    - "Delta_v = Delta*absv(v-v_r)"
+    - "r' = (k*Delta_u/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r + Delta_v)/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u + x"
+    - "x' = -x/tau_x + kappa*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    Delta_u: variable(0.0)
+    Delta_v: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# adIK neurons with distributed b and approximation `u = b(v-v_r)` (i.e. fast recovery variable dynamics)
+fast_recovery_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*k*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in - b)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r + Delta*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u - x) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u"
+    - "x' = -x/tau_x + kappa*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    sigma: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# adIK neurons with quadratic recovery variable
+quadratic_recovery_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (w*pi*tau_u*k/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "w' = (Delta*absv(v_r-v)*absv(w-x)/(pi*tau_u) + w*(2*u - b*(v_r-v) - x)) / tau_u"
+    - "u' = (u - b*(v_r-v))*(u - x)/tau_u - pi*w*(pi*w*tau_u + Delta*(v_r-v)*sign(u-x))"
+    - "x' = -x/tau_x + kappa*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    u: variable(0.0)
+    w: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    sigma: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# node templates
+################
+
+# adIK neuron population with distributed etas
+recovery_pop:
+  base: NodeTemplate
+  operators:
+    - recovery_op
+
+# adIK neuron population with distributed bs
+recovery_b_pop:
+  base: NodeTemplate
+  operators:
+    - recovery_b_op
+
+# adIK neuron population with fast recovery variable approximation
+fast_recovery_pop:
+  base: NodeTemplate
+  operators:
+    - fast_recovery_op
+
+# adIK neuron population with distributed etas
+quadratic_recovery_pop:
+  base: NodeTemplate
+  operators:
+    - quadratic_recovery_op
+
+# circuit templates
+###################
+
+# adIK neuron population with distributed etas
+recovery:
+  base: CircuitTemplate
+  nodes:
+    p: recovery_pop
+  edges:
+    - [p/recovery_op/s, p/recovery_op/s_in, null, {weight: 1.0}]
+
+# adIK neuron population with distributed bs
+recovery_b:
+  base: CircuitTemplate
+  nodes:
+    p: recovery_b_pop
+  edges:
+    - [p/recovery_b_op/s, p/recovery_b_op/s_in, null, {weight: 1.0}]
+
+# adIK neuron population with fast recovery variable
+fast_recovery_b:
+  base: CircuitTemplate
+  nodes:
+    p: fast_recovery_pop
+  edges:
+    - [p/fast_recovery_op/s, p/fast_recovery_op/s_in, null, {weight: 1.0}]
+
+# adIK neuron population with fast recovery variable
+quadratic_recovery_b:
+  base: CircuitTemplate
+  nodes:
+    p: quadratic_recovery_pop
+  edges:
+    - [p/quadratic_recovery_op/s, p/quadratic_recovery_op/s_in, null, {weight: 1.0}]
