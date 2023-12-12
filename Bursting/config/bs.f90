@@ -1,16 +1,16 @@
-module etas
+module bs
 
 double precision :: PI = 4.0*atan(1.0)
 
 contains
 
 
-subroutine etas_run(t,y,dy,v_t,v_r,k,g,Delta,C,E_r,I_ext,b,a,d,tau_s)
+subroutine bs_run(t,y,dy,v_t,v_r,k,g,Delta,C,E_r,I_ext,b,tau_u,kappa,tau_s,tau_x)
 
 implicit none
 
 double precision, intent(in) :: t
-double precision, intent(in) :: y(4)
+double precision, intent(in) :: y(5)
 double precision :: r
 double precision :: v
 double precision :: u
@@ -30,6 +30,8 @@ double precision, intent(in) :: tau_u
 double precision, intent(in) :: kappa
 double precision, intent(in) :: tau_s
 double precision, intent(in) :: tau_x
+double precision :: Delta_u
+double precision :: Delta_v
 
 r = y(1)
 v = y(2)
@@ -38,9 +40,11 @@ x = y(4)
 s = y(5)
 
 Delta_u = Delta*abs(v-v_r) + r*pi*C*abs(b)/k
+Delta_v = 0.0
 
-dy(1) = (Delta*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
-dy(2) = (k*(v-v_r)*(v-v_t) + I_ext + g*s*(E_r-v) - u - (pi*C*r)^2/k)/C
+dy(1) = (Delta_u*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
+dy(2) = (k*(v-v_r)*(v-v_t) + I_ext + g*s*(E_r-v) - u &
+     & - pi*C*r*(pi*C*r + Delta_v)/k)/C
 dy(3) = (b*(v - v_r) - u)/tau_u + x
 dy(4) = -x/tau_x + kappa*r
 dy(5) = -s/tau_s + r
@@ -53,16 +57,16 @@ end module
 
 subroutine func(ndim,y,icp,args,ijac,dy,dfdu,dfdp)
 
-use izhikevich_exc
+use bs
 implicit none
 integer, intent(in) :: ndim, icp(*), ijac
 double precision, intent(in) :: y(ndim), args(*)
 double precision, intent(out) :: dy(ndim)
 double precision, intent(inout) :: dfdu(ndim,ndim), dfdp(ndim,*)
 
-call etas_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
+call bs_run(args(14), y, dy, args(1), args(2), args(3), args(4), &
      & args(5), args(6), args(7), args(8), args(9), args(15), args(16),&
-     &  args(17))
+     &  args(17), args(18))
 
 end subroutine func
 

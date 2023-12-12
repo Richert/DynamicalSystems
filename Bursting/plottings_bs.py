@@ -9,7 +9,7 @@ sys.path.append('../')
 # load pyauto data
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
-a = ODESystem.from_file(f"results/etas.pkl", auto_dir=auto_dir)
+a = ODESystem.from_file(f"results/bs.pkl", auto_dir=auto_dir)
 deltas = a.additional_attributes['deltas']
 kappas = a.additional_attributes['kappas']
 
@@ -93,5 +93,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/etas.pdf')
+plt.savefig(f'results/bs.pdf')
 plt.show()

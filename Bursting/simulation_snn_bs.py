@@ -17,10 +17,10 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 1.0
-kappa = 0.0
+Delta = 5.0
+kappa = 5.0
 tau_u = 35.0
-b = -5.0
+b = -2.0
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
@@ -34,9 +34,9 @@ T = 3500.0
 dt = 1e-2
 dts = 1e-1
 cutoff = int(500.0/dt)
-inp = np.zeros((int(T/dt), 1)) + 50.0
+inp = np.zeros((int(T/dt), 1)) + 120.0
 # inp[:int(cutoff/dt), 0] -= 30.0
-inp[int(1000/dt):int(2000/dt), 0] += 50.0
+inp[int(1000/dt):int(2000/dt), 0] -= 40.0
 
 # define lorentzian distribution of bs
 bs = b + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -53,10 +53,10 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": ta
 
 # initialize model
 net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("sfa", f"config/snn/recovery", #weights=W, source_var="s", target_var="s_in",
+net.add_diffeq_node("sfa", f"config/snn/recovery_global", #weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                    node_vars=node_vars.copy(), op="recovery_op", spike_reset=v_reset, spike_threshold=v_peak,
-                    verbose=False, clear=True, N=N)
+                    node_vars=node_vars.copy(), op="global_recovery_op", spike_reset=v_reset, spike_threshold=v_peak,
+                    verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=cutoff)

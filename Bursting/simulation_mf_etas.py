@@ -14,7 +14,7 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 4.0
+Delta = 1.0
 kappa = 0.1
 tau_u = 35.0
 b = -2.0
@@ -28,9 +28,9 @@ T = 3500.0
 cutoff = 500.0
 dt = 1e-2
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 35.0
-inp[:int(cutoff/dt)] -= 30.0
-inp[int(1000/dt):int(2000/dt),] += 30.0
+inp = np.zeros((int(T/dt),)) + 33.0
+# inp[:int(cutoff/dt)] -= 15.0
+inp[int(1000/dt):int(2000/dt),] += 15.8
 
 # run the model
 ###############
@@ -47,7 +47,7 @@ ik.update_var(node_vars={'p/recovery_op/C': C, 'p/recovery_op/k': k, 'p/recovery
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
              outputs={'s': 'p/recovery_op/s', 'u': 'p/recovery_op/u'}, inputs={'p/recovery_op/I_ext': inp},
-             decorator=nb.njit, fastmath=True)
+             decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 5))
