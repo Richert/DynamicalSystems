@@ -9,7 +9,7 @@ import numba as nb
 ###################
 
 # condition
-cond = "low_kappa"
+cond = "high_kappa"
 
 # model parameters
 C = 100.0   # unit: pF
@@ -39,21 +39,21 @@ inp[int(2000/dt):int(4000/dt),] += (5.0 if cond == "low_kappa" else -20.0)
 ###############
 
 # initialize model
-ik = CircuitTemplate.from_yaml("config/mf/recovery")
+ik = CircuitTemplate.from_yaml("config/mf/recovery_global")
 
 # update parameters
 node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
              'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
-ik.update_var(node_vars={f"p/recovery_op/{key}": val for key, val in node_vars.items()})
+ik.update_var(node_vars={f"p/global_recovery_op/{key}": val for key, val in node_vars.items()})
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/recovery_op/s', 'u': 'p/recovery_op/u'},
-             inputs={'p/recovery_op/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
+             outputs={'s': 'p/global_recovery_op/s', 'u': 'p/global_recovery_op/u'},
+             inputs={'p/global_recovery_op/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
 file_num = "" if cond == "low_kappa" else "2"
-pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas{file_num}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_global{file_num}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 5))
