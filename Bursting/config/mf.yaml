@@ -74,7 +74,7 @@ global_recovery_op:
 recovery_b_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) + b - g*s_in)) / C"
+    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r + Delta*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + x"
     - "x' = -x/tau_x + kappa*r"

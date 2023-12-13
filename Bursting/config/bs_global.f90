@@ -30,6 +30,8 @@ double precision, intent(in) :: tau_u
 double precision, intent(in) :: kappa
 double precision, intent(in) :: tau_s
 double precision, intent(in) :: tau_x
+double precision :: Delta_u
+double precision :: Delta_v
 
 r = y(1)
 v = y(2)
@@ -37,7 +39,7 @@ u = y(3)
 x = y(4)
 s = y(5)
 
-dy(1) = (Delta*abs(v-v_r)*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - b - g*s)) / C
+dy(1) = (Delta*abs(v-v_r)*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
 dy(2) = (k*(v-v_r)*(v-v_t) + I_ext + g*s*(E_r-v) - u &
      & - pi*C*r*(pi*C*r + Delta*sign(dble(1), v-v_r))/k)/C
 dy(3) = (b*(v - v_r) - u)/tau_u + x
