@@ -18,7 +18,7 @@ v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
 Delta = 2.5
-kappa = 0.0 if cond == "low_kappa" else 0.2
+kappa = 0.0 if cond == "low_kappa" else 1.0
 tau_u = 35.0
 b = -8.0
 tau_s = 6.0
@@ -39,21 +39,22 @@ inp[int(2000/dt):int(4000/dt),] += (25.0 if cond == "low_kappa" else 15.0)
 ###############
 
 # initialize model
-ik = CircuitTemplate.from_yaml("config/mf/recovery_b")
+ik = CircuitTemplate.from_yaml("config/mf/recovery_b_global")
 
 # update parameters
 node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
              'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
-ik.update_var(node_vars={f"p/recovery_b_op/{key}": val for key, val in node_vars.items()})
+ik.update_var(node_vars={f"p/global_recovery_b_op/{key}": val for key, val in node_vars.items()})
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/recovery_b_op/s', 'u': 'p/recovery_b_op/u'}, inputs={'p/recovery_b_op/I_ext': inp},
+             outputs={'s': 'p/global_recovery_b_op/s', 'u': 'p/global_recovery_b_op/u'},
+             inputs={'p/global_recovery_b_op/I_ext': inp},
              decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
 file_num = "" if cond == "low_kappa" else "2"
-pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs{file_num}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_global{file_num}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 5))

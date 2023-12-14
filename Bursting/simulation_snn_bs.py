@@ -1,6 +1,7 @@
 import numba as nb
 nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(4)
+import pickle
 import numpy as np
 from rectipy import Network, random_connectivity
 import matplotlib.pyplot as plt
@@ -10,33 +11,36 @@ plt.rcParams['backend'] = 'TkAgg'
 # define parameters
 ###################
 
+# condition
+cond = "low_kappa"
+
 # model parameters
-N = 1000
+N = 2000
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 5.0
-kappa = 5.0
+Delta = 2.5
+kappa = 0.0 if cond == "low_kappa" else 0.2
 tau_u = 35.0
-b = -2.0
+b = -8.0
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
 E_r = 0.0
 
-v_reset = -1000.0
-v_peak = 1000.0
+v_reset = -2000.0
+v_peak = 2000.0
 
 # define inputs
-T = 3500.0
+T = 6000.0
 dt = 1e-2
 dts = 1e-1
-cutoff = int(500.0/dt)
-inp = np.zeros((int(T/dt), 1)) + 120.0
-# inp[:int(cutoff/dt), 0] -= 30.0
-inp[int(1000/dt):int(2000/dt), 0] -= 40.0
+cutoff = 1000.0
+inp = np.zeros((int(T/dt), 1)) + (-15.0 if cond == "low_kappa" else 15.0)
+# inp[:int(200.0/dt)] -= 10.0
+inp[int(2000/dt):int(4000/dt), 0] += (25.0 if cond == "low_kappa" else 15.0)
 
 # define lorentzian distribution of bs
 bs = b + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -59,8 +63,12 @@ net.add_diffeq_node("sfa", f"config/snn/recovery", #weights=W, source_var="s", t
                     verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=cutoff)
+obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt))
 res = obs.to_dataframe("out")
+
+# save results to file
+file_num = "" if cond == "low_kappa" else "2"
+pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_bs{file_num}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

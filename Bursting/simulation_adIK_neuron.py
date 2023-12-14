@@ -9,16 +9,15 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-tau_u = 30.0
+tau_u = 35.0
 b = -20.0
-d = 10.0
-eta = 50.0
+d = 0.1
+eta = 0.0
 tau_x = 300.0
 
 # constants
 v_cutoff = 100.0
 v_reset = -100.0
-tau_r = 50.0
 
 # function definitions
 ######################
@@ -38,7 +37,7 @@ def adik_run(T, dt, C, k, eta, v_r, v_t, tau_u, b, d, tau_x):
     for step in range(steps):
 
         dv = (k * (v - v_r) * (v - v_t) + eta - u) / C
-        du = (b * (v - v_r) - u) / tau_u + x
+        du = (b * (v - v_r) - u) / tau_u + d*x
         dx = -x/tau_x
 
         v += dt * dv
@@ -47,7 +46,7 @@ def adik_run(T, dt, C, k, eta, v_r, v_t, tau_u, b, d, tau_x):
 
         if v > v_cutoff:
             v = v_reset
-            x += d
+            x += 1.0
 
         v_hist.append(v)
         u_hist.append(u)

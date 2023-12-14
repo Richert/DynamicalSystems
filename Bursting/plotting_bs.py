@@ -16,8 +16,8 @@ kappas = a.additional_attributes['kappas']
 
 # load simulation data
 signals = {}
-for key in ["mf_etas_global", "mf_etas", "snn_etas_global", "snn_etas",
-            "mf_etas_global2", "mf_etas2", "snn_etas_global2", "snn_etas2"
+for key in ["mf_bs_global", "mf_bs", "snn_bs_global", "snn_bs",
+            "mf_bs_global2", "mf_bs2", "snn_bs_global2", "snn_bs2"
             ]:
     signals[key] = pickle.load(open(f"results/{key}.pkl", "rb"))["results"]
 
@@ -54,10 +54,10 @@ for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp2', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb1', ax=ax, line_color_stable='#148F77',
-                            line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb2', ax=ax, line_color_stable='#148F77',
-                            line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
+    # a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb1', ax=ax, line_color_stable='#148F77',
+    #                         line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
+    # a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb2', ax=ax, line_color_stable='#148F77',
+    #                         line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
 ax.set_title(rf'(A) $\kappa = {kappas[0]}$ pA')
 ax.set_ylabel(r'$\Delta$ (mv)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
@@ -67,10 +67,16 @@ ax.set_xlabel(r'$I_{ext}$ (pA)')
 # high kappa
 ax = fig.add_subplot(grid[:2, 1])
 for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb3', ax=ax, line_color_stable='#148F77',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp3', ax=ax, line_color_stable='#5D6D7E',
+                            line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
+    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_stable='#5D6D7E',
+                            line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
+    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb1', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb4', ax=ax, line_color_stable='#148F77',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb2', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
+    # a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb4', ax=ax, line_color_stable='#148F77',
+    #                         line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
 ax.set_ylabel(r'$\Delta$ (mv)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_title(rf'(B) $\kappa = {kappas[1]}$ pA')
@@ -81,10 +87,11 @@ ax.set_title(rf'(B) $\kappa = {kappas[1]}$ pA')
 #############
 
 # for small kappa
-conditions = ["etas", "etas_global"]
+conditions = ["bs", "bs_global"]
 rows = [2, 3]
+ymax = [0.25, 0.01]
 titles = ["(C) Neuron-specific recovery variables", "(D) Global recovery variable"]
-for cond, row, title in zip(conditions, rows, titles):
+for cond, row, title, ylim in zip(conditions, rows, titles, ymax):
     mf_data = signals[f"mf_{cond}"]
     snn_data = signals[f"snn_{cond}"]
     ax = fig.add_subplot(grid[row, 0])
@@ -93,11 +100,11 @@ for cond, row, title in zip(conditions, rows, titles):
     ax.legend()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(r"$s$")
-    ax.set_ylim([0.0, 0.2])
+    # ax.set_ylim([0.0, ylim])
     ax.set_title(title)
 
 # for large kappa
-conditions = ["etas", "etas_global"]
+conditions = ["bs", "bs_global"]
 rows = [2, 3]
 titles = ["(C) Neuron-specific recovery variables", "(D) Global recovery variable"]
 for cond, row, title in zip(conditions, rows, titles):
@@ -109,7 +116,7 @@ for cond, row, title in zip(conditions, rows, titles):
     ax.legend()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(r"$s$")
-    ax.set_ylim([0.0, 0.2])
+    # ax.set_ylim([0.0, 0.2])
     ax.set_title(title)
 
 # finishing touches
