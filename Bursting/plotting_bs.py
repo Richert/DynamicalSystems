@@ -67,10 +67,10 @@ ax.set_xlabel(r'$I_{ext}$ (pA)')
 # high kappa
 ax = fig.add_subplot(grid[:2, 1])
 for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp3', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_stable='#5D6D7E',
-                            line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
+    # a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp3', ax=ax, line_color_stable='#5D6D7E',
+    #                         line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
+    # a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_stable='#5D6D7E',
+    #                         line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb1', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb2', ax=ax, line_color_stable='#148F77',

@@ -21,8 +21,8 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 2.5
-kappa = 0.0 if cond == "low_kappa" else 0.2
+Delta = 5.0
+kappa = 0.0 if cond == "low_kappa" else 0.5
 tau_u = 35.0
 b = -8.0
 tau_s = 6.0
@@ -38,9 +38,9 @@ T = 6000.0
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int(T/dt), 1)) + (-15.0 if cond == "low_kappa" else 15.0)
+inp = np.zeros((int(T/dt), 1)) + (-10.0 if cond == "low_kappa" else 10.0)
 # inp[:int(200.0/dt)] -= 10.0
-inp[int(2000/dt):int(4000/dt), 0] += (25.0 if cond == "low_kappa" else 15.0)
+inp[int(2000/dt):int(4000/dt), 0] += (25.0 if cond == "low_kappa" else 10.0)
 
 # define lorentzian distribution of bs
 bs = b + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
