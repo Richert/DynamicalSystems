@@ -1,6 +1,35 @@
 %YAML 1.2
 ---
 
+# adIK neurons with neuron-specific recovery variable
+test_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*mean(s)*(E_r - v)) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + x"
+    - "x' = -x/tau_x + kappa*spike"
+    - "s' = -s/tau_s + spike"
+  variables:
+    s: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_theta: -40.0
+    eta: 0.0
+    g: 1.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 33.33
+    kappa: 10.0
+    tau_x: 300.0
+    tau_s: 6.0
+    spike: input(0.0)
+    s_in: input(0.0)
+    I_ext: input(0.0)
+
 # adIK neurons with global recovery variable
 global_recovery_op:
   base: OperatorTemplate
@@ -105,3 +134,9 @@ recovery_quadratic:
   base: NodeTemplate
   operators:
     - quadratic_recovery_op
+
+# population of adIK neurons with neuron-specific recovery variable
+ik_test:
+  base: NodeTemplate
+  operators:
+    - test_op

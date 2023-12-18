@@ -11,7 +11,12 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # condition
-cond = "high_kappa"
+cond = "strong_sfa"
+cond_map = {
+    "no_sfa": {"kappa": 0.0, "eta": 20.0, "eta_inc": 10.0},
+    "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0},
+    "strong_sfa": {"kappa": 0.4, "eta": 37.0, "eta_inc": 10.0}
+}
 
 # model parameters
 N = 2000
@@ -20,8 +25,8 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 7.5
-kappa = 0.1 if cond == "low_kappa" else 5.0
+Delta = 10.0
+kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
 b = -2.0
 tau_s = 6.0
@@ -33,13 +38,13 @@ v_reset = -2000.0
 v_peak = 2000.0
 
 # define inputs
-T = 6000.0
+T = 7000.0
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int(T/dt), 1)) + (35.0 if cond == "low_kappa" else 200.0)
+inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
 # inp[:int(200.0/dt)] -= 10.0
-inp[int(2000/dt):int(4000/dt), 0] += (5.0 if cond == "low_kappa" else -20.0)
+inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
 
 # define lorentzian distribution of etas
 etas = eta + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -66,8 +71,7 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(c
 res = obs.to_dataframe("out")
 
 # save results to file
-file_num = "" if cond == "low_kappa" else "2"
-pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_etas{file_num}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
