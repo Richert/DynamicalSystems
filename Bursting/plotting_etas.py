@@ -11,7 +11,6 @@ path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 a = ODESystem.from_file(f"results/etas.pkl", auto_dir=auto_dir)
 ag = ODESystem.from_file(f"results/etas_global.pkl", auto_dir=auto_dir)
-at = ODESystem.from_file(f"results/etas_test.pkl", auto_dir=auto_dir)
 kappas = a.additional_attributes['kappas']
 
 # load simulation data
@@ -52,7 +51,7 @@ grid = gridspec.GridSpec(nrows=4, ncols=3, figure=fig)
 
 # no spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 0])
-for a_tmp, linestyle in zip([a, ag, at], ["solid", "dotted", "dashed"]):
+for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp1', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp2', ax=ax, line_color_stable='#5D6D7E',
@@ -63,7 +62,7 @@ ax.set_xlabel(r'$I_{ext}$ (pA)')
 
 # weak spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 1])
-for a_tmp, linestyle in zip([a, ag, at], ["solid", "dotted", "dashed"]):
+for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp3', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_stable='#5D6D7E',
@@ -80,7 +79,7 @@ ax.set_xlabel(r'$I_{ext}$ (pA)')
 
 # strong spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 2])
-for a_tmp, linestyle in zip([a, ag, at], ["solid", "dotted", "dashed"]):
+for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb3', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb4', ax=ax, line_color_stable='#148F77',

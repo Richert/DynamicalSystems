@@ -9,7 +9,7 @@ import numba as nb
 ###################
 
 # condition
-cond = "no_sfa"
+cond = "weak_sfa"
 cond_map = {
     "no_sfa": {"kappa": 0.0, "eta": 20.0, "eta_inc": 10.0},
     "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0},

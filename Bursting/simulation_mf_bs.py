@@ -9,7 +9,12 @@ import numba as nb
 ###################
 
 # condition
-cond = "high_kappa"
+cond = "weak_sfa"
+cond_map = {
+    "no_sfa": {"kappa": 0.0, "eta": 10.0, "eta_inc": -5.0, "eta_init": 20.0},
+    "weak_sfa": {"kappa": 0.2, "eta": 30.0, "eta_inc": 10.0, "eta_init": 0.0},
+    "strong_sfa": {"kappa": 0.4, "eta": 20.0, "eta_inc": 12.0, "eta_init": 0.0}
+}
 
 # model parameters
 C = 100.0   # unit: pF
@@ -17,23 +22,23 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 5.0
-kappa = 0.0 if cond == "low_kappa" else 0.5
+Delta = 4.5
+kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = -8.0
+b = 0.5
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
 E_r = 0.0
 
 # define inputs
-T = 6000.0
+T = 7000.0
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int(T/dt),)) + (-10.0 if cond == "low_kappa" else 10.0)
-inp[:int(200.0/dt)] -= 10.0
-inp[int(2000/dt):int(4000/dt),] += (25.0 if cond == "low_kappa" else 10.0)
+inp = np.zeros((int(T/dt),)) + cond_map[cond]["eta"]
+inp[:int(300.0/dt)] += cond_map[cond]["eta_init"]
+inp[int(2000/dt):int(5000/dt),] += cond_map[cond]["eta_inc"]
 
 # run the model
 ###############
@@ -48,12 +53,11 @@ ik.update_var(node_vars={f"p/recovery_b_op/{key}": val for key, val in node_vars
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/recovery_b_op/s', 'u': 'p/recovery_b_op/u'}, inputs={'p/recovery_b_op/I_ext': inp},
-             decorator=nb.njit, fastmath=True, float_precision="float64")
+             outputs={'s': 'p/recovery_b_op/s', 'u': 'p/recovery_b_op/u'},
+             inputs={'p/recovery_b_op/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
-file_num = "" if cond == "low_kappa" else "2"
-pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs{file_num}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 5))

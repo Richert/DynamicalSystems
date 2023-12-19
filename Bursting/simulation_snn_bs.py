@@ -7,12 +7,16 @@ from rectipy import Network, random_connectivity
 import matplotlib.pyplot as plt
 plt.rcParams['backend'] = 'TkAgg'
 
-
 # define parameters
 ###################
 
 # condition
-cond = "low_kappa"
+cond = "weak_sfa"
+cond_map = {
+    "no_sfa": {"kappa": 0.0, "eta": 10.0, "eta_inc": -5.0, "eta_init": 20.0},
+    "weak_sfa": {"kappa": 0.2, "eta": 30.0, "eta_inc": 10.0, "eta_init": 0.0},
+    "strong_sfa": {"kappa": 0.4, "eta": 20.0, "eta_inc": 12.0, "eta_init": 0.0}
+}
 
 # model parameters
 N = 2000
@@ -21,10 +25,10 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 5.0
-kappa = 0.0 if cond == "low_kappa" else 0.5
+Delta = 4.5
+kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = -8.0
+b = 0.5
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
@@ -34,15 +38,15 @@ v_reset = -2000.0
 v_peak = 2000.0
 
 # define inputs
-T = 6000.0
+T = 7000.0
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int(T/dt), 1)) + (-10.0 if cond == "low_kappa" else 10.0)
-# inp[:int(200.0/dt)] -= 10.0
-inp[int(2000/dt):int(4000/dt), 0] += (25.0 if cond == "low_kappa" else 10.0)
+inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
+inp[:int(300.0/dt)] += cond_map[cond]["eta_init"]
+inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
 
-# define lorentzian distribution of bs
+# define lorentzian distribution of etas
 bs = b + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
 
 # define connectivity
@@ -67,8 +71,7 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(c
 res = obs.to_dataframe("out")
 
 # save results to file
-file_num = "" if cond == "low_kappa" else "2"
-pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_bs{file_num}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_bs_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

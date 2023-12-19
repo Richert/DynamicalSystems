@@ -64,7 +64,7 @@ recovery_op:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*mean(s)*(E_r - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + mean(x)"
+    - "u' = (b*(v-v_r) - u) / tau_u + x"
     - "x' = -x/tau_x + kappa*spike"
     - "s' = -s/tau_s + spike"
   variables:

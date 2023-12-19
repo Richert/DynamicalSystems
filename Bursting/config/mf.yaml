@@ -41,7 +41,7 @@ recovery_op:
 test_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*(Delta - sqrt(r)*kappa*tau_u)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
+    - "r' = (k*(Delta + kappa)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + x"
     - "x' = -x/tau_x + kappa*r"
@@ -107,8 +107,8 @@ global_recovery_op:
 recovery_b_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*0.3*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r + 0.0)/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) + absv(b*(v-v_r)) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - sqrt(Delta)*sign(v-v_r)/pi)/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + x"
     - "x' = -x/tau_x + kappa*r"
     - "s' = -s/tau_s + r"
@@ -118,7 +118,7 @@ recovery_b_op:
     u: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
-    sigma: 0.3
+    sigma: 3.1416
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -140,7 +140,7 @@ global_recovery_b_op:
   base: OperatorTemplate
   equations:
     - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - sqrt(Delta)*sign(v-v_r)/(k*pi))/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - sqrt(Delta/pi^2)*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + x"
     - "x' = -x/tau_x + kappa*r"
     - "s' = -s/tau_s + r"
