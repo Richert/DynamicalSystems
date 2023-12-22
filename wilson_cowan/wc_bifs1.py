@@ -91,6 +91,9 @@ ode.run(starting_point="LP1", origin="s_e:ss:2", name="s_e/s_i:lp2", ICP=["I/wc_
 # post-processing and plotting
 ##############################
 
+# save PyCoBi object
+ode.to_file("wc_bifurcations.pkl")
+
 # save results as csv
 # ode.get_summary("s_e:ss").to_csv("steady_state_3.csv")
 # ode.get_summary("s_e:ss:2").to_csv("steady_state_4.csv")
