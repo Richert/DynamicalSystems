@@ -48,14 +48,9 @@ for idx in df.index:
 data = interpolate2d(data)
 data[data < 1e-6] = np.nan
 df_2d = DataFrame(columns=s_e_unique, index=s_i_unique, data=data)
-fig, axes = plt.subplots(nrows=2, figsize=(8, 8))
+fig, axes = plt.subplots(nrows=2, figsize=(8, 10))
 
 ax = axes[0]
-sb.heatmap(df_2d, ax=ax)
-ax.set_xlabel(r"$S_E$")
-ax.set_ylabel(r"$S_I$")
-
-ax = axes[1]
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:hb1", ax=ax, color="red", ignore=["UZ"],
                       line_style_unstable="solid", line_color_stable='#148F77', line_color_unstable='#148F77')
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:hb2", ax=ax, color="red", ignore=["UZ"],
@@ -72,6 +67,11 @@ ax.set_title(r"$a = 16$, $e = 15$")
 ax.set_xlabel(r"$S_E$")
 ax.set_ylabel(r"$S_I$")
 ax.set_ylim([np.min(s_i_unique) - 0.5, np.max(s_i_unique) + 0.5])
+
+ax = axes[1]
+sb.heatmap(df_2d.iloc[::-1, :], ax=ax, rasterized=True, linewidths=0.0)
+ax.set_xlabel(r"$S_E$")
+ax.set_ylabel(r"$S_I$")
 
 plt.tight_layout()
 fig.canvas.draw()
