@@ -5,22 +5,22 @@
 ####################
 
 # adIK neurons with distributed eta
-recovery_op:
+test_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
+    - "r' = (k*w/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + x"
+    - "u' = (b*(v-v_r) - u - Delta*sqrt(r*C*pi/k))/tau_u + x"
+    - "w' = (Delta*absv(v-v_r) - pi*b*sqrt(C*pi*r/k) - w)/tau_u"
     - "x' = -x/tau_x + kappa*r"
     - "s' = -s/tau_s + r"
   variables:
-    r: output(0.0)
+    r: output(0.01)
     v: variable(-60.0)
     u: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
-    Delta_u: variable(0.0)
-    Delta_v: variable(0.0)
+    w: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -38,10 +38,10 @@ recovery_op:
     s_in: input(0.0)
 
 # adIK neurons with distributed eta
-test_op:
+recovery_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*(Delta + kappa)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
+    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - b - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + x"
     - "x' = -x/tau_x + kappa*r"
@@ -107,10 +107,10 @@ global_recovery_op:
 recovery_b_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) + absv(b*(v-v_r)) - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - sqrt(Delta)*sign(v-v_r)/pi)/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + x"
-    - "x' = -x/tau_x + kappa*r"
+    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) + b*sign(v-v_r) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r - Delta*sign(v-v_r))*C*pi*r/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
+    - "x' = -x/tau_x + r"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
@@ -118,7 +118,6 @@ recovery_b_op:
     u: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
-    sigma: 3.1416
     Delta: 0.1
     C: 100.0
     k: 0.7

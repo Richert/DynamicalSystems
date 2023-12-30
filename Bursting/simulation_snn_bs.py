@@ -1,6 +1,3 @@
-import numba as nb
-nb.config.THREADING_LAYER = 'omp'
-nb.set_num_threads(4)
 import pickle
 import numpy as np
 from rectipy import Network, random_connectivity
@@ -11,7 +8,7 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # condition
-cond = "weak_sfa"
+cond = "no_sfa"
 cond_map = {
     "no_sfa": {"kappa": 0.0, "eta": 10.0, "eta_inc": -5.0, "eta_init": 20.0},
     "weak_sfa": {"kappa": 0.2, "eta": 30.0, "eta_inc": 10.0, "eta_init": 0.0},
@@ -28,7 +25,7 @@ eta = 0.0  # unit: pA
 Delta = 4.5
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = 0.5
+b = -2.0
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0

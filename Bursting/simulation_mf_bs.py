@@ -9,7 +9,9 @@ import numba as nb
 ###################
 
 # condition
-cond = "weak_sfa"
+model = "ik_test"
+op = "test_op"
+cond = "strong_sfa"
 cond_map = {
     "no_sfa": {"kappa": 0.0, "eta": 10.0, "eta_inc": -5.0, "eta_init": 20.0},
     "weak_sfa": {"kappa": 0.2, "eta": 30.0, "eta_inc": 10.0, "eta_init": 0.0},
@@ -25,7 +27,7 @@ eta = 0.0  # unit: pA
 Delta = 4.5
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = 0.5
+b = -2.0
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
@@ -44,17 +46,17 @@ inp[int(2000/dt):int(5000/dt),] += cond_map[cond]["eta_inc"]
 ###############
 
 # initialize model
-ik = CircuitTemplate.from_yaml("config/mf/recovery_b")
+ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
 
 # update parameters
 node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
              'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
-ik.update_var(node_vars={f"p/recovery_b_op/{key}": val for key, val in node_vars.items()})
+ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': 'p/recovery_b_op/s', 'u': 'p/recovery_b_op/u'},
-             inputs={'p/recovery_b_op/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
+             outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u'},
+             inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
 pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_{cond}.pkl", "wb"))
