@@ -52,27 +52,27 @@ grid = gridspec.GridSpec(nrows=4, ncols=3, figure=fig)
 # no spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 0])
 for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp1', ax=ax, line_color_stable='#5D6D7E',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:lp1', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp2', ax=ax, line_color_stable='#5D6D7E',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:lp2', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
 ax.set_title(rf'(A) $\kappa = {kappas[0]}$ pA')
-ax.set_ylabel(r'$\Delta$ (mv)')
+ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 
 # weak spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 1])
 for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp3', ax=ax, line_color_stable='#5D6D7E',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:lp3', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:lp4', ax=ax, line_color_stable='#5D6D7E',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:lp4', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb1', ax=ax, line_color_stable='#148F77',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb1', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb2', ax=ax, line_color_stable='#148F77',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb2', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
 ax.set_title(rf'(B) $\kappa = {kappas[1]}$ pA')
-ax.set_ylabel(r'$\Delta$ (mv)')
+ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 # ax.set_ylim([0.0, 4.0])
 # ax.set_xlim([0.0, 80.0])
@@ -80,11 +80,11 @@ ax.set_xlabel(r'$I_{ext}$ (pA)')
 # strong spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 2])
 for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb3', ax=ax, line_color_stable='#148F77',
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb3', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-    a_tmp.plot_continuation('PAR(8)', 'PAR(5)', cont=f'D/I:hb4', ax=ax, line_color_stable='#148F77',
-                            line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-ax.set_ylabel(r'$\Delta$ (mv)')
+    # a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb4', ax=ax, line_color_stable='#148F77',
+    #                         line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
+ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_title(rf'(C) $\kappa = {kappas[2]}$ pA')
 # ax.set_ylim([0.0, 2.0])

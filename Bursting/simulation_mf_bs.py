@@ -11,7 +11,7 @@ import numba as nb
 # condition
 model = "ik_test"
 op = "test_op"
-cond = "strong_sfa"
+cond = "no_sfa"
 cond_map = {
     "no_sfa": {"kappa": 0.0, "eta": 10.0, "eta_inc": -5.0, "eta_init": 20.0},
     "weak_sfa": {"kappa": 0.2, "eta": 30.0, "eta_inc": 10.0, "eta_init": 0.0},

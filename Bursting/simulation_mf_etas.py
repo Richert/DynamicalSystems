@@ -10,6 +10,8 @@ import numba as nb
 
 # condition
 cond = "strong_sfa"
+model = "recovery"
+op = "recovery_op"
 cond_map = {
     "no_sfa": {"kappa": 0.0, "eta": 20.0, "eta_inc": 10.0},
     "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0},
@@ -44,8 +46,6 @@ inp[int(2000/dt):int(5000/dt),] += cond_map[cond]["eta_inc"]
 ###############
 
 # initialize model
-model = "ik_test"
-op = "test_op"
 ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
 
 # update parameters
@@ -59,7 +59,7 @@ res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cut
              inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
-# pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 5))
