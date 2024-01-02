@@ -28,11 +28,11 @@ t_sols, t_cont = a.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=
 ###############
 
 # continuation in synaptic strength
-c1_sols, c1_cont = a.run(starting_point='UZ1', c='ss', ICP=4, name='g:1', origin=t_cont, NMX=8000, DSMAX=0.05,
-                         UZR={4: [15.0]}, STOP=[f'UZ1'], NPR=20, RL1=50.0, RL0=0.0, NPAR=n_params, NDIM=n_dim)
+c1_sols, c1_cont = a.run(starting_point='UZ1', c='ss', ICP=4, name='g:1', origin=t_cont,
+                         UZR={4: [15.0]}, STOP=[f'UZ1'], RL1=50.0, RL0=0.0, NPAR=n_params, NDIM=n_dim)
 
 # continuations in kappa
-vals = [0.4, 1.2]
+vals = [0.2, 1.0]
 c2_sols, c2_cont = a.run(starting_point='UZ1', ICP=16, name='kappa:1', origin=c1_cont, UZR={16: vals},
                          STOP=[f'UZ{len(vals)}'], RL1=10.0, RL0=0.0, bidirectional=True)
 
@@ -90,8 +90,8 @@ r3_sols, r3_cont = a.run(starting_point='UZ2', ICP=8, NPAR=n_params, NDIM=n_dim,
                          origin=c2_cont, UZR={}, STOP=[], RL1=250.0, RL0=-50.0)
 a.run(starting_point='HB1', c='2d', ICP=[9, 8], name='b/I:hb3', origin=r3_cont, RL1=RL1, RL0=RL0, bidirectional=True,
       NPAR=n_params, NDIM=n_dim)
-# a.run(starting_point='HB2', c='2d', ICP=[9, 8], name='b/I:hb4', origin=r3_cont, RL1=RL1, RL0=RL0, bidirectional=True,
-#       NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='HB2', c='2d', ICP=[9, 8], name='b/I:hb4', origin=r3_cont, RL1=RL1, RL0=RL0, bidirectional=True,
+      NPAR=n_params, NDIM=n_dim)
 
 # save results
 fname = '../results/etas_global.pkl'

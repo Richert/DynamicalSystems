@@ -56,9 +56,17 @@ for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:lp2', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
+    try:
+        a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb0', ax=ax, line_color_stable='#148F77',
+                                line_color_unstable='#148F77', line_style_unstable=linestyle,
+                                line_style_stable=linestyle)
+    except KeyError:
+        pass
 ax.set_title(rf'(A) $\kappa = {kappas[0]}$ pA')
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
+ax.set_ylim([-20.0, 15.0])
+ax.set_xlim([-200.0, 200.0])
 
 # weak spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 1])
@@ -74,21 +82,21 @@ for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
 ax.set_title(rf'(B) $\kappa = {kappas[1]}$ pA')
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
-# ax.set_ylim([0.0, 4.0])
-# ax.set_xlim([0.0, 80.0])
+ax.set_ylim([-20.0, 15.0])
+ax.set_xlim([-200.0, 200.0])
 
 # strong spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 2])
 for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
     a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb3', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-    # a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb4', ax=ax, line_color_stable='#148F77',
-    #                         line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
+    a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb4', ax=ax, line_color_stable='#148F77',
+                            line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_title(rf'(C) $\kappa = {kappas[2]}$ pA')
-# ax.set_ylim([0.0, 2.0])
-# ax.set_xlim([0.0, 80.0])
+ax.set_ylim([-20.0, 15.0])
+ax.set_xlim([-50.0, 350.0])
 
 # Time series
 #############
@@ -107,7 +115,7 @@ for approx, row, title in zip(approximation, rows, titles):
     ax.legend()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(r"$s$")
-    ax.set_ylim([0.0, 0.2])
+    # ax.set_ylim([0.0, 0.2])
     ax.set_title(title)
 
 # weak spike frequency adaptation
@@ -124,7 +132,7 @@ for approx, row, title in zip(approximation, rows, titles):
     ax.legend()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(r"$s$")
-    ax.set_ylim([0.0, 0.2])
+    # ax.set_ylim([0.0, 0.2])
     ax.set_title(title)
 
 # strong spike frequency adaptation
@@ -141,7 +149,7 @@ for approx, row, title in zip(approximation, rows, titles):
     ax.legend()
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(r"$s$")
-    ax.set_ylim([0.0, 0.2])
+    # ax.set_ylim([0.0, 0.2])
     ax.set_title(title)
 
 # finishing touches

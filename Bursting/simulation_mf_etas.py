@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 plt.rcParams['backend'] = 'TkAgg'
-import numba as nb
 
 # define parameters
 ###################
@@ -13,9 +12,9 @@ cond = "strong_sfa"
 model = "recovery"
 op = "recovery_op"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": 20.0, "eta_inc": 10.0},
-    "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0},
-    "strong_sfa": {"kappa": 0.4, "eta": 37.0, "eta_inc": 10.0}
+    "no_sfa": {"kappa": 0.0, "eta": 132.0, "eta_inc": 30.0, "eta_init": -30.0},
+    "weak_sfa": {"kappa": 0.2, "eta": 50.0, "eta_inc": 100.0, "eta_init": 0.0},
+    "strong_sfa": {"kappa": 1.0, "eta": 110.0, "eta_inc": 20.0, "eta_init": -20.0}
 }
 
 # model parameters
@@ -24,10 +23,10 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 10.0
+Delta = 5.0
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = -2.0
+b = 5.0
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
@@ -39,7 +38,7 @@ dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
 inp = np.zeros((int(T/dt),)) + cond_map[cond]["eta"]
-# inp[:int(200.0/dt)] -= 10.0
+inp[:int(300.0/dt)] += cond_map[cond]["eta_init"]
 inp[int(2000/dt):int(5000/dt),] += cond_map[cond]["eta_inc"]
 
 # run the model
@@ -56,7 +55,7 @@ ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()}
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
              outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u'},
-             inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
+             inputs={f'p/{op}/I_ext': inp}, float_precision="float64")
 
 # save results to file
 pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))

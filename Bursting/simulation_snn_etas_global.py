@@ -12,11 +12,11 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # condition
-cond = "strong_sfa"
+cond = "no_sfa"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": 20.0, "eta_inc": 10.0},
-    "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0},
-    "strong_sfa": {"kappa": 0.4, "eta": 37.0, "eta_inc": 10.0}
+    "no_sfa": {"kappa": 0.0, "eta": -50.0, "eta_inc": 60.0, "eta_init": -20.0},
+    "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0, "eta_init": 0.0},
+    "strong_sfa": {"kappa": 0.4, "eta": 37.0, "eta_inc": 10.0, "eta_init": 0.0}
 }
 
 # model parameters
@@ -26,10 +26,10 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 10.0
+Delta = 5.0
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = -2.0
+b = -10.0
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
@@ -44,7 +44,7 @@ dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
 inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
-# inp[:int(200.0/dt)] -= 10.0
+inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
 inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
 
 # define lorentzian distribution of etas
