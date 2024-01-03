@@ -41,10 +41,10 @@ test_op:
 recovery_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*absv(Delta - b*(C*pi*r/k)^(1/2))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (k*absv(Delta - w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "w' = (b*(C*pi*r/k)^(1/2) - w) / tau_u"
+    - "w' = (b*(C*pi*r/k)^(1/3) - w) / tau_u"
     - "x' = -x/tau_x + r"
     - "s' = -s/tau_s + r"
   variables:
