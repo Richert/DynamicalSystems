@@ -56,17 +56,11 @@ for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:lp2', ax=ax, line_color_stable='#5D6D7E',
                             line_color_unstable='#5D6D7E', line_style_unstable=linestyle, line_style_stable=linestyle)
-    try:
-        a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb0', ax=ax, line_color_stable='#148F77',
-                                line_color_unstable='#148F77', line_style_unstable=linestyle,
-                                line_style_stable=linestyle)
-    except KeyError:
-        pass
-ax.set_title(rf'(A) $\kappa = {kappas[0]}$ pA')
+ax.set_title(rf'(A) $\kappa = {kappas[0]}$ pA/ms')
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_ylim([-20.0, 15.0])
-ax.set_xlim([-200.0, 200.0])
+ax.set_xlim([-200.0, 170.0])
 
 # weak spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 1])
@@ -79,11 +73,11 @@ for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
     a_tmp.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:hb2', ax=ax, line_color_stable='#148F77',
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
-ax.set_title(rf'(B) $\kappa = {kappas[1]}$ pA')
+ax.set_title(rf'(B) $\kappa = {kappas[1]}$ pA/ms')
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_ylim([-20.0, 15.0])
-ax.set_xlim([-200.0, 200.0])
+ax.set_xlim([-150.0, 200.0])
 
 # strong spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 2])
@@ -94,9 +88,9 @@ for a_tmp, linestyle in zip([a, ag], ["solid", "dotted"]):
                             line_color_unstable='#148F77', line_style_unstable=linestyle, line_style_stable=linestyle)
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
-ax.set_title(rf'(C) $\kappa = {kappas[2]}$ pA')
+ax.set_title(rf'(C) $\kappa = {kappas[2]}$ pA/ms')
 ax.set_ylim([-20.0, 15.0])
-ax.set_xlim([-50.0, 350.0])
+ax.set_xlim([-30.0, 320.0])
 
 # Time series
 #############

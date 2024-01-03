@@ -1,0 +1,6 @@
+IPS =   2, ILP =   1
+NTST=  400, NCOL=   8, IAD =   3, ISP =   2, ISW = -1, IPLT= 9, NBC= 0, NINT= 0
+NMX=   2000, NPR=  10, MXBF=   10, IID =   2, ITMX= 12, ITNW= 20, NWTN= 10, JAC= 0
+EPSL= 1e-08, EPSU = 1e-08, EPSS = 1e-05
+DS  =  0.005, DSMIN= 1e-10, DSMAX=   0.02, IADS=   1
+THL =  {}, THU =  {}, UZR =  {}, STOP = {'UZ1'}

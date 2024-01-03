@@ -9,14 +9,15 @@ import numba as nb
 ###################
 
 # condition
-cond = "no_sfa"
+cond = "strong_sfa"
 model = "recovery_global"
 op = "global_recovery_op"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": -50.0, "eta_inc": 60.0, "eta_init": -20.0},
-    "weak_sfa": {"kappa": 0.2, "eta": 37.0, "eta_inc": 10.0, "eta_init": 0.0},
-    "strong_sfa": {"kappa": 0.4, "eta": 37.0, "eta_inc": 10.0, "eta_init": 0.0}
+    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0},
+    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0},
+    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0}
 }
+
 
 # model parameters
 C = 100.0   # unit: pF
@@ -27,7 +28,7 @@ eta = 0.0  # unit: pA
 Delta = 5.0
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
-b = -10.0
+b = cond_map[cond]["b"]
 tau_s = 6.0
 tau_x = 300.0
 g = 15.0
