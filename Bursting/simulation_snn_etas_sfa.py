@@ -7,11 +7,12 @@ from rectipy import Network, random_connectivity
 import matplotlib.pyplot as plt
 plt.rcParams['backend'] = 'TkAgg'
 
+
 # define parameters
 ###################
 
 # condition
-cond = "low_sfa"
+cond = "high_sfa"
 cond_map = {
     "low_sfa": {"kappa": 0.1, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -64,9 +65,9 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": t
 
 # initialize model
 net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("sfa", f"config/snn/recovery", #weights=W, source_var="s", target_var="s_in",
+net.add_diffeq_node("sfa", f"config/snn/recovery_sfa", #weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                    node_vars=node_vars.copy(), op="recovery_op", spike_reset=v_reset, spike_threshold=v_peak,
+                    node_vars=node_vars.copy(), op="recovery_sfa_op", spike_reset=v_reset, spike_threshold=v_peak,
                     verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
@@ -74,7 +75,7 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(c
 res = obs.to_dataframe("out")
 
 # save results to file
-pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_etas_sfa_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

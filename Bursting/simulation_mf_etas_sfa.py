@@ -9,9 +9,9 @@ import numba as nb
 ###################
 
 # condition
-cond = "high_sfa"
-model = "ik_eta_corrected"
-op = "eta_op_corrected"
+cond = "low_sfa"
+model = "ik_eta_sfa"
+op = "eta_op_sfa"
 cond_map = {
     "low_sfa": {"kappa": 0.1, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -62,7 +62,7 @@ res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cut
              inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
-pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_corrected_{cond}.pkl", "wb"))
+pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_sfa_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 5))

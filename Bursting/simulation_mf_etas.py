@@ -13,9 +13,9 @@ cond = "high_delta"
 model = "ik_eta"
 op = "eta_op"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
-    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
-    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0, "delta": 5.0},
+    "low_sfa": {"kappa": 0.1, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "med_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
+    "high_sfa": {"kappa": 0.9, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0, "delta": 5.0},
     "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
     "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
