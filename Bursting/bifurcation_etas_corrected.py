@@ -14,7 +14,7 @@ auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjec
 # config
 n_dim = 5
 n_params = 20
-a = ODESystem("etas_global", working_dir="config", auto_dir=auto_dir, init_cont=False)
+a = ODESystem("etas_corrected", working_dir="config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time to converge to fixed point
 t_sols, t_cont = a.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params, NDIM=n_dim,
@@ -78,6 +78,6 @@ a.run(starting_point='LP2', c='2d', ICP=[9, 8], name='b/I:lp6', origin=r3_cont, 
 #       NPAR=n_params, NDIM=n_dim, STOP=STOP)
 
 # save results
-fname = '../results/etas_global.pkl'
+fname = '../results/etas_corrected.pkl'
 kwargs = {'deltas': [1.0] + vals}
 a.to_file(fname, **kwargs)

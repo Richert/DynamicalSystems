@@ -11,21 +11,24 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # condition
-cond = "strong_sfa"
+cond = "high_delta"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0},
-    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0},
-    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0}
+    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
+    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0, "delta": 5.0},
+    "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
+    "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
 }
 
 # model parameters
-N = 1000
+N = 5000
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 5.0
+Delta = cond_map[cond]["delta"]
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
 b = cond_map[cond]["b"]
@@ -34,12 +37,12 @@ tau_x = 300.0
 g = 15.0
 E_r = 0.0
 
-v_reset = -1000.0
-v_peak = 1000.0
+v_reset = -10000.0
+v_peak = 10000.0
 
 # define inputs
 T = 7000.0
-dt = 1e-2
+dt = 1e-3
 dts = 1e-1
 cutoff = 1000.0
 inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]

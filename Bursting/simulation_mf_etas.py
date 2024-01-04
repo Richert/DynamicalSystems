@@ -9,13 +9,16 @@ import numba as nb
 ###################
 
 # condition
-cond = "strong_sfa"
-model = "recovery"
-op = "recovery_op"
+cond = "high_delta"
+model = "ik_eta"
+op = "eta_op"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0},
-    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0},
-    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0}
+    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
+    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0, "delta": 5.0},
+    "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
+    "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
 }
 
 # model parameters
@@ -24,7 +27,7 @@ k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
 v_t = -40.0  # unit: mV
 eta = 0.0  # unit: pA
-Delta = 5.0
+Delta = cond_map[cond]["delta"]
 kappa = cond_map[cond]["kappa"]
 tau_u = 35.0
 b = cond_map[cond]["b"]

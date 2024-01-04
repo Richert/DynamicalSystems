@@ -10,14 +10,14 @@ subroutine etas_run(t,y,dy,v_t,v_r,k,g,Delta,C,E_r,I_ext,b,tau_u,kappa,tau_s,tau
 implicit none
 
 double precision, intent(in) :: t
-double precision, intent(in) :: y(6)
+double precision, intent(in) :: y(5)
 double precision :: r
 double precision :: v
 double precision :: u
-double precision :: w
 double precision :: x
 double precision :: s
-double precision, intent(inout) :: dy(6)
+double precision :: Delta_u
+double precision, intent(inout) :: dy(5)
 double precision, intent(in) :: v_t
 double precision, intent(in) :: v_r
 double precision, intent(in) :: k
@@ -35,16 +35,16 @@ double precision, intent(in) :: tau_x
 r = y(1)
 v = y(2)
 u = y(3)
-w = y(4)
-x = y(5)
-s = y(6)
+x = y(4)
+s = y(5)
 
-dy(1) = (abs(Delta - w)*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
+Delta_u = b*(pi*C*r/k)
+
+dy(1) = (abs(Delta - Delta_u)*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
 dy(2) = (k*(v-v_r)*(v-v_t) + I_ext + g*s*(E_r-v) - u - (pi*C*r)**2/k)/C
-dy(3) = (b*(v-v_r) - u) / tau_u + kappa*x
-dy(4) = (b*(pi*C*r/k)**(1/3) - w) / tau_u
-dy(5) = -x/tau_x + r
-dy(6) = -s/tau_s + r
+dy(3) = (b*(v-v_r) - u)/tau_u + kappa*x
+dy(4) = -x/tau_x + r
+dy(5) = -s/tau_s + r
 
 end subroutine
 
@@ -79,7 +79,7 @@ args(1) = -40.0  ! v_t
 args(2) = -60.0  ! v_r
 args(3) = 0.7  ! k
 args(4) = 1.0  ! g
-args(5) = 5.0  ! Delta
+args(5) = 1.0  ! Delta
 args(6) = 100.0  ! C
 args(7) = 0.0  ! E_r
 args(8) = 0.0  ! I_ext
@@ -92,9 +92,8 @@ args(18) = 300.0  ! tau_x
 y(1) = 0.0  ! r
 y(2) = -60.0  ! v
 y(3) = 0.0  ! u
-y(4) = 0.0 ! w
-y(5) = 0.0  ! x
-y(6) = 0.0  ! s
+y(4) = 0.0 ! x
+y(5) = 0.0  ! s
 
 end subroutine stpnt
 
