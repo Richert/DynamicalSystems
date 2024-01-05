@@ -10,8 +10,8 @@ import numba as nb
 
 # condition
 cond = "high_delta"
-model = "recovery_global"
-op = "global_recovery_op"
+model = "ik_eta_global"
+op = "global_eta_op"
 cond_map = {
     "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},

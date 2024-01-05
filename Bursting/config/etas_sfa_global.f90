@@ -40,7 +40,7 @@ s = y(5)
 dy(1) = (Delta*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
 dy(2) = (k*(v-v_r)*(v-v_t) + I_ext + g*s*(E_r-v) - u - (pi*C*r)**2/k)/C
 dy(3) = (b*(v-v_r) - u)/tau_u + kappa*x
-dy(4) = -x/tau_x + r
+dy(4) = (r-x)/tau_x
 dy(5) = -s/tau_s + r
 
 end subroutine

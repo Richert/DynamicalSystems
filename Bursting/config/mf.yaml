@@ -11,7 +11,7 @@ eta_op:
     - "r' = (k*absv(Delta - b*(C*pi*r/k))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "x' = -x/tau_x + r"
+    - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
@@ -39,10 +39,10 @@ eta_op:
 eta_op_corrected:
   base: OperatorTemplate
   equations:
-    - "r' = (k*absv(Delta - b*(C*pi*r/k)^(1/3))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (k*absv(Delta - b*(C*pi*r/k)^(1/4))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "x' = -x/tau_x + r"
+    - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
@@ -67,13 +67,13 @@ eta_op_corrected:
     s_in: input(0.0)
 
 # adIK neurons with distributed eta and a global recovery variable u
-global_eta_op:
+eta_op_global:
   base: OperatorTemplate
   equations:
     - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + x"
-    - "x' = -x/tau_x + kappa*r"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
+    - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
@@ -106,12 +106,45 @@ eta_op_sfa:
     - "r' = (k*absv(Delta - b*(C*pi*r/k)^(1/3) - kappa*r^(1/3))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "x' = -x/tau_x + r"
+    - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# adIK neurons with distributed eta
+eta_op_6d:
+  base: OperatorTemplate
+  equations:
+    - "r' = (k*absv(Delta - w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "w' = (b*(C*pi*r/k)^(1/2) - w - kappa*x) / tau_u"
+    - "x' = (r-x) / tau_x"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    w: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
@@ -137,7 +170,7 @@ b_op:
     - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) + b*sign(v-v_r) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r - Delta*sign(v-v_r))*C*pi*r/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
-    - "x' = -x/tau_x + r"
+    - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
@@ -162,13 +195,13 @@ b_op:
     s_in: input(0.0)
 
 # adIK neurons with distributed b and a global recovery variable u
-global_b_op:
+b_op_global:
   base: OperatorTemplate
   equations:
     - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - sqrt(Delta/pi^2)*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + x"
-    - "x' = -x/tau_x + kappa*r"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
+    - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
@@ -214,10 +247,16 @@ eta_pop_sfa:
     - eta_op_sfa
 
 # adIK neuron population with distributed etas and a global recovery variable u
-global_eta_pop:
+eta_pop_global:
   base: NodeTemplate
   operators:
-    - global_eta_op
+    - eta_op_global
+
+# adIK neuron population with distributed etas and a 6th state variable
+eta_pop_6d:
+  base: NodeTemplate
+  operators:
+    - eta_op_6d
 
 # adIK neuron population with distributed bs
 b_pop:
@@ -226,10 +265,10 @@ b_pop:
     - b_op
 
 # adIK neuron population with distributed bs and a global recovery variable u
-global_b_pop:
+b_pop_global:
   base: NodeTemplate
   operators:
-    - global_b_op
+    - b_op_global
 
 # circuit templates
 ###################
@@ -262,9 +301,17 @@ ik_eta_sfa:
 ik_eta_global:
   base: CircuitTemplate
   nodes:
-    p: global_eta_pop
+    p: eta_pop_global
   edges:
-    - [p/global_eta_op/s, p/global_eta_op/s_in, null, {weight: 1.0}]
+    - [p/eta_op_global/s, p/eta_op_global/s_in, null, {weight: 1.0}]
+
+# 6-dimensional adIK neuron population
+ik_eta_6d:
+  base: CircuitTemplate
+  nodes:
+    p: eta_pop_6d
+  edges:
+    - [p/eta_op_6d/s, p/eta_op_6d/s_in, null, {weight: 1.0}]
 
 # adIK neuron population with distributed bs
 ik_b:
@@ -278,6 +325,6 @@ ik_b:
 ik_b_global:
   base: CircuitTemplate
   nodes:
-    p: global_b_pop
+    p: b_pop_global
   edges:
-    - [p/global_b_op/s, p/global_b_op/s_in, null, {weight: 1.0}]
+    - [p/b_op_global/s, p/b_op_global/s_in, null, {weight: 1.0}]

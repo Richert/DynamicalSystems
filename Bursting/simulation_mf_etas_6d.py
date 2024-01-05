@@ -10,8 +10,8 @@ import numba as nb
 
 # condition
 cond = "low_sfa"
-model = "ik_eta_corrected"
-op = "eta_op_corrected"
+model = "ik_eta_6d"
+op = "eta_op_6d"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},

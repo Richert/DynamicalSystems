@@ -11,11 +11,11 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # condition
-cond = "low_sfa"
+cond = "high_sfa"
 cond_map = {
     "low_sfa": {"kappa": 0.1, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
-    "high_sfa": {"kappa": 0.9, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0, "delta": 5.0},
+    "high_sfa": {"kappa": 5.0, "eta": 60.0, "eta_inc": -35.0, "eta_init": 0.0, "b": -7.5, "delta": 5.0},
     "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
     "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
@@ -64,9 +64,9 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": t
 
 # initialize model
 net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("sfa", f"config/snn/recovery", #weights=W, source_var="s", target_var="s_in",
+net.add_diffeq_node("sfa", f"config/snn/adik", #weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                    node_vars=node_vars.copy(), op="recovery_op", spike_reset=v_reset, spike_threshold=v_peak,
+                    node_vars=node_vars.copy(), op="adik_op", spike_reset=v_reset, spike_threshold=v_peak,
                     verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
