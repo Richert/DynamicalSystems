@@ -5,6 +5,7 @@ import numpy as np
 from rectipy import Network
 from pyrates import CircuitTemplate
 import matplotlib.pyplot as plt
+from sklearn.linear_model import Lasso
 plt.rcParams['backend'] = 'TkAgg'
 
 
@@ -37,7 +38,7 @@ def get_fwhm(signal: np.ndarray, n_bins: int) -> np.ndarray:
 ###################
 
 # condition
-cond = "high_sfa"
+cond = "low_sfa"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -97,10 +98,9 @@ net.add_diffeq_node("sfa", f"config/snn/adik_sfa", #weights=W, source_var="s", t
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt),
-              record_vars=[("sfa", "u", False), ("sfa", "v", False)])
-s, v, u = obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u"))
-
-# calculate width of state variables at each time point
+              record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)])
+s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
+              obs.to_dataframe(("sfa", "x")))
 
 # run the mean-field model
 ##########################
@@ -119,8 +119,41 @@ ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()}
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
              outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'r': f'p/{op}/r',
-                      'x': f'p/{op}/x'},
+                      'x': f'p/{op}/x', 'w': f'p/{op}/w'},
              inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
+
+# collect results
+r_mf = res["r"].values
+v_mf = res["v"].values
+u_mf = res["u"].values
+w_mf = res["w"].values
+x_mf = res["x"].values
+s_mf = res["s"].values
+
+# FWHM analysis
+###############
+
+# calculate width of state variables at each time point
+n_bins = 500
+u_mean = np.mean(u.values, axis=1)
+v_mean = np.mean(v.values, axis=1)
+s_mean = np.mean(s.values, axis=1)
+x_mean = np.mean(x.values, axis=1)
+u_widths = get_fwhm(u.values, n_bins)
+v_widths = get_fwhm(v.values, n_bins)
+v_dot = (k*(v_mean-v_r)*(v_mean-v_t) - g*s_mean*(E_r-v_mean) + eta + inp[int(cutoff/dt)::int(dts/dt), 0] - u_mean) / C
+u_dot = (b*(v_mean - v_r) - u_mean) / tau_u + kappa*x_mean
+s_dot = -s_mean/tau_s + r_mf
+x_dot = (r_mf - x_mean) / tau_x
+
+# fit the width of u via mean-field variables
+predictors = [u_mean, v_mean, s_mean, x_mean, u_mean**2, v_mean**2, s_mean**2, x_mean**2, u_dot, v_dot, s_dot, x_dot]
+predictor_names = ["u", "v", "s", "x", "u^2", "v^2", "s^2", "x^2", "u'", "v'", "s'", "x'"]
+predictors = np.asarray(predictors).T
+glm = Lasso()
+glm.fit(predictors, u_widths)
+coefs = glm.coef_
+u_width_fitted = glm.predict(predictors)
 
 # plotting
 ##########
@@ -129,7 +162,6 @@ res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cut
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
 spikes = s.values
 time = s.index
-s_mean = np.mean(spikes, axis=1)
 ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
 ax[0].set_ylabel(r'neuron id')
 ax[1].plot(time, s_mean, label="SNN", color="black")
@@ -140,11 +172,6 @@ ax[1].legend()
 plt.tight_layout()
 
 # plot distribution dynamics for SNN
-n_bins = 500
-u_mean = np.mean(u.values, axis=1)
-v_mean = np.mean(v.values, axis=1)
-u_widths = get_fwhm(u.values, n_bins)
-v_widths = get_fwhm(v.values, n_bins)
 fig2, ax2 = plt.subplots(nrows=3, figsize=(12, 6))
 ax2[0].plot(time, v_mean, color="royalblue")
 ax2[0].fill_between(time, v_mean - v_widths, v_mean + v_widths, alpha=0.3, color="royalblue")
@@ -159,24 +186,30 @@ fig2.suptitle("SNN")
 plt.tight_layout()
 
 # plot distribution dynamics for MF
-r = res["r"].values
-v = res["v"].values
-u = res["u"].values
-x = res["x"].values
-s = res["s"].values
-u_delta = b*(np.pi*C*r/k)**(1/4) - kappa*x
-v_delta = np.pi*C*r/k
+u_delta = w_mf
+v_delta = np.pi*C*r_mf/k
 fig3, ax3 = plt.subplots(nrows=3, figsize=(12, 6))
-ax3[0].plot(time, v, color="royalblue")
-ax3[0].fill_between(time, v - v_delta, v + v_delta, alpha=0.3, color="royalblue")
+ax3[0].plot(time, v_mf, color="royalblue")
+ax3[0].fill_between(time, v_mf - v_delta, v_mf + v_delta, alpha=0.3, color="royalblue")
 ax3[0].set_title("v (mV)")
-ax3[1].plot(time, u, color="darkorange")
-ax3[1].fill_between(time, u - u_delta, u + u_delta, alpha=0.3, color="darkorange")
+ax3[1].plot(time, u_mf, color="darkorange")
+ax3[1].fill_between(time, u_mf - u_delta, u_mf + u_delta, alpha=0.3, color="darkorange")
 ax3[1].set_title("u (pA)")
-ax3[2].plot(time, s, color="black")
+ax3[2].plot(time, s_mf, color="black")
 ax3[2].set_title("s (dimensionless)")
 ax3[2].set_xlabel("time (ms)")
 fig3.suptitle("MF")
+plt.tight_layout()
+
+# plot the mean-field fit:
+print(f"Fitted coefficients: {[f'{key}: {val}' for key, val in zip(predictor_names, coefs)]}")
+fig4, ax4 = plt.subplots(figsize=(12, 5), nrows=2)
+ax4[0].plot(time, u_mean, color="darkorange")
+ax4[0].fill_between(time, u_mean - u_widths, u_mean + u_widths, alpha=0.3, color="darkorange")
+ax4[0].set_title("Target")
+ax4[1].plot(time, u_mean, color="darkorange")
+ax4[1].fill_between(time, u_mean - u_width_fitted, u_mean + u_width_fitted, alpha=0.3, color="darkorange")
+ax4[1].set_title("Fit")
 plt.tight_layout()
 
 plt.show()

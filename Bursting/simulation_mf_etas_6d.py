@@ -9,7 +9,7 @@ import numba as nb
 ###################
 
 # condition
-cond = "low_sfa"
+cond = "med_sfa"
 model = "ik_eta_6d"
 op = "eta_op_6d"
 cond_map = {
