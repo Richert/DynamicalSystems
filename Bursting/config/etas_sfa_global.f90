@@ -16,6 +16,7 @@ double precision :: v
 double precision :: u
 double precision :: x
 double precision :: s
+double precision :: Delta_u
 double precision, intent(inout) :: dy(5)
 double precision, intent(in) :: v_t
 double precision, intent(in) :: v_r
@@ -37,7 +38,9 @@ u = y(3)
 x = y(4)
 s = y(5)
 
-dy(1) = (Delta*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
+Delta_u = b*(pi*C*r/k)**(1/2)
+
+dy(1) = (abs(Delta - Delta_u)*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C
 dy(2) = (k*(v-v_r)*(v-v_t) + I_ext + g*s*(E_r-v) - u - (pi*C*r)**2/k)/C
 dy(3) = (b*(v-v_r) - u)/tau_u + kappa*x
 dy(4) = (r-x)/tau_x

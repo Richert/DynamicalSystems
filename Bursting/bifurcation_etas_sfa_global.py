@@ -32,9 +32,9 @@ c1_sols, c1_cont = a.run(starting_point='UZ1', c='ss', ICP=4, name='g:1', origin
                          UZR={4: [15.0]}, STOP=[f'UZ1'], RL1=50.0, RL0=0.0, NPAR=n_params, NDIM=n_dim)
 
 # continuations in kappa
-vals = [0.1, 0.3, 0.9]
+vals = [30, 90.0, 300.0]
 c2_sols, c2_cont = a.run(starting_point='UZ1', ICP=16, name='kappa:1', origin=c1_cont, UZR={16: vals},
-                         STOP=[f'UZ{len(vals)}'], RL1=2.0, RL0=0.0)
+                         STOP=[f'UZ{len(vals)}'], RL1=310.0, RL0=0.0, DSMAX=0.5)
 
 # main continuations
 ####################
