@@ -9,7 +9,7 @@ import numba as nb
 ###################
 
 # condition
-cond = "med_sfa"
+cond = "high_sfa"
 model = "ik_eta_6d"
 op = "eta_op_6d"
 cond_map = {
@@ -58,18 +58,40 @@ ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()}
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u'},
-             inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
+             outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'r': f'p/{op}/r',
+                      'x': f'p/{op}/x', 'w': f'p/{op}/w'}, clear=False,
+             inputs={f'p/{op}/I_ext': inp}, float_precision="complex64", decorator=nb.njit)
 
-# save results to file
-pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_corrected_{cond}.pkl", "wb"))
+# collect results
+time = res.index
+r_mf = res["r"].values
+v_mf = res["v"].values
+u_mf = res["u"].values
+w_mf = res["w"].values
+x_mf = res["x"].values
+s_mf = res["s"].values
 
-# plot results
-fig, ax = plt.subplots(nrows=2, figsize=(12, 5))
-ax[0].plot(res["s"])
-ax[0].set_ylabel(r'$s(t)$')
-ax[1].plot(res["u"])
-ax[1].set_ylabel(r'$u(t)$')
-ax[1].set_xlabel("time (ms)")
+# calculate width of v and u
+y = np.sqrt(k/C)*(v_mf-v_r)
+x = np.pi*C*r_mf/k
+z = np.abs((1 - x + 1.0j*y)/(1 + x - 1.0j*y))
+u_delta = (b*np.pi*C*r_mf/k - kappa*x_mf)*z**2
+v_delta = np.pi*C*r_mf/k
+
+# plot distribution dynamics for MF
+fig, ax = plt.subplots(nrows=4, figsize=(12, 7))
+ax[0].plot(time, v_mf, color="royalblue")
+ax[0].fill_between(time, v_mf - v_delta, v_mf + v_delta, alpha=0.3, color="royalblue", linewidth=0.0)
+ax[0].set_title("v (mV)")
+ax[1].plot(time, u_mf, color="darkorange")
+ax[1].fill_between(time, u_mf - u_delta, u_mf + u_delta, alpha=0.3, color="darkorange", linewidth=0.0)
+ax[1].set_title("u (pA)")
+ax[2].plot(time, s_mf, color="black")
+ax[2].set_title("s (dimensionless)")
+ax[2].set_xlabel("time (ms)")
+ax[3].plot(time, z, color="red")
+ax[3].set_title("z")
+ax[3].set_xlabel("time (ms)")
+fig.suptitle("MF")
 plt.tight_layout()
 plt.show()

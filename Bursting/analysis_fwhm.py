@@ -38,7 +38,7 @@ def get_fwhm(signal: np.ndarray, n_bins: int) -> np.ndarray:
 ###################
 
 # condition
-cond = "low_sfa"
+cond = "med_sfa"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -91,9 +91,9 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": t
 
 # initialize model
 net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("sfa", f"config/snn/adik_sfa", #weights=W, source_var="s", target_var="s_in",
+net.add_diffeq_node("sfa", f"config/snn/adik", #weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                    node_vars=node_vars.copy(), op="adik_op_sfa", spike_reset=v_reset, spike_threshold=v_peak,
+                    node_vars=node_vars.copy(), op="adik_op", spike_reset=v_reset, spike_threshold=v_peak,
                     verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
@@ -141,14 +141,14 @@ s_mean = np.mean(s.values, axis=1)
 x_mean = np.mean(x.values, axis=1)
 u_widths = get_fwhm(u.values, n_bins)
 v_widths = get_fwhm(v.values, n_bins)
-v_dot = (k*(v_mean-v_r)*(v_mean-v_t) - g*s_mean*(E_r-v_mean) + eta + inp[int(cutoff/dt)::int(dts/dt), 0] - u_mean) / C
-u_dot = (b*(v_mean - v_r) - u_mean) / tau_u + kappa*x_mean
-s_dot = -s_mean/tau_s + r_mf
-x_dot = (r_mf - x_mean) / tau_x
 
 # fit the width of u via mean-field variables
-predictors = [u_mean, v_mean, s_mean, x_mean, u_mean**2, v_mean**2, s_mean**2, x_mean**2, u_dot, v_dot, s_dot, x_dot]
-predictor_names = ["u", "v", "s", "x", "u^2", "v^2", "s^2", "x^2", "u'", "v'", "s'", "x'"]
+r_mean = s_mean/tau_s
+z = np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r)))
+predictors = [u_mean, v_mean, r_mean, x_mean, v_mean-v_r, np.abs(v_mean-v_r),
+              z, b*(np.pi*C*r_mean/k)**(1-z), b*(np.pi*C*r_mean/k)**z, b*(np.pi*C*r_mean/k)*(1-z),
+              b*(np.pi*C*r_mean/k)*z]
+predictor_names = ["u", "v", "r", "x", "v-v-r", "|v-v_r|", "z", "w^(1-z))", "w^z", "w*(1-z))", "w*z"]
 predictors = np.asarray(predictors).T
 glm = Lasso()
 glm.fit(predictors, u_widths)
@@ -174,10 +174,10 @@ plt.tight_layout()
 # plot distribution dynamics for SNN
 fig2, ax2 = plt.subplots(nrows=3, figsize=(12, 6))
 ax2[0].plot(time, v_mean, color="royalblue")
-ax2[0].fill_between(time, v_mean - v_widths, v_mean + v_widths, alpha=0.3, color="royalblue")
+ax2[0].fill_between(time, v_mean - v_widths, v_mean + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
 ax2[0].set_title("v (mV)")
 ax2[1].plot(time, u_mean, color="darkorange")
-ax2[1].fill_between(time, u_mean - u_widths, u_mean + u_widths, alpha=0.3, color="darkorange")
+ax2[1].fill_between(time, u_mean - u_widths, u_mean + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
 ax2[1].set_title("u (pA)")
 ax2[2].plot(time, s_mean, color="black")
 ax2[2].set_title("s (dimensionless)")
@@ -186,14 +186,14 @@ fig2.suptitle("SNN")
 plt.tight_layout()
 
 # plot distribution dynamics for MF
-u_delta = w_mf
+u_delta = np.abs(b*(v_mf-v_r))/np.pi**2 - u_mf/Delta
 v_delta = np.pi*C*r_mf/k
 fig3, ax3 = plt.subplots(nrows=3, figsize=(12, 6))
 ax3[0].plot(time, v_mf, color="royalblue")
-ax3[0].fill_between(time, v_mf - v_delta, v_mf + v_delta, alpha=0.3, color="royalblue")
+ax3[0].fill_between(time, v_mf - v_delta, v_mf + v_delta, alpha=0.3, color="royalblue", linewidth=0.0)
 ax3[0].set_title("v (mV)")
 ax3[1].plot(time, u_mf, color="darkorange")
-ax3[1].fill_between(time, u_mf - u_delta, u_mf + u_delta, alpha=0.3, color="darkorange")
+ax3[1].fill_between(time, u_mf - u_delta, u_mf + u_delta, alpha=0.3, color="darkorange", linewidth=0.0)
 ax3[1].set_title("u (pA)")
 ax3[2].plot(time, s_mf, color="black")
 ax3[2].set_title("s (dimensionless)")
