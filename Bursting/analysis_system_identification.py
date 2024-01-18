@@ -110,13 +110,13 @@ u_widths = get_fwhm(u.values, n_bins)
 v_widths = get_fwhm(v.values, n_bins)
 
 # calculate KOP
-z = np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
+z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
 
 # initialize sindy model
 features = ["v", "u", "s", "x", "v_var", "u_var", "z"]
 X = np.stack((v_mean, u_mean, s_mean, x_mean, v_widths, u_widths, z), axis=-1)
 lib = ps.PolynomialLibrary(degree=2, interaction_only=True)
-opt = ps.STLSQ(threshold=0.01, max_iter=50, alpha=10.0)
+opt = ps.STLSQ(threshold=0.1, max_iter=50, alpha=100.0, normalize_columns=True)
 model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt)
 
 # fit model
@@ -127,7 +127,7 @@ model.print()
 
 # predict model widths
 predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts,
-                             integrator_kws={"method": "DOP853", "rtol": 1e-7, "atol": 1e-7, "min_step": 1e-5})
+                             integrator_kws={"method": "DOP853", "rtol": 1e-8, "atol": 1e-8})
 
 # plotting
 ##########
@@ -137,8 +137,9 @@ fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_featu
 for i, f in enumerate(plot_features):
 
     ax = axes[i]
-    ax.plot(X[:, i], label="target")
-    ax.plot(predictions[:, i], label="prediction")
+    idx = features.index(f)
+    ax.plot(X[:, idx], label="target")
+    ax.plot(predictions[:, idx], label="prediction")
     ax.set_ylabel(f)
     ax.legend()
 
