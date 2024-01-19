@@ -2,31 +2,35 @@ import numpy as np
 from rectipy import Network
 import pysindy as ps
 import matplotlib.pyplot as plt
+from scipy.stats import cauchy
+from joblib import Parallel, delayed
 plt.rcParams['backend'] = 'TkAgg'
 
 
-def FWHM(x, y):
-    max_idx = np.argmax(y)
-    half_max = np.max(y) / 2.
-    left_idx = np.argmin(np.abs(y[:max_idx] - half_max)) if max_idx > 0 else 0
-    right_idx = np.argmin(np.abs(y[max_idx:] - half_max)) + max_idx
-    return x[right_idx] - x[left_idx]
-    # fig, ax = plt.subplots()
-    # ax.plot(x, y)
-    # ax.axvline(x=x[left_idx], ymin=0.0, ymax=2.0*half_max, color="red")
-    # ax.axvline(x=x[right_idx], ymin=0.0, ymax=2.0*half_max, color="red")
-    # plt.show()
-
-
-def get_fwhm(signal: np.ndarray, n_bins: int) -> np.ndarray:
-
-    widths = []
-    for n in range(signal.shape[0]):
-        s = signal[n, :]
+def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> float:
+    center, width = cauchy.fit(s, loc=np.mean(s), scale=np.var(s))
+    if plot:
         bins = np.linspace(np.min(s), np.max(s), n_bins)
         y, _ = np.histogram(s, bins)
-        x = np.asarray([(bins[i+1] + bins[i])/2.0 for i in range(n_bins-1)])
-        widths.append(FWHM(x, y))
+        y = np.asarray(y, dtype=np.float64) / np.sum(y)
+        x = np.asarray([(bins[i + 1] + bins[i]) / 2.0 for i in range(n_bins - 1)])
+        ymax = 1.2 * np.max(y)
+        xrange = np.max(bins) - np.min(bins)
+        fig, ax = plt.subplots()
+        ax.plot(x, y, label="data")
+        ax.plot(x, cauchy.pdf(x, loc=center, scale=width), label="fit")
+        ax.legend()
+        ax.axvline(x=center - width, ymin=0.0, ymax=1.0, color="red")
+        ax.axvline(x=center + width, ymin=0.0, ymax=1.0, color="red")
+        ax.set_xlim([center - xrange / 6, center + xrange / 6])
+        ax.set_ylim([0.0, ymax])
+        plt.show()
+    return width
+
+
+def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs: int = 8) -> np.ndarray:
+    pool = Parallel(n_jobs=jobs)
+    widths = pool(delayed(FWHM)(signal[i, :], i+1 % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
     return np.asarray(widths)
 
 
@@ -100,23 +104,22 @@ s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_da
 #######################
 
 # calculate width of state variables at each time point
-n_bins = 500
 u_mean = np.mean(u.values, axis=1)
 v_mean = np.mean(v.values, axis=1)
 s_mean = np.mean(s.values, axis=1)
 x_mean = np.mean(x.values, axis=1)
 r_mean = s_mean/tau_s
-u_widths = get_fwhm(u.values, n_bins)
-v_widths = get_fwhm(v.values, n_bins)
+u_widths = get_fwhm(u.values, plot_steps=1000000, jobs=12)
+v_widths = get_fwhm(v.values, plot_steps=1000000, jobs=12)
 
 # calculate KOP
 z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
 
 # initialize sindy model
-features = ["v", "u", "s", "x", "v_var", "u_var", "z"]
-X = np.stack((v_mean, u_mean, s_mean, x_mean, v_widths, u_widths, z), axis=-1)
-lib = ps.PolynomialLibrary(degree=2, interaction_only=True)
-opt = ps.STLSQ(threshold=0.1, max_iter=50, alpha=100.0, normalize_columns=True)
+features = ["v", "u", "s", "x", "v_var", "u_var", "z", "|v-v_r|"]
+X = np.stack((v_mean, u_mean, s_mean, x_mean, v_widths, u_widths, z, np.abs(v_mean-v_r)), axis=-1)
+lib = ps.PolynomialLibrary(degree=2, interaction_only=False)
+opt = ps.SSR(max_iter=100, kappa=0.1, alpha=1.0)
 model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt)
 
 # fit model
@@ -132,7 +135,7 @@ predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts,
 # plotting
 ##########
 
-plot_features = ["v", "u", "x", "z", "u_var"]
+plot_features = ["|v-v_r|", "u", "x", "z", "u_var"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)))
 for i, f in enumerate(plot_features):
 

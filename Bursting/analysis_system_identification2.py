@@ -2,7 +2,7 @@ import numpy as np
 from pandas import DataFrame
 from rectipy import Network
 from scipy.stats import cauchy
-from sysidentpy.model_structure_selection import AOLS
+from sysidentpy.model_structure_selection import FROLS
 from sysidentpy.basis_function._basis_function import Polynomial
 from sysidentpy.metrics import root_relative_squared_error
 from sysidentpy.utils.display_results import results
@@ -73,7 +73,8 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 7000.0
+T = 11000.0
+train = 0.8
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
@@ -121,21 +122,25 @@ v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=12)
 z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
 
 # create input and output data
-features = ["r", "v", "u", "x", "z", "v_width"]
-X = np.stack((r_mean, v_mean, u_mean, x_mean, z, v_widths), axis=-1)
+features = ["r", "v", "u", "x", "v_width", "|v-v_r|", "z"]
+X = np.stack((r_mean, v_mean, u_mean, x_mean, v_widths, np.abs(v_mean-v_r), z), axis=-1)
+for i in range(X.shape[1]):
+    X[:, i] -= np.mean(X[:, i])
+    X[:, i] /= np.std(X[:, i])
 y = np.reshape(u_widths, (u_widths.shape[0], 1))
+train_idx = int(train*T/dts)
 
 # initialize system identification model
-basis_functions = Polynomial(degree=2)
-model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-             k=5, L=1, threshold=1e-8)
+basis_functions = Polynomial(degree=3)
+model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions,
+              n_terms=4, estimator="recursive_least_squares", lam=0.995)
 
 # fit model
-model.fit(X=X, y=y)
+model.fit(X=X[:train_idx, :], y=y[:train_idx, :])
 
 # predict width of u
-predictions = model.predict(X=X, y=y)
-rrse = root_relative_squared_error(y, predictions)
+predictions = model.predict(X=X[train_idx:, :], y=y[train_idx-1:train_idx, :])
+rrse = root_relative_squared_error(y[train_idx:, :], predictions)
 
 # print results
 res = results(model.final_model, model.theta, model.err, model.n_terms, err_precision=8, dtype="sci")  # type: list
@@ -153,13 +158,13 @@ print(r)
 # plotting
 ##########
 
-plot_features = ["r", "v", "u", "x", "z"]
+plot_features = ["r", "v", "u", "|v-v_r|", "z"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)))
 for i, f in enumerate(plot_features):
 
     ax = axes[i]
     idx = features.index(f)
-    ax.plot(X[:, idx], label="target")
+    ax.plot(X[train_idx:, idx], label="target")
     ax.set_ylabel(f)
     ax.legend()
 
@@ -167,8 +172,8 @@ plt.tight_layout()
 plt.suptitle("Predictors")
 
 fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(y, label="target")
-ax.plot(predictions, label="predictions")
+ax.plot(y[train_idx:, 0], label="target")
+ax.plot(predictions[:, 0], label="predictions")
 ax.legend()
 ax.set_xlabel("time")
 ax.set_ylabel("width(u)")
