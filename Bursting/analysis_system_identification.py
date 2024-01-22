@@ -119,9 +119,9 @@ z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C
 print("Generating training data")
 features = ["r", "v", "u", "x", "width(u)"]
 X = np.stack((r_mean, v_mean, u_mean, x_mean, u_widths), axis=-1)
-# for i in range(X.shape[1]):
-#     X[:, i] -= np.mean(X[:, i])
-#     X[:, i] /= np.std(X[:, i])
+for i in range(X.shape[1]):
+    X[:, i] -= np.mean(X[:, i])
+    # X[:, i] /= np.std(X[:, i])
 
 # initialize sindy model
 lib = ps.PolynomialLibrary(degree=3, interaction_only=False)
@@ -138,8 +138,8 @@ model.print()
 # predict model widths
 print("Generating model predictions")
 predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, integrator="solve_ivp",
-                             integrator_kws={"method": "RK45", "rtol": 1e-8, "atol": 1e-8,
-                                             "max_step": dts, "min_step": 1e-6})
+                             integrator_kws={"method": "RK45", "rtol": 1e-7, "atol": 1e-7,
+                                             "max_step": dts, "min_step": 1e-5})
 
 # plotting
 ##########
@@ -155,7 +155,7 @@ for i, f in enumerate(plot_features):
     ax.set_ylabel(f)
     ax.legend()
     ymin, ymax = np.min(X[:, idx]), np.max(X[:, idx])
-    ax.set_ylim([ymin+0.2*ymin, ymax+0.2*ymax])
+    ax.set_ylim([ymin-0.2*np.abs(ymin), ymax+0.2*np.abs(ymax)])
 
 plt.tight_layout()
 plt.show()
