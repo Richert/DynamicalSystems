@@ -6,7 +6,6 @@ from sysidentpy.model_structure_selection import FROLS
 from sysidentpy.basis_function._basis_function import Polynomial
 from sysidentpy.metrics import root_relative_squared_error
 from sysidentpy.utils.display_results import results
-from sysidentpy.utils.plotting import plot_residues_correlation, plot_results
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 plt.rcParams['backend'] = 'TkAgg'
@@ -73,12 +72,12 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 11000.0
+T = 10000.0
 train = 0.8
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
+inp = np.zeros((int((T + cutoff)/dt), 1)) + cond_map[cond]["eta"]
 
 # define lorentzian distribution of etas
 etas = eta + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -110,20 +109,22 @@ s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_da
 #######################
 
 # calculate the mean-field quantities
+print("Starting FWHM calculation")
 u_mean = np.mean(u.values, axis=1)
 v_mean = np.mean(v.values, axis=1)
 s_mean = np.mean(s.values, axis=1)
 x_mean = np.mean(x.values, axis=1)
 r_mean = s_mean/tau_s
-u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=12)
-v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=12)
+u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
+v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=10)
 
 # calculate KOP
 z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
 
 # create input and output data
-features = ["r", "v", "u", "x", "v_width", "|v-v_r|", "z"]
-X = np.stack((r_mean, v_mean, u_mean, x_mean, v_widths, np.abs(v_mean-v_r), z), axis=-1)
+print("Creating training data")
+features = ["r", "v", "u", "x", "v_width", "z", "|v-v_r|"]
+X = np.stack((r_mean, v_mean, u_mean, x_mean, v_widths, z, np.abs(v_mean-v_r)), axis=-1)
 for i in range(X.shape[1]):
     X[:, i] -= np.mean(X[:, i])
     X[:, i] /= np.std(X[:, i])
@@ -131,14 +132,16 @@ y = np.reshape(u_widths, (u_widths.shape[0], 1))
 train_idx = int(train*T/dts)
 
 # initialize system identification model
+print("Training sparse identification model")
 basis_functions = Polynomial(degree=3)
 model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions,
-              n_terms=4, estimator="recursive_least_squares", lam=0.995)
+              n_terms=5, estimator="recursive_least_squares", lam=0.95)
 
 # fit model
 model.fit(X=X[:train_idx, :], y=y[:train_idx, :])
 
 # predict width of u
+print("Model prediction")
 predictions = model.predict(X=X[train_idx:, :], y=y[train_idx-1:train_idx, :])
 rrse = root_relative_squared_error(y[train_idx:, :], predictions)
 
@@ -158,8 +161,8 @@ print(r)
 # plotting
 ##########
 
-plot_features = ["r", "v", "u", "|v-v_r|", "z"]
-fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)))
+plot_features = ["r", "v", "u", "x", "v_width", "z"]
+fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, len(plot_features)))
 for i, f in enumerate(plot_features):
 
     ax = axes[i]
@@ -171,13 +174,13 @@ for i, f in enumerate(plot_features):
 plt.tight_layout()
 plt.suptitle("Predictors")
 
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(y[train_idx:, 0], label="target")
-ax.plot(predictions[:, 0], label="predictions")
-ax.legend()
-ax.set_xlabel("time")
-ax.set_ylabel("width(u)")
-ax.set_title(f"Squared error on training data: {rrse}")
+fig2, ax2 = plt.subplots(figsize=(12, 4))
+ax2.plot(y[train_idx:, 0], label="target")
+ax2.plot(predictions[:, 0], label="predictions")
+ax2.legend()
+ax2.set_xlabel("time")
+ax2.set_ylabel("width(u)")
+ax2.set_title(f"Squared error on test data: {rrse}")
 plt.tight_layout()
 
 plt.show()

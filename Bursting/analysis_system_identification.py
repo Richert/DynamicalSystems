@@ -68,11 +68,11 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 7000.0
+T = 10000.0
 dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
+inp = np.zeros((int((T + cutoff)/dt), 1)) + cond_map[cond]["eta"]
 
 # define lorentzian distribution of etas
 etas = eta + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -103,39 +103,48 @@ s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_da
 # system identification
 #######################
 
-# calculate width of state variables at each time point
+# calculate the mean-field quantities
+print("Starting FWHM calculation")
 u_mean = np.mean(u.values, axis=1)
 v_mean = np.mean(v.values, axis=1)
 s_mean = np.mean(s.values, axis=1)
 x_mean = np.mean(x.values, axis=1)
 r_mean = s_mean/tau_s
-u_widths = get_fwhm(u.values, plot_steps=1000000, jobs=12)
-v_widths = get_fwhm(v.values, plot_steps=1000000, jobs=12)
+u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
 
 # calculate KOP
 z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
 
+# create input and output data
+print("Generating training data")
+features = ["r", "v", "u", "x", "width(u)"]
+X = np.stack((r_mean, v_mean, u_mean, x_mean, u_widths), axis=-1)
+# for i in range(X.shape[1]):
+#     X[:, i] -= np.mean(X[:, i])
+#     X[:, i] /= np.std(X[:, i])
+
 # initialize sindy model
-features = ["v", "u", "s", "x", "v_var", "u_var", "z", "|v-v_r|"]
-X = np.stack((v_mean, u_mean, s_mean, x_mean, v_widths, u_widths, z, np.abs(v_mean-v_r)), axis=-1)
-lib = ps.PolynomialLibrary(degree=2, interaction_only=False)
-opt = ps.SSR(max_iter=100, kappa=0.1, alpha=1.0)
+lib = ps.PolynomialLibrary(degree=3, interaction_only=False)
+opt = ps.FROLS(max_iter=5, alpha=10.0, verbose=False)
 model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt)
 
 # fit model
+print("Fitting the model")
 model.fit(X, t=dts)
 
 # print identified dynamical system
 model.print()
 
 # predict model widths
-predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts,
-                             integrator_kws={"method": "DOP853", "rtol": 1e-8, "atol": 1e-8})
+print("Generating model predictions")
+predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, integrator="solve_ivp",
+                             integrator_kws={"method": "RK45", "rtol": 1e-8, "atol": 1e-8,
+                                             "max_step": dts, "min_step": 1e-6})
 
 # plotting
 ##########
 
-plot_features = ["|v-v_r|", "u", "x", "z", "u_var"]
+plot_features = ["r", "v", "u", "x", "width(u)"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)))
 for i, f in enumerate(plot_features):
 
@@ -145,6 +154,8 @@ for i, f in enumerate(plot_features):
     ax.plot(predictions[:, idx], label="prediction")
     ax.set_ylabel(f)
     ax.legend()
+    ymin, ymax = np.min(X[:, idx]), np.max(X[:, idx])
+    ax.set_ylim([ymin+0.2*ymin, ymax+0.2*ymax])
 
 plt.tight_layout()
 plt.show()
