@@ -38,7 +38,7 @@ def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs
 ###################
 
 # condition
-cond = "med_sfa"
+cond = "high_sfa"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -124,8 +124,8 @@ for i in range(X.shape[1]):
     # X[:, i] /= np.std(X[:, i])
 
 # initialize sindy model
-lib = ps.PolynomialLibrary(degree=3, interaction_only=False)
-opt = ps.FROLS(max_iter=5, alpha=10.0, verbose=False)
+lib = ps.PolynomialLibrary(degree=2, interaction_only=False)
+opt = ps.FROLS(max_iter=5, alpha=1000.0, verbose=False)
 model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt)
 
 # fit model
@@ -138,8 +138,8 @@ model.print()
 # predict model widths
 print("Generating model predictions")
 predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, integrator="solve_ivp",
-                             integrator_kws={"method": "RK45", "rtol": 1e-7, "atol": 1e-7,
-                                             "max_step": dts, "min_step": 1e-5})
+                             integrator_kws={"method": "RK23", "rtol": 1e-7, "atol": 1e-7,
+                                             "max_step": dts, "min_step": 1e-4})
 
 # plotting
 ##########
