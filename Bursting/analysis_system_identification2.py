@@ -111,7 +111,7 @@ net.add_diffeq_node("sfa", f"config/snn/adik", #weights=W, source_var="s", targe
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt),
-              record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)])
+              record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)], enable_grad=False)
 s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
               obs.to_dataframe(("sfa", "x")))
 del obs
@@ -151,7 +151,7 @@ print("Training sparse identification model")
 basis_functions = Polynomial(degree=4)
 # model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
 model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-             k=4, threshold=1e-8, L=1)
+             k=3, threshold=1e-9, L=1)
 
 # fit model
 model.fit(X=X[:train_idx, :], y=y[:train_idx, :])
