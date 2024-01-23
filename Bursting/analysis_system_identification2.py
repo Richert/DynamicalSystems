@@ -2,7 +2,9 @@ import numpy as np
 from pandas import DataFrame
 from rectipy import Network
 from scipy.stats import cauchy
-from sysidentpy.model_structure_selection import FROLS
+from scipy.signal import find_peaks
+from scipy.ndimage import gaussian_filter1d
+from sysidentpy.model_structure_selection import FROLS, AOLS
 from sysidentpy.basis_function._basis_function import Polynomial
 from sysidentpy.metrics import root_relative_squared_error
 from sysidentpy.utils.display_results import results
@@ -36,6 +38,14 @@ def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs
     pool = Parallel(n_jobs=jobs)
     widths = pool(delayed(FWHM)(signal[i, :], i+1 % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
     return np.asarray(widths)
+
+
+def smooth(signal: np.ndarray, window: int = 10):
+    # N = len(signal)
+    # for start in range(N):
+    #     signal_window = signal[start:start+window] if N - start > window else signal[start:]
+    #     signal[start] = np.mean(signal_window)
+    return gaussian_filter1d(signal, sigma=window)
 
 
 # define parameters
@@ -72,10 +82,10 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 10000.0
-train = 0.8
+T = 3000.0
+train = 0.7
 dt = 1e-2
-dts = 1e-1
+dts = 2e-2
 cutoff = 1000.0
 inp = np.zeros((int((T + cutoff)/dt), 1)) + cond_map[cond]["eta"]
 
@@ -104,38 +114,44 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(c
               record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)])
 s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
               obs.to_dataframe(("sfa", "x")))
+del obs
 
 # system identification
 #######################
 
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
-u_mean = np.mean(u.values, axis=1)
-v_mean = np.mean(v.values, axis=1)
-s_mean = np.mean(s.values, axis=1)
-x_mean = np.mean(x.values, axis=1)
-r_mean = s_mean/tau_s
-u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
-v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=10)
+window = 30
+r = np.zeros_like(v.values)
+for i in range(N):
+    spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
+    r[spikes, i] = 1.0
+r = smooth(np.mean(r, axis=1), window)
+u_widths = smooth(get_fwhm(u.values, plot_steps=10000000, jobs=10), window)
+u = smooth(np.mean(u.values, axis=1), window)
+v = smooth(np.mean(v.values, axis=1), window)
+s = smooth(np.mean(s.values, axis=1), window)
+x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
-z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
+z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*(v-v_r))/(1 + np.pi*C*r/k - 1.0j*(v-v_r))))
 
 # create input and output data
 print("Creating training data")
-features = ["r", "v", "u", "x", "v_width", "z", "|v-v_r|"]
-X = np.stack((r_mean, v_mean, u_mean, x_mean, v_widths, z, np.abs(v_mean-v_r)), axis=-1)
-for i in range(X.shape[1]):
-    X[:, i] -= np.mean(X[:, i])
-    X[:, i] /= np.std(X[:, i])
+features = ["r", "s", "v", "u", "x", "z", "(v-v_r)^2"]
+X = np.stack((r, s, v, u, x, z, (v-v_r)**2), axis=-1)
+# for i in range(X.shape[1]):
+#     X[:, i] -= np.mean(X[:, i])
+#     X[:, i] /= np.std(X[:, i])
 y = np.reshape(u_widths, (u_widths.shape[0], 1))
 train_idx = int(train*T/dts)
 
 # initialize system identification model
 print("Training sparse identification model")
-basis_functions = Polynomial(degree=3)
-model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions,
-              n_terms=5, estimator="recursive_least_squares", lam=0.95)
+basis_functions = Polynomial(degree=4)
+# model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
+model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
+             k=4, threshold=1e-8, L=1)
 
 # fit model
 model.fit(X=X[:train_idx, :], y=y[:train_idx, :])
@@ -161,26 +177,24 @@ print(r)
 # plotting
 ##########
 
-plot_features = ["r", "v", "u", "x", "v_width", "z"]
-fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, len(plot_features)))
+plot_features = ["r", "v", "u", "x", "z", "(v-v_r)^2"]
+fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
-
     ax = axes[i]
     idx = features.index(f)
-    ax.plot(X[train_idx:, idx], label="target")
+    ax.plot(X[train_idx:, idx])
     ax.set_ylabel(f)
-    ax.legend()
-
 plt.tight_layout()
 plt.suptitle("Predictors")
 
-fig2, ax2 = plt.subplots(figsize=(12, 4))
+fig2, ax2 = plt.subplots(figsize=(12, 4), sharex="all")
 ax2.plot(y[train_idx:, 0], label="target")
 ax2.plot(predictions[:, 0], label="predictions")
 ax2.legend()
 ax2.set_xlabel("time")
 ax2.set_ylabel("width(u)")
 ax2.set_title(f"Squared error on test data: {rrse}")
+plt.suptitle("Prediction")
 plt.tight_layout()
 
 plt.show()

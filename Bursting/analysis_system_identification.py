@@ -3,6 +3,7 @@ from rectipy import Network
 import pysindy as ps
 import matplotlib.pyplot as plt
 from scipy.stats import cauchy
+from scipy.signal import find_peaks
 from joblib import Parallel, delayed
 plt.rcParams['backend'] = 'TkAgg'
 
@@ -68,9 +69,9 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 10000.0
-dt = 1e-2
-dts = 1e-1
+T = 660.0
+dt = 2e-3
+dts = 1e-2
 cutoff = 1000.0
 inp = np.zeros((int((T + cutoff)/dt), 1)) + cond_map[cond]["eta"]
 
@@ -99,34 +100,40 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(c
               record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)])
 s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
               obs.to_dataframe(("sfa", "x")))
+del obs
 
 # system identification
 #######################
 
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
-u_mean = np.mean(u.values, axis=1)
-v_mean = np.mean(v.values, axis=1)
-s_mean = np.mean(s.values, axis=1)
-x_mean = np.mean(x.values, axis=1)
-r_mean = s_mean/tau_s
 u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
+r = np.zeros_like(v.values)
+for i in range(N):
+    spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
+    r[spikes, i] = 1.0
+r = np.mean(r, axis=1)
+u = np.mean(u.values, axis=1)
+v = np.mean(v.values, axis=1)
+s = np.mean(s.values, axis=1)
+x = np.mean(x.values, axis=1)
 
 # calculate KOP
-z = 1.0 - np.real(np.abs((1 - np.pi*C*r_mean/k + 1.0j*(v_mean-v_r))/(1 + np.pi*C*r_mean/k - 1.0j*(v_mean-v_r))))
+z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*(v-v_r))/(1 + np.pi*C*r/k - 1.0j*(v-v_r))))
 
 # create input and output data
 print("Generating training data")
-features = ["r", "v", "u", "x", "width(u)"]
-X = np.stack((r_mean, v_mean, u_mean, x_mean, u_widths), axis=-1)
+features = ["v", "u", "x", "s", "z", "width(u)"]
+X = np.stack((v, u, x, s, z, u_widths), axis=-1)
 for i in range(X.shape[1]):
     X[:, i] -= np.mean(X[:, i])
-    # X[:, i] /= np.std(X[:, i])
+    X[:, i] /= np.std(X[:, i])
 
 # initialize sindy model
-lib = ps.PolynomialLibrary(degree=2, interaction_only=False)
-opt = ps.FROLS(max_iter=5, alpha=1000.0, verbose=False)
-model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt)
+lib = ps.PolynomialLibrary(degree=3, interaction_only=False)
+opt = ps.FROLS(max_iter=5, alpha=0.1, fit_intercept=False)
+diff = ps.SINDyDerivative(kind="savitzky_golay", left=1, right=1, order=3, periodic=True)
+model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt, differentiation_method=diff)
 
 # fit model
 print("Fitting the model")
@@ -138,14 +145,14 @@ model.print()
 # predict model widths
 print("Generating model predictions")
 predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, integrator="solve_ivp",
-                             integrator_kws={"method": "RK23", "rtol": 1e-7, "atol": 1e-7,
+                             integrator_kws={"method": "DOP853", "rtol": 1e-9, "atol": 1e-9,
                                              "max_step": dts, "min_step": 1e-4})
 
 # plotting
 ##########
 
-plot_features = ["r", "v", "u", "x", "width(u)"]
-fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)))
+plot_features = ["s", "v", "u", "x", "width(u)"]
+fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
 
     ax = axes[i]
