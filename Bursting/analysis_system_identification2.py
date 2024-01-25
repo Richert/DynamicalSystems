@@ -52,7 +52,7 @@ def smooth(signal: np.ndarray, window: int = 10):
 ###################
 
 # condition
-cond = "med_sfa"
+cond = "low_delta"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -82,12 +82,13 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 3000.0
-train = 0.7
+T = 7000.0
 dt = 1e-2
-dts = 2e-2
+dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int((T + cutoff)/dt), 1)) + cond_map[cond]["eta"]
+inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
+inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
+inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
 
 # define lorentzian distribution of etas
 etas = eta + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -121,45 +122,45 @@ del obs
 
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
-window = 30
+window = 25
 r = np.zeros_like(v.values)
 for i in range(N):
     spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
     r[spikes, i] = 1.0
 r = smooth(np.mean(r, axis=1), window)
 u_widths = smooth(get_fwhm(u.values, plot_steps=10000000, jobs=10), window)
+v_widths = smooth(get_fwhm(v.values, plot_steps=10000000, jobs=10), window)
 u = smooth(np.mean(u.values, axis=1), window)
 v = smooth(np.mean(v.values, axis=1), window)
 s = smooth(np.mean(s.values, axis=1), window)
 x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
-z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*(v-v_r))/(1 + np.pi*C*r/k - 1.0j*(v-v_r))))
+z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*v)/(1 + np.pi*C*r/k - 1.0j*v)))
 
 # create input and output data
 print("Creating training data")
-features = ["r", "s", "v", "u", "x", "z", "(v-v_r)^2"]
-X = np.stack((r, s, v, u, x, z, (v-v_r)**2), axis=-1)
+features = ["r", "s", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
+X = np.stack((r, s, v, u, x, z, np.abs(v-v_r), v_widths), axis=-1)
 # for i in range(X.shape[1]):
 #     X[:, i] -= np.mean(X[:, i])
 #     X[:, i] /= np.std(X[:, i])
 y = np.reshape(u_widths, (u_widths.shape[0], 1))
-train_idx = int(train*T/dts)
 
 # initialize system identification model
 print("Training sparse identification model")
 basis_functions = Polynomial(degree=4)
 # model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
 model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-             k=3, threshold=1e-9, L=1)
+             k=6, threshold=1e-8, L=1)
 
 # fit model
-model.fit(X=X[:train_idx, :], y=y[:train_idx, :])
+model.fit(X=X, y=y)
 
 # predict width of u
 print("Model prediction")
-predictions = model.predict(X=X[train_idx:, :], y=y[train_idx-1:train_idx, :])
-rrse = root_relative_squared_error(y[train_idx:, :], predictions)
+predictions = model.predict(X=X, y=y)
+rrse = root_relative_squared_error(y, predictions)
 
 # print results
 res = results(model.final_model, model.theta, model.err, model.n_terms, err_precision=8, dtype="sci")  # type: list
@@ -177,18 +178,18 @@ print(r)
 # plotting
 ##########
 
-plot_features = ["r", "v", "u", "x", "z", "(v-v_r)^2"]
+plot_features = ["r", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
     ax = axes[i]
     idx = features.index(f)
-    ax.plot(X[train_idx:, idx])
+    ax.plot(X[:, idx])
     ax.set_ylabel(f)
 plt.tight_layout()
 plt.suptitle("Predictors")
 
 fig2, ax2 = plt.subplots(figsize=(12, 4), sharex="all")
-ax2.plot(y[train_idx:, 0], label="target")
+ax2.plot(y[:, 0], label="target")
 ax2.plot(predictions[:, 0], label="predictions")
 ax2.legend()
 ax2.set_xlabel("time")

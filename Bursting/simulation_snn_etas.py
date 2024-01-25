@@ -1,25 +1,54 @@
-import numba as nb
-nb.config.THREADING_LAYER = 'omp'
-nb.set_num_threads(4)
-import pickle
 import numpy as np
-from rectipy import Network, random_connectivity
+from rectipy import Network
+from scipy.stats import cauchy
+from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+from joblib import Parallel, delayed
+import pickle
 plt.rcParams['backend'] = 'TkAgg'
+
+
+def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> float:
+    center, width = cauchy.fit(s, loc=np.mean(s), scale=np.var(s))
+    if plot:
+        bins = np.linspace(np.min(s), np.max(s), n_bins)
+        y, _ = np.histogram(s, bins)
+        y = np.asarray(y, dtype=np.float64) / np.sum(y)
+        x = np.asarray([(bins[i + 1] + bins[i]) / 2.0 for i in range(n_bins - 1)])
+        ymax = 1.2 * np.max(y)
+        xrange = np.max(bins) - np.min(bins)
+        fig, ax = plt.subplots()
+        ax.plot(x, y, label="data")
+        ax.plot(x, cauchy.pdf(x, loc=center, scale=width), label="fit")
+        ax.legend()
+        ax.axvline(x=center - width, ymin=0.0, ymax=1.0, color="red")
+        ax.axvline(x=center + width, ymin=0.0, ymax=1.0, color="red")
+        ax.set_xlim([center - xrange / 6, center + xrange / 6])
+        ax.set_ylim([0.0, ymax])
+        plt.show()
+    return width
+
+
+def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs: int = 8) -> np.ndarray:
+    pool = Parallel(n_jobs=jobs)
+    widths = pool(delayed(FWHM)(signal[i, :], i+1 % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
+    return np.asarray(widths)
+
 
 # define parameters
 ###################
 
 # condition
-cond = "high_sfa"
+cond = "low_delta"
 cond_map = {
-    "low_sfa": {"kappa": 0.1, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
-    "med_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
-    "high_sfa": {"kappa": 5.0, "eta": 60.0, "eta_inc": -35.0, "eta_init": 0.0, "b": -7.5, "delta": 5.0},
+    "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
+    "high_sfa": {"kappa": 300.0, "eta": 60.0, "eta_inc": -35.0, "eta_init": 0.0, "b": -7.5, "delta": 5.0},
     "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
     "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
 }
+
 
 # model parameters
 N = 2000
@@ -70,19 +99,61 @@ net.add_diffeq_node("sfa", f"config/snn/adik", #weights=W, source_var="s", targe
                     verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt))
-res = obs.to_dataframe("out")
+obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt),
+              record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)], enable_grad=False)
+s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
+              obs.to_dataframe(("sfa", "x")))
+del obs
+time = s.index
+
+# calculate the mean-field quantities
+spikes = np.zeros_like(v.values)
+n_plot = 50
+for i in range(N):
+    idx_spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
+    spikes[idx_spikes, i] = 1.0
+    # if i % n_plot == 0:
+    #     fig, ax = plt.subplots(figsize=(12, 3))
+    #     ax.plot(v.values[:, i])
+    #     for idx in idx_spikes:
+    #         ax.axvline(x=idx, ymin=0.0, ymax=1.0, color="red")
+    #     plt.show()
+r = np.mean(spikes, axis=1)
+u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
+v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=10)
+u = np.mean(u.values, axis=1)
+v = np.mean(v.values, axis=1)
+s = np.mean(s.values, axis=1)
+x = np.mean(x.values, axis=1)
 
 # save results to file
-pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
+pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "u_width": u_widths,
+                         "v_widths": v_widths}, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-spikes = res.values
 ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
 ax[0].set_ylabel(r'neuron id')
-ax[1].plot(res.index, np.mean(spikes, axis=1))
-ax[1].set_ylabel(r'$s(t)$')
+ax[1].plot(time, r)
+ax[1].set_ylabel(r'$r(t)$')
 ax[1].set_xlabel('time')
+plt.tight_layout()
+plt.show()
+
+# plot distribution dynamics
+fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
+ax[0].plot(time, v, color="royalblue")
+ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
+ax[0].set_title("v (mV)")
+ax[1].plot(time, u, color="darkorange")
+ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
+ax[1].set_title("u (pA)")
+ax[2].plot(time, s, color="black")
+ax[2].set_title("s (dimensionless)")
+ax[2].set_xlabel("time (ms)")
+ax[3].plot(time, u_widths, color="red")
+ax[3].set_title("w (dimensionless)")
+ax[3].set_xlabel("time (ms)")
+fig2.suptitle("SNN")
 plt.tight_layout()
 plt.show()

@@ -4,6 +4,7 @@ import pysindy as ps
 import matplotlib.pyplot as plt
 from scipy.stats import cauchy
 from scipy.signal import find_peaks
+from scipy.ndimage import gaussian_filter1d
 from joblib import Parallel, delayed
 plt.rcParams['backend'] = 'TkAgg'
 
@@ -33,6 +34,14 @@ def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs
     pool = Parallel(n_jobs=jobs)
     widths = pool(delayed(FWHM)(signal[i, :], i+1 % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
     return np.asarray(widths)
+
+
+def smooth(signal: np.ndarray, window: int = 10):
+    # N = len(signal)
+    # for start in range(N):
+    #     signal_window = signal[start:start+window] if N - start > window else signal[start:]
+    #     signal[start] = np.mean(signal_window)
+    return gaussian_filter1d(signal, sigma=window)
 
 
 # define parameters
@@ -69,11 +78,13 @@ v_reset = -1000.0
 v_peak = 1000.0
 
 # define inputs
-T = 660.0
-dt = 2e-3
-dts = 1e-2
+T = 7000.0
+dt = 1e-2
+dts = 1e-1
 cutoff = 1000.0
-inp = np.zeros((int((T + cutoff)/dt), 1)) + cond_map[cond]["eta"]
+inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
+inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
+inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
 
 # define lorentzian distribution of etas
 etas = eta + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
@@ -107,51 +118,54 @@ del obs
 
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
-u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
+window = 10
 r = np.zeros_like(v.values)
 for i in range(N):
     spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
     r[spikes, i] = 1.0
-r = np.mean(r, axis=1)
-u = np.mean(u.values, axis=1)
-v = np.mean(v.values, axis=1)
-s = np.mean(s.values, axis=1)
-x = np.mean(x.values, axis=1)
+r = smooth(np.mean(r, axis=1), window)
+u_widths = smooth(get_fwhm(u.values, plot_steps=10000000, jobs=10), window)
+v_widths = smooth(get_fwhm(v.values, plot_steps=10000000, jobs=10), window)
+u = smooth(np.mean(u.values, axis=1), window)
+v = smooth(np.mean(v.values, axis=1), window)
+s = smooth(np.mean(s.values, axis=1), window)
+x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
 z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*(v-v_r))/(1 + np.pi*C*r/k - 1.0j*(v-v_r))))
 
 # create input and output data
 print("Generating training data")
-features = ["v", "u", "x", "s", "z", "width(u)"]
-X = np.stack((v, u, x, s, z, u_widths), axis=-1)
-for i in range(X.shape[1]):
-    X[:, i] -= np.mean(X[:, i])
-    X[:, i] /= np.std(X[:, i])
+features = ["v", "u", "x", "s", "r", "width(u)"]
+X = np.stack((v, u, x, s, r, u_widths), axis=-1)
+# for i in range(X.shape[1]):
+#     X[:, i] -= np.mean(X[:, i])
+#     X[:, i] /= np.std(X[:, i])
 
 # initialize sindy model
-lib = ps.PolynomialLibrary(degree=3, interaction_only=False)
+lib = ps.PolynomialLibrary(degree=4, interaction_only=False)
 opt = ps.FROLS(max_iter=5, alpha=0.1, fit_intercept=False)
-diff = ps.SINDyDerivative(kind="savitzky_golay", left=1, right=1, order=3, periodic=True)
+diff = ps.SINDyDerivative(kind="spline", s=0.1, order=3)
 model = ps.SINDy(feature_names=features, feature_library=lib, optimizer=opt, differentiation_method=diff)
 
 # fit model
 print("Fitting the model")
-model.fit(X, t=dts)
+inp = inp[int(cutoff/dt)::int(dts/dt), 0]
+model.fit(X, t=dts, u=inp)
 
 # print identified dynamical system
 model.print()
 
 # predict model widths
 print("Generating model predictions")
-predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, integrator="solve_ivp",
-                             integrator_kws={"method": "DOP853", "rtol": 1e-9, "atol": 1e-9,
+predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, u=inp, integrator="solve_ivp",
+                             integrator_kws={"method": "DOP853", "rtol": 1e-8, "atol": 1e-8,
                                              "max_step": dts, "min_step": 1e-4})
 
 # plotting
 ##########
 
-plot_features = ["s", "v", "u", "x", "width(u)"]
+plot_features = ["r", "v", "u", "x", "width(u)"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
 
