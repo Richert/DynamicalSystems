@@ -1,12 +1,36 @@
 import numpy as np
 from rectipy import Network
-import pysindy as ps
-import matplotlib.pyplot as plt
 from scipy.stats import cauchy
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
+from scipy.special import comb
+from sysidentpy.neural_network import NARXNN
+from sysidentpy.basis_function._basis_function import Polynomial
+from sysidentpy.metrics import root_relative_squared_error
+import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
+from torch import nn
 plt.rcParams['backend'] = 'TkAgg'
+
+
+class DNN(nn.Module):
+
+    def __init__(self, n_in: int, n_out: int, n_hidden: int = 10, activation_func: str = "tanh"):
+
+        super().__init__()
+        self.W_in = nn.Linear(n_in, n_hidden)
+        self.W_out = nn.Linear(n_hidden, n_out)
+        if activation_func == "tanh":
+            self.func = nn.Tanh()
+        elif activation_func == "sigmoid":
+            self.func = nn.Sigmoid()
+        elif activation_func == "relu":
+            self.func = nn.ReLU()
+        else:
+            raise ValueError("Invalid activation function. Choose better.")
+
+    def forward(self, x):
+        return self.func(self.W_out(self.func(self.W_in(x))))
 
 
 def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> float:
@@ -108,7 +132,7 @@ net.add_diffeq_node("sfa", f"config/snn/adik", #weights=W, source_var="s", targe
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt),
-              record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)])
+              record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)], enable_grad=False)
 s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
               obs.to_dataframe(("sfa", "x")))
 del obs
@@ -118,7 +142,7 @@ del obs
 
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
-window = 10
+window = 25
 r = np.zeros_like(v.values)
 for i in range(N):
     spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
@@ -132,55 +156,56 @@ s = smooth(np.mean(s.values, axis=1), window)
 x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
-z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*(v-v_r))/(1 + np.pi*C*r/k - 1.0j*(v-v_r))))
+z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*v)/(1 + np.pi*C*r/k - 1.0j*v)))
 
 # create input and output data
-print("Generating training data")
-features = ["v_m", "u_m", "x_m", "s_m", "r_m", "w"]
-X = np.stack((v, u, x, s, r, u_widths), axis=-1)
-for i in range(X.shape[1]):
-    X[:, i] -= np.mean(X[:, i])
-    X[:, i] /= np.std(X[:, i])
+print("Creating training data")
+features = ["r", "s", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
+X = np.stack((r, s, v, u, x, z, np.abs(v-v_r), v_widths), axis=-1)
+# for i in range(X.shape[1]):
+#     X[:, i] -= np.mean(X[:, i])
+#     X[:, i] /= np.std(X[:, i])
+y = np.reshape(u_widths, (u_widths.shape[0], 1))
 
-# initialize sindy model
-lib = ps.PolynomialLibrary(degree=3, interaction_only=False, include_bias=True)
-opt = ps.FROLS(max_iter=6, alpha=0.1)
-diff = ps.SINDyDerivative(kind="spline", order=3, s=0.05)
-model = ps.SINDy(feature_library=lib, optimizer=opt, differentiation_method=diff)
+# initialize system identification model
+print("Training sparse identification model")
+degree = 3
+n_bf = np.sum([comb(len(features)+1, i+1, repetition=True) for i in range(degree)])
+basis_functions = Polynomial(degree=degree)
+net = DNN(n_in=int(n_bf), n_out=1, n_hidden=10, activation_func="relu")
+model = NARXNN(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
+               loss_func="mse_loss", optimizer="Adam", epochs=200, optim_params={"betas": (0.9, 0.999), 'eps': 1e-5},
+               learning_rate=0.05, batch_size=1000, net=net)
 
 # fit model
-print("Fitting the model")
-inp = inp[int(cutoff/dt)::int(dts/dt), 0]
-model.fit(X, t=dts, u=inp)
+model.fit(X=X, y=y)
 
-# print identified dynamical system
-eqs = model.equations(precision=3)
-for f, eq in zip(features, eqs):
-    for i, f_tmp in enumerate(features):
-        eq = eq.replace(f"x{i}", f_tmp)
-    print(f"{f}' = {eq}")
-
-# predict model widths
-print("Generating model predictions")
-predictions = model.simulate(x0=X[0, :], t=np.arange(X.shape[0])*dts, u=inp, integrator="solve_ivp",
-                             integrator_kws={"method": "DOP853", "rtol": 1e-8, "atol": 1e-8,
-                                             "max_step": dts, "min_step": 1e-5})
+# predict width of u
+print("Model prediction")
+predictions = model.predict(X=X, y=y)
+rrse = root_relative_squared_error(y, predictions)
 
 # plotting
 ##########
 
-plot_features = ["r_m", "v_m", "u_m", "x_m", "w"]
-fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)), sharex="all")
+plot_features = ["r", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
+fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
-
     ax = axes[i]
     idx = features.index(f)
-    ax.plot(X[:, idx], label="target")
-    ax.plot(predictions[:, idx], label="prediction")
+    ax.plot(X[:, idx])
     ax.set_ylabel(f)
-    ax.legend()
-    ymin, ymax = np.min(X[:, idx]), np.max(X[:, idx])
-    ax.set_ylim([ymin-0.2*np.abs(ymin), ymax+0.2*np.abs(ymax)])
-
+plt.suptitle("Predictors")
 plt.tight_layout()
+
+fig2, ax2 = plt.subplots(figsize=(12, 4), sharex="all")
+ax2.plot(y[:, 0], label="target")
+ax2.plot(predictions[:, 0], label="predictions")
+ax2.legend()
+ax2.set_xlabel("time")
+ax2.set_ylabel("width(u)")
+ax2.set_title(f"Squared error on test data: {rrse}")
+plt.suptitle("Prediction")
+plt.tight_layout()
+
 plt.show()
