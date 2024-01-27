@@ -1,3 +1,5 @@
+from typing import Iterator
+
 import numpy as np
 from rectipy import Network
 from scipy.stats import cauchy
@@ -10,16 +12,18 @@ from sysidentpy.metrics import root_relative_squared_error
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 from torch import nn
+from torch.nn import Parameter
+
 plt.rcParams['backend'] = 'TkAgg'
 
 
 class DNN(nn.Module):
 
-    def __init__(self, n_in: int, n_out: int, n_hidden: int = 10, activation_func: str = "tanh"):
+    def __init__(self, n_in: int, n_out: int, n_hidden: tuple = (10,), activation_func: str = "tanh"):
 
         super().__init__()
-        self.W_in = nn.Linear(n_in, n_hidden)
-        self.W_out = nn.Linear(n_hidden, n_out)
+        dims = [n_in] + list(n_hidden) + [n_out]
+        self.layers = [nn.Linear(dims[i], dims[i+1]) for i in range(len(dims)-1)]
         if activation_func == "tanh":
             self.func = nn.Tanh()
         elif activation_func == "sigmoid":
@@ -30,7 +34,14 @@ class DNN(nn.Module):
             raise ValueError("Invalid activation function. Choose better.")
 
     def forward(self, x):
-        return self.func(self.W_out(self.func(self.W_in(x))))
+        for layer in self.layers:
+            x = self.func(layer(x))
+        return x
+
+    def parameters(self, recurse: bool = True):
+        for layer in self.layers:
+            yield layer.weight
+            yield layer.bias
 
 
 def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> float:
@@ -72,11 +83,11 @@ def smooth(signal: np.ndarray, window: int = 10):
 ###################
 
 # condition
-cond = "low_delta"
+cond = "high_sfa"
 cond_map = {
-    "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
+    "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 0.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
-    "high_sfa": {"kappa": 300.0, "eta": 60.0, "eta_inc": -35.0, "eta_init": 0.0, "b": -7.5, "delta": 5.0},
+    "high_sfa": {"kappa": 300.0, "eta": 60.0, "eta_inc": 0.0, "eta_init": 0.0, "b": -7.5, "delta": 5.0},
     "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
     "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
@@ -162,20 +173,20 @@ z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*v)/(1 + np.pi*C*r/k - 1.0j*v)))
 print("Creating training data")
 features = ["r", "s", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
 X = np.stack((r, s, v, u, x, z, np.abs(v-v_r), v_widths), axis=-1)
-# for i in range(X.shape[1]):
-#     X[:, i] -= np.mean(X[:, i])
-#     X[:, i] /= np.std(X[:, i])
+for i in range(X.shape[1]):
+    X[:, i] -= np.mean(X[:, i])
+    X[:, i] /= np.std(X[:, i])
 y = np.reshape(u_widths, (u_widths.shape[0], 1))
 
 # initialize system identification model
 print("Training sparse identification model")
 degree = 3
-n_bf = np.sum([comb(len(features)+1, i+1, repetition=True) for i in range(degree)])
+n_bf = np.sum([comb(len(features), i+1, repetition=True) for i in range(degree)])
 basis_functions = Polynomial(degree=degree)
-net = DNN(n_in=int(n_bf), n_out=1, n_hidden=10, activation_func="relu")
-model = NARXNN(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-               loss_func="mse_loss", optimizer="Adam", epochs=200, optim_params={"betas": (0.9, 0.999), 'eps': 1e-5},
-               learning_rate=0.05, batch_size=1000, net=net)
+net = DNN(n_in=int(n_bf), n_out=1, n_hidden=(50, 5), activation_func="tanh")
+model = NARXNN(ylag=3, xlag=[[3] for _ in range(X.shape[1])], basis_function=basis_functions,
+               loss_func="mse_loss", optimizer="Rprop", epochs=500, optim_params={"etas": (0.5, 1.2)},
+               learning_rate=0.01, batch_size=10000, net=net, model_type="NFIR")
 
 # fit model
 model.fit(X=X, y=y)
