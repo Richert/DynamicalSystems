@@ -39,7 +39,7 @@ def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs
 ###################
 
 # condition
-cond = "low_delta"
+cond = "high_delta"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -48,7 +48,6 @@ cond_map = {
     "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
 }
-
 
 # model parameters
 N = 2000
@@ -107,18 +106,19 @@ del obs
 time = s.index
 
 # calculate the mean-field quantities
-spikes = np.zeros_like(v.values)
-n_plot = 50
-for i in range(N):
-    idx_spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
-    spikes[idx_spikes, i] = 1.0
-    # if i % n_plot == 0:
-    #     fig, ax = plt.subplots(figsize=(12, 3))
-    #     ax.plot(v.values[:, i])
-    #     for idx in idx_spikes:
-    #         ax.axvline(x=idx, ymin=0.0, ymax=1.0, color="red")
-    #     plt.show()
-r = np.mean(spikes, axis=1)
+# spikes = np.zeros_like(v.values)
+# n_plot = 50
+# for i in range(N):
+#     idx_spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
+#     spikes[idx_spikes, i] = dts/dt
+#     # if i % n_plot == 0:
+#     #     fig, ax = plt.subplots(figsize=(12, 3))
+#     #     ax.plot(v.values[:, i])
+#     #     for idx in idx_spikes:
+#     #         ax.axvline(x=idx, ymin=0.0, ymax=1.0, color="red")
+#     #     plt.show()
+spikes = s.values
+r = np.mean(spikes, axis=1) / tau_s
 u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
 v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=10)
 u = np.mean(u.values, axis=1)
@@ -126,9 +126,14 @@ v = np.mean(v.values, axis=1)
 s = np.mean(s.values, axis=1)
 x = np.mean(x.values, axis=1)
 
+# calculate the kuramoto order parameter
+ko_y = 1 + v/np.abs(v_r)
+ko_x = np.pi*C*r/k
+z = 1 - np.abs((1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y))
+
 # save results to file
-pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "u_width": u_widths,
-                         "v_widths": v_widths}, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
+pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": z, "u_width": u_widths,
+                         "v_width": v_widths}, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
@@ -148,8 +153,8 @@ ax[0].set_title("v (mV)")
 ax[1].plot(time, u, color="darkorange")
 ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
 ax[1].set_title("u (pA)")
-ax[2].plot(time, s, color="black")
-ax[2].set_title("s (dimensionless)")
+ax[2].plot(time, z, color="black")
+ax[2].set_title("z (dimensionless)")
 ax[2].set_xlabel("time (ms)")
 ax[3].plot(time, u_widths, color="red")
 ax[3].set_title("w (dimensionless)")

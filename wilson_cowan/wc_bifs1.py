@@ -159,9 +159,9 @@ ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:hb1", ax=ax, color="
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:hb2", ax=ax, color="red", ignore=["UZ"],
                       line_style_unstable="solid")
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:lp1", ax=ax, color="blue", ignore=["UZ"],
-                      line_style_unstable="solid")
+                      line_style_unstable="dashed", line_style_stable="dashed")
 ode.plot_continuation("E/wc_e/s", "I/wc_i/s", cont="s_e/s_i:lp2", ax=ax, color="blue", ignore=["UZ"],
-                      line_style_unstable="solid")
+                      line_style_unstable="dashed", line_style_stable="dashed")
 ax.set_title(r"$a = 16$, $e = 15$")
 ax.set_xlabel(r"$S_E$")
 ax.set_ylabel(r"$S_I$")

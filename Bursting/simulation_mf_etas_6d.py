@@ -78,6 +78,9 @@ z = 1 - np.abs((1 - x + 1.0j*y)/(1 + x - 1.0j*y))
 u_delta = w_mf
 v_delta = np.pi*C*r_mf/k
 
+pickle.dump({"results": {"v": v_mf, "u": u_mf, "x": x_mf, "r": r_mf, "s": s_mf, "u_width": w_mf,
+                         "v_width": x}, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))
+
 # plot distribution dynamics for MF
 fig, ax = plt.subplots(nrows=4, figsize=(12, 7))
 ax[0].plot(time, v_mf, color="royalblue")

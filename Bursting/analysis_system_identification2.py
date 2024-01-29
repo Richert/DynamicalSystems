@@ -123,11 +123,18 @@ del obs
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
 window = 25
-r = np.zeros_like(v.values)
+thetas = np.zeros_like(v.values)
 for i in range(N):
+    time = v.index
     spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
-    r[spikes, i] = 1.0
-r = smooth(np.mean(r, axis=1), window)
+    neuron_phase = np.zeros((thetas.shape[0],))
+    idx = 0
+    for tk in spikes:
+        neuron_phase[idx:tk] = np.linspace(0, 2.0*np.pi, tk-idx)
+        idx = tk
+    thetas[:, i] = neuron_phase
+spikes = s.values
+r = np.mean(spikes, axis=1) / tau_s
 u_widths = smooth(get_fwhm(u.values, plot_steps=10000000, jobs=10), window)
 v_widths = smooth(get_fwhm(v.values, plot_steps=10000000, jobs=10), window)
 u = smooth(np.mean(u.values, axis=1), window)
@@ -136,7 +143,8 @@ s = smooth(np.mean(s.values, axis=1), window)
 x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
-z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*v)/(1 + np.pi*C*r/k - 1.0j*v)))
+kmo = np.mean(np.exp(1.0j*thetas), axis=1)
+z = smooth(np.abs(kmo), window=window)
 
 # create input and output data
 print("Creating training data")
@@ -149,10 +157,10 @@ y = np.reshape(u_widths, (u_widths.shape[0], 1))
 
 # initialize system identification model
 print("Training sparse identification model")
-basis_functions = Polynomial(degree=4)
+basis_functions = Polynomial(degree=3)
 # model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
 model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-             k=6, threshold=1e-8, L=1)
+             k=4, threshold=1e-8, L=1)
 
 # fit model
 model.fit(X=X, y=y)
