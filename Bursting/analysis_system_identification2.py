@@ -122,34 +122,39 @@ del obs
 
 # calculate the mean-field quantities
 print("Starting FWHM calculation")
-window = 25
-thetas = np.zeros_like(v.values)
-for i in range(N):
-    time = v.index
-    spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
-    neuron_phase = np.zeros((thetas.shape[0],))
-    idx = 0
-    for tk in spikes:
-        neuron_phase[idx:tk] = np.linspace(0, 2.0*np.pi, tk-idx)
-        idx = tk
-    thetas[:, i] = neuron_phase
+window = 5
+# thetas = np.zeros_like(v.values)
+# for i in range(N):
+#     time = v.index
+#     vs = v.values[:, i]
+    # spikes, _ = find_peaks(vs, prominence=50.0, distance=20)
+    # neuron_phase = np.zeros_like(vs)
+    # idx = 0
+    # for tk in spikes:
+    #     neuron_phase[idx:tk] = np.linspace(0, 2.0*np.pi, tk-idx)
+    #     idx = tk
+    # thetas[:, i] = neuron_phase
+thetas = 2.0 * np.arctan((v.values - v_r))
 spikes = s.values
-r = np.mean(spikes, axis=1) / tau_s
+r = smooth(np.mean(spikes, axis=1) / tau_s, window=window)
 u_widths = smooth(get_fwhm(u.values, plot_steps=10000000, jobs=10), window)
-v_widths = smooth(get_fwhm(v.values, plot_steps=10000000, jobs=10), window)
+# v_widths = smooth(get_fwhm(v.values, plot_steps=10000000, jobs=10), window)
 u = smooth(np.mean(u.values, axis=1), window)
 v = smooth(np.mean(v.values, axis=1), window)
 s = smooth(np.mean(s.values, axis=1), window)
 x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
-kmo = np.mean(np.exp(1.0j*thetas), axis=1)
-z = smooth(np.abs(kmo), window=window)
+z_0 = smooth(np.mean(np.exp(1.0j*thetas), axis=1), window=window)
+z_1 = smooth(np.mean(thetas, axis=1), window=window)
+ko_y = v - v_r
+ko_x = np.pi*C*r/k
+z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # create input and output data
 print("Creating training data")
-features = ["r", "s", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
-X = np.stack((r, s, v, u, x, z, np.abs(v-v_r), v_widths), axis=-1)
+features = ["r", "theta", "z", "|v-v_r|"]
+X = np.stack((r, np.imag(np.log(z)), np.abs(z), np.abs(v-v_r)), axis=-1)
 # for i in range(X.shape[1]):
 #     X[:, i] -= np.mean(X[:, i])
 #     X[:, i] /= np.std(X[:, i])
@@ -157,7 +162,7 @@ y = np.reshape(u_widths, (u_widths.shape[0], 1))
 
 # initialize system identification model
 print("Training sparse identification model")
-basis_functions = Polynomial(degree=3)
+basis_functions = Polynomial(degree=4)
 # model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
 model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
              k=4, threshold=1e-8, L=1)
@@ -186,16 +191,18 @@ print(r)
 # plotting
 ##########
 
-plot_features = ["r", "v", "u", "x", "z", "|v-v_r|", "width(v)"]
-fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, len(plot_features)), sharex="all")
+# plot predictors
+plot_features = ["r", "|v-v_r|", "theta", "z"]
+fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
     ax = axes[i]
     idx = features.index(f)
     ax.plot(X[:, idx])
     ax.set_ylabel(f)
-plt.tight_layout()
 plt.suptitle("Predictors")
+plt.tight_layout()
 
+# plot fitting results
 fig2, ax2 = plt.subplots(figsize=(12, 4), sharex="all")
 ax2.plot(y[:, 0], label="target")
 ax2.plot(predictions[:, 0], label="predictions")
@@ -204,6 +211,19 @@ ax2.set_xlabel("time")
 ax2.set_ylabel("width(u)")
 ax2.set_title(f"Squared error on test data: {rrse}")
 plt.suptitle("Prediction")
+plt.tight_layout()
+
+# plot KMO comparison
+fig3, ax3 = plt.subplots(figsize=(12, 4), nrows=2)
+ax3[0].plot(np.abs(z_0), label="SNN")
+ax3[0].plot(np.abs(z), label="MF")
+ax3[0].set_ylabel("z")
+ax3[0].legend()
+ax3[1].plot(np.imag(np.log(z_0)), label="SNN")
+ax3[1].plot(np.imag(np.log(z)), label="MF")
+ax3[0].plot(z_1, label="SNN_thetas")
+ax3[1].set_ylabel("theta")
+ax3[1].legend()
 plt.tight_layout()
 
 plt.show()

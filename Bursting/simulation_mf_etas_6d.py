@@ -9,7 +9,7 @@ import numba as nb
 ###################
 
 # condition
-cond = "low_delta"
+cond = "high_delta"
 model = "ik_eta_6d"
 op = "eta_op_6d"
 cond_map = {
@@ -60,7 +60,7 @@ ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()}
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
              outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'r': f'p/{op}/r',
                       'x': f'p/{op}/x', 'w': f'p/{op}/w'}, clear=False,
-             inputs={f'p/{op}/I_ext': inp}, float_precision="float64", decorator=nb.njit)
+             inputs={f'p/{op}/I_ext': inp}, float_precision="complex64", decorator=nb.njit)
 
 # collect results
 time = res.index
@@ -72,14 +72,15 @@ x_mf = res["x"].values
 s_mf = res["s"].values
 
 # calculate width of v and u
-y = v_mf
+y = v_mf - v_r
 x = np.pi*C*r_mf/k
-z = 1 - np.abs((1 - x + 1.0j*y)/(1 + x - 1.0j*y))
+z = (1 - x + 1.0j*y)/(1 + x - 1.0j*y)
 u_delta = w_mf
 v_delta = np.pi*C*r_mf/k
 
-pickle.dump({"results": {"v": v_mf, "u": u_mf, "x": x_mf, "r": r_mf, "s": s_mf, "u_width": w_mf,
-                         "v_width": x}, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))
+pickle.dump({"results": {"v": v_mf, "u": u_mf, "x": x_mf, "r": r_mf, "s": s_mf, "z": 1 - np.abs(z),
+                         "theta": np.imag(z), "u_width": w_mf, "v_width": x}, "params": node_vars},
+            open(f"results/mf_etas_{cond}.pkl", "wb"))
 
 # plot distribution dynamics for MF
 fig, ax = plt.subplots(nrows=4, figsize=(12, 7))
@@ -89,11 +90,11 @@ ax[0].set_title("v (mV)")
 ax[1].plot(time, u_mf, color="darkorange")
 ax[1].fill_between(time, u_mf - u_delta, u_mf + u_delta, alpha=0.3, color="darkorange", linewidth=0.0)
 ax[1].set_title("u (pA)")
-ax[2].plot(time, s_mf, color="black")
-ax[2].set_title("s (dimensionless)")
+ax[2].plot(time, r_mf*1e-3, color="black")
+ax[2].set_title("r (Hz)")
 ax[2].set_xlabel("time (ms)")
-ax[3].plot(time, w_mf, color="red")
-ax[3].set_title("w (dimensionless)")
+ax[3].plot(time, z, color="red")
+ax[3].set_title("z (dimensionless)")
 ax[3].set_xlabel("time (ms)")
 fig.suptitle("MF")
 plt.tight_layout()

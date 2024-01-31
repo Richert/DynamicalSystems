@@ -127,13 +127,14 @@ s = np.mean(s.values, axis=1)
 x = np.mean(x.values, axis=1)
 
 # calculate the kuramoto order parameter
-ko_y = 1 + v/np.abs(v_r)
+ko_y = v - v_r
 ko_x = np.pi*C*r/k
-z = 1 - np.abs((1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y))
+z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # save results to file
-pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": z, "u_width": u_widths,
-                         "v_width": v_widths}, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
+pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z),
+                         "theta": np.imag(z), "u_width": u_widths, "v_width": v_widths}, "params": node_vars},
+            open(f"results/snn_etas_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
@@ -153,11 +154,11 @@ ax[0].set_title("v (mV)")
 ax[1].plot(time, u, color="darkorange")
 ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
 ax[1].set_title("u (pA)")
-ax[2].plot(time, z, color="black")
+ax[2].plot(time, 1 - np.abs(z), color="black")
 ax[2].set_title("z (dimensionless)")
 ax[2].set_xlabel("time (ms)")
-ax[3].plot(time, u_widths, color="red")
-ax[3].set_title("w (dimensionless)")
+ax[3].plot(time, np.imag(z), color="red")
+ax[3].set_title("theta (dimensionless)")
 ax[3].set_xlabel("time (ms)")
 fig2.suptitle("SNN")
 plt.tight_layout()

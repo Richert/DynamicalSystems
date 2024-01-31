@@ -14,7 +14,7 @@ for cond in conditions:
 #############################################################################
 
 # prepare figure
-plot_variables = ["v", "s", "x", "u", "u_width", "v_width"]
+plot_variables = ["v", "s", "x", "u", "u_width", "z", "theta"]
 fig = plt.figure(figsize=(4*len(conditions), len(plot_variables)), dpi=130)
 grid = fig.add_gridspec(nrows=len(plot_variables), ncols=len(conditions))
 
