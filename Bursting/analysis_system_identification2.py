@@ -48,6 +48,10 @@ def smooth(signal: np.ndarray, window: int = 10):
     return gaussian_filter1d(signal, sigma=window)
 
 
+def get_phase(z: np.ndarray) -> np.ndarray:
+    return np.imag(np.log(z))
+
+
 # define parameters
 ###################
 
@@ -146,15 +150,15 @@ x = smooth(np.mean(x.values, axis=1), window)
 
 # calculate KOP
 z_0 = smooth(np.mean(np.exp(1.0j*thetas), axis=1), window=window)
-z_1 = smooth(np.mean(thetas, axis=1), window=window)
+z_1 = smooth(np.exp(1.0j*np.mean(thetas, axis=1)), window=window)
 ko_y = v - v_r
 ko_x = np.pi*C*r/k
 z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # create input and output data
 print("Creating training data")
-features = ["r", "theta", "z", "|v-v_r|"]
-X = np.stack((r, np.imag(np.log(z)), np.abs(z), np.abs(v-v_r)), axis=-1)
+features = ["r", "theta", "z", "|v-v_t|", "v"]
+X = np.stack((r, np.imag(np.log(z)), np.abs(z), np.abs(v-v_t), v), axis=-1)
 # for i in range(X.shape[1]):
 #     X[:, i] -= np.mean(X[:, i])
 #     X[:, i] /= np.std(X[:, i])
@@ -192,7 +196,7 @@ print(r)
 ##########
 
 # plot predictors
-plot_features = ["r", "|v-v_r|", "theta", "z"]
+plot_features = ["|v-v_t|", "v", "theta", "z"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
     ax = axes[i]
@@ -206,24 +210,26 @@ plt.tight_layout()
 fig2, ax2 = plt.subplots(figsize=(12, 4), sharex="all")
 ax2.plot(y[:, 0], label="target")
 ax2.plot(predictions[:, 0], label="predictions")
+ax2.set_ylabel("width(u)")
 ax2.legend()
 ax2.set_xlabel("time")
-ax2.set_ylabel("width(u)")
 ax2.set_title(f"Squared error on test data: {rrse}")
 plt.suptitle("Prediction")
 plt.tight_layout()
 
 # plot KMO comparison
 fig3, ax3 = plt.subplots(figsize=(12, 4), nrows=2)
-ax3[0].plot(np.abs(z_0), label="SNN")
-ax3[0].plot(np.abs(z), label="MF")
-ax3[0].set_ylabel("z")
+ax3[0].plot(np.abs(z_0), label="KO_snn")
+ax3[0].plot(np.abs(z), label="KO_mf")
+ax3[0].plot(np.abs(z_1), label="OO_snn")
+ax3[0].set_ylabel("r")
 ax3[0].legend()
-ax3[1].plot(np.imag(np.log(z_0)), label="SNN")
-ax3[1].plot(np.imag(np.log(z)), label="MF")
-ax3[0].plot(z_1, label="SNN_thetas")
+ax3[1].plot(get_phase(z_0), label="KO_snn")
+ax3[1].plot(get_phase(z), label="KO_mf")
+ax3[1].plot(np.imag(np.log(z_1)), label="OO_snn")
 ax3[1].set_ylabel("theta")
 ax3[1].legend()
+plt.suptitle("Kuramoto Order Parameter")
 plt.tight_layout()
 
 plt.show()
