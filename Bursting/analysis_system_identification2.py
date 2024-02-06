@@ -56,7 +56,7 @@ def get_phase(z: np.ndarray) -> np.ndarray:
 ###################
 
 # condition
-cond = "low_delta"
+cond = "high_delta"
 cond_map = {
     "low_sfa": {"kappa": 30.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
     "med_sfa": {"kappa": 100.0, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
@@ -142,7 +142,7 @@ thetas = 2.0 * np.arctan((v.values - v_r))
 spikes = s.values
 r = smooth(np.mean(spikes, axis=1) / tau_s, window=window)
 u_widths = smooth(get_fwhm(u.values, plot_steps=10000000, jobs=10), window)
-# v_widths = smooth(get_fwhm(v.values, plot_steps=10000000, jobs=10), window)
+theta_widths = smooth(get_fwhm(thetas, plot_steps=10000000, jobs=10), window)
 u = smooth(np.mean(u.values, axis=1), window)
 v = smooth(np.mean(v.values, axis=1), window)
 s = smooth(np.mean(s.values, axis=1), window)
@@ -151,14 +151,14 @@ x = smooth(np.mean(x.values, axis=1), window)
 # calculate KOP
 z_0 = smooth(np.mean(np.exp(1.0j*thetas), axis=1), window=window)
 z_1 = smooth(np.exp(1.0j*np.mean(thetas, axis=1)), window=window)
-ko_y = v - v_r
-ko_x = np.pi*C*r/k
+ko_y = smooth(v - v_r, window=10)
+ko_x = smooth(np.pi*C*r/k, window=10)
 z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # create input and output data
 print("Creating training data")
-features = ["r", "theta", "z", "|v-v_t|", "v"]
-X = np.stack((r, np.imag(np.log(z)), np.abs(z), np.abs(v-v_t), v), axis=-1)
+features = ["r", "theta", "z", "|v-v_r|", "u"]
+X = np.stack((r, np.imag(np.log(z)), np.abs(z), np.abs(v-v_r), u), axis=-1)
 # for i in range(X.shape[1]):
 #     X[:, i] -= np.mean(X[:, i])
 #     X[:, i] /= np.std(X[:, i])
@@ -196,7 +196,7 @@ print(r)
 ##########
 
 # plot predictors
-plot_features = ["|v-v_t|", "v", "theta", "z"]
+plot_features = ["r", "|v-v_r|", "u", "theta", "z"]
 fig, axes = plt.subplots(nrows=len(plot_features), figsize=(12, 2*len(plot_features)), sharex="all")
 for i, f in enumerate(plot_features):
     ax = axes[i]
@@ -218,17 +218,23 @@ plt.suptitle("Prediction")
 plt.tight_layout()
 
 # plot KMO comparison
-fig3, ax3 = plt.subplots(figsize=(12, 4), nrows=2)
+fig3, ax3 = plt.subplots(figsize=(12, 6), nrows=3)
 ax3[0].plot(np.abs(z_0), label="KO_snn")
 ax3[0].plot(np.abs(z), label="KO_mf")
 ax3[0].plot(np.abs(z_1), label="OO_snn")
 ax3[0].set_ylabel("r")
 ax3[0].legend()
-ax3[1].plot(get_phase(z_0), label="KO_snn")
-ax3[1].plot(get_phase(z), label="KO_mf")
-ax3[1].plot(np.imag(np.log(z_1)), label="OO_snn")
+ax3[1].plot(get_phase(z_0), label="KO_snn", color="royalblue")
+ax3[1].plot(get_phase(z), label="KO_mf", color="darkorange")
+mean_theta = np.imag(np.log(z_1))
+ax3[1].plot(mean_theta, label="OO_snn", color="green")
+ax3[1].fill_between(np.arange(len(mean_theta)), mean_theta - theta_widths, mean_theta + theta_widths, alpha=0.3,
+                    color="green", linewidth=0.0)
 ax3[1].set_ylabel("theta")
 ax3[1].legend()
+ax3[2].plot(u_widths)
+ax3[2].set_xlabel("time")
+ax3[2].set_ylabel("width(u)")
 plt.suptitle("Kuramoto Order Parameter")
 plt.tight_layout()
 

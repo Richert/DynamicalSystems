@@ -9,7 +9,7 @@ import numba as nb
 ###################
 
 # condition
-cond = "high_delta"
+cond = "low_delta"
 model = "ik_eta_6d"
 op = "eta_op_6d"
 cond_map = {
@@ -75,27 +75,30 @@ s_mf = res["s"].values
 y = v_mf - v_r
 x = np.pi*C*r_mf/k
 z = (1 - x + 1.0j*y)/(1 + x - 1.0j*y)
-u_delta = w_mf
+u_delta = np.abs(w_mf) #+ np.abs(b*(v_mf-v_r))
 v_delta = np.pi*C*r_mf/k
 
-pickle.dump({"results": {"v": v_mf, "u": u_mf, "x": x_mf, "r": r_mf, "s": s_mf, "z": 1 - np.abs(z),
-                         "theta": np.imag(z), "u_width": w_mf, "v_width": x}, "params": node_vars},
+pickle.dump({"results": {"v": v_mf, "u": u_mf, "x": x_mf, "r": r_mf, "s": s_mf, "z": np.abs(z),
+                         "theta": np.imag(np.log(z)), "u_width": w_mf, "v_width": x}, "params": node_vars},
             open(f"results/mf_etas_{cond}.pkl", "wb"))
 
 # plot distribution dynamics for MF
-fig, ax = plt.subplots(nrows=4, figsize=(12, 7))
+fig, ax = plt.subplots(nrows=5, figsize=(12, 10))
 ax[0].plot(time, v_mf, color="royalblue")
 ax[0].fill_between(time, v_mf - v_delta, v_mf + v_delta, alpha=0.3, color="royalblue", linewidth=0.0)
 ax[0].set_title("v (mV)")
 ax[1].plot(time, u_mf, color="darkorange")
 ax[1].fill_between(time, u_mf - u_delta, u_mf + u_delta, alpha=0.3, color="darkorange", linewidth=0.0)
 ax[1].set_title("u (pA)")
-ax[2].plot(time, r_mf*1e-3, color="black")
+ax[2].plot(time, r_mf*1e3, color="black")
 ax[2].set_title("r (Hz)")
 ax[2].set_xlabel("time (ms)")
-ax[3].plot(time, z, color="red")
+ax[3].plot(time, np.abs(z), color="red")
 ax[3].set_title("z (dimensionless)")
 ax[3].set_xlabel("time (ms)")
+ax[4].plot(time, u_delta, color="green")
+ax[4].set_title("w (pA)")
+ax[4].set_xlabel("time (ms)")
 fig.suptitle("MF")
 plt.tight_layout()
 plt.show()

@@ -135,10 +135,10 @@ eta_op_6d:
   base: OperatorTemplate
   equations:
     - "z = (1 - pi*C*r/k + j*(v-v_r)) / (1 + pi*C*r/k - j*(v-v_r))"
-    - "r' = (k*absv(Delta - w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (k*absv(Delta + absv(w))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "w' = (b*absv(v-v_r)*absv(z)*imag(z) - w) / tau_u"
+    - "w' = (b*r*pi*pi*(1 - z) - w) / 5.0"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
