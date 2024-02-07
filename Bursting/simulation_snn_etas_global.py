@@ -1,29 +1,56 @@
-import numba as nb
-nb.config.THREADING_LAYER = 'omp'
-nb.set_num_threads(4)
-import pickle
 import numpy as np
-from rectipy import Network, random_connectivity
+from rectipy import Network
+from scipy.stats import cauchy
+from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
+from joblib import Parallel, delayed
+import pickle
 plt.rcParams['backend'] = 'TkAgg'
+
+
+def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> float:
+    center, width = cauchy.fit(s, loc=np.mean(s), scale=np.var(s))
+    if plot:
+        bins = np.linspace(np.min(s), np.max(s), n_bins)
+        y, _ = np.histogram(s, bins)
+        y = np.asarray(y, dtype=np.float64) / np.sum(y)
+        x = np.asarray([(bins[i + 1] + bins[i]) / 2.0 for i in range(n_bins - 1)])
+        ymax = 1.2 * np.max(y)
+        xrange = np.max(bins) - np.min(bins)
+        fig, ax = plt.subplots()
+        ax.plot(x, y, label="data")
+        ax.plot(x, cauchy.pdf(x, loc=center, scale=width), label="fit")
+        ax.legend()
+        ax.axvline(x=center - width, ymin=0.0, ymax=1.0, color="red")
+        ax.axvline(x=center + width, ymin=0.0, ymax=1.0, color="red")
+        ax.set_xlim([center - xrange / 6, center + xrange / 6])
+        ax.set_ylim([0.0, ymax])
+        plt.show()
+    return width
+
+
+def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs: int = 8) -> np.ndarray:
+    pool = Parallel(n_jobs=jobs)
+    widths = pool(delayed(FWHM)(signal[i, :], i+1 % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
+    return np.asarray(widths)
 
 
 # define parameters
 ###################
 
 # condition
-cond = "low_delta"
+cond = "strong_sfa_1"
 cond_map = {
-    "no_sfa": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
-    "weak_sfa": {"kappa": 0.3, "eta": 120.0, "eta_inc": 30.0, "eta_init": 0.0, "b": 5.0, "delta": 5.0},
-    "strong_sfa": {"kappa": 1.0, "eta": 20.0, "eta_inc": 30.0, "eta_init": 0.0, "b": -10.0, "delta": 5.0},
-    "low_delta": {"kappa": 0.0, "eta": -125.0, "eta_inc": 135.0, "eta_init": -30.0, "b": -15.0, "delta": 1.0},
-    "med_delta": {"kappa": 0.0, "eta": 100.0, "eta_inc": 30.0, "eta_init": -30.0, "b": 5.0, "delta": 5.0},
-    "high_delta": {"kappa": 0.0, "eta": 6.0, "eta_inc": -40.0, "eta_init": 30.0, "b": -6.0, "delta": 10.0},
+    "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
+    "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
+    "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 45.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
+    "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
+    "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
+    "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 60.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
 }
 
 # model parameters
-N = 5000
+N = 2000
 C = 100.0   # unit: pF
 k = 0.7  # unit: None
 v_r = -60.0  # unit: mV
@@ -38,12 +65,12 @@ tau_x = 300.0
 g = 15.0
 E_r = 0.0
 
-v_reset = -10000.0
-v_peak = 10000.0
+v_reset = -1000.0
+v_peak = 1000.0
 
 # define inputs
 T = 7000.0
-dt = 1e-3
+dt = 1e-2
 dts = 1e-1
 cutoff = 1000.0
 inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
@@ -65,25 +92,74 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": t
 
 # initialize model
 net = Network(dt=dt, device="cpu")
-net.add_diffeq_node("sfa", f"config/snn/recovery_global", #weights=W, source_var="s", target_var="s_in",
+net.add_diffeq_node("adik", f"config/snn/adik_global", #weights=W, source_var="s", target_var="s_in",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                    node_vars=node_vars.copy(), op="global_recovery_op", spike_reset=v_reset, spike_threshold=v_peak,
+                    node_vars=node_vars.copy(), op="adik_op_global", spike_reset=v_reset, spike_threshold=v_peak,
                     verbose=False, clear=True, N=N, float_precision="float64")
 
 # perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt))
-res = obs.to_dataframe("out")
+obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt),
+              record_vars=[("adik", "u", False), ("adik", "v", False), ("adik", "x", False)], enable_grad=False)
+s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("adik", "v")), obs.to_dataframe(("adik", "u")),
+              obs.to_dataframe(("adik", "x")))
+del obs
+time = s.index
+
+# calculate the mean-field quantities
+# spikes = np.zeros_like(v.values)
+# n_plot = 50
+# for i in range(N):
+#     idx_spikes, _ = find_peaks(v.values[:, i], prominence=50.0, distance=20)
+#     spikes[idx_spikes, i] = dts/dt
+#     # if i % n_plot == 0:
+#     #     fig, ax = plt.subplots(figsize=(12, 3))
+#     #     ax.plot(v.values[:, i])
+#     #     for idx in idx_spikes:
+#     #         ax.axvline(x=idx, ymin=0.0, ymax=1.0, color="red")
+#     #     plt.show()
+spikes = s.values
+r = np.mean(spikes, axis=1) / tau_s
+u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
+v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=10)
+u = np.mean(u.values, axis=1)
+v = np.mean(v.values, axis=1)
+s = np.mean(s.values, axis=1)
+x = np.mean(x.values, axis=1)
+
+# calculate the kuramoto order parameter
+ko_y = v - v_r
+ko_x = np.pi*C*r/k
+z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # save results to file
-pickle.dump({"results": res, "params": node_vars}, open(f"results/snn_etas_global_{cond}.pkl", "wb"))
+pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z),
+                         "theta": np.imag(z), "u_width": u_widths, "v_width": v_widths}, "params": node_vars},
+            open(f"results/snn_etas_global_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-spikes = res.values
 ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
 ax[0].set_ylabel(r'neuron id')
-ax[1].plot(res.index, np.mean(spikes, axis=1))
-ax[1].set_ylabel(r'$s(t)$')
+ax[1].plot(time, r)
+ax[1].set_ylabel(r'$r(t)$')
 ax[1].set_xlabel('time')
+plt.tight_layout()
+plt.show()
+
+# plot distribution dynamics
+fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
+ax[0].plot(time, v, color="royalblue")
+ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
+ax[0].set_title("v (mV)")
+ax[1].plot(time, u, color="darkorange")
+ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
+ax[1].set_title("u (pA)")
+ax[2].plot(time, 1 - np.abs(z), color="black")
+ax[2].set_title("z (dimensionless)")
+ax[2].set_xlabel("time (ms)")
+ax[3].plot(time, np.imag(z), color="red")
+ax[3].set_title("theta (dimensionless)")
+ax[3].set_xlabel("time (ms)")
+fig2.suptitle("SNN")
 plt.tight_layout()
 plt.show()

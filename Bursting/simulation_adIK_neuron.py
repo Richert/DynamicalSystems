@@ -128,7 +128,7 @@ for i, (b, v, u, x, ncs) in enumerate(zip(results["b"], results["v"], results["u
 
     # spike frequency adaptation
     ax = fig.add_subplot(grid[2, i * 2:(i + 1) * 2])
-    ax.plot(time, v)
+    ax.plot(time, x)
     ax.set_xlabel("time (ms)")
     ax.set_ylabel(r"$x$ (dimensionless)")
 
