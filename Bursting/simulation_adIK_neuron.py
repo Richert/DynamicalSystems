@@ -11,7 +11,7 @@ v_r = -60.0
 v_t = -40.0
 tau_u = 35.0
 bs = [-20.0, -10.0, 0.0]
-d = 2.0
+d = 400.0
 eta = 100.0
 tau_x = 300.0
 
@@ -46,7 +46,7 @@ def adik_run(T, dt, C, k, eta, v_r, v_t, tau_u, b, d, tau_x):
 
         if v > v_cutoff:
             v = v_reset
-            x += 1.0
+            x += 1.0/tau_x
 
         v_hist.append(v)
         u_hist.append(u)
@@ -101,10 +101,10 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 6)
-plt.rcParams['font.size'] = 10.0
-plt.rcParams['axes.titlesize'] = 10
-plt.rcParams['axes.labelsize'] = 10
+plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['font.size'] = 12.0
+plt.rcParams['axes.titlesize'] = 12
+plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
@@ -144,10 +144,12 @@ for i, (b, v, u, x, ncs) in enumerate(zip(results["b"], results["v"], results["u
             ax.set_ylabel(r"$u$ (pA)")
         ax.set_ylim([0.0, 400.0])
         ax.set_xlim([-75.0, -25.0])
+        if j > 0:
+            ax.set_yticklabels([])
         ax.set_title(rf"$x = {np.round(x_vals[j], decimals=1)}$")
 
 # padding
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0.01, wspace=0.01)
 
 # saving/plotting
 fig.canvas.draw()
