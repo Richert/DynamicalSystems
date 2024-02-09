@@ -160,45 +160,63 @@ for kappa in kappas:
 ##########
 
 # plot settings
+plt.rcParams['backend'] = "WebAgg"
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
-plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
 plt.rcParams['figure.figsize'] = (12, 8)
 plt.rcParams['font.size'] = 12.0
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
-markersize = 6
 
 # create figure layout
-fig = plt.figure()
-grid = fig.add_gridspec(nrows=4, ncols=4)
+fig = plt.figure(layout="constrained")
+subfigs = fig.subfigures(2, 2)
+fig.suptitle("Lorentzian ansatz I: AdIK neuron statistics")
+# fig.canvas.draw()
+# fig.set_layout_engine("none")
 
 t_plot = [800.0, 800.0]
+titles = [["(A) no feedback", r"(B) feedback from $a$"], [r"(C) feedback from $u$", "(D) feedback from $u$ and $a$"]]
 for i, (kappa, res) in enumerate(zip(kappas, results)):
 
+    # set up grid specs
     stop = int(t_plot[i] / dt)
+    grid1 = subfigs[0, i].add_gridspec(2, 2)
+    grid2 = subfigs[1, i].add_gridspec(2, 2)
+    subfigs[0, i].suptitle(titles[0][i])
+    subfigs[1, i].suptitle(titles[1][i])
+
+    # set up axes
+    ax1 = subfigs[0, i].add_subplot(grid1[0, 0])
+    ax2 = subfigs[0, i].add_subplot(grid1[0, 1])
+    ax3 = subfigs[0, i].add_subplot(grid1[1, :])
+    ax4 = subfigs[1, i].add_subplot(grid2[0, 0])
+    ax5 = subfigs[1, i].add_subplot(grid2[0, 1])
+    ax6 = subfigs[1, i].add_subplot(grid2[1, :])
 
     # plot v distribution
-    ax = fig.add_subplot(grid[0, i*2])
+    ax = ax1
+    # ax.set_ylim([0.0, 0.08])
+    # ax.set_yticks([0.0, 0.04, 0.08])
     v_edges, v_hist = res["v_edges"], res["v_hist"]
     ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
     ax.set_xlabel(r"$v$ (mV)")
-    ax.set_ylabel(r"$p$")
-    ax.set_title(r"Membrane Potential $v$")
+    ax.set_ylabel(r"$\rho$")
 
     # plot u distribution
-    ax = fig.add_subplot(grid[0, i*2 + 1])
+    ax = ax2
+    # ax.set_ylim([0.0, 0.08])
+    # ax.set_yticks([0.0, 0.04, 0.08])
     u_edges, u_hist = res["u_edges"], res["u_hist"]
     ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
     ax.set_xlabel(r"$u$ (pA)")
-    ax.set_ylabel(r"$p$")
-    ax.set_title(r"Recovery Variable $u$")
+    ax.set_ylabel("")
 
     # plot v and u dynamics
-    ax = fig.add_subplot(grid[1, i * 2: (i + 1) * 2])
+    ax = ax3
     v, u, time = res["v"], res["u"], res["time"]
     ax.plot(time[:stop], v[:stop], color="royalblue")
     ax2 = ax.twinx()
@@ -208,23 +226,25 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
     ax2.set_ylabel(r"$u$ (pA)", color="darkorange")
 
     # plot v2 distribution
-    ax = fig.add_subplot(grid[2, i * 2])
+    ax = ax4
+    # ax.set_ylim([0.0, 0.08])
+    # ax.set_yticks([0.0, 0.04, 0.08])
     v_edges, v_hist = res["v2_edges"], res["v2_hist"]
     ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
     ax.set_xlabel(r"$v$ (mV)")
-    ax.set_ylabel(r"$p$")
-    ax.set_title(r"AdIK Neuron: $v$")
+    ax.set_ylabel(r"$\rho$")
 
     # plot u distribution
-    ax = fig.add_subplot(grid[2, i * 2 + 1])
+    ax = ax5
+    # ax.set_ylim([0.0, 0.08])
+    # ax.set_yticks([0.0, 0.04, 0.08])
     u_edges, u_hist = res["u_edges"], res["u_hist"]
     ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
     ax.set_xlabel(r"$u$ (pA)")
-    ax.set_ylabel(r"$p$")
-    ax.set_title(r"AdIK Neuron: $u$")
+    ax.set_ylabel("")
 
     # plot v and u dynamics
-    ax = fig.add_subplot(grid[3, i * 2: (i + 1) * 2])
+    ax = ax6
     v, u = res["v2"], res["u2"]
     ax.plot(time[:stop], v[:stop], color="royalblue")
     ax2 = ax.twinx()
@@ -233,13 +253,9 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
     ax.set_ylabel(r"$v$ (mV)", color="royalblue")
     ax2.set_ylabel(r"$u$ (pA)", color="darkorange")
 
-# finishing touches
-###################
-
-# padding
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0.01, wspace=0.01)
-
 # saving/plotting
+# fig.set_layout_engine("compressed")
+fig.get_layout_engine().set(h_pad=0.01, w_pad=0.01, hspace=0.01, wspace=0.01)
 fig.canvas.draw()
 plt.savefig(f'results/adik_distributions.pdf')
 plt.show()
