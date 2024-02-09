@@ -35,13 +35,16 @@ for cond in conditions:
 
     # create regressors and target
     X = np.stack([data[f] for f in features], axis=-1)
+    for i in range(X.shape[1]):
+        # X[:, i] -= np.mean(X[:, i])
+        X[:, i] /= np.max(X[:, i])
     y = np.reshape(data["r"], (data["r"].shape[0], 1))
 
     # fit sindy model to data
     basis_functions = Polynomial(degree=3)
-    # model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
-    model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-                 k=4, threshold=1e-8, L=1)
+    # model = FROLS(ylag=2, xlag=[[2] for _ in range(X.shape[1])], basis_function=basis_functions, n_terms=4)
+    model = AOLS(ylag=1, xlag=[[3] for _ in range(X.shape[1])], basis_function=basis_functions,
+                 k=4, threshold=1e-7, L=1)
     model.fit(X=X, y=y)
 
     # test model
