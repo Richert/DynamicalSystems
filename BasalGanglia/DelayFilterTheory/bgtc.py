@@ -22,6 +22,9 @@ W_bc = input_connections(n_bg, n_ctx, p, zero_mean=True)
 W_bt = input_connections(n_bg, n_tha, p, zero_mean=True)
 W_tb = random_connectivity(n_tha, n_bg, p, normalize=False)
 
+# basal ganglia delays
+D_tb = np.random.uniform(1.0, 9.0, (n_tha, n_bg))
+
 # neuron equations
 rate_op = OperatorTemplate(
     name="rate_op",
@@ -71,7 +74,7 @@ net.add_edges_from_matrix("rate_op/x", "rate_op/I_syn", source_nodes=[f"tha/{key
                           weight=W_bt)
 net.add_edges_from_matrix("rate_op/x", "rate_op/I_syn", source_nodes=[f"bg/{key}" for key in bg_neurons],
                           target_nodes=[f"tha/{key}" for key in tha_neurons],
-                          weight=-W_tb)
+                          weight=-W_tb, edge_attr={"delay": D_tb})
 
 # simulation
 ############
@@ -92,7 +95,7 @@ for idx, (start, stop), alpha in zip(in_neurons, in_times, alphas):
 # simulation
 res = net.run(T, dt, inputs={f"tha/{key}/rate_op/I_ext": I_ext[idx, :] for idx, key in enumerate(tha_neurons)},
               outputs={"ctx": "ctx/all/rate_op/x", "tha": "tha/all/rate_op/x", "bg": "bg/all/rate_op/x"},
-              solver="scipy", method="RK45", atol=1e-7, rtol=1e-6)
+              solver="euler")
 
 fig, axes = plt.subplots(nrows=2, figsize=(12, 7))
 
