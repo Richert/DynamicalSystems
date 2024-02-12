@@ -8,38 +8,50 @@ import pickle
 plt.rcParams['backend'] = 'TkAgg'
 
 
-def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> float:
+def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> tuple:
+
+    # fit lorentzian
     center, width = cauchy.fit(s, loc=np.mean(s), scale=np.var(s))
+
+    # compute goodness of fit
+    bins = np.linspace(np.min(s), np.max(s), n_bins)
+    y, _ = np.histogram(s, bins)
+    y = np.asarray(y, dtype=np.float64) / np.sum(y)
+    x = np.asarray([(bins[i + 1] + bins[i]) / 2.0 for i in range(n_bins - 1)])
+    y_pred = cauchy.pdf(x, loc=center, scale=width)
+    rmse = np.sqrt(np.mean(y-y_pred)**2)/np.max(y)
+
+    # plot the fit
     if plot:
-        bins = np.linspace(np.min(s), np.max(s), n_bins)
-        y, _ = np.histogram(s, bins)
-        y = np.asarray(y, dtype=np.float64) / np.sum(y)
-        x = np.asarray([(bins[i + 1] + bins[i]) / 2.0 for i in range(n_bins - 1)])
         ymax = 1.2 * np.max(y)
         xrange = np.max(bins) - np.min(bins)
         fig, ax = plt.subplots()
         ax.plot(x, y, label="data")
-        ax.plot(x, cauchy.pdf(x, loc=center, scale=width), label="fit")
+        ax.plot(x, y_pred, label="fit")
         ax.legend()
         ax.axvline(x=center - width, ymin=0.0, ymax=1.0, color="red")
         ax.axvline(x=center + width, ymin=0.0, ymax=1.0, color="red")
         ax.set_xlim([center - xrange / 6, center + xrange / 6])
         ax.set_ylim([0.0, ymax])
+        ax.set_xlabel("values")
+        ax.set_ylabel("p")
+        ax.set_title(f"RMSE = {np.mean(rmse)}")
         plt.show()
-    return width
+
+    return width, rmse
 
 
-def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs: int = 8) -> np.ndarray:
+def get_fwhm(signal: np.ndarray, n_bins: int = 500, plot_steps: int = 1000, jobs: int = 8) -> tuple:
     pool = Parallel(n_jobs=jobs)
-    widths = pool(delayed(FWHM)(signal[i, :], i+1 % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
-    return np.asarray(widths)
+    results = pool(delayed(FWHM)(signal[i, :], (i+1) % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
+    return np.asarray([res[0] for res in results]), np.asarray([res[1] for res in results])
 
 
 # define parameters
 ###################
 
 # condition
-cond = "strong_sfa_2"
+cond = "strong_sfa_1"
 cond_map = {
     "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
     "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
@@ -48,7 +60,6 @@ cond_map = {
     "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
     "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
 }
-
 
 # model parameters
 N = 2000
@@ -73,7 +84,7 @@ v_peak = 1000.0
 T = 7000.0
 dt = 1e-2
 dts = 1e-1
-cutoff = 0.0
+cutoff = 1000.0
 inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
 inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
 inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
@@ -120,8 +131,8 @@ time = s.index
 #     #     plt.show()
 spikes = s.values
 r = np.mean(spikes, axis=1) / tau_s
-u_widths = get_fwhm(u.values, plot_steps=10000000, jobs=10)
-v_widths = get_fwhm(v.values, plot_steps=10000000, jobs=10)
+u_widths, u_errors = get_fwhm(u.values, plot_steps=100000, jobs=10)
+v_widths, v_errors = get_fwhm(v.values, plot_steps=100000, jobs=10)
 u = np.mean(u.values, axis=1)
 v = np.mean(v.values, axis=1)
 s = np.mean(s.values, axis=1)
@@ -134,8 +145,8 @@ z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # save results to file
 pickle.dump({"results": {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z),
-                         "theta": np.imag(z), "u_width": u_widths, "v_width": v_widths}, "params": node_vars},
-            open(f"results/snn_etas_{cond}.pkl", "wb"))
+                         "theta": np.imag(z), "u_width": u_widths, "v_width": v_widths, "u_errors": u_errors},
+             "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
 # plot results
 fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

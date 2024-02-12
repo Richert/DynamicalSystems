@@ -58,7 +58,7 @@ ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()}
 
 # run simulation
 res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-             outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u'},
+             outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'x': f'p/{op}/x'},
              inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64")
 
 # save results to file
