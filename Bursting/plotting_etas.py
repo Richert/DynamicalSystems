@@ -65,7 +65,7 @@ ax.set_title(rf'(A) Bifurcations for $\kappa = {kappas[0]}$ pA')
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_ylim([-25.0, 15.0])
-ax.set_xlim([-250.0, 200.0])
+ax.set_xlim([-200.0, 200.0])
 
 # weak spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 1])
@@ -83,15 +83,20 @@ ax.set_xlim([-200.0, 200.0])
 
 # strong spike frequency adaptation
 ax = fig.add_subplot(grid[:2, 2])
+a.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:3:lp1', ax=ax, line_color_stable=fold_color,
+                    line_color_unstable=fold_color, line_style_unstable="solid", bifurcation_legend=False)
+a.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:3:lp2', ax=ax, line_color_stable=fold_color,
+                    line_color_unstable=fold_color, line_style_unstable="solid", bifurcation_legend=False)
 a.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:3:hb1', ax=ax, line_color_stable=hopf_color,
                     line_color_unstable=hopf_color, line_style_unstable="solid", bifurcation_legend=False)
 a.plot_continuation('PAR(8)', 'PAR(9)', cont=f'b/I:3:hb2', ax=ax, line_color_stable=hopf_color,
-                    line_color_unstable=hopf_color, line_style_unstable="solid", bifurcation_legend=False)
+                    line_color_unstable=hopf_color, line_style_unstable="solid", bifurcation_legend=False,
+                    ignore=["UZ"])
 ax.set_title(rf'(C) Bifurcations for $\kappa = {kappas[2]}$ pA')
 ax.set_ylabel(r'$b$ (nS)')
 ax.set_xlabel(r'$I_{ext}$ (pA)')
 ax.set_ylim([-25.0, 15.0])
-ax.set_xlim([-50.0, 300.0])
+ax.set_xlim([-100.0, 300.0])
 
 # Time series
 #############

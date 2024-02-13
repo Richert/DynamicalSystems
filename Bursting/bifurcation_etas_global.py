@@ -75,6 +75,12 @@ r3_sols, r3_cont = a.run(starting_point='UZ2', ICP=8, NPAR=n_params, NDIM=n_dim,
 a.run(starting_point='HB1', c='2d', ICP=[9, 8], name='b/I:3:hb1', origin=r3_cont, RL1=RL1, RL0=RL0, bidirectional=True,
       NPAR=n_params, NDIM=n_dim, STOP=STOP)
 a.run(starting_point='HB2', c='2d', ICP=[9, 8], name='b/I:3:hb2', origin=r3_cont, RL1=RL1, RL0=RL0, bidirectional=True,
+      NPAR=n_params, NDIM=n_dim, STOP=STOP, UZR={9: [-15.0]})
+a.run(starting_point='UZ1', c="ss", ICP=8, NPAR=n_params, NDIM=n_dim, name='I_ext:4', origin='b/I:3:hb2', UZR={},
+      STOP=[], RL1=250.0, RL0=-50.0, DS="-")
+a.run(starting_point='LP1', c='2d', ICP=[9, 8], name='b/I:3:lp1', origin='I_ext:4', RL1=RL1, RL0=RL0, bidirectional=True,
+      NPAR=n_params, NDIM=n_dim, STOP=STOP)
+a.run(starting_point='LP2', c='2d', ICP=[9, 8], name='b/I:3:lp2', origin='I_ext:4', RL1=RL1, RL0=RL0, bidirectional=True,
       NPAR=n_params, NDIM=n_dim, STOP=STOP)
 
 # save results

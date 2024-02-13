@@ -153,15 +153,14 @@ n_bins = 500
 results = []
 for kappa in kappas:
     res = solve(u0, v0, t0, T,  dt, C=C, k=k, v_r=v_r, v_t=v_t, eta=eta, b=b, tau_u=tau_u, kappa=kappa, tau_x=tau_x,
-                n_bins=n_bins, v_range=(v_reset, v_peak), method=method, atol=atol, rtol=rtol)
+                n_bins=n_bins, method=method, atol=atol, rtol=rtol)
     results.append(res)
 
 # plotting
 ##########
 
 # plot settings
-plt.rcParams['backend'] = "WebAgg"
-print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams['backend'] = "TkAgg"
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.dpi'] = 200
@@ -173,10 +172,9 @@ plt.rcParams['lines.linewidth'] = 1.0
 
 # create figure layout
 fig = plt.figure(layout="constrained")
+fig.set_constrained_layout_pads(w_pad=0, h_pad=0, hspace=0.005, wspace=0.005)
 subfigs = fig.subfigures(2, 2)
 fig.suptitle("Lorentzian ansatz I: AdIK neuron statistics")
-# fig.canvas.draw()
-# fig.set_layout_engine("none")
 
 t_plot = [800.0, 800.0]
 titles = [["(A) no feedback", r"(B) feedback from $a$"], [r"(C) feedback from $u$", "(D) feedback from $u$ and $a$"]]
@@ -199,15 +197,17 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
 
     # plot v distribution
     ax = ax1
+    ax.set_yscale("log")
     # ax.set_ylim([0.0, 0.08])
     # ax.set_yticks([0.0, 0.04, 0.08])
     v_edges, v_hist = res["v_edges"], res["v_hist"]
     ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
     ax.set_xlabel(r"$v$ (mV)")
-    ax.set_ylabel(r"$\rho$")
+    ax.set_ylabel(r"$\log(\rho)$")
 
     # plot u distribution
     ax = ax2
+    ax.set_yscale("log")
     # ax.set_ylim([0.0, 0.08])
     # ax.set_yticks([0.0, 0.04, 0.08])
     u_edges, u_hist = res["u_edges"], res["u_hist"]
@@ -227,15 +227,17 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
 
     # plot v2 distribution
     ax = ax4
+    ax.set_yscale("log")
     # ax.set_ylim([0.0, 0.08])
     # ax.set_yticks([0.0, 0.04, 0.08])
     v_edges, v_hist = res["v2_edges"], res["v2_hist"]
     ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
     ax.set_xlabel(r"$v$ (mV)")
-    ax.set_ylabel(r"$\rho$")
+    ax.set_ylabel(r"$\log(\rho)$")
 
     # plot u distribution
     ax = ax5
+    ax.set_yscale("log")
     # ax.set_ylim([0.0, 0.08])
     # ax.set_yticks([0.0, 0.04, 0.08])
     u_edges, u_hist = res["u_edges"], res["u_hist"]
@@ -253,9 +255,10 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
     ax.set_ylabel(r"$v$ (mV)", color="royalblue")
     ax2.set_ylabel(r"$u$ (pA)", color="darkorange")
 
+    grid1.set_width_ratios([1, 1])
+    grid2.set_width_ratios([1, 1])
+
 # saving/plotting
-# fig.set_layout_engine("compressed")
-fig.get_layout_engine().set(h_pad=0.01, w_pad=0.01, hspace=0.01, wspace=0.01)
 fig.canvas.draw()
 plt.savefig(f'results/adik_distributions.pdf')
 plt.show()
