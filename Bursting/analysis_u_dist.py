@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
+from scipy.stats import cauchy
 from typing import Callable
 
 # global variables
@@ -109,6 +110,7 @@ def solve(u0: float, v0: float, t_init: float, T: float, dt: float, C: float, k:
     v2_hist, v2_edges = np.histogram(v2, bins=n_bins)
     u2_hist, u2_edges = np.histogram(u2, bins=n_bins)
 
+    # collect results
     res = {"v_hist": v_hist, "u_hist": u_hist, "inp_hist": inp_hist, "v": v, "u": u, "time": time,
            "v_edges": [(v_edges[i] + v_edges[i+1])/2 for i in range(len(v_edges)-1)],
            "u_edges": [(u_edges[i] + u_edges[i+1])/2 for i in range(len(u_edges)-1)],
@@ -117,6 +119,13 @@ def solve(u0: float, v0: float, t_init: float, T: float, dt: float, C: float, k:
            "v2_edges": [(v2_edges[i] + v2_edges[i+1])/2 for i in range(len(v2_edges)-1)],
            "u2_edges": [(u2_edges[i] + u2_edges[i + 1]) / 2 for i in range(len(u2_edges) - 1)],
            }
+
+    # fit lorentzian distribution to the v distributions
+    v_center, v_width = cauchy.fit(v, loc=np.mean(v), scale=np.var(v))
+    res["v_fit"] = cauchy.pdf(res["v_edges"], loc=v_center, scale=v_width)
+    v2_center, v2_width = cauchy.fit(v2, loc=np.mean(v2), scale=np.var(v2))
+    res["v2_fit"] = cauchy.pdf(res["v2_edges"], loc=v2_center, scale=v2_width)
+
     return res
 
 
@@ -172,51 +181,35 @@ plt.rcParams['lines.linewidth'] = 1.0
 
 # create figure layout
 fig = plt.figure(layout="constrained")
-fig.set_constrained_layout_pads(w_pad=0, h_pad=0, hspace=0.005, wspace=0.005)
-subfigs = fig.subfigures(2, 2)
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.03, hspace=0.01, wspace=0.01)
+grid = fig.add_gridspec(nrows=4, ncols=4, width_ratios=[1, 1, 1, 1])
 fig.suptitle("Lorentzian ansatz I: AdIK neuron statistics")
 
 t_plot = [800.0, 800.0]
-titles = [["(A) no feedback", r"(B) feedback from $a$"], [r"(C) feedback from $u$", "(D) feedback from $u$ and $a$"]]
+titles = [[r"(A) independent $v$ and $u$ ($\kappa = 0$ pA)",
+           r"(B) coupled $v$ and $u$ ($\kappa = 0$ pA)"],
+          [r"(C) independent $v$ and $u$ ($\kappa = 400$ pA)",
+           r"(D) coupled $v$ and $u$ ($\kappa = 400$ pA)"]]
+axes = []
+# plot time series and create all axes
 for i, (kappa, res) in enumerate(zip(kappas, results)):
 
     # set up grid specs
     stop = int(t_plot[i] / dt)
-    grid1 = subfigs[0, i].add_gridspec(2, 2)
-    grid2 = subfigs[1, i].add_gridspec(2, 2)
-    subfigs[0, i].suptitle(titles[0][i])
-    subfigs[1, i].suptitle(titles[1][i])
 
     # set up axes
-    ax1 = subfigs[0, i].add_subplot(grid1[0, 0])
-    ax2 = subfigs[0, i].add_subplot(grid1[0, 1])
-    ax3 = subfigs[0, i].add_subplot(grid1[1, :])
-    ax4 = subfigs[1, i].add_subplot(grid2[0, 0])
-    ax5 = subfigs[1, i].add_subplot(grid2[0, 1])
-    ax6 = subfigs[1, i].add_subplot(grid2[1, :])
-
-    # plot v distribution
-    ax = ax1
-    ax.set_yscale("log")
-    # ax.set_ylim([0.0, 0.08])
-    # ax.set_yticks([0.0, 0.04, 0.08])
-    v_edges, v_hist = res["v_edges"], res["v_hist"]
-    ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
-    ax.set_xlabel(r"$v$ (mV)")
-    ax.set_ylabel(r"$\log(\rho)$")
-
-    # plot u distribution
-    ax = ax2
-    ax.set_yscale("log")
-    # ax.set_ylim([0.0, 0.08])
-    # ax.set_yticks([0.0, 0.04, 0.08])
-    u_edges, u_hist = res["u_edges"], res["u_hist"]
-    ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
-    ax.set_xlabel(r"$u$ (pA)")
-    ax.set_ylabel("")
+    ax1 = fig.add_subplot(grid[i*2, :2])
+    ax2 = fig.add_subplot(grid[i*2+1, 0])
+    ax3 = fig.add_subplot(grid[i*2+1, 1])
+    ax4 = fig.add_subplot(grid[i*2, 2:])
+    ax5 = fig.add_subplot(grid[i*2+1, 2])
+    ax6 = fig.add_subplot(grid[i*2+1, 3])
+    fig.canvas.draw()
+    axes.append((ax2, ax3, ax5, ax6))
 
     # plot v and u dynamics
-    ax = ax3
+    ax = ax1
+    ax.set_title(titles[i][0])
     v, u, time = res["v"], res["u"], res["time"]
     ax.plot(time[:stop], v[:stop], color="royalblue")
     ax2 = ax.twinx()
@@ -225,28 +218,9 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
     ax.set_ylabel(r"$v$ (mV)", color="royalblue")
     ax2.set_ylabel(r"$u$ (pA)", color="darkorange")
 
-    # plot v2 distribution
-    ax = ax4
-    ax.set_yscale("log")
-    # ax.set_ylim([0.0, 0.08])
-    # ax.set_yticks([0.0, 0.04, 0.08])
-    v_edges, v_hist = res["v2_edges"], res["v2_hist"]
-    ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
-    ax.set_xlabel(r"$v$ (mV)")
-    ax.set_ylabel(r"$\log(\rho)$")
-
-    # plot u distribution
-    ax = ax5
-    ax.set_yscale("log")
-    # ax.set_ylim([0.0, 0.08])
-    # ax.set_yticks([0.0, 0.04, 0.08])
-    u_edges, u_hist = res["u_edges"], res["u_hist"]
-    ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
-    ax.set_xlabel(r"$u$ (pA)")
-    ax.set_ylabel("")
-
     # plot v and u dynamics
-    ax = ax6
+    ax = ax4
+    ax.set_title(titles[i][1])
     v, u = res["v2"], res["u2"]
     ax.plot(time[:stop], v[:stop], color="royalblue")
     ax2 = ax.twinx()
@@ -255,8 +229,50 @@ for i, (kappa, res) in enumerate(zip(kappas, results)):
     ax.set_ylabel(r"$v$ (mV)", color="royalblue")
     ax2.set_ylabel(r"$u$ (pA)", color="darkorange")
 
-    grid1.set_width_ratios([1, 1])
-    grid2.set_width_ratios([1, 1])
+# freeze layout updates
+fig.canvas.draw()
+# fig.set_layout_engine("none")
+
+# plot distributions
+for res, (ax1, ax2, ax3, ax4) in zip(results, axes):
+
+    # plot v distribution
+    ax = ax1
+    ax.set_yscale("log")
+    v_edges, v_hist, v_fit = res["v_edges"], res["v_hist"], res["v_fit"]
+    ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
+    ax.plot(v_edges, v_fit, color="grey", linestyle="--")
+    ax.set_xlabel(r"$v$ (mV)")
+    ax.set_ylabel(r"$\log(\rho)$")
+    ax.set_ylim([1e-5, 0.06])
+
+    # plot u distribution
+    ax = ax2
+    ax.set_yscale("log")
+    u_edges, u_hist = res["u_edges"], res["u_hist"]
+    ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
+    ax.set_xlabel(r"$u$ (pA)")
+    ax.set_ylabel("")
+
+    # plot v2 distribution
+    ax = ax3
+    ax.sharey(ax1)
+    ax.set_yscale("log")
+    v_edges, v_hist, v_fit = res["v2_edges"], res["v2_hist"], res["v2_fit"]
+    ax.bar(v_edges, v_hist / np.sum(v_hist), width=1.0, color="royalblue")
+    ax.plot(v_edges, v_fit, color="grey", linestyle="--")
+    ax.set_xlabel(r"$v$ (mV)")
+    ax.set_ylabel(r"$\log(\rho)$")
+
+    # plot u distribution
+    ax = ax4
+    ax.sharey(ax2)
+    ax.set_ylim([1e-5, 0.06])
+    ax.set_yscale("log")
+    u_edges, u_hist = res["u_edges"], res["u_hist"]
+    ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
+    ax.set_xlabel(r"$u$ (pA)")
+    ax.set_ylabel("")
 
 # saving/plotting
 fig.canvas.draw()

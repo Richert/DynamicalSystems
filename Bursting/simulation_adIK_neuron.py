@@ -124,7 +124,7 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
 # vectorfield settings
-vec_norm = 1.5
+scale = 1.5
 
 # figure layout
 fig = plt.figure(layout="constrained")
@@ -141,7 +141,7 @@ for i, (b, v, u, x, ncs, vfs) in (
     ax.plot(time, v)
     if i == 0:
         ax.set_ylabel(r"$v$ (mv)")
-    ax.set_title(fr"({titles[i]}) $b = {b}$")
+    ax.set_title(fr"({titles[i]}) $b = {b}$ nS")
 
     # recovery variable
     ax = fig.add_subplot(grid[1, i * 2:(i + 1) * 2])
@@ -152,7 +152,7 @@ for i, (b, v, u, x, ncs, vfs) in (
 
     # spike frequency adaptation
     ax = fig.add_subplot(grid[2, i * 2:(i + 1) * 2])
-    ax.plot(time, x)
+    ax.plot(time, x, color="darkorchid")
     ax.set_ylim([0.0, 0.022])
     ax.set_xlabel("time (ms)")
     if i == 0:
@@ -170,7 +170,7 @@ for i, (b, v, u, x, ncs, vfs) in (
         for row in range(vf.shape[0]):
             for col in range(vf.shape[1]):
                 dv, du = vf[row, col, 0], vf[row, col, 1]
-                scale = vec_norm
+                scale = scale
                 ax.annotate("", xy=[vgrid[col] + scale*dv, ugrid[row] + scale*du],
                             xytext=[vgrid[col], ugrid[row]], arrowprops=dict(width=0.5, headlength=4.0, headwidth=3.0,
                                                                              shrink=0.01, edgecolor="none",
