@@ -10,18 +10,22 @@ plt.rcParams['backend'] = 'TkAgg'
 
 def get_kld(ps: np.ndarray, qs: np.ndarray) -> float:
     kld = np.zeros_like(ps)
+    n = len(kld)
     for i, (p, q) in enumerate(zip(ps, qs)):
         if p > 0 and q > 0:
             kld[i] = p * np.log(p/q)
-    return np.sum(kld)
+        elif p > 0:
+            kld[i] = n
+    return np.abs(np.sum(kld))
 
 
-def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, plot: bool = False):
+def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: tuple = None, plot: bool = False):
 
     center, width = params[:]
 
     # get signal distribution
-    bins = np.linspace(np.min(s), np.max(s), n_bins)
+    xmin, xmax = (np.min(s), np.max(s)) if eval_range is None else eval_range
+    bins = np.linspace(xmin, xmax, n_bins)
     y, _ = np.histogram(s, bins)
     y = np.asarray(y, dtype=np.float64) / np.sum(y)
 
@@ -30,7 +34,7 @@ def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, plot: bool = False)
     y_pred = cauchy.pdf(x, loc=center, scale=width)
 
     # compute distance between empirical and Lorentzian distribution
-    kld = np.abs(get_kld(y, y_pred))
+    kld = get_kld(y, y_pred)
 
     # plot the fit
     if plot:
@@ -52,19 +56,23 @@ def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, plot: bool = False)
     return kld
 
 
-def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500) -> tuple:
+def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500, eval_range: tuple = None) -> tuple:
 
     # fit lorentzian
-    res = minimize(get_dist, np.asarray([np.mean(s), np.var(s)]), args=(s, n_bins), options={"maxiter": 1000}, tol=1e-4)
+    res = minimize(get_dist, np.asarray([np.mean(s), np.std(s)]), args=(s, n_bins, eval_range),
+                   options={"maxiter": 1000}, tol=1e-4, method="Nelder-Mead",
+                   bounds=[(np.min(s), np.max(s)), (1e-6, np.max(s)-np.min(s))])
 
     # compute goodness of fit
-    kld = get_dist(res.x, s, n_bins, plot)
+    kld = get_dist(res.x, s, n_bins, eval_range=eval_range, plot=plot)
 
     return res.x[1], kld
 
 
-def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: int = 1000) -> tuple:
-    results = pool(delayed(FWHM)(signal[i, :], (i+1) % plot_steps == 0, n_bins) for i in range(signal.shape[0]))
+def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: int = 1000, eval_range: tuple = None
+             ) -> tuple:
+    results = pool(delayed(FWHM)(signal[i, :], (i+1) % plot_steps == 0, n_bins, eval_range)
+                   for i in range(signal.shape[0]))
     return np.asarray([res[0] for res in results]), np.asarray([res[1] for res in results])
 
 
@@ -158,7 +166,7 @@ for cond in conditions:
     spikes = s.values
     r = np.mean(spikes, axis=1) / tau_s
     u_widths, u_errors = get_fwhm(u.values, pool=pool, plot_steps=100000)
-    v_widths, v_errors = get_fwhm(v.values, pool=pool, plot_steps=100)
+    v_widths, v_errors = get_fwhm(v.values, pool=pool, plot_steps=100, eval_range=(v_r - 100.0, v_r + 100.0))
     u = np.mean(u.values, axis=1)
     v = np.mean(v.values, axis=1)
     s = np.mean(s.values, axis=1)
