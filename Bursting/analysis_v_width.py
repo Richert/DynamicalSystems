@@ -49,7 +49,7 @@ for cond in conditions:
     results[cond]["v_width"] = y
     results[cond]["var_explained"] = var_explained
     results[cond]["time"] = signals[cond]["mf_etas_global"]["s"].index
-    results[cond]["wd"] = data["v_errors"]
+    results[cond]["kld"] = data["v_errors"]
 
 # plotting
 ##########
@@ -86,15 +86,16 @@ for i, cond in enumerate(plot_conditions):
 
         # plot target
         ax = fig.add_subplot(grid[i, j])
-        ax.plot(time, results[c]["v_width"], label="target", color="black")
-        ax.plot(time, results[c]["x"], label="fit", color="darkorange")
         ax2 = ax.twinx()
-        ax2.plot(time, results[c]["wd"], label="error", color="darkred")
-        ax2.set_ylabel("WD")
+        l1, = ax2.plot(time, results[c]["kld"], color="darkred", alpha=0.5)
+        ax2.set_ylim([0.0, 1.0])
+        l2, = ax.plot(time, results[c]["v_width"], color="black")
+        l3, = ax.plot(time, results[c]["x"], color="royalblue")
+        ax2.set_ylabel("KLD", color="darkred")
         ax.set_ylabel("width(v)")
         ax.set_xlabel("time (ms)")
         if i == 1 and j == 0:
-            plt.legend()
+            fig.legend([l2, l3, l1], ["target", "fit", "KLD"])
 
 # finishing touches
 ###################

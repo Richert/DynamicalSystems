@@ -5,9 +5,11 @@ from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 from joblib import Parallel, delayed
 import pickle
+from numba import njit
 plt.rcParams['backend'] = 'TkAgg'
 
 
+@njit
 def get_kld(ps: np.ndarray, qs: np.ndarray) -> float:
     kld = np.zeros_like(ps)
     n = len(kld)
@@ -16,28 +18,33 @@ def get_kld(ps: np.ndarray, qs: np.ndarray) -> float:
             kld[i] = p * np.log(p/q)
         elif p > 0:
             kld[i] = n
-    return np.abs(np.sum(kld))
+    return np.sum(kld)
 
 
-def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: tuple = None, plot: bool = False):
+def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: float = None, plot: bool = False):
 
-    center, width = params[:]
+    width = params[0]
 
-    # get signal distribution
-    xmin, xmax = (np.min(s), np.max(s)) if eval_range is None else eval_range
-    bins = np.linspace(xmin, xmax, n_bins)
-    y, _ = np.histogram(s, bins)
-    y = np.asarray(y, dtype=np.float64) / np.sum(y)
+    # determine signal range
+    smin, smax = (np.min(s), np.max(s))
+    bins = np.linspace(smin, smax, n_bins)
 
-    # get Lorentzian distribution
+    # estimate empirical distribution
+    y, _ = np.histogram(s, bins, density=True)
+    y = np.asarray(y, dtype=np.float64)
+
+    # get Lorentzian distribution for current parameters
     x = np.asarray([(bins[i + 1] + bins[i]) / 2.0 for i in range(n_bins - 1)])
+    center = x[np.argmax(y).squeeze()]
     y_pred = cauchy.pdf(x, loc=center, scale=width)
 
     # compute distance between empirical and Lorentzian distribution
-    kld = get_kld(y, y_pred)
+    xmin, xmax = (smin, smax) if eval_range is None else (center - eval_range, center + eval_range)
+    idx = (xmax >= x) * (x >= xmin)
+    kld = get_kld(y[idx] / np.sum(y[idx]), y_pred[idx] / np.sum(y_pred[idx]))
 
-    # plot the fit
-    if plot:
+    # plot the current fit
+    if plot and kld > 0.5:
         ymax = 1.2 * np.max(y)
         xrange = np.max(bins) - np.min(bins)
         fig, ax = plt.subplots()
@@ -50,28 +57,31 @@ def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: tuple =
         ax.set_ylim([0.0, ymax])
         ax.set_xlabel("values")
         ax.set_ylabel("p")
-        ax.set_title(f"KLD = {kld}")
+        ax.set_title(fr"$\Delta = {width}$, KLD = {kld}")
         plt.show()
 
     return kld
 
 
-def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500, eval_range: tuple = None) -> tuple:
+def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500, eval_range: float = None, min_width: float = 1e-6,
+         kwargs: dict = None) -> tuple:
+
+    if kwargs is None:
+        kwargs = {}
 
     # fit lorentzian
-    res = minimize(get_dist, np.asarray([np.mean(s), np.std(s)]), args=(s, n_bins, eval_range),
-                   options={"maxiter": 1000}, tol=1e-4, method="Nelder-Mead",
-                   bounds=[(np.min(s), np.max(s)), (1e-6, np.max(s)-np.min(s))])
+    res = minimize(get_dist, np.asarray([np.std(s)]), args=(s, n_bins, eval_range),
+                   bounds=[(min_width, np.max(s)-np.min(s))], **kwargs)
 
     # compute goodness of fit
     kld = get_dist(res.x, s, n_bins, eval_range=eval_range, plot=plot)
 
-    return res.x[1], kld
+    return res.x[0], kld
 
 
-def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: int = 1000, eval_range: tuple = None
-             ) -> tuple:
-    results = pool(delayed(FWHM)(signal[i, :], (i+1) % plot_steps == 0, n_bins, eval_range)
+def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: int = 1000, eval_range: float = None,
+             min_width: float = 1e-6, **kwargs) -> tuple:
+    results = pool(delayed(FWHM)(signal[i, :], (i+1) % plot_steps == 0, n_bins, eval_range, min_width, kwargs)
                    for i in range(signal.shape[0]))
     return np.asarray([res[0] for res in results]), np.asarray([res[1] for res in results])
 
@@ -165,8 +175,10 @@ for cond in conditions:
     #     #     plt.show()
     spikes = s.values
     r = np.mean(spikes, axis=1) / tau_s
-    u_widths, u_errors = get_fwhm(u.values, pool=pool, plot_steps=100000)
-    v_widths, v_errors = get_fwhm(v.values, pool=pool, plot_steps=100, eval_range=(v_r - 100.0, v_r + 100.0))
+    u_widths, u_errors = get_fwhm(u.values, pool=pool, plot_steps=100000, n_bins=500, eval_range=100.0,
+                                  tol=1e-3, options={"maxiter": 500}, min_width=1e-10, method="Nelder-Mead")
+    v_widths, v_errors = get_fwhm(v.values, pool=pool, plot_steps=100000, n_bins=500, eval_range=50.0,
+                                  tol=1e-3, options={"maxiter": 500}, min_width=1e-10, method="Nelder-Mead")
     u = np.mean(u.values, axis=1)
     v = np.mean(v.values, axis=1)
     s = np.mean(s.values, axis=1)
@@ -183,29 +195,28 @@ for cond in conditions:
     pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
     # plot results
-    # fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-    # ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
-    # ax[0].set_ylabel(r'neuron id')
-    # ax[1].plot(time, r)
-    # ax[1].set_ylabel(r'$r(t)$')
-    # ax[1].set_xlabel('time')
-    # plt.tight_layout()
-    # plt.show()
-    #
-    # # plot distribution dynamics
-    # fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
-    # ax[0].plot(time, v, color="royalblue")
-    # ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
-    # ax[0].set_title("v (mV)")
-    # ax[1].plot(time, u, color="darkorange")
-    # ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
-    # ax[1].set_title("u (pA)")
-    # ax[2].plot(time, 1 - np.abs(z), color="black")
-    # ax[2].set_title("z (dimensionless)")
-    # ax[2].set_xlabel("time (ms)")
-    # ax[3].plot(time, np.imag(z), color="red")
-    # ax[3].set_title("theta (dimensionless)")
-    # ax[3].set_xlabel("time (ms)")
-    # fig2.suptitle("SNN")
-    # plt.tight_layout()
-    # plt.show()
+    fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
+    ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
+    ax[0].set_ylabel(r'neuron id')
+    ax[1].plot(time, r)
+    ax[1].set_ylabel(r'$r(t)$')
+    ax[1].set_xlabel('time')
+    plt.tight_layout()
+
+    # plot distribution dynamics
+    fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
+    ax[0].plot(time, v, color="royalblue")
+    ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
+    ax[0].set_title("v (mV)")
+    ax[1].plot(time, u, color="darkorange")
+    ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
+    ax[1].set_title("u (pA)")
+    ax[2].plot(time, v_errors, color="black")
+    ax[2].set_title("KLD(v)")
+    ax[2].set_xlabel("time (ms)")
+    ax[3].plot(time, u_errors, color="red")
+    ax[3].set_title("KLD(u)")
+    ax[3].set_xlabel("time (ms)")
+    fig2.suptitle("SNN")
+    plt.tight_layout()
+    plt.show()
