@@ -16,7 +16,7 @@ op = "eta_op_corrected"
 cond_map = {
     "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
     "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-    "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 45.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
+    "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
     "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
     "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
     "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
@@ -122,10 +122,10 @@ for i, cond in enumerate(conditions):
         if v == "u_width":
             ax.plot(mf_data.index, snn_data[v], color="black")
             ax2 = ax.twinx()
-            ax2.plot(mf_data.index, snn_data["u_errors"], color="darkred")
-            ax2.set_ylim([0.0, 0.1])
+            ax2.plot(mf_data.index, snn_data["u_errors"], color="darkred", alpha=0.5)
+            ax2.set_ylim([0.0, 1.0])
             if i == 2:
-                ax2.set_ylabel("RMSE", color="darkred")
+                ax2.set_ylabel("KLD", color="darkred")
         else:
             ax.plot(mf_data.index, snn_data[v], label="SNN", color="black")
             ax.plot(mf_data[v], label="MF", color="royalblue")

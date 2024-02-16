@@ -92,10 +92,10 @@ for i, cond in enumerate(plot_conditions):
         l2, = ax.plot(time, results[c]["v_width"], color="black")
         l3, = ax.plot(time, results[c]["x"], color="royalblue")
         ax2.set_ylabel("KLD", color="darkred")
-        ax.set_ylabel("width(v)")
+        ax.set_ylabel("x (mV)")
         ax.set_xlabel("time (ms)")
         if i == 1 and j == 0:
-            fig.legend([l2, l3, l1], ["target", "fit", "KLD"])
+            fig.legend([l2, l3, l1], [r"$x(t)$", r"$\frac{C \pi}{k} r(t)$", "KLD"])
 
 # finishing touches
 ###################
