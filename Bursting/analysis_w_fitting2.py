@@ -4,11 +4,24 @@ import matplotlib.pyplot as plt
 import pickle
 plt.rcParams['backend'] = 'TkAgg'
 import numba as nb
-from scipy.optimize import differential_evolution
+import black_box as bb
+from black_box import search_min
 
+fname = 0
 
 # function definition
 #####################
+
+
+def downsample(x: np.ndarray, rate: int = 5) -> np.ndarray:
+    x_new, x_batch = [], []
+    for i in range(x.shape[0]):
+        x_batch.append(x[i])
+        if (i+1) % rate == 0:
+            x_new.append(np.mean(x_batch))
+            x_batch.clear()
+    return np.asarray(x_new)
+
 
 def rmse(x: np.ndarray, y: np.ndarray):
     return np.sqrt(np.mean((x-y)**2))
@@ -26,17 +39,17 @@ def get_signal(w: np.ndarray, inp: np.ndarray, model: str, op: str, node_vars: d
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
                  outputs={target_var: f'p/{op}/{target_var}'},
                  inputs={f'p/{op}/I_ext': inp, f'p/{op}/w': w},
-                 decorator=nb.njit, fastmath=True, float_precision="float64", verbose=False)
+                 decorator=nb.njit, fastmath=True, float_precision="float64", verbose=False, to_file=False
+                 )
     clear(ik)
 
     return np.squeeze(res[target_var].values)
 
 
-def fit_w(w: np.ndarray, y: np.ndarray, inp: np.ndarray, model: str, op: str, node_vars: dict, target_var: str,
-          **kwargs):
+def fit_w(w: np.ndarray):
 
     # interpolate w
-    time_old = np.linspace(0, T, num=int(T / dts))
+    time_old = np.linspace(0, T, num=int(T / (dts * ds)))
     time_new = np.linspace(0, T, num=int(T / dt))
     w_interp = np.interp(time_new, time_old, w)
 
@@ -77,12 +90,12 @@ E_r = 0.0
 
 # optimization parameters
 target_var = "v"
-maxiter = 50
-strategy = "best1exp"
+maxiter = 50000
 wmin = 0.0
 wmax = 100.0
 tol = 1e-4
-popsize = 3
+batch_size = 15
+ds = 4
 
 # mean-field simulations
 ########################
@@ -111,11 +124,11 @@ for cond in conditions:
     # load target data
     y = pickle.load(open(f"results/snn_etas_{cond}.pkl", "rb"))["results"][target_var]
     w0 = pickle.load(open(f"results/snn_etas_{cond}_nc.pkl", "rb"))["results"]["u_width"]
+    w0 = downsample(w0, ds)
 
     # fit ws
-    w = differential_evolution(fit_w, bounds=[(wmin, wmax) for _ in range(w0.shape[0])],
-                               args=(y, inp, model, op, node_vars, target_var),
-                               strategy=strategy, maxiter=maxiter, popsize=popsize, tol=tol, workers=-1).x
+    w = search_min(fit_w, [(wmin, wmax) for _ in range(w0.shape[0])], budget=maxiter, batch=batch_size,
+                   resfile="results/w_fitting.txt")
 
     results[cond] = {"w": w, "prediction": get_signal(w, inp, model, op, node_vars, target_var), "target": y}
 
