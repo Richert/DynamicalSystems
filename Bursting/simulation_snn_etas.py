@@ -69,14 +69,25 @@ def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500, eval_range: float = None,
     if kwargs is None:
         kwargs = {}
 
-    # fit lorentzian
-    res = minimize(get_dist, np.asarray([np.std(s)]), args=(s, n_bins, eval_range),
-                   bounds=[(min_width, np.abs(np.max(s)-np.min(s)))], **kwargs)
+    # specify upper boundary
+    max_width = np.abs(np.max(s)-np.min(s))
 
-    # compute goodness of fit
-    kld = get_dist(res.x, s, n_bins, eval_range=eval_range, plot=plot)
+    if max_width < min_width:
 
-    return res.x[0], kld
+        width = min_width
+        kld = 0.0
+
+    else:
+
+        # fit lorentzian
+        res = minimize(get_dist, np.asarray([np.std(s)]), args=(s, n_bins, eval_range),
+                       bounds=[(min_width, max_width)], **kwargs)
+        width = res.x[0]
+
+        # compute goodness of fit
+        kld = get_dist(width, s, n_bins, eval_range=eval_range, plot=plot)
+
+    return width, kld
 
 
 def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: int = 1000, eval_range: float = None,
