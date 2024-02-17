@@ -71,7 +71,7 @@ def FWHM(s: np.ndarray, plot: bool, n_bins: int = 500, eval_range: float = None,
 
     # fit lorentzian
     res = minimize(get_dist, np.asarray([np.std(s)]), args=(s, n_bins, eval_range),
-                   bounds=[(min_width, np.max(s)-np.min(s))], **kwargs)
+                   bounds=[(min_width, np.abs(np.max(s)-np.min(s)))], **kwargs)
 
     # compute goodness of fit
     kld = get_dist(res.x, s, n_bins, eval_range=eval_range, plot=plot)
