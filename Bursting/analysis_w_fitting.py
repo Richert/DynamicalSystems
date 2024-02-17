@@ -76,9 +76,9 @@ g = 15.0
 E_r = 0.0
 
 # optimization parameters
-target_var = "s"
-maxiter = 100
-temp = 0.5
+target_var = "v"
+maxiter = 50
+temp = 1.0
 stepsize = 1.0
 
 # mean-field simulations
