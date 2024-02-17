@@ -82,7 +82,7 @@ strategy = "best1exp"
 wmin = 0.0
 wmax = 100.0
 tol = 1e-4
-popsize = 10
+popsize = 3
 
 # mean-field simulations
 ########################
