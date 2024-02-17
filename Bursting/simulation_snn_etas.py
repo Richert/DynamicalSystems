@@ -21,9 +21,7 @@ def get_kld(ps: np.ndarray, qs: np.ndarray) -> float:
     return np.sum(kld)
 
 
-def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: float = None, plot: bool = False):
-
-    width = params[0]
+def get_dist(width: np.ndarray, s: np.ndarray, n_bins: int, eval_range: float = None, plot: bool = False):
 
     # determine signal range
     smin, smax = (np.min(s), np.max(s))
