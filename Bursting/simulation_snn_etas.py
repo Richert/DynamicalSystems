@@ -128,7 +128,7 @@ for cond in conditions:
     T = 7000.0
     dt = 1e-2
     dts = 1e-1
-    cutoff = 1000.0
+    cutoff = 0.0
     inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
     inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
     inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
@@ -192,31 +192,31 @@ for cond in conditions:
     # save results to file
     results = {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z), "theta": np.imag(z),
                "u_width": u_widths, "v_width": v_widths, "u_errors": u_errors, "v_errors": v_errors}
-    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
+    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}_nc.pkl", "wb"))
 
-    # plot results
-    fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
-    ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
-    ax[0].set_ylabel(r'neuron id')
-    ax[1].plot(time, r)
-    ax[1].set_ylabel(r'$r(t)$')
-    ax[1].set_xlabel('time')
-    plt.tight_layout()
-
-    # plot distribution dynamics
-    fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
-    ax[0].plot(time, v, color="royalblue")
-    ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
-    ax[0].set_title("v (mV)")
-    ax[1].plot(time, u, color="darkorange")
-    ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
-    ax[1].set_title("u (pA)")
-    ax[2].plot(time, v_errors, color="black")
-    ax[2].set_title("KLD(v)")
-    ax[2].set_xlabel("time (ms)")
-    ax[3].plot(time, u_errors, color="red")
-    ax[3].set_title("KLD(u)")
-    ax[3].set_xlabel("time (ms)")
-    fig2.suptitle("SNN")
-    plt.tight_layout()
-    plt.show()
+    # # plot results
+    # fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
+    # ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
+    # ax[0].set_ylabel(r'neuron id')
+    # ax[1].plot(time, r)
+    # ax[1].set_ylabel(r'$r(t)$')
+    # ax[1].set_xlabel('time')
+    # plt.tight_layout()
+    #
+    # # plot distribution dynamics
+    # fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
+    # ax[0].plot(time, v, color="royalblue")
+    # ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
+    # ax[0].set_title("v (mV)")
+    # ax[1].plot(time, u, color="darkorange")
+    # ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
+    # ax[1].set_title("u (pA)")
+    # ax[2].plot(time, v_errors, color="black")
+    # ax[2].set_title("KLD(v)")
+    # ax[2].set_xlabel("time (ms)")
+    # ax[3].plot(time, u_errors, color="red")
+    # ax[3].set_title("KLD(u)")
+    # ax[3].set_xlabel("time (ms)")
+    # fig2.suptitle("SNN")
+    # plt.tight_layout()
+    # plt.show()
