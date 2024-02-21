@@ -157,8 +157,8 @@ z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
 # create input and output data
 print("Creating training data")
-features = ["r", "theta", "z", "|v-v_r|", "u"]
-X = np.stack((r, np.imag(np.log(z)), np.abs(z), np.abs(v-v_r), u), axis=-1)
+features = ["r", "s", "v", "u", "x"]
+X = np.stack((r, s, v, u, x), axis=-1)
 # for i in range(X.shape[1]):
 #     X[:, i] -= np.mean(X[:, i])
 #     X[:, i] /= np.std(X[:, i])
@@ -166,10 +166,10 @@ y = np.reshape(u_widths, (u_widths.shape[0], 1))
 
 # initialize system identification model
 print("Training sparse identification model")
-basis_functions = Polynomial(degree=4)
+basis_functions = Polynomial(degree=3)
 # model = FROLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], elag=1, basis_function=basis_functions, n_terms=5)
 model = AOLS(ylag=1, xlag=[[1] for _ in range(X.shape[1])], basis_function=basis_functions,
-             k=4, threshold=1e-8, L=1)
+             k=5, threshold=1e-8, L=1)
 
 # fit model
 model.fit(X=X, y=y)

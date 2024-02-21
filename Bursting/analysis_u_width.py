@@ -16,9 +16,18 @@ def smooth(signal: np.ndarray, window: int = 10):
 
 # define conditions
 conditions = ["no_sfa_1", "no_sfa_2", "weak_sfa_1", "weak_sfa_2", "strong_sfa_1", "strong_sfa_2"]
+cond_map = {
+        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
+        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
+        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
+        "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
+        "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
+        "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
+    }
 C = 100.0
 k = 0.7
 tau_s = 6.0
+
 
 # load simulation data
 signals = {}
@@ -38,10 +47,11 @@ results = {cond: {} for cond in conditions}
 for cond in conditions:
 
     data = signals[cond]["snn_etas"]
+    b = cond_map[cond]["b"]
 
     # calculate explained variance
-    x = data["r"]*C*np.pi/k
-    y = data["v_width"]
+    x = data["r"]*C*np.pi*np.abs(b)/k
+    y = data["u_width"]
     var_explained = explained_variance_score(y, x)
 
     # store results
@@ -49,7 +59,7 @@ for cond in conditions:
     results[cond]["v_width"] = y
     results[cond]["var_explained"] = var_explained
     results[cond]["time"] = signals[cond]["mf_etas_global"]["s"].index
-    results[cond]["kld"] = data["v_errors"]
+    results[cond]["kld"] = data["u_errors"]
 
 # plotting
 ##########
@@ -73,7 +83,7 @@ markersize = 6
 # create figure layout
 fig = plt.figure()
 grid = fig.add_gridspec(nrows=len(plot_conditions), ncols=2)
-plt.suptitle(r"Lorentzian ansatz II: Width of $\rho(v)$")
+plt.suptitle(r"Lorentzian ansatz III: Width of $\rho(u)$")
 
 for i, cond in enumerate(plot_conditions):
 
@@ -89,13 +99,13 @@ for i, cond in enumerate(plot_conditions):
         ax2 = ax.twinx()
         l1, = ax2.plot(time, results[c]["kld"], color="darkred", alpha=0.5)
         ax2.set_ylim([0.0, 1.0])
-        l2, = ax.plot(time, results[c]["v_width"], color="black")
+        l2, = ax.plot(time, results[c]["u_width"], color="black")
         l3, = ax.plot(time, results[c]["x"], color="royalblue")
         ax2.set_ylabel("KLD", color="darkred")
-        ax.set_ylabel("x (mV)")
+        ax.set_ylabel("w (pA)")
         ax.set_xlabel("time (ms)")
         if i == 1 and j == 0:
-            fig.legend([l2, l3, l1], [r"$x(t)$", r"$\frac{C \pi}{k} r(t)$", "KLD"])
+            fig.legend([l2, l3, l1], [r"$w(t)$", r"$\frac{|b| C \pi}{k} r(t)$", "KLD"])
 
 # finishing touches
 ###################
@@ -105,5 +115,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0.01, wspace=0.01
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/v_width.pdf')
+plt.savefig(f'results/u_width.pdf')
 plt.show()

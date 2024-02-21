@@ -39,12 +39,14 @@ eta_op_corrected:
     - "r' = (k*(Delta + w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "w' = (absv(b)*pi*C*r/k - w)/tau_u"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
+    w: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
@@ -62,7 +64,6 @@ eta_op_corrected:
     eta: 0.0
     I_ext: input(0.0)
     s_in: input(0.0)
-    w: input(0.0)
 
 # adIK neurons with distributed eta and a global recovery variable u
 eta_op_global:

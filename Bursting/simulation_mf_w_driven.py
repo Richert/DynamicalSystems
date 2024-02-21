@@ -75,8 +75,8 @@ for cond in conditions:
 
     # run simulation
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'v': f'p/{op}/v', 'u': f'p/{op}/u', 's': f'p/{op}/s', 'x': f'p/{op}/x'},
-                 inputs={f'p/{op}/I_ext': inp, f'p/{op}/w': w_in},
+                 outputs={'v': f'p/{op}/v', 'u': f'p/{op}/u', 's': f'p/{op}/s', 'x': f'p/{op}/x', 'w': f'p/{op}/w'},
+                 inputs={f'p/{op}/I_ext': inp},
                  decorator=nb.njit, fastmath=True, float_precision="float64")
 
     # store results
@@ -120,7 +120,8 @@ for i, cond in enumerate(conditions):
         # plot mean-field vs. SNN dynamics
         ax = fig.add_subplot(grid[i, j])
         if v == "u_width":
-            ax.plot(mf_data.index, snn_data[v], color="black")
+            ax.plot(mf_data.index, snn_data[v], color="black", label="SNN")
+            ax.plot(mfc_data["w"], color="darkorange", label="MF-c")
             ax2 = ax.twinx()
             ax2.plot(mf_data.index, snn_data["u_errors"], color="darkred", alpha=0.5)
             ax2.set_ylim([0.0, 1.0])

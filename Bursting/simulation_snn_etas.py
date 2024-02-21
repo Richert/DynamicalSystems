@@ -115,7 +115,7 @@ for cond in conditions:
     }
 
     # model parameters
-    N = 2000
+    N = 8000
     C = 100.0   # unit: pF
     k = 0.7  # unit: None
     v_r = -60.0  # unit: mV
@@ -136,8 +136,8 @@ for cond in conditions:
     # define inputs
     T = 7000.0
     dt = 1e-2
-    dts = 1e-1
-    cutoff = 0.0
+    dts = 2e-1
+    cutoff = 1000.0
     inp = np.zeros((int(T/dt), 1)) + cond_map[cond]["eta"]
     inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
     inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
@@ -201,7 +201,7 @@ for cond in conditions:
     # save results to file
     results = {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z), "theta": np.imag(z),
                "u_width": u_widths, "v_width": v_widths, "u_errors": u_errors, "v_errors": v_errors}
-    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}_nc.pkl", "wb"))
+    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
     # # plot results
     # fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
