@@ -3,20 +3,18 @@ import matplotlib.pyplot as plt
 
 # load simulation data
 signals = {}
-conditions = ["low_delta", "med_delta", "high_delta"]
+conditions = ["no_sfa_1", "no_sfa_2", "weak_sfa_1", "weak_sfa_2", "strong_sfa_1", "strong_sfa_2"]
 for cond in conditions:
-    signals[cond] = {}
-    for model in ["mf", "snn"]:
-        data = pickle.load(open(f"results/{model}_etas_{cond}.pkl", "rb"))["results"]
-        signals[cond][model] = data
+    signals[cond] = {"mf": pickle.load(open(f"results/mf_bs_corrected_{cond}.pkl", "rb"))["results"],
+                     "snn": pickle.load(open(f"results/snn_bs_{cond}.pkl", "rb"))["results"]}
 
 # plot comparison between snn and mf simulation results over three conditions
 #############################################################################
 
 # prepare figure
-plot_variables = ["v", "s", "x", "u", "u_width", "z", "theta"]
-fig = plt.figure(figsize=(4*len(conditions), len(plot_variables)), dpi=130)
-grid = fig.add_gridspec(nrows=len(plot_variables), ncols=len(conditions))
+plot_variables = ["u", "v"]
+fig = plt.figure(figsize=(12, 8), dpi=130)
+grid = fig.add_gridspec(nrows=len(conditions), ncols=len(plot_variables))
 
 # plotting
 for i, cond in enumerate(conditions):
@@ -25,11 +23,11 @@ for i, cond in enumerate(conditions):
         mf_data = signals[cond]["mf"][var]
         snn_data = signals[cond]["snn"][var]
 
-        ax = fig.add_subplot(grid[j, i])
-        ax.plot(snn_data, color="black", label="snn")
+        ax = fig.add_subplot(grid[i, j])
+        ax.plot(mf_data.index, snn_data, color="black", label="snn")
         ax.plot(mf_data, color="darkorange", label="mf")
         ax.set_ylabel(var)
-        if j == len(plot_variables) - 1:
+        if i == len(plot_variables) - 1:
             ax.set_xlabel("time")
             ax.legend()
 

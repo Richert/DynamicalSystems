@@ -39,14 +39,12 @@ eta_op_corrected:
     - "r' = (k*(Delta + w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "w' = (absv(b)*pi*C*r/k - w)/tau_u"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    w: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
@@ -64,6 +62,7 @@ eta_op_corrected:
     eta: 0.0
     I_ext: input(0.0)
     s_in: input(0.0)
+    w: input(0.0)
 
 # adIK neurons with distributed eta and a global recovery variable u
 eta_op_global:
@@ -98,46 +97,14 @@ eta_op_global:
     I_ext: input(0.0)
     s_in: input(0.0)
 
-# adIK neurons with distributed eta and corrected for spike frequency adaptation
-eta_op_sfa:
+# adIK neurons with distributed b
+b_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*absv(Delta - b*(C*pi*r/k)^(1/3) - kappa*r^(1/3))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (k*w/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "x' = (r-x) / tau_x"
-    - "s' = -s/tau_s + r"
-  variables:
-    r: output(0.0)
-    v: variable(-60.0)
-    u: variable(0.0)
-    x: variable(0.0)
-    s: variable(0.0)
-    Delta: 0.1
-    C: 100.0
-    k: 0.7
-    v_r: -60.0
-    v_t: -40.0
-    g: 20.0
-    E_r: 0.0
-    b: -2.0
-    tau_u: 30.0
-    tau_s: 6.0
-    kappa: 10.0
-    tau_x: 300.0
-    eta: 0.0
-    I_ext: input(0.0)
-    s_in: input(0.0)
-
-# adIK neurons with distributed eta
-eta_op_6d:
-  base: OperatorTemplate
-  equations:
-    - "z = (1 - pi*C*r/k + j*(v-v_r)) / (1 + pi*C*r/k - j*(v-v_r))"
-    - "r' = (k*absv(Delta + absv(w))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
-    - "w' = (b*r*pi*pi*(1 - z) - w) / 5.0"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
+    - "w' = (Delta*absv(v-v_r) - w) / tau_u"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
@@ -145,40 +112,6 @@ eta_op_6d:
     v: variable(-60.0)
     u: variable(0.0)
     w: variable(0.0)
-    x: variable(0.0)
-    s: variable(0.0)
-    z: variable(0.0 + 0.0j)
-    j: 1.0j
-    zero: 1e-6
-    Delta: 0.1
-    C: 100.0
-    k: 0.7
-    v_r: -60.0
-    v_t: -40.0
-    g: 20.0
-    E_r: 0.0
-    b: -2.0
-    tau_u: 30.0
-    tau_s: 6.0
-    kappa: 10.0
-    tau_x: 300.0
-    eta: 0.0
-    I_ext: input(0.0)
-    s_in: input(0.0)
-
-# adIK neurons with distributed b
-b_op:
-  base: OperatorTemplate
-  equations:
-    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) + b*sign(v-v_r) - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r - Delta*sign(v-v_r))*C*pi*r/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
-    - "x' = (r-x) / tau_x"
-    - "s' = -s/tau_s + r"
-  variables:
-    r: output(0.0)
-    v: variable(-60.0)
-    u: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
@@ -198,20 +131,23 @@ b_op:
     s_in: input(0.0)
 
 # adIK neurons with distributed b and a global recovery variable u
-b_op_global:
+b_op_corrected:
   base: OperatorTemplate
   equations:
-    - "r' = (k*Delta*absv(v-v_r)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r - sqrt(Delta/pi^2)*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u)/tau_u + kappa*x"
+    - "r' = (k*maxi(w, zero)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(C*pi*r + 0.0*Delta*sign(v-v_r))/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) + Delta*C*pi*r/k - u)/tau_u + kappa*x"
+    - "w' = (Delta*(v-v_r) + b*C*pi*r/k - w) / tau_u"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
+    w: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
+    zero: 0.0
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -243,23 +179,11 @@ eta_pop_corrected:
   operators:
     - eta_op_corrected
 
-# adIK neuron population with distributed etas and a correction for spike frequency adaptation
-eta_pop_sfa:
-  base: NodeTemplate
-  operators:
-    - eta_op_sfa
-
 # adIK neuron population with distributed etas and a global recovery variable u
 eta_pop_global:
   base: NodeTemplate
   operators:
     - eta_op_global
-
-# adIK neuron population with distributed etas and a 6th state variable
-eta_pop_6d:
-  base: NodeTemplate
-  operators:
-    - eta_op_6d
 
 # adIK neuron population with distributed bs
 b_pop:
@@ -268,10 +192,10 @@ b_pop:
     - b_op
 
 # adIK neuron population with distributed bs and a global recovery variable u
-b_pop_global:
+b_pop_corrected:
   base: NodeTemplate
   operators:
-    - b_op_global
+    - b_op_corrected
 
 # circuit templates
 ###################
@@ -292,14 +216,6 @@ ik_eta_corrected:
   edges:
     - [p/eta_op_corrected/s, p/eta_op_corrected/s_in, null, {weight: 1.0}]
 
-# adIK neuron population with distributed etas and a spike frequency adaptation correction
-ik_eta_sfa:
-  base: CircuitTemplate
-  nodes:
-    p: eta_pop_sfa
-  edges:
-    - [p/eta_op_sfa/s, p/eta_op_sfa/s_in, null, {weight: 1.0}]
-
 # adIK neuron population with distributed etas and a global recovery variable u
 ik_eta_global:
   base: CircuitTemplate
@@ -307,14 +223,6 @@ ik_eta_global:
     p: eta_pop_global
   edges:
     - [p/eta_op_global/s, p/eta_op_global/s_in, null, {weight: 1.0}]
-
-# 6-dimensional adIK neuron population
-ik_eta_6d:
-  base: CircuitTemplate
-  nodes:
-    p: eta_pop_6d
-  edges:
-    - [p/eta_op_6d/s, p/eta_op_6d/s_in, null, {weight: 1.0}]
 
 # adIK neuron population with distributed bs
 ik_b:
@@ -325,9 +233,9 @@ ik_b:
     - [p/b_op/s, p/b_op/s_in, null, {weight: 1.0}]
 
 # adIK neuron population with distributed bs and a global recovery variable u
-ik_b_global:
+ik_b_corrected:
   base: CircuitTemplate
   nodes:
-    p: b_pop_global
+    p: b_pop_corrected
   edges:
-    - [p/b_op_global/s, p/b_op_global/s_in, null, {weight: 1.0}]
+    - [p/b_op_corrected/s, p/b_op_corrected/s_in, null, {weight: 1.0}]

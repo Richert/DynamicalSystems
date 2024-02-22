@@ -17,22 +17,23 @@ def smooth(signal: np.ndarray, window: int = 10):
 # define conditions
 conditions = ["no_sfa_1", "no_sfa_2", "weak_sfa_1", "weak_sfa_2", "strong_sfa_1", "strong_sfa_2"]
 cond_map = {
-        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
-        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-        "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
-        "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
-        "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
+        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 1.0},
+        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 1.0},
+        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 1.0},
+        "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 1.0},
+        "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 1.0},
+        "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 1.0},
     }
 C = 100.0
 k = 0.7
 tau_s = 6.0
+v_r = -60.0
 
 
 # load simulation data
 signals = {}
-mf_models = ["mf_etas_global"]
-snn_models = ["snn_etas"]
+mf_models = ["mf_bs"]
+snn_models = ["snn_bs"]
 models = mf_models + snn_models
 for cond in conditions:
     signals[cond] = {}
@@ -46,19 +47,20 @@ for cond in conditions:
 results = {cond: {} for cond in conditions}
 for cond in conditions:
 
-    data = signals[cond]["snn_etas"]
+    data = signals[cond]["snn_bs"]
     b = cond_map[cond]["b"]
+    Delta = cond_map[cond]["delta"]
 
     # calculate explained variance
-    x = data["r"]*C*np.pi*np.abs(b)/k
+    x = Delta*np.abs(data["v"] - v_r)
     y = data["u_width"]
     var_explained = explained_variance_score(y, x)
 
     # store results
     results[cond]["x"] = x
-    results[cond]["v_width"] = y
+    results[cond]["y"] = y
     results[cond]["var_explained"] = var_explained
-    results[cond]["time"] = signals[cond]["mf_etas_global"]["s"].index
+    results[cond]["time"] = signals[cond]["mf_bs"]["s"].index
     results[cond]["kld"] = data["u_errors"]
 
 # plotting
@@ -83,7 +85,7 @@ markersize = 6
 # create figure layout
 fig = plt.figure()
 grid = fig.add_gridspec(nrows=len(plot_conditions), ncols=2)
-plt.suptitle(r"Lorentzian ansatz III: Width of $\rho(u)$")
+# plt.suptitle(r"Lorentzian ansatz III: Width of $\rho(u)$")
 
 for i, cond in enumerate(plot_conditions):
 
@@ -99,7 +101,7 @@ for i, cond in enumerate(plot_conditions):
         ax2 = ax.twinx()
         l1, = ax2.plot(time, results[c]["kld"], color="darkred", alpha=0.5)
         ax2.set_ylim([0.0, 1.0])
-        l2, = ax.plot(time, results[c]["u_width"], color="black")
+        l2, = ax.plot(time, results[c]["y"], color="black")
         l3, = ax.plot(time, results[c]["x"], color="royalblue")
         ax2.set_ylabel("KLD", color="darkred")
         ax.set_ylabel("w (pA)")

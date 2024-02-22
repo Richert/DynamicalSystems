@@ -9,17 +9,17 @@ import numba as nb
 ###################
 
 # pyrates model selection
-model = "ik_eta_global"
-op = "eta_op_global"
+model = "ik_b_corrected"
+op = "b_op_corrected"
 
 # define conditions
 cond_map = {
-    "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
-    "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-    "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-    "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
-    "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
-    "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
+    "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 1.0},
+    "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 1.0},
+    "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 1.0},
+    "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 1.0},
+    "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 1.0},
+    "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 1.0},
 }
 
 # conditions
@@ -63,20 +63,22 @@ for cond in conditions:
 
     # run simulation
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'x': f'p/{op}/x'},
+                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'w': f'p/{op}/w'},
                  inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64",
                  clear=False)
 
     # save results to file
-    pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_global_{cond}.pkl", "wb"))
+    pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_corrected_{cond}.pkl", "wb"))
     clear(ik)
 
-    # # plot results
-    # fig, ax = plt.subplots(nrows=2, figsize=(12, 5))
-    # ax[0].plot(res["s"])
-    # ax[0].set_ylabel(r'$s(t)$')
-    # ax[1].plot(res["u"])
-    # ax[1].set_ylabel(r'$u(t)$')
-    # ax[1].set_xlabel("time (ms)")
-    # plt.tight_layout()
-    # plt.show()
+    # plot results
+    fig, ax = plt.subplots(nrows=3, figsize=(12, 6))
+    ax[0].plot(res["s"])
+    ax[0].set_ylabel(r'$s(t)$')
+    ax[1].plot(res["v"])
+    ax[1].set_ylabel(r'$v(t)$')
+    ax[2].plot(res["w"])
+    ax[2].set_ylabel(r'$w(t)$')
+    ax[2].set_xlabel("time (ms)")
+    plt.tight_layout()
+    plt.show()

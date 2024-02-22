@@ -74,9 +74,9 @@ for cond in conditions:
     ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
     # run simulation
-    res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'v': f'p/{op}/v', 'u': f'p/{op}/u', 's': f'p/{op}/s', 'x': f'p/{op}/x', 'w': f'p/{op}/w'},
-                 inputs={f'p/{op}/I_ext': inp},
+    res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=2*dts, cutoff=cutoff, solver='euler',
+                 outputs={'v': f'p/{op}/v', 'u': f'p/{op}/u', 's': f'p/{op}/s', 'x': f'p/{op}/x'},
+                 inputs={f'p/{op}/I_ext': inp, f'p/{op}/w': w_in},
                  decorator=nb.njit, fastmath=True, float_precision="float64")
 
     # store results
@@ -86,55 +86,50 @@ for cond in conditions:
 # plotting
 ##########
 
+# conditions to plot
+plot_conditions = ["no_sfa", "weak_sfa", "strong_sfa"]
+
 # plot settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['figure.figsize'] = (12, 4)
 plt.rcParams['font.size'] = 12.0
 plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 6
 
-# define state variables to plot
-plot_vars = ["s", "v", "u_width"]
-ylabels = [r"$s$ (dimensionless)", r"$v$ (mV)", r"$w$ (pA)"]
-
 # create figure layout
 fig = plt.figure()
-grid = fig.add_gridspec(nrows=len(conditions), ncols=len(plot_vars))
-plt.suptitle("Lorentzian ansatz III: Corrected mean-field equations")
+grid = fig.add_gridspec(nrows=len(plot_conditions), ncols=2)
+# plt.suptitle(r"Lorentzian ansatz IV: Extracting $w(t)$ from the SNN dynamics")
 
-for i, cond in enumerate(conditions):
+for i, cond in enumerate(plot_conditions):
 
-    # load data
-    snn_data = pickle.load(open(f"results/snn_etas_{cond}.pkl", "rb"))["results"]
-    mf_data = pickle.load(open(f"results/mf_etas_global_{cond}.pkl", "rb"))["results"]
-    mfc_data = results[cond]
+    for j in range(2):
 
-    for j, v in enumerate(plot_vars):
+        c = f"{cond}_{j+1}"
+
+        # extract time
+        time = results[c]["s"].index
+
+        # load data
+        snn_data = pickle.load(open(f"results/snn_etas_{c}.pkl", "rb"))["results"]
+        mf_data = pickle.load(open(f"results/mf_etas_global_{c}.pkl", "rb"))["results"]
+        mfc_data = results[c]
 
         # plot mean-field vs. SNN dynamics
         ax = fig.add_subplot(grid[i, j])
-        if v == "u_width":
-            ax.plot(mf_data.index, snn_data[v], color="black", label="SNN")
-            ax.plot(mfc_data["w"], color="darkorange", label="MF-c")
-            ax2 = ax.twinx()
-            ax2.plot(mf_data.index, snn_data["u_errors"], color="darkred", alpha=0.5)
-            ax2.set_ylim([0.0, 1.0])
-            if i == 2:
-                ax2.set_ylabel("KLD", color="darkred")
-        else:
-            ax.plot(mf_data.index, snn_data[v], label="SNN", color="black")
-            ax.plot(mf_data[v], label="MF", color="royalblue")
-            ax.plot(mfc_data[v], label="MF-c", color="darkorange")
-        if i == len(conditions)-1 and j == 1:
+        ax.plot(mf_data.index, snn_data["s"], label="SNN", color="black")
+        ax.plot(mf_data["s"], label="MF", color="royalblue")
+        ax.plot(mfc_data["s"], label="MF-c", color="darkorange")
+        if i == len(plot_conditions)-1:
             ax.set_xlabel("time (ms)")
-        if i == 2:
-            ax.set_ylabel(ylabels[j])
+        if j == 0 and i == 1:
+            ax.set_ylabel(r"$s$ (dimensionless)")
         if i == 0 and j == 1:
             ax.legend()
 
