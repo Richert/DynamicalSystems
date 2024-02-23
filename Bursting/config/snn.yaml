@@ -2,11 +2,11 @@
 ---
 
 # adIK neurons with neuron-specific recovery variable
-adik_op_sfa:
+adik_op_mu:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*mean(s)*(E_r - v)) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*mean(x)"
+    - "u' = (b*(v-v_r) + mu - u) / tau_u + kappa*mean(x)"
     - "x' = (spike-x)/tau_x"
     - "s' = -s/tau_s + spike"
   variables:
@@ -19,6 +19,7 @@ adik_op_sfa:
     v_r: -60.0
     v_theta: -40.0
     eta: 0.0
+    mu: 0.0
     g: 1.0
     E_r: 0.0
     b: -2.0
@@ -95,10 +96,10 @@ adik_global:
     - adik_op_global
 
 # population of adIK neurons with global spike frequency adaptation variable
-adik_sfa:
+adik_mu:
   base: NodeTemplate
   operators:
-    - adik_op_sfa
+    - adik_op_mu
 
 # population of adIK neurons with neuron-specific recovery variable
 adik:

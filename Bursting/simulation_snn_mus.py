@@ -112,7 +112,7 @@ def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: 
 pool = Parallel(n_jobs=10)
 
 # define level of heterogeneity
-delta = 1.0
+delta = 5.0
 
 # define conditions
 cond_map = {
@@ -135,6 +135,7 @@ for cond in conditions:
     v_r = -60.0  # unit: mV
     v_t = -40.0  # unit: mV
     eta = 0.0  # unit: pA
+    mu = 0.0  # unit: pA
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
     tau_u = 35.0
@@ -157,8 +158,8 @@ for cond in conditions:
     inp[int(2000/dt):int(5000/dt), 0] += cond_map[cond]["eta_inc"]
 
     # define lorentzian distribution of etas
-    # bs = b + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
-    bs = lorentzian(N, b, Delta, b - 20.0, b + 20.0)
+    mus = mu + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
+    bs = lorentzian(N, b, Delta/5.0, b - 20.0, b + 20.0)
 
     # define connectivity
     # W = random_connectivity(N, N, 0.2)
@@ -168,13 +169,13 @@ for cond in conditions:
 
     # initialize model
     node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": bs, "kappa": kappa,
-                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_r, "tau_x": tau_x}
+                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_r, "tau_x": tau_x, "mu": mus}
 
     # initialize model
     net = Network(dt=dt, device="cpu")
-    net.add_diffeq_node("sfa", f"config/snn/adik", #weights=W, source_var="s", target_var="s_in",
+    net.add_diffeq_node("sfa", f"config/snn/adik_mu", #weights=W, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                        node_vars=node_vars.copy(), op="adik_op", spike_reset=v_reset, spike_threshold=v_peak,
+                        node_vars=node_vars.copy(), op="adik_op_mu", spike_reset=v_reset, spike_threshold=v_peak,
                         verbose=False, clear=True, N=N, float_precision="float64")
 
     # perform simulation
@@ -203,7 +204,7 @@ for cond in conditions:
     # save results to file
     results = {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z), "theta": np.imag(z),
                "u_width": u_widths, "u_errors": u_errors}
-    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_bs_{cond}.pkl", "wb"))
+    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_mus_{cond}.pkl", "wb"))
 
     # plot results
     fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

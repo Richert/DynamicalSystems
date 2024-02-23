@@ -12,7 +12,7 @@ for cond in conditions:
 #############################################################################
 
 # prepare figure
-plot_variables = ["u", "v"]
+plot_variables = ["s", "u"]
 fig = plt.figure(figsize=(12, 8), dpi=130)
 grid = fig.add_gridspec(nrows=len(conditions), ncols=len(plot_variables))
 

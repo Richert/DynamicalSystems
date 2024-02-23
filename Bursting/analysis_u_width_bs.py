@@ -52,7 +52,7 @@ for cond in conditions:
     Delta = cond_map[cond]["delta"]
 
     # calculate explained variance
-    x = Delta*np.abs(data["v"] - v_r)
+    x = np.abs(b)*C*np.pi*data["r"]/k
     y = data["u_width"]
     var_explained = explained_variance_score(y, x)
 
@@ -60,7 +60,7 @@ for cond in conditions:
     results[cond]["x"] = x
     results[cond]["y"] = y
     results[cond]["var_explained"] = var_explained
-    results[cond]["time"] = signals[cond]["mf_bs"]["s"].index
+    results[cond]["time"] = signals[cond]["mf_etas"]["s"].index
     results[cond]["kld"] = data["u_errors"]
 
 # plotting
