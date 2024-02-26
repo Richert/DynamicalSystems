@@ -35,7 +35,7 @@ for cond in conditions:
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
     lam = 0.2*Delta
-    tau_u = 35.0
+    tau_u = 80.0
     mu = 0.0
     b = cond_map[cond]["b"]
     tau_s = 6.0
@@ -65,7 +65,7 @@ for cond in conditions:
 
     # run simulation
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'w': f'p/{op}/w'},
+                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v'},
                  inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64",
                  clear=False)
 
@@ -79,8 +79,8 @@ for cond in conditions:
     ax[0].set_ylabel(r'$s(t)$')
     ax[1].plot(res["v"])
     ax[1].set_ylabel(r'$v(t)$')
-    ax[2].plot(res["w"])
-    ax[2].set_ylabel(r'$w(t)$')
+    ax[2].plot(res["u"])
+    ax[2].set_ylabel(r'$u(t)$')
     ax[2].set_xlabel("time (ms)")
     plt.tight_layout()
     plt.show()

@@ -138,7 +138,7 @@ for cond in conditions:
     mu = 0.0  # unit: pA
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
-    tau_u = 35.0
+    tau_u = 80.0
     b = cond_map[cond]["b"]
     tau_s = 6.0
     tau_x = 300.0
@@ -204,7 +204,7 @@ for cond in conditions:
     # save results to file
     results = {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z), "theta": np.imag(z),
                "u_width": u_widths, "u_errors": u_errors}
-    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_mus_{cond}.pkl", "wb"))
+    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_bs_{cond}.pkl", "wb"))
 
     # plot results
     fig, ax = plt.subplots(nrows=2, figsize=(12, 6))

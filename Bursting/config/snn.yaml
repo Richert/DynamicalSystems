@@ -6,7 +6,7 @@ adik_op_mu:
   base: OperatorTemplate
   equations:
     - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g*mean(s)*(E_r - v)) / C"
-    - "u' = (b*(v-v_r) + mu - u) / tau_u + kappa*mean(x)"
+    - "u' = (b*(v-v_r+mu) - u) / tau_u + kappa*mean(x)"
     - "x' = (spike-x)/tau_x"
     - "s' = -s/tau_s + spike"
   variables:

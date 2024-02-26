@@ -269,7 +269,7 @@ for res, (ax1, ax2, ax3, ax4) in zip(results, axes):
     ax.sharey(ax2)
     ax.set_ylim([1e-5, 0.06])
     ax.set_yscale("log")
-    u_edges, u_hist = res["u_edges"], res["u_hist"]
+    u_edges, u_hist = res["u2_edges"], res["u2_hist"]
     ax.bar(u_edges, u_hist / np.sum(u_hist), width=1.0, color="darkorange")
     ax.set_xlabel(r"$u$ (pA)")
     ax.set_ylabel("")
