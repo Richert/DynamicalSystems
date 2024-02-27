@@ -112,7 +112,8 @@ def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: 
 pool = Parallel(n_jobs=10)
 
 # define level of heterogeneity
-delta = 5.0
+delta = 1.0
+lam = 1.0
 
 # define conditions
 cond_map = {
@@ -138,7 +139,7 @@ for cond in conditions:
     mu = 0.0  # unit: pA
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
-    tau_u = 80.0
+    tau_u = 50.0
     b = cond_map[cond]["b"]
     tau_s = 6.0
     tau_x = 300.0
@@ -159,7 +160,7 @@ for cond in conditions:
 
     # define lorentzian distribution of etas
     mus = mu + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
-    bs = lorentzian(N, b, Delta/5.0, b - 20.0, b + 20.0)
+    kappas = kappa + lam * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
 
     # define connectivity
     # W = random_connectivity(N, N, 0.2)
@@ -168,7 +169,7 @@ for cond in conditions:
     ###############
 
     # initialize model
-    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": bs, "kappa": kappa,
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": b, "kappa": kappas,
                  "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_r, "tau_x": tau_x, "mu": mus}
 
     # initialize model
