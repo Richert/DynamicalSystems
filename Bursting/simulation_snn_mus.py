@@ -112,8 +112,7 @@ def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: 
 pool = Parallel(n_jobs=10)
 
 # define level of heterogeneity
-delta = 1.0
-lam = 1.0
+delta = 2.0
 
 # define conditions
 cond_map = {
@@ -160,7 +159,6 @@ for cond in conditions:
 
     # define lorentzian distribution of etas
     mus = mu + Delta * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
-    kappas = kappa + lam * np.tan(0.5*np.pi*(2*np.arange(1, N+1)-N-1)/(N+1))
 
     # define connectivity
     # W = random_connectivity(N, N, 0.2)
@@ -169,7 +167,7 @@ for cond in conditions:
     ###############
 
     # initialize model
-    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": b, "kappa": kappas,
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": b, "kappa": kappa,
                  "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_r, "tau_x": tau_x, "mu": mus}
 
     # initialize model
