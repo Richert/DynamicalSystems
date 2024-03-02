@@ -137,7 +137,7 @@ b_op_corrected:
     - "r' = (k*w/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r+mu) - u)/tau_u + kappa*x"
-    - "w' = (absv(b)*(Delta + pi*r*C/k) + lam*x - w) / tau_u"
+    - "w' = (absv(b)*(Delta + pi*r*C/k) - w) / tau_u"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
@@ -147,7 +147,6 @@ b_op_corrected:
     w: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
-    lam: 0.2
     Delta: 1.0
     C: 100.0
     k: 0.7

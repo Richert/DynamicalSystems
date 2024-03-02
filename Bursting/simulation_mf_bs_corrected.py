@@ -13,8 +13,7 @@ model = "ik_b_corrected"
 op = "b_op_corrected"
 
 # define level of heterogeneity
-delta = 1.0
-lam = 1.0
+delta = 2.0
 
 # define conditions
 cond_map = {
@@ -63,7 +62,7 @@ for cond in conditions:
 
     # update parameters
     node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
-                 'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta, "mu": mu, "lam": lam}
+                 'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta, "mu": mu}
     ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
     # run simulation
