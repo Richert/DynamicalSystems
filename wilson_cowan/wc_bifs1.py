@@ -50,7 +50,7 @@ ode = ODESystem(eq_file="wc", auto_dir="~/PycharmProjects/auto-07p", init_cont=F
 # define the standard auto parameters
 algorithm_params = {"NTST": 400, "NCOL": 4, "IAD": 3, "IPLT": 0, "NBC": 0, "NINT": 0, "NMX": 8000, "NPR": 5,
                     "MXBF": 7, "IID": 2, "ITMX": 40, "ITNW": 40, "NWTN": 12, "JAC": 0, "EPSL": 1e-8, "EPSU": 1e-8,
-                    "EPSS": 1e-9, "DS": 1e-3, "DSMIN": 1e-12, "DSMAX": 5e-2, "IADS": 1, "THL": {}, "THU": {}}
+                    "EPSS": 1e-9, "DS": 1e-3, "DSMIN": 1e-12, "DSMAX": 1e-2, "IADS": 1, "THL": {}, "THU": {}}
 
 # perform bifurcation analysis for S_i = 1.35
 #############################################
@@ -117,18 +117,20 @@ markersize = 10
 fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
 
 ax = axes[0]
-ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:ss", ax=ax, color="blue")
-ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:lc", ax=ax, color="black", ignore=["BP"])
-ax.set_title("Equilibria in E as a function of S_e")
-ax.set_xlabel("S_e")
-ax.set_ylabel("E")
+ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:ss", ax=ax, color="blue", ignore=["BP", "UZ"])
+ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:lc", ax=ax, color="black", ignore=["BP", "UZ"])
+# ax.set_title("Equilibria in E as a function of S_e")
+ax.set_xlabel(r"$S_e$")
+ax.set_ylabel(r"$E$")
+ax.set_xlim([-1.0, 8.0])
 ax = axes[1]
-ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:ss", ax=ax, color="orange")
-ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:lc", ax=ax, color="black", ignore=["BP"])
-ax.set_title("Equilibria in I as a function of S_e")
-ax.set_xlabel("S_e")
-ax.set_ylabel("I")
-plt.suptitle("S_i = 1.8, a = 16, e = 15")
+ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:ss", ax=ax, color="orange", ignore=["BP", "UZ"])
+ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:lc", ax=ax, color="black", ignore=["BP", "UZ"])
+# ax.set_title("Equilibria in I as a function of S_e")
+ax.set_xlabel(r"$S_E$")
+ax.set_ylabel(r"$I$")
+ax.set_xlim([-1.0, 8.0])
+plt.suptitle(r"$S_I = 1.8$, $a = 16$, $e = 15$")
 plt.tight_layout()
 fig.canvas.draw()
 plt.savefig("wc_codim1_1.pdf")
@@ -136,18 +138,20 @@ plt.savefig("wc_codim1_1.pdf")
 # plot the 1D bifurcation diagram for S_I = 0
 fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
 ax = axes[0]
-ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:ss:2", ax=ax, color="blue")
-ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:lc:2", ax=ax, color="black", ignore=["BP"])
-ax.set_title("Equilibria in E as a function of S_e")
-ax.set_xlabel("S_e")
-ax.set_ylabel("E")
+ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:ss:2", ax=ax, color="blue", ignore=["BP", "UZ"])
+ode.plot_continuation("E/wc_e/s", "E/wc_e/u", cont="s_e:lc:2", ax=ax, color="black", ignore=["BP", "UZ"])
+# ax.set_title("Equilibria in E as a function of S_e")
+ax.set_xlabel(r"$S_E$")
+ax.set_ylabel(r"$E$")
+ax.set_xlim([-1.0, 8.0])
 ax = axes[1]
-ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:ss:2", ax=ax, color="orange")
-ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:lc:2", ax=ax, color="black", ignore=["BP"])
-ax.set_title("Equilibria in I as a function of S_e")
-ax.set_xlabel("S_e")
-ax.set_ylabel("I")
-plt.suptitle("S_i = 0.0, a = 16, e = 15")
+ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:ss:2", ax=ax, color="orange", ignore=["BP", "UZ"])
+ode.plot_continuation("E/wc_e/s", "I/wc_i/u", cont="s_e:lc:2", ax=ax, color="black", ignore=["BP", "UZ"])
+# ax.set_title("Equilibria in I as a function of S_e")
+ax.set_xlabel(r"$S_E$")
+ax.set_ylabel(r"$I$")
+ax.set_xlim([-1.0, 8.0])
+plt.suptitle(r"$S_I = 0.0$, $a = 16$, $e = 15$")
 plt.tight_layout()
 fig.canvas.draw()
 plt.savefig("wc_codim1_2.pdf")
