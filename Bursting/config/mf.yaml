@@ -5,9 +5,40 @@
 eta_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*absv(Delta - b*(C*pi*r/k))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "x' = (r-x) / tau_x"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    tau_u: 30.0
+    tau_s: 6.0
+    kappa: 10.0
+    tau_x: 300.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# adIK neurons with distributed eta
+eta_op_c:
+  base: OperatorTemplate
+  equations:
+    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(C*pi*r/k) - u) / tau_u + kappa*x"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
@@ -173,6 +204,12 @@ eta_pop:
   operators:
     - eta_op
 
+# adIK neuron population with distributed etas
+eta_pop_c:
+  base: NodeTemplate
+  operators:
+    - eta_op_c
+
 # adIK neuron population with distributed etas and a correction term
 eta_pop_corrected:
   base: NodeTemplate
@@ -239,3 +276,14 @@ ik_b_corrected:
     p: b_pop_corrected
   edges:
     - [p/b_op_corrected/s, p/b_op_corrected/s_in, null, {weight: 1.0}]
+
+ik_2pop:
+  base: CircuitTemplate
+  nodes:
+    p1: eta_pop
+    p2: eta_pop_c
+  edges:
+    - [p1/eta_op/s, p1/eta_op/s_in, null, {weight: 0.5}]
+    - [p1/eta_op/s, p2/eta_op_c/s_in, null, {weight: 0.5}]
+    - [p2/eta_op_c/s, p1/eta_op/s_in, null, {weight: 0.5}]
+    - [p2/eta_op_c/s, p2/eta_op_c/s_in, null, {weight: 0.5}]

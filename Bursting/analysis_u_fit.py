@@ -42,7 +42,8 @@ def multi_cauchy(centers: np.asarray, widths: np.asarray, bins: np.asarray):
     return x, y_pred
 
 
-def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: tuple = None, plot: bool = False):
+def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: tuple = None, plot: bool = False,
+             full_output: bool = False):
 
     # determine signal range
     smin, smax = (np.min(s), np.max(s))
@@ -81,11 +82,13 @@ def get_dist(params: np.ndarray, s: np.ndarray, n_bins: int, eval_range: tuple =
         ax.set_title(fr"KLD = {kld}")
         plt.show()
 
+    if full_output:
+        return {"kld": kld, "center": centers, "widths": widths, "prediction": y_pred, "target": y, "x": x}
     return kld
 
 
 def FWHM(s: np.ndarray, plot: bool, m: int = 1, n_bins: int = 500, eval_range: float = None, min_width: float = 1e-6,
-         kwargs: dict = None) -> tuple:
+         kwargs: dict = None) -> dict:
 
     if kwargs is None:
         kwargs = {}
@@ -100,7 +103,7 @@ def FWHM(s: np.ndarray, plot: bool, m: int = 1, n_bins: int = 500, eval_range: f
     coefs[m:] += width
 
     if max_width < min_width:
-        return coefs, 0.0
+        return {}
 
     # fit lorentzian
     center_bounds = [(smin, smax)] * m
@@ -109,17 +112,14 @@ def FWHM(s: np.ndarray, plot: bool, m: int = 1, n_bins: int = 500, eval_range: f
                    bounds=center_bounds + width_bounds, **kwargs)
     coefs = res.x
 
-    # compute goodness of fit
-    kld = get_dist(coefs, s, n_bins, eval_range=(smin-eval_range, smax+eval_range), plot=plot)
-
-    return coefs, kld
+    return get_dist(coefs, s, n_bins, eval_range=(smin-eval_range, smax+eval_range), plot=plot, full_output=True)
 
 
 def get_fwhm(signal: np.ndarray, pool: Parallel, m: int = 1, n_bins: int = 500, plot_steps: int = 1000,
              eval_range: float = None, min_width: float = 1e-6, **kwargs) -> tuple:
     results = pool(delayed(FWHM)(signal[i, :], (i+1) % plot_steps == 0, m, n_bins, eval_range, min_width, kwargs)
                    for i in range(signal.shape[0]))
-    return np.asarray([res[0] for res in results]), np.asarray([res[1] for res in results])
+    return results
 
 
 # preparations
@@ -155,19 +155,40 @@ min_width = 1e-10
 options = {"maxiter": 500}
 tol = 1e-5
 n_bins = 200
-plot_steps = 10000
+plot_steps = 100000
 eval_range = 100.0
 
 # fitting
 results = {}
 pool = Parallel(n_jobs=10)
 for cond in conditions:
-    coefs, klds = get_fwhm(signals[cond], pool=pool, m=m, plot_steps=plot_steps, n_bins=n_bins, eval_range=eval_range,
-                           tol=tol, options=options, min_width=min_width, method=method)
-    results[cond] = {"centers": np.asarray([coef[:m] for coef in coefs]),
-                     "widths": np.asarray([coef[m:] for coef in coefs]),
-                     "klds": klds}
 
-# plotting
-##########
+    # get fit
+    res = get_fwhm(signals[cond], pool=pool, m=m, plot_steps=plot_steps, n_bins=n_bins,
+                   eval_range=eval_range, tol=tol, options=options, min_width=min_width,
+                   method=method)
+    results[cond] = res
 
+    # plot fit
+    fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+
+    target = np.asarray([r["target"] for r in res]).T
+    prediction = np.asarray([r["prediction"] for r in res]).T
+
+    ax = axes[0]
+    ax.imshow(target, aspect="auto", interpolation="none", cmap="viridis")
+    ax.set_xlabel("time")
+    ax.set_ylabel("u")
+    ax.set_title("Target")
+
+    ax = axes[1]
+    ax.imshow(prediction, aspect="auto", interpolation="none", cmap="viridis")
+    ax.set_xlabel("time")
+    ax.set_ylabel("u")
+    ax.set_title("Prediction")
+
+    plt.tight_layout()
+    plt.show()
+
+# store results
+pickle.dump(results, open("results/u_fit.pkl", "wb"))
