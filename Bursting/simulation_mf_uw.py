@@ -9,9 +9,8 @@ import numba as nb
 ###################
 
 # pyrates model selection
-model = "ik_2pop"
-op1 = "eta_op"
-op2 = "eta_op_c"
+model = "ik_eta_uw"
+op = "eta_op_uw"
 
 # define conditions
 cond_map = {
@@ -60,13 +59,12 @@ for cond in conditions:
     # update parameters
     node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
                  'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
-    ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
-    ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
+    ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
     # run simulation
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s', 'u1': f'p1/{op1}/u', 'u2': f'p2/{op2}/u'},
-                 inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp}, decorator=nb.njit, fastmath=True,
+                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'w': f'p/{op}/w'},
+                 inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True,
                  float_precision="float64", clear=False)
 
     # save results to file
@@ -74,17 +72,13 @@ for cond in conditions:
     clear(ik)
 
     # plot results
-    fig, ax = plt.subplots(nrows=5, figsize=(12, 10))
-    ax[0].plot(res["s1"])
-    ax[0].set_ylabel(r'$s_1(t)$')
-    ax[1].plot(res["s2"])
-    ax[1].set_ylabel(r'$s_2(t)$')
-    ax[2].plot(res["u1"])
-    ax[2].set_ylabel(r'$u_1(t)$')
-    ax[3].plot(res["u2"])
-    ax[3].set_ylabel(r'$u_2(t)$')
-    ax[4].plot((res["s1"]*0.5 + res["s2"]*0.5))
-    ax[4].set_ylabel(r"$s_1 + s_2$")
-    ax[4].set_xlabel("time (ms)")
+    fig, ax = plt.subplots(nrows=3, figsize=(12, 6))
+    ax[0].plot(res["s"])
+    ax[0].set_ylabel(r'$s(t)$')
+    ax[1].plot(res["u"])
+    ax[1].set_ylabel(r'$u(t)$')
+    ax[2].plot(res["w"])
+    ax[2].set_ylabel(r'$w(t)$')
+    ax[2].set_xlabel("time (ms)")
     plt.tight_layout()
     plt.show()

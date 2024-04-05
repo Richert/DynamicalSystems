@@ -9,9 +9,10 @@ import numba as nb
 ###################
 
 # pyrates model selection
-model = "ik_2pop"
+model = "ik_3pop"
 op1 = "eta_op"
 op2 = "eta_op_c"
+eps = 1.0
 
 # define conditions
 cond_map = {
@@ -62,29 +63,50 @@ for cond in conditions:
                  'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
     ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
     ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
+    ik.update_var(node_vars={f"p3/{op2}/{key}": val for key, val in node_vars.items()})
+    ik.update_var(node_vars={f"p2/{op2}/eps": eps, f"p3/{op2}/eps": -eps})
 
     # run simulation
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s', 'u1': f'p1/{op1}/u', 'u2': f'p2/{op2}/u'},
-                 inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp}, decorator=nb.njit, fastmath=True,
-                 float_precision="float64", clear=False)
+                 outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s', 's3': f'p3/{op2}/s',
+                          'u1': f'p1/{op1}/u', 'u2': f'p2/{op2}/u', 'u3': f'p3/{op2}/u'},
+                 inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp, f'p3/{op2}/I_ext': inp},
+                 decorator=nb.njit, fastmath=True, float_precision="float64", clear=False)
 
     # save results to file
     # pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))
     clear(ik)
 
     # plot results
-    fig, ax = plt.subplots(nrows=5, figsize=(12, 10))
-    ax[0].plot(res["s1"])
-    ax[0].set_ylabel(r'$s_1(t)$')
-    ax[1].plot(res["s2"])
-    ax[1].set_ylabel(r'$s_2(t)$')
-    ax[2].plot(res["u1"])
-    ax[2].set_ylabel(r'$u_1(t)$')
-    ax[3].plot(res["u2"])
-    ax[3].set_ylabel(r'$u_2(t)$')
-    ax[4].plot((res["s1"]*0.5 + res["s2"]*0.5))
-    ax[4].set_ylabel(r"$s_1 + s_2$")
-    ax[4].set_xlabel("time (ms)")
+    fig, axes = plt.subplots(ncols=2, nrows=4, figsize=(16, 10))
+
+    # plot variable s
+    w = [0.5, 0.25, 0.25]
+    s_comb = np.zeros((res.shape[0],))
+    for i in range(3):
+        ax = axes[i, 0]
+        sig = res[f"s{i+1}"]
+        ax.plot(sig)
+        ax.set_ylabel(rf"$s_{i+1}(t)$")
+        s_comb += w[i]*sig
+    ax = axes[3, 0]
+    ax.plot(s_comb)
+    ax.set_ylabel(r"$\sum s_i$")
+    ax.set_xlabel("time (ms)")
+
+    # plot variable s
+    w = [0.7, 0.15, 0.15]
+    u_comb = np.zeros((res.shape[0],))
+    for i in range(3):
+        ax = axes[i, 1]
+        sig = res[f"u{i + 1}"]
+        ax.plot(sig)
+        ax.set_ylabel(rf"$u_{i+1}(t)$")
+        u_comb += w[i] * sig
+    ax = axes[3, 1]
+    ax.plot(u_comb)
+    ax.set_ylabel(r"$\sum u_i$")
+    ax.set_xlabel("time (ms)")
+
     plt.tight_layout()
     plt.show()
