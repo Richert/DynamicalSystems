@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.optimize import minimize
+from scipy.optimize import differential_evolution
 from pyrates import CircuitTemplate, clear
 from numba import njit
 from typing import Union
@@ -13,11 +13,16 @@ plt.rcParams['backend'] = 'TkAgg'
 
 
 def rmse(x: np.ndarray, y: np.ndarray):
-    diff = x - y
-    return
+    try:
+        diff = (x - y)**2
+        error = np.sqrt(np.mean(diff))
+    except RuntimeWarning:
+        error = np.inf
+    return error
 
 
-def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: float, cutoff: float, inp: np.ndarray):
+def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: float, cutoff: float, inp: np.ndarray,
+               maxiter: int = 10):
 
     # preparations
     model = "ik_2pop"
@@ -25,19 +30,29 @@ def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: fl
     op2 = "eta_op_c"
 
     # simulate model dynamics
-    ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
-    ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
-    ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
-    ik.update_var(node_vars={f"p2/{op2}/eps1": params[0], f"p2/{op2}/eps2": params[1]},
-                  edge_vars=[(f"p1/{op1}/s", f"p1/{op1}/s_in", {"weight": params[2]}),
-                             (f"p1/{op1}/s", f"p2/{op2}/s_in", {"weight": params[2]}),
-                             (f"p2/{op2}/s", f"p1/{op1}/s_in", {"weight": 1 - params[2]}),
-                             (f"p2/{op1}/s", f"p2/{op2}/s_in", {"weight": 1 - params[2]})])
-    res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s'},
-                 inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp},
-                 decorator=njit, fastmath=True, float_precision="float64", clear=False)
-    clear(ik)
+    success = False
+    iter = 0
+    while not success and iter < maxiter:
+        try:
+            ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
+            ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
+            ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
+            ik.update_var(node_vars={f"p2/{op2}/eps1": params[0], f"p2/{op2}/eps2": params[1]},
+                          edge_vars=[(f"p1/{op1}/s", f"p1/{op1}/s_in", {"weight": params[2]}),
+                                     (f"p1/{op1}/s", f"p2/{op2}/s_in", {"weight": params[2]}),
+                                     (f"p2/{op2}/s", f"p1/{op1}/s_in", {"weight": 1 - params[2]}),
+                                     (f"p2/{op2}/s", f"p2/{op2}/s_in", {"weight": 1 - params[2]})])
+            res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
+                         outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s'},
+                         inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp},
+                         decorator=njit, fastmath=True, float_precision="float64", clear=False, verbose=False)
+            success = True
+            clear(ik)
+        except (KeyError, IndexError, ImportError):
+            iter += 1
+    if not success:
+        raise ValueError("Model simulation did not finish successfully")
+
     return res["s1"].values*params[2] + res["s2"].values*(1 - params[2])
 
 
@@ -118,8 +133,8 @@ initial_coefs = np.asarray([1.0, 1.0, 0.5])
 bounds = [(0.0, 10.0), (0.0, 10.0), (0.0, 1.0)]
 
 # fitting procedure
-res = minimize(get_error, initial_coefs, args=(signals, cond_map, T, dt, dts, cutoff), bounds=bounds,
-               method="Nelder-Mead", tol=1e-6, options={"maxiter": 5000})
+res = differential_evolution(get_error, bounds=bounds, args=(signals, cond_map, T, dt, dts, cutoff),
+                             strategy="best2bin", maxiter=1000, popsize=30, tol=1e-3, atol=1e-4, disp=True, workers=16)
 coefs = res.x
 
 # get final model dynamics
