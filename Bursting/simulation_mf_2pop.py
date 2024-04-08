@@ -11,7 +11,7 @@ import numba as nb
 # pyrates model selection
 model = "ik_2pop"
 op1 = "eta_op"
-op2 = "eta_op_c"
+op2 = "eta_op_uw"
 
 # define conditions
 cond_map = {
@@ -83,7 +83,7 @@ for cond in conditions:
     ax[2].set_ylabel(r'$u_1(t)$')
     ax[3].plot(res["u2"])
     ax[3].set_ylabel(r'$u_2(t)$')
-    ax[4].plot((res["s1"]*0.5 + res["s2"]*0.5))
+    ax[4].plot((res["s1"]*0.4 + res["s2"]*0.6))
     ax[4].set_ylabel(r"$s_1 + s_2$")
     ax[4].set_xlabel("time (ms)")
     plt.tight_layout()
