@@ -38,7 +38,7 @@ eta_op_c:
   equations:
     - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(eps1*C*pi*r/k) - u) / tau_u + eps2*kappa*x"
+    - "u' = (eps*b*C*pi*r/k - u) / tau_u + kappa*x"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
@@ -60,8 +60,7 @@ eta_op_c:
     kappa: 10.0
     tau_x: 300.0
     eta: 0.0
-    eps1: 1.0
-    eps2: 1.0
+    eps: 1.0
     I_ext: input(0.0)
     s_in: input(0.0)
 

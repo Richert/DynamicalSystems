@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.optimize import differential_evolution
+from scipy.optimize import minimize
 from pyrates import CircuitTemplate, clear, clear_frontend_caches
 from numba import njit
 from typing import Union
@@ -32,11 +32,11 @@ def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: fl
     ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
     ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
     ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
-    ik.update_var(node_vars={f"p2/{op2}/eps1": params[0], f"p2/{op2}/eps2": params[1]},
-                  edge_vars=[(f"p1/{op1}/s", f"p1/{op1}/s_in", {"weight": params[2]}),
-                             (f"p1/{op1}/s", f"p2/{op2}/s_in", {"weight": params[2]}),
-                             (f"p2/{op2}/s", f"p1/{op1}/s_in", {"weight": 1 - params[2]}),
-                             (f"p2/{op2}/s", f"p2/{op2}/s_in", {"weight": 1 - params[2]})])
+    ik.update_var(node_vars={f"p2/{op2}/eps": params[0]},
+                  edge_vars=[(f"p1/{op1}/s", f"p1/{op1}/s_in", {"weight": params[1]}),
+                             (f"p1/{op1}/s", f"p2/{op2}/s_in", {"weight": params[1]}),
+                             (f"p2/{op2}/s", f"p1/{op1}/s_in", {"weight": 1 - params[1]}),
+                             (f"p2/{op2}/s", f"p2/{op2}/s_in", {"weight": 1 - params[1]})])
 
     # simulate model dynamics
     global model_idx
@@ -47,7 +47,7 @@ def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: fl
                  decorator=njit, fastmath=True, float_precision="float64", clear=False, verbose=False,
                  in_place=False, file_name=f"ik_{model_idx}")
     clear(ik)
-    return res["s1"].values*params[2] + res["s2"].values*(1 - params[2])
+    return res["s1"].values*params[1] + res["s2"].values*(1 - params[1])
 
 
 def get_error(params: np.ndarray, signals: dict, cond_map: dict, T: float, dt: float, dts: float, cutoff: float,
@@ -118,7 +118,7 @@ cond_map = {
 # load SNN data
 signals = {}
 for cond in conditions:
-    signals[cond] = pickle.load(open(f"results/snn_etas_{cond}.pkl", "rb"))["results"]["s"]
+    signals[cond] = pickle.load(open(f"results/snn_udist_{cond}.pkl", "rb"))["results"]["s"]
 
 # simulation parameters
 T = 7000.0
@@ -130,12 +130,12 @@ cutoff = 1000.0
 ###############
 
 # initial parameters and boundaries
-initial_coefs = np.asarray([1.0, 1.0, 0.5])
-bounds = [(0.0, 3.0), (0.0, 3.0), (0.0, 1.0)]
+initial_coefs = np.asarray([1.0, 0.5])
+bounds = [(0.0, 5.0), (0.0, 1.0)]
 
 # fitting procedure
-res = differential_evolution(get_error, bounds=bounds, args=(signals, cond_map, T, dt, dts, cutoff),
-                             strategy="best2bin", maxiter=100, popsize=20, tol=1e-2, atol=1e-3, disp=True, workers=16)
+res = minimize(get_error, initial_coefs, bounds=bounds, args=(signals, cond_map, T, dt, dts, cutoff),
+               method="Nelder-Mead", options={"maxiter": 500, "disp": True}, tol=1e-3)
 coefs = res.x
 
 # get final model dynamics
@@ -170,7 +170,8 @@ for i, cond in enumerate(cond_map):
         ax.set_xlabel("time")
         ax.legend()
 
-# padding
+# final touches
+fig.suptitle(f"Final parameters: {np.round(coefs, decimals=2)}")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 
 # saving/plotting
