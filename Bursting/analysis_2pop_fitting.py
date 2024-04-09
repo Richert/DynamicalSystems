@@ -2,23 +2,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy.optimize import differential_evolution
-from pyrates import CircuitTemplate, clear
+from pyrates import CircuitTemplate, clear, clear_frontend_caches
 from numba import njit
 from typing import Union
 plt.rcParams['backend'] = 'TkAgg'
 
+model_idx = 0
 
 # function definitions
 ######################
 
 
 def rmse(x: np.ndarray, y: np.ndarray):
-    try:
-        diff = (x - y)**2
-        error = np.sqrt(np.mean(diff))
-    except RuntimeWarning:
-        error = np.inf
-    return error
+    e = np.sqrt(np.mean((x - y)**2))
+    if np.isnan(e) or np.isinf(e):
+        e = 1e10
+    return e
 
 
 def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: float, cutoff: float, inp: np.ndarray,
@@ -29,35 +28,30 @@ def get_signal(params: np.ndarray, node_vars: dict, T: float, dt: float, dts: fl
     op1 = "eta_op"
     op2 = "eta_op_c"
 
-    # simulate model dynamics
-    success = False
-    iter = 0
-    while not success and iter < maxiter:
-        try:
-            ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
-            ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
-            ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
-            ik.update_var(node_vars={f"p2/{op2}/eps1": params[0], f"p2/{op2}/eps2": params[1]},
-                          edge_vars=[(f"p1/{op1}/s", f"p1/{op1}/s_in", {"weight": params[2]}),
-                                     (f"p1/{op1}/s", f"p2/{op2}/s_in", {"weight": params[2]}),
-                                     (f"p2/{op2}/s", f"p1/{op1}/s_in", {"weight": 1 - params[2]}),
-                                     (f"p2/{op2}/s", f"p2/{op2}/s_in", {"weight": 1 - params[2]})])
-            res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                         outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s'},
-                         inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp},
-                         decorator=njit, fastmath=True, float_precision="float64", clear=False, verbose=False)
-            success = True
-            clear(ik)
-        except (KeyError, IndexError, ImportError):
-            iter += 1
-    if not success:
-        raise ValueError("Model simulation did not finish successfully")
+    # initialize model
+    ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
+    ik.update_var(node_vars={f"p1/{op1}/{key}": val for key, val in node_vars.items()})
+    ik.update_var(node_vars={f"p2/{op2}/{key}": val for key, val in node_vars.items()})
+    ik.update_var(node_vars={f"p2/{op2}/eps1": params[0], f"p2/{op2}/eps2": params[1]},
+                  edge_vars=[(f"p1/{op1}/s", f"p1/{op1}/s_in", {"weight": params[2]}),
+                             (f"p1/{op1}/s", f"p2/{op2}/s_in", {"weight": params[2]}),
+                             (f"p2/{op2}/s", f"p1/{op1}/s_in", {"weight": 1 - params[2]}),
+                             (f"p2/{op2}/s", f"p2/{op2}/s_in", {"weight": 1 - params[2]})])
 
+    # simulate model dynamics
+    global model_idx
+    model_idx += 1
+    res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
+                 outputs={'s1': f'p1/{op1}/s', 's2': f'p2/{op2}/s'},
+                 inputs={f'p1/{op1}/I_ext': inp, f'p2/{op2}/I_ext': inp},
+                 decorator=njit, fastmath=True, float_precision="float64", clear=False, verbose=False,
+                 in_place=False, file_name=f"ik_{model_idx}")
+    clear(ik)
     return res["s1"].values*params[2] + res["s2"].values*(1 - params[2])
 
 
 def get_error(params: np.ndarray, signals: dict, cond_map: dict, T: float, dt: float, dts: float, cutoff: float,
-              full_output: bool = False) -> Union[float, tuple]:
+              full_output: bool = False, maxiter: int = 10) -> Union[float, tuple]:
 
     # get predictions for each condition
     predictions = {}
@@ -88,7 +82,14 @@ def get_error(params: np.ndarray, signals: dict, cond_map: dict, T: float, dt: f
                      'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
 
         # get prediction
-        predictions[cond] = get_signal(params, node_vars, T, dt, dts, cutoff, inp)
+        iteration = 0
+        while iteration < maxiter:
+            try:
+                predictions[cond] = get_signal(params, node_vars, T, dt, dts, cutoff, inp)
+                break
+            except (KeyError, ImportError):
+                clear_frontend_caches()
+                iteration += 1
 
     # calculate NMRSE across conditions
     error = 0.0
@@ -130,11 +131,11 @@ cutoff = 1000.0
 
 # initial parameters and boundaries
 initial_coefs = np.asarray([1.0, 1.0, 0.5])
-bounds = [(0.0, 10.0), (0.0, 10.0), (0.0, 1.0)]
+bounds = [(0.0, 3.0), (0.0, 3.0), (0.0, 1.0)]
 
 # fitting procedure
 res = differential_evolution(get_error, bounds=bounds, args=(signals, cond_map, T, dt, dts, cutoff),
-                             strategy="best2bin", maxiter=1000, popsize=30, tol=1e-3, atol=1e-4, disp=True, workers=16)
+                             strategy="best2bin", maxiter=200, popsize=10, tol=1e-2, atol=1e-3, disp=True, workers=16)
 coefs = res.x
 
 # get final model dynamics
