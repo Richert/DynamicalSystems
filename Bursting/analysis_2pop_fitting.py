@@ -135,7 +135,7 @@ bounds = [(0.0, 3.0), (0.0, 3.0), (0.0, 1.0)]
 
 # fitting procedure
 res = differential_evolution(get_error, bounds=bounds, args=(signals, cond_map, T, dt, dts, cutoff),
-                             strategy="best2bin", maxiter=200, popsize=10, tol=1e-2, atol=1e-3, disp=True, workers=16)
+                             strategy="best2bin", maxiter=100, popsize=20, tol=1e-2, atol=1e-3, disp=True, workers=16)
 coefs = res.x
 
 # get final model dynamics
