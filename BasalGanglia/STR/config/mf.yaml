@@ -8,37 +8,32 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - q - g_ampa*s_ampa - g_gaba*s_gaba)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_ampa*s_ampa*(E_ampa-v) + g_gaba*s_gaba*(E_gaba-v) + I_ext - u) / C"
-    - "u' = a*(b*(v-v_r) - u) + d*r"
-    - "s_ampa' = -s_ampa/tau_ampa + r_e"
-    - "s_gaba' = -s_gaba/tau_gaba + r_i"
+    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
+    - "u' = a*(b*(v-v_r) - u) + kappa*r"
+    - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    s_ampa: variable(0.0)
-    s_gaba: variable(0.0)
+    s: variable(0.0)
     Delta: 0.5
     C: 100.0
     k: 1.0
     v_r: -60.0
     v_t: -40.0
-    v_p: 50.0
-    v_z: -80.0
-    q: 0.0
-    g_ampa: 7.0
-    g_gaba: 5.0
-    E_ampa: 0.0
-    E_gaba: -60.0
-    tau_ampa: 6.0
-    tau_gaba: 4.0
+    g_e: 7.0
+    g_i: 5.0
+    E_e: 0.0
+    E_i: -60.0
+    tau_s: 4.0
     b: -2.0
     a: 0.03
-    d: 100.0
+    kappa: 100.0
+    eta: 0.0
     I_ext: input(0.0)
-    r_e: input(0.0)
-    r_i: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
 
 spn_op:
   base: ik_op
@@ -47,31 +42,29 @@ spn_op:
     Delta: 2.0
     v_r: -80.0
     v_t: -30.0
-    v_p: 15.0
-    v_z: -90.0
     a: 0.01
     b: -20.0
-    d: 90.0
+    kappa: 90.0
 
 spn_d1_op:
   base: spn_op
   equations:
     replace:
       v_r: v_r_d1
-      d: d_d1
-      g_ampa: g_ampa_d1
-      g_gaba: g_gaba_d1
+      kappa: kappa_d1
+      g_e: g_e_d1
+      g_i: g_i_d1
     add:
       - "v_r_d1 = v_r*(1+c1*phi)"
-      - "d_d1 = d*(1-c2*phi)"
-      - "g_ampa_d1 = g_ampa*(1+c3*phi)"
-      - "g_gaba_d1 = g_gaba*(1-c4*phi)"
+      - "kappa_d1 = kappa*(1-c2*phi)"
+      - "g_e_d1 = g_e*(1+c3*phi)"
+      - "g_i_d1 = g_i*(1-c4*phi)"
   variables:
     phi: input(0.0)
     v_r_d1: variable(-80.0)
     d_d1: variable(0.0)
-    g_ampa_d1: variable(0.0)
-    g_gaba_d1: variable(0.0)
+    g_e_d1: variable(0.0)
+    g_i_d1: variable(0.0)
     c1: 0.03
     c2: 0.3
     c3: 5.0
@@ -86,13 +79,13 @@ spn_d2_op:
       g_gaba: g_gaba_d2
     add:
       - "k_d2 = k*(1-c1*phi)"
-      - "g_ampa_d2 = g_ampa*(1+c2*phi)"
-      - "g_gaba_d2 = g_gaba*(1+c3*phi)"
+      - "g_e_d2 = g_e*(1+c2*phi)"
+      - "g_i_d2 = g_i*(1+c3*phi)"
   variables:
     phi: input(0.0)
     k_d2: variable(1.0)
-    g_ampa_d2: variable(0.0)
-    g_gaba_d2: variable(0.0)
+    g_e_d2: variable(0.0)
+    g_i_d2: variable(0.0)
     c1: 0.03
     c2: 1.0
     c3: 1.0
@@ -110,11 +103,9 @@ fsi_op:
     Delta: 1.0
     v_r: -70.0
     v_t: -50.0
-    v_p: 10.0
-    v_z: -80.0
     a: 0.2
     b: 0.025
-    d: 0.0
+    kappa: 0.0
     q: 0.5
     c1: 0.1
     phi: input(0.0)
@@ -153,7 +144,7 @@ spn:
   nodes:
     p: spn_pop
   edges:
-    - [p/spn_op/r, p/spn_op/r_i, null, {weight: 1.0}]
+    - [p/spn_op/s, p/spn_op/s_i, null, {weight: 1.0}]
 
 spn_d1:
   base: CircuitTemplate

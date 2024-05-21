@@ -7,14 +7,27 @@ from numba import njit
 neuron_type = 'spn'
 
 # redefine model parameters
-node_vars = {}
-edge_vars = [(f'p/{neuron_type}_op/r', f'p/{neuron_type}_op/r_i', {'weight': 5.0})]
+# model parameters
+C = 15.0
+k = 1.0
+v_r = -80.0
+v_t = -30.0
+Delta = 1.0
+kappa = 90.0
+a = 0.01
+b = -20.0
+tau_s = 4.0
+g_i = 5.0
+E_i = -60.0
+node_vars = {"C": C, "k": k, "v_r": v_r, "v_t": v_t, "tau_u": 1/a, "b": b, "kappa": kappa,
+             "g_i": g_i, "E_i": E_i, "tau_s": tau_s, "v": v_t, "Delta": Delta}
+edge_vars = [(f'p/{neuron_type}_op/s', f'p/{neuron_type}_op/s_i', {'weight': 1.0})]
 
 # load model template
-template = CircuitTemplate.from_yaml(f'config/model_def/{neuron_type}')
+template = CircuitTemplate.from_yaml(f'config/mf/{neuron_type}')
 
 # update template parameters
-template.update_var(node_vars=node_vars, edge_vars=edge_vars)
+template.update_var(node_vars={f"p/{neuron_type}_op/{key}": val for key, val in node_vars.items()}, edge_vars=edge_vars)
 
 # set pyrates-specific parameters
 T = 100.0
@@ -22,11 +35,11 @@ start = 300.0
 stop = 600.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + 300.0
+inp = np.zeros((int(T/dt),)) + 900.0
 inp[int(start/dt):int(stop/dt)] += 0.0
 backend = 'default'
 solver = 'euler'
-out_vars = ['r', 's_gaba', 'v']
+out_vars = ['r', 's', 'v']
 kwargs = {'vectorize': False, 'float_precision': 'float64', 'decorator': njit, 'fastmath': False}
 
 # perform simulation
