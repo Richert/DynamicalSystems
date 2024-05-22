@@ -29,14 +29,14 @@ C = 15.0
 k = 1.0
 v_r = -80.0
 v_t = -30.0
-v_spike = 15.0
-v_reset = -90.0
-Delta = 1.0
+v_spike = 1000.0
+v_reset = -1000.0
+Delta = 0.5
 kappa = 90.0
 a = 0.01
 b = -20.0
-tau_s = 4.0
-g_i = 5.0
+tau_s = 8.0
+g_i = 4.0
 E_i = -60.0
 W = np.load('config/msn_conn.npy')
 
@@ -45,12 +45,12 @@ spike_thresholds = lorentzian(N, eta=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 
 # define inputs
 T = 100.0
-cutoff = 0.0
+cutoff = 10.0
 start = 30.0
 stop = 60.0
 dt = 1e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt), 1)) + 900.0
+inp = np.zeros((int(T/dt), 1)) + 600.0
 # inp[int(start/dt):int(stop/dt)] += 50.0
 
 # collect parameters
@@ -68,7 +68,7 @@ net.add_diffeq_node("SPNs", node=f"config/snn/ik", weights=W, source_var="s", ta
                     verbose=False, clear=True)
 
 # perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False)
+obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False, cutoff=int(cutoff/dt))
 res = obs.to_numpy("out")
 
 # plot results

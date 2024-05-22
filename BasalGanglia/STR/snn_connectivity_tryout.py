@@ -22,10 +22,10 @@ def generate_connectivity(N: int, p: float, spatial_distribution: rv_discrete) -
 
 
 N = 1000
-p = 0.1
+p = 0.2
 
 xs = np.arange(0, N)
-ys = 1/(xs**2+1)
+ys = 1/(xs**(1.0)+1)
 ys /= np.sum(ys)
 spatial_distribution = rv_discrete(b=N, name='spatial_kernel', values=(xs, ys))
 

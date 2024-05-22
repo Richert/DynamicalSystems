@@ -11,12 +11,14 @@ ik_op:
     - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
     - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
     - "u' = a*(b*(v-v_r) - u) + kappa*r"
-    - "s' = -s/tau_s + r"
+    - "s' = x"
+    - "x' = (r - x*(tau_r + tau_d) - s)/(tau_r * tau_d)"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
     s: variable(0.0)
+    x: variable(0.0)
     Delta: 0.5
     C: 100.0
     k: 1.0
@@ -26,7 +28,8 @@ ik_op:
     g_i: 5.0
     E_e: 0.0
     E_i: -60.0
-    tau_s: 8.0
+    tau_d: 8.0
+    tau_r: 2.0
     b: -2.0
     a: 0.03
     kappa: 100.0
@@ -106,7 +109,6 @@ fsi_op:
     a: 0.2
     b: 0.025
     kappa: 0.0
-    q: 0.5
     c1: 0.1
     phi: input(0.0)
 
@@ -166,3 +168,18 @@ fsi:
     p: fsi_pop
   edges:
     - [p/fsi_op/r, p/fsi_op/r_i, null, {weight: 1.0}]
+
+str:
+  base: CircuitTemplate
+  nodes:
+    d1_spn: spn_pop
+    d2_spn: spn_pop
+    fsi: fsi_pop
+  edges:
+    - [d1_spn/spn_op/s, d1_spn/spn_op/s_i, null, {weight: 0.8}]
+    - [d1_spn/spn_op/s, d2_spn/spn_op/s_i, null, {weight: 0.4}]
+    - [d2_spn/spn_op/s, d1_spn/spn_op/s_i, null, {weight: 1.0}]
+    - [d2_spn/spn_op/s, d2_spn/spn_op/s_i, null, {weight: 1.2}]
+    - [fsi/fsi_op/s, d1_spn/spn_op/s_i, null, {weight: 3.0}]
+    - [fsi/fsi_op/s, d2_spn/spn_op/s_i, null, {weight: 2.0}]
+    - [fsi/fsi_op/s, fsi/fsi_op/s_i, null, {weight: 1.0}]
