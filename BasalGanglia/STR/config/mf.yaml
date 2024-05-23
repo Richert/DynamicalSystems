@@ -8,9 +8,9 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
-    - "u' = a*(b*(v-v_r) - u) + kappa*r"
+    - "r' = ((Delta+d)*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+d+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
     - "s' = x"
     - "x' = (r - x*(tau_r + tau_d) - s)/(tau_r * tau_d)"
   variables:
@@ -31,12 +31,13 @@ ik_op:
     tau_d: 8.0
     tau_r: 2.0
     b: -2.0
-    a: 0.03
+    tau_u: 33.33
     kappa: 100.0
     eta: 0.0
     I_ext: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
+    d: input(0.0)
 
 spn_op:
   base: ik_op
@@ -45,7 +46,7 @@ spn_op:
     Delta: 2.0
     v_r: -80.0
     v_t: -30.0
-    a: 0.01
+    tau_u: 100.0
     b: -20.0
     kappa: 90.0
 
