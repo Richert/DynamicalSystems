@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 #######################
 
 # neuron parameters
-C = 50.0
-k = 0.2
-v_r = -80.0
+C = 100.0
+k = 0.7
+v_r = -60.0
 v_t = -40.0
 tau_u = 100.0
-bs = [4.0, 8.0, 12.0]
-d = 200.0
-eta = 350.0
+bs = [-0.5, -0.1, 0.2]
+d = 100.0
+eta = 100.0
 tau_x = 350.0
 
 # constants
@@ -25,14 +25,14 @@ v_reset = -100.0
 
 def adik_vf(v, u, x, C, k, eta, v_r, v_t, tau_u, b, d, tau_x):
     dv = (k * (v - v_r) * (v - v_t) + eta - u) / C
-    du = (b * (v - v_r) - u) / tau_u + d * x
+    du = (b * (v - v_r) * (v - v_t) - u) / tau_u + d * x
     dx = -x / tau_x
     return np.asarray([dv, du, dx])
 
 
 def adik_run(T, dt, C, k, eta, v_r, v_t, tau_u, b, d, tau_x):
 
-    v = v_r
+    v = v_t
     u = 0.0
     x = 0.0
 
@@ -62,7 +62,7 @@ def adik_run(T, dt, C, k, eta, v_r, v_t, tau_u, b, d, tau_x):
 def adik_nullclines(v, k, eta, v_r, v_t, tau_u, b, d, x):
 
     nc1 = k*v**2 + k*(-v_r-v_t)*v + k*v_r*v_t + eta
-    nc2 = b*(v-v_r) + tau_u*d*x
+    nc2 = b*v**2 + b*(-v_r-v_t)*v + b*v_r*v_t + tau_u*d*x
 
     return nc1, nc2
 
@@ -170,7 +170,6 @@ for i, (b, v, u, x, ncs, vfs) in (
         for row in range(vf.shape[0]):
             for col in range(vf.shape[1]):
                 dv, du = vf[row, col, 0], vf[row, col, 1]
-                scale = scale
                 ax.annotate("", xy=[vgrid[col] + scale*dv, ugrid[row] + scale*du],
                             xytext=[vgrid[col], ugrid[row]], arrowprops=dict(width=0.5, headlength=4.0, headwidth=3.0,
                                                                              shrink=0.01, edgecolor="none",

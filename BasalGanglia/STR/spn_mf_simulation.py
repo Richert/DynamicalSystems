@@ -8,14 +8,14 @@ neuron_type = 'spn'
 
 # model parameters
 C = 80.0
-k = 1.0
+k = 0.13
 v_r = -81.0
 v_t = -45.0
-eta = 500.0
-Delta = 0.5
-kappa = 90.0
+eta = 100.0
+Delta = 0.9
+kappa = 150.0
 a = 0.01
-b = -20.0
+b = 5.0
 tau_r = 2.0
 tau_d = 8.0
 g_i = 4.0
