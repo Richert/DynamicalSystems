@@ -33,21 +33,26 @@ eta_op:
     s_in: input(0.0)
 
 # adIK neurons with distributed eta
-eta_op_c:
+eta_op_uw2:
   base: OperatorTemplate
   equations:
-    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "Delta_v = C*pi*r/k"
+    - "r' = (k*absv(Delta+w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (eps*b*C*pi*r/k - u) / tau_u + kappa*x"
+    - "w' = (Delta_b*(v-v_r)*(v-v_t) - w - Delta_b*Delta_v^2 + 2*b*v*Delta_v - b*Delta_v*(v_r+v_t)) / tau_u"
+    - "u' = (b*(v-v_r)*(v-v_t) - u - b*Delta_v^2 - 2*Delta_v*Delta_b + Delta_v*Delta_b*(v_r+v_t)) / tau_u + kappa*x"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
+    w: variable(0.0)
     x: variable(0.0)
     s: variable(0.0)
+    Delta_v: variable(0.0)
     Delta: 0.1
+    Delta_b: 0.01
     C: 100.0
     k: 0.7
     v_r: -60.0
@@ -60,7 +65,6 @@ eta_op_c:
     kappa: 10.0
     tau_x: 300.0
     eta: 0.0
-    eps: 1.0
     I_ext: input(0.0)
     s_in: input(0.0)
 
@@ -68,10 +72,10 @@ eta_op_c:
 eta_op_uw:
   base: OperatorTemplate
   equations:
-    - "r' = (k*(Delta + absv(w))/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
+    - "r' = (k*absv(Delta+w)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
-    - "w' = (b*C*pi*r/k - w) / tau_u"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "w' = (Delta_b*(v-v_r)*(v-v_t) - w) / tau_u"
+    - "u' = (b*(v-v_r)*(v-v_t) - u) / tau_u + kappa*x"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
@@ -82,6 +86,7 @@ eta_op_uw:
     x: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
+    Delta_b: 0.1
     C: 100.0
     k: 0.7
     v_r: -60.0
@@ -248,7 +253,7 @@ eta_pop_c:
 eta_pop_uw:
   base: NodeTemplate
   operators:
-    - eta_op_uw
+    - eta_op_uw2
 
 # adIK neuron population with distributed etas and a correction term
 eta_pop_corrected:
@@ -291,7 +296,7 @@ ik_eta_uw:
   nodes:
     p: eta_pop_uw
   edges:
-    - [p/eta_op_uw/s, p/eta_op_uw/s_in, null, {weight: 1.0}]
+    - [p/eta_op_uw2/s, p/eta_op_uw2/s_in, null, {weight: 1.0}]
 
 # adIK neuron population with distributed etas and a correction term
 ik_eta_corrected:

@@ -10,16 +10,16 @@ import numba as nb
 
 # pyrates model selection
 model = "ik_eta_uw"
-op = "eta_op_uw"
+op = "eta_op_uw2"
 
 # define conditions
 cond_map = {
-        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
-        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-        "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
-        "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
-        "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
+        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 150.0, "eta_init": 0.0, "b": -0.1, "delta": 5.0},
+        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 150.0, "eta_init": 0.0, "b": -0.1, "delta": 5.0},
+        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 150.0, "eta_init": 0.0, "b": -0.1, "delta": 5.0},
+        "no_sfa_2": {"kappa": 0.0, "eta": 0.0, "eta_inc": 150.0, "eta_init": 0.0, "b": -0.3, "delta": 5.0},
+        "weak_sfa_2": {"kappa": 100.0, "eta": 0.0, "eta_inc": 150.0, "eta_init": 0.0, "b": -0.3, "delta": 5.0},
+        "strong_sfa_2": {"kappa": 300.0, "eta": 0.0, "eta_inc": 150.0, "eta_init": 0.0, "b": -0.3, "delta": 5.0},
     }
 
 # conditions
@@ -27,18 +27,19 @@ conditions = ["no_sfa_1", "no_sfa_2", "weak_sfa_1", "weak_sfa_2", "strong_sfa_1"
 for cond in conditions:
 
     # model parameters
-    C = 100.0   # unit: pF
-    k = 0.7  # unit: None
+    C = 100.0  # unit: pF
+    k = 1.0  # unit: None
     v_r = -60.0  # unit: mV
     v_t = -40.0  # unit: mV
     eta = 0.0  # unit: pA
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
-    tau_u = 35.0
+    tau_u = 100.0
     b = cond_map[cond]["b"]
+    Delta_b = 0.01
     tau_s = 6.0
-    tau_x = 300.0
-    g = 15.0
+    tau_x = 350.0
+    g = 10.0
     E_r = 0.0
 
     # define inputs
@@ -58,7 +59,7 @@ for cond in conditions:
 
     # update parameters
     node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
-                 'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
+                 'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta, 'Delta_b': Delta_b}
     ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
     # run simulation

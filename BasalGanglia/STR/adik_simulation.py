@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 
 # neuron parameters
 C = 100.0
-k = 0.7
+k = 0.5
 v_r = -60.0
 v_t = -40.0
 tau_u = 100.0
-bs = [-0.5, -0.1, 0.2]
-d = 100.0
+bs = [-0.4, -0.2, -0.1]
+d = 200.0
 eta = 100.0
 tau_x = 350.0
 
