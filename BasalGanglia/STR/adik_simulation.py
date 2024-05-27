@@ -5,19 +5,19 @@ import matplotlib.pyplot as plt
 #######################
 
 # neuron parameters
-C = 100.0
-k = 0.5
-v_r = -60.0
-v_t = -40.0
+C = 50.0
+k = 1.0
+v_r = -80.0
+v_t = -30.0
 tau_u = 100.0
-bs = [-0.4, -0.2, -0.1]
+bs = [-0.1, -0.05, -0.01]
 d = 200.0
-eta = 100.0
+eta = 800.0
 tau_x = 350.0
 
 # constants
-v_cutoff = 100.0
-v_reset = -100.0
+v_cutoff = 40.0
+v_reset = -55.0
 
 # function definitions
 ######################
@@ -146,7 +146,7 @@ for i, (b, v, u, x, ncs, vfs) in (
     # recovery variable
     ax = fig.add_subplot(grid[1, i * 2:(i + 1) * 2])
     ax.plot(time, u, color="darkorange")
-    ax.set_ylim([-400.0, 450.0])
+    ax.set_ylim([-300.0, 300.0])
     if i == 0:
         ax.set_ylabel(r"$u$ (pA)")
 
@@ -176,8 +176,8 @@ for i, (b, v, u, x, ncs, vfs) in (
                                                                              facecolor="black"))
         if i == 0 and j == 0:
             ax.set_ylabel(r"$u$ (pA)")
-        ax.set_ylim([0.0, 400.0])
-        ax.set_xlim([-75.0, -25.0])
+        ax.set_ylim([-100.0, 300.0])
+        ax.set_xlim([-85.0, -25.0])
         if j > 0:
             ax.set_yticklabels([])
         ax.set_title(rf"$a = {np.round(x_vals[j], decimals=3)}$")
