@@ -16,8 +16,8 @@ path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 # config
-n_dim = 5
-n_params = 25
+n_dim = 4
+n_params = 22
 a = ODESystem.from_yaml("config/mf/spn", auto_dir=auto_dir, working_dir="config", init_cont=False)
 
 # initial continuation in time to converge to fixed point
@@ -62,11 +62,14 @@ r2_sols, r2_cont = a.run(starting_point=f'UZ1', c='qif', ICP=7, NPAR=n_params, N
                          bidirectional=True)
 
 # limit cycle continuation in D
-a.run(starting_point='HB1', ICP=7, name=f'D:lc:1', origin=r2_cont, NMX=8000, DSMAX=0.01,
+a.run(starting_point='HB1', ICP=7, name=f'D:lc:1', origin=r2_cont, NMX=8000, DSMAX=0.05,
       NPR=20, RL1=0.5, RL0=0.05, NDIM=n_dim, NPAR=n_params, ISW=-1, ISP=2, IPS=2, ILP=1)
 
 # plotting
 ##########
+
+# save results
+a.to_file("../results/spn_bifurcations.pkl")
 
 # D vs I
 fig, ax = plt.subplots(figsize=(6, 6))

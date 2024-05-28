@@ -1,6 +1,7 @@
 import numba as nb
 nb.config.THREADING_LAYER = 'omp'
 nb.set_num_threads(2)
+import pickle
 import numpy as np
 from rectipy import Network
 import matplotlib.pyplot as plt
@@ -62,6 +63,9 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbos
 s = obs.to_numpy("out")
 v = obs.to_numpy(("SPNs", "v"))
 
+# save results
+pickle.dump({'s': s, 'v': v}, open("results/spn_singleneuron.pkl", "wb"))
+
 # plot results
 fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
 ax = axes[0]
@@ -74,6 +78,3 @@ ax.set_xlabel("time")
 ax.set_ylabel("s")
 plt.tight_layout()
 plt.show()
-
-# save results
-# pickle.dump({'results': res}, open("results/spn_rnn.p", "wb"))

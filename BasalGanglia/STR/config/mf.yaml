@@ -11,14 +11,12 @@ ik_op:
     - "r' = ((Delta+d)*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
     - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+d+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
-    - "s' = x"
-    - "x' = (r - x*(tau_r + tau_d) - s)/(tau_r * tau_d)"
+    - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
     s: variable(0.0)
-    x: variable(0.0)
     Delta: 0.5
     C: 100.0
     k: 1.0
@@ -28,13 +26,49 @@ ik_op:
     g_i: 5.0
     E_e: 0.0
     E_i: -60.0
-    tau_d: 8.0
-    tau_r: 2.0
+    tau_s: 8.0
     b: -2.0
     tau_u: 33.33
     kappa: 100.0
     eta: 0.0
     I_ext: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+    d: input(0.0)
+
+# izhikevich operator with biophysiologically relevant parameters
+mg_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = ((Delta+d)*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e*(1-sigmoid(x)) - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+d+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(1-sigmoid(x))*(E_e-v) + g_i*s_i*(E_i-v) + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
+    - "s' = -s/tau_s + r"
+    - "x' = x2"
+    - "x2' = alpha*s_e*(1-sigmoid(x))/tau_x - 2.0*x2/tau_x - x/tau_x^2"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    s: variable(0.0)
+    x: variable(0.0)
+    x2: variable(0.0)
+    Delta: 0.5
+    C: 100.0
+    k: 1.0
+    v_r: -60.0
+    v_t: -40.0
+    g_e: 7.0
+    g_i: 5.0
+    E_e: 0.0
+    E_i: -60.0
+    b: -2.0
+    tau_u: 33.33
+    tau_s: 8.0
+    tau_x: 500.0
+    kappa: 100.0
+    I_ext: input(0.0)
+    alpha: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
     d: input(0.0)
@@ -136,11 +170,23 @@ fsi_pop:
   operators:
     - fsi_op
 
+mg_pop:
+  base: NodeTemplate
+  operators:
+    - mg_op
+
 # edge templates
 ################
 
 # circuit templates
 ###################
+
+mg:
+  base: CircuitTemplate
+  nodes:
+    p: mg_pop
+  edges:
+    - [ p/mg_op/s, p/mg_op/s_i, null, { weight: 1.0 } ]
 
 spn:
   base: CircuitTemplate
