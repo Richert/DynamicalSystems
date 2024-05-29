@@ -70,5 +70,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0.01, wspace=0.01
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'results/msn.svg')
+plt.savefig(f'results/msn.pdf')
 plt.show()
