@@ -12,7 +12,8 @@ spike_field = "dff_traces_5hz"
 speed_field = "speed_traces_5hz"
 
 # meta parameters
-speed_threshold = 0.6
+speed_threshold = 0.1
+acceleration_threshold = 0.1
 sigma_speed = 50
 sigma_rate = 3
 
@@ -35,16 +36,24 @@ for file in os.listdir(f"{path}/{drug}/{dose}"):
     avg_sr = np.mean(smoothed_spikes, axis=0)
     std_sr = np.std(smoothed_spikes, axis=0)
     smoothed_speed = gaussian_filter1d(speed, sigma=sigma_speed)
+    smoothed_speed /= np.max(smoothed_speed)
+
+    # calculate acceleration
+    speed_diff = np.diff(smoothed_speed, 1)
+    speed_diff /= np.max(speed_diff)
 
     # plotting
     if condition == "veh":
         fig, axes = plt.subplots(nrows=2, figsize=(12, 6), sharex=True)
         ax = axes[0]
-        ax.plot(smoothed_speed, color="black")
+        ax.plot(smoothed_speed, color="black", label="speed")
+        ax.plot(speed_diff, color="red", label="acceleration")
+        ax.legend()
         ax.set_ylabel("speed")
         ax = axes[1]
-        ax.plot(avg_sr * (smoothed_speed < speed_threshold), label="slow")
-        ax.plot(avg_sr * (smoothed_speed >= speed_threshold), label="fast")
+        ax.plot(avg_sr[:-1] * (smoothed_speed[:-1] < speed_threshold), label="slow")
+        ax.plot(avg_sr[:-1] * (smoothed_speed[:-1] >= speed_threshold) * (speed_diff > acceleration_threshold), label="accelerating")
+        ax.plot(avg_sr[:-1] * (smoothed_speed[:-1] >= speed_threshold) * (speed_diff < -acceleration_threshold), label="decelerating")
         ax.fill_between(x=np.arange(0, avg_sr.shape[0]), y1=avg_sr - 0.25*std_sr, y2=avg_sr + 0.25*std_sr, alpha=0.5,
                         color="black")
         ax.legend()
