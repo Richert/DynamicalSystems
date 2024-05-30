@@ -15,7 +15,7 @@ speed_field = "speed_traces_5hz"
 speed_threshold = 0.1
 acceleration_threshold = 0.1
 sigma_speed = 50
-sigma_rate = 3
+sigma_rate = 2
 
 # analysis
 ##########
@@ -41,13 +41,16 @@ for file in os.listdir(f"{path}/{drug}/{dose}"):
     # calculate acceleration
     speed_diff = np.diff(smoothed_speed, 1)
     speed_diff /= np.max(speed_diff)
+    diff2 = np.diff(speed_diff, 1)
+    diff2 /= np.max(diff2)
 
     # plotting
     if condition == "veh":
         fig, axes = plt.subplots(nrows=2, figsize=(12, 6), sharex=True)
         ax = axes[0]
-        ax.plot(smoothed_speed, color="black", label="speed")
-        ax.plot(speed_diff, color="red", label="acceleration")
+        ax.plot(smoothed_speed, color="black", label="v")
+        ax.plot(speed_diff, color="red", label="dv/dt")
+        ax.plot(diff2, color="green", label="dv2/d2t")
         ax.legend()
         ax.set_ylabel("speed")
         ax = axes[1]
