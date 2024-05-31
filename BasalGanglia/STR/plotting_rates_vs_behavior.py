@@ -9,12 +9,15 @@ from pandas import read_csv, DataFrame
 # choose condition
 drug = "SKF38393"
 dose = "Vehicle"
-mouse = "m120"
+mouse = "m106"
 
 # meta parameters
 sigma_movement = 20
-sigma_rates = 2
+sigma_rates = 5
 sr = 5
+threshold = 0.02
+threshold2 = 0.05
+threshold3 = 0.05
 
 # load data
 path = "/run/user/1000/gvfs/smb-share:server=fsmresfiles.fsm.northwestern.edu,share=fsmresfiles/Basic_Sciences/Phys/Kennedylab/Parkerlab/Richard"
@@ -37,38 +40,47 @@ markersize = 6
 ##########
 
 results = {"condition": [], "velocity": [], "acceleration": [], "angle": [], "angle_change": [],
-           "rate_mean": [], "rate_std": [], "time": []}
+           "rate_mean": [], "state": [], "time": []}
 for cond in ["amph", "veh"]:
 
     # extract data
     data_tmp = data.loc[data["condition"] == cond, :]
     rate_mean = data_tmp.loc[:, "rate_mean"]
-    rate_std = data_tmp.loc[:, "rate_std"]
     velocity = data_tmp.loc[:, "velocity"]
     angle = data_tmp.loc[:, "angle"]
 
     # calculate smooth variables
     rate_mean_smooth = gaussian_filter1d(rate_mean, sigma=sigma_rates)
-    rate_std_smooth = gaussian_filter1d(rate_std, sigma=sigma_rates)
     velocity_smooth = gaussian_filter1d(velocity, sigma=sigma_movement)
     angle_smooth = gaussian_filter1d(angle, sigma=sigma_movement)
+    rate_mean_smooth /= np.max(rate_mean_smooth)
+    velocity_smooth /= np.max(velocity_smooth)
 
     # calculate change in velocity and angle
     acceleration = np.diff(velocity_smooth, 1)
     acceleration /= np.max(acceleration)
     angle_change = np.diff(angle_smooth, 1)
     angle_change /= np.max(angle_change)
+    n = len(acceleration)
+
+    # find behavioral state
+    rest = velocity_smooth[:n] < threshold
+    decelerating = acceleration < -threshold2
+    accelerating = acceleration > threshold3
+    state = np.zeros_like(rest, dtype=np.int32)
+    state[rest] = 1
+    state[decelerating] = 2
+    state[accelerating] = 3
 
     # save data
-    n = len(acceleration)
     results["condition"].extend([cond] * n)
     results["time"].extend(np.arange(0, n, dtype=np.float64) / sr)
     results["rate_mean"].extend(rate_mean_smooth[:n].tolist())
-    results["rate_std"].extend(rate_std_smooth[:n].tolist())
     results["velocity"].extend(velocity_smooth[:n].tolist())
     results["acceleration"].extend(acceleration[:n].tolist())
     results["angle"].extend(angle_smooth[:n].tolist())
     results["angle_change"].extend(angle_change[:n].tolist())
+    results["state"].extend(state[:n].tolist())
 
 results = DataFrame.from_dict(results)
 
@@ -78,7 +90,8 @@ results = DataFrame.from_dict(results)
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(nrows=3, ncols=2)
 titles = ["Control condition", "Dopamine condition"]
-window = [200, 600]
+window = [200, 500]
+state_colors = ["black", "darkred", "darkgreen"]
 c1 = "black"
 c2 = "darkred"
 for i, cond in enumerate(["veh", "amph"]):
@@ -86,7 +99,7 @@ for i, cond in enumerate(["veh", "amph"]):
     # reduce data to condition
     results_tmp = results.loc[results["condition"] == cond, :]
     results_tmp = results_tmp.loc[(window[0] <= results_tmp.loc[:, "time"]) & (results_tmp.loc[:, "time"] < window[1])]
-    x = results_tmp.loc[:, "time"]
+    x = results_tmp.loc[:, "time"].values
 
     # movement
     ax = fig.add_subplot(grid[0, i])
@@ -105,24 +118,26 @@ for i, cond in enumerate(["veh", "amph"]):
     ax2 = ax.twinx()
     ax2.plot(x, results_tmp.loc[:, "angle_change"], color=c2)
     if i == 0:
-        ax.set_ylabel("angle", color=c1)
+        ax.set_ylabel("HNT angle", color=c1)
     else:
-        ax2.set_ylabel("angle change", color=c2)
+        ax2.set_ylabel("HNT angle change", color=c2)
 
     # neural rates
     ax = fig.add_subplot(grid[2, i])
     mean_rate = results_tmp.loc[:, "rate_mean"]
-    v = results_tmp.loc[:, "rate_std"]
-    lower_bound = mean_rate - 0.25*v
-    lower_bound[lower_bound < 0.0] = 0.0
-    upper_bound = mean_rate + 0.25*v
+    mean_rate /= np.max(mean_rate)
+    state = results_tmp.loc[:, "state"].values
     ax.plot(x, mean_rate, color=c1, label="mean rate")
-    # ax.plot(avg_sr[:-1] * (smoothed_speed[:-1] >= speed_threshold) * (speed_diff > acceleration_threshold), label="accelerating")
-    # ax.plot(avg_sr[:-1] * (smoothed_speed[:-1] >= speed_threshold) * (speed_diff < -acceleration_threshold), label="decelerating")
-    ax.fill_between(x=x, y1=lower_bound, y2=upper_bound, alpha=0.3, color=c1, linewidth=0.0)
+    borders = np.argwhere(np.abs(np.diff(state, 1)) > 0.0).squeeze().tolist() + [len(state)-1]
+    b0 = 0
+    for b in borders:
+        idx = state[b0+1]
+        if idx != 0:
+            ax.fill_betweenx(y=[0.0, 1.0], x1=x[b0], x2=x[b], alpha=0.3, color=state_colors[idx-1])
+        b0 = b
     # ax.legend()
     if i == 0:
-        ax.set_ylabel("MSN spike rate")
+        ax.set_ylabel("norm. spike rate")
     ax.set_xlabel("time (s)")
 
 # padding
