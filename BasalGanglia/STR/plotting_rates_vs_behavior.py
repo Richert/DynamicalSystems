@@ -16,8 +16,8 @@ sigma_movement = 20
 sigma_rates = 5
 sr = 5
 threshold = 0.02
-threshold2 = 0.05
-threshold3 = 0.05
+threshold2 = 0.08
+threshold3 = 0.08
 
 # load data
 path = "/run/user/1000/gvfs/smb-share:server=fsmresfiles.fsm.northwestern.edu,share=fsmresfiles/Basic_Sciences/Phys/Kennedylab/Parkerlab/Richard"
@@ -30,10 +30,10 @@ plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 200
-plt.rcParams['font.size'] = 10.0
-plt.rcParams['axes.titlesize'] = 10
-plt.rcParams['axes.labelsize'] = 10
-plt.rcParams['lines.linewidth'] = 1.0
+plt.rcParams['font.size'] = 12.0
+plt.rcParams['axes.titlesize'] = 12
+plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['lines.linewidth'] = 1.5
 markersize = 6
 
 # analysis
@@ -61,6 +61,10 @@ for cond in ["amph", "veh"]:
     acceleration /= np.max(acceleration)
     angle_change = np.diff(angle_smooth, 1)
     angle_change /= np.max(angle_change)
+    acceleration[acceleration > 0] = np.sqrt(acceleration[acceleration > 0])
+    acceleration[acceleration < 0] = -np.sqrt(-acceleration[acceleration < 0])
+    angle_change[angle_change > 0] = np.sqrt(angle_change[angle_change > 0])
+    angle_change[angle_change < 0] = -np.sqrt(-angle_change[angle_change < 0])
     n = len(acceleration)
 
     # find behavioral state
@@ -87,8 +91,8 @@ results = DataFrame.from_dict(results)
 # plotting
 ##########
 
-fig = plt.figure(figsize=(12, 6))
-grid = fig.add_gridspec(nrows=3, ncols=2)
+fig = plt.figure(figsize=(12, 4))
+grid = fig.add_gridspec(nrows=2, ncols=2)
 titles = ["Control condition", "Dopamine condition"]
 window = [200, 500]
 state_colors = ["black", "darkred", "darkgreen"]
@@ -99,34 +103,24 @@ for i, cond in enumerate(["veh", "amph"]):
     # reduce data to condition
     results_tmp = results.loc[results["condition"] == cond, :]
     results_tmp = results_tmp.loc[(window[0] <= results_tmp.loc[:, "time"]) & (results_tmp.loc[:, "time"] < window[1])]
+    state = results_tmp.loc[:, "state"].values
     x = results_tmp.loc[:, "time"].values
 
     # movement
     ax = fig.add_subplot(grid[0, i])
-    ax.plot(x, results_tmp.loc[:, "velocity"], color=c1)
-    ax2 = ax.twinx()
-    ax2.plot(x, results_tmp.loc[:, "acceleration"], color=c2)
-    if i == 0:
-        ax.set_ylabel("velocity", color=c1)
-    else:
-        ax2.set_ylabel("acceleration", color=c2)
-    ax.set_title(titles[i])
-
-    # angles
-    ax = fig.add_subplot(grid[1, i])
-    ax.plot(x, results_tmp.loc[:, "angle"], color=c1)
+    ax.plot(x, results_tmp.loc[:, "acceleration"], color=c1)
     ax2 = ax.twinx()
     ax2.plot(x, results_tmp.loc[:, "angle_change"], color=c2)
     if i == 0:
-        ax.set_ylabel("HNT angle", color=c1)
+        ax.set_ylabel("acceleration", color=c1)
     else:
-        ax2.set_ylabel("HNT angle change", color=c2)
+        ax2.set_ylabel("change in HNT angle", color=c2)
+    ax.set_title(titles[i])
 
     # neural rates
-    ax = fig.add_subplot(grid[2, i])
+    ax = fig.add_subplot(grid[1, i])
     mean_rate = results_tmp.loc[:, "rate_mean"]
     mean_rate /= np.max(mean_rate)
-    state = results_tmp.loc[:, "state"].values
     ax.plot(x, mean_rate, color=c1, label="mean rate")
     borders = np.argwhere(np.abs(np.diff(state, 1)) > 0.0).squeeze().tolist() + [len(state)-1]
     b0 = 0
@@ -145,5 +139,5 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0.01, wspace=0.01
 
 # saving/plotting
 fig.canvas.draw()
-plt.savefig(f'{path}/{drug}_{dose}_{mouse}_signal.pdf')
+plt.savefig(f'{path}/{drug}_{dose}_{mouse}_signal.svg')
 plt.show()
