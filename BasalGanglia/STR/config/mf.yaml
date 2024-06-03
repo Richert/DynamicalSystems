@@ -44,8 +44,8 @@ mg_op:
     - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+d+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(1-sigmoid(x))*(E_e-v) + g_i*s_i*(E_i-v) + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
     - "s' = -s/tau_s + r"
-    - "x' = x2"
-    - "x2' = alpha*s_e*(1-sigmoid(x))/tau_x - 2.0*x2/tau_x - x/tau_x^2"
+    - "x' = x2 - x/tau_d"
+    - "x2' = alpha*s_e*(1-sigmoid(x)) - x2/tau_r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
@@ -54,19 +54,20 @@ mg_op:
     x: variable(0.0)
     x2: variable(0.0)
     Delta: 0.5
-    C: 100.0
+    C: 50.0
     k: 1.0
-    v_r: -60.0
-    v_t: -40.0
-    g_e: 7.0
+    v_r: -80.0
+    v_t: -30.0
+    g_e: 10.0
     g_i: 5.0
     E_e: 0.0
     E_i: -60.0
-    b: -2.0
-    tau_u: 33.33
-    tau_s: 8.0
-    tau_x: 500.0
-    kappa: 100.0
+    b: -20.0
+    tau_u: 100.0
+    tau_s: 4.0
+    tau_r: 50.0
+    tau_d: 500.0
+    kappa: 150.0
     I_ext: input(0.0)
     alpha: input(0.0)
     s_e: input(0.0)
