@@ -44,7 +44,7 @@ v_t = -40.0
 eta = 50.0
 a = 0.03
 b = -2.0
-d = 100.0
+d = 50.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -59,10 +59,10 @@ thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 W = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
-T = 2500.0
-cutoff = 500.0
-start = 500.0
-stop = 510.0
+T = 3000.0
+cutoff = 1000.0
+start = 1000.0
+stop = 1010.0
 amp = 100.0
 dt = 1e-2
 dts = 1e-1
@@ -100,7 +100,7 @@ s_std = np.std(s, axis=1)
 # save results
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
              "tau_s": tau_s, "N": N},
-            open(f"results/snn_ir_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
+            open(f"results/snn_dim/ir_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
 
 # # plotting
 # fig, ax = plt.subplots(figsize=(12, 4))
