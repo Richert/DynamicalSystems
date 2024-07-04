@@ -44,7 +44,7 @@ v_t = -40.0
 eta = 50.0
 a = 0.03
 b = -2.0
-d = 50.0
+d = 40.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -95,7 +95,7 @@ s_std = np.std(s, axis=1) / tau_s
 
 # save results
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-            open(f"results/snn_dim/rest_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
+            open(f"results/snn_dim/ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
 
 # # plotting
 # fig, ax = plt.subplots(figsize=(12, 4))
