@@ -30,9 +30,9 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
 ###################
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
+rep = 0 #int(sys.argv[-1])
+g = 12.0 #float(sys.argv[-2])
+Delta = 1.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -41,10 +41,10 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 50.0
+eta = 70.0
 a = 0.03
 b = -2.0
-d = 40.0
+d = 120.0
 E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -100,15 +100,15 @@ s_std = np.std(s, axis=1) * 1e3/tau_s
 # save results
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
              "tau_s": tau_s, "N": N},
-            open(f"results/snn_dim/ir_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
+            open(f"results/snn_dim/ir2_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
 
-# # plotting
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean, label="mean(r)")
-# ax.plot(s_std, label="std(r)")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim}")
-# plt.tight_layout()
-# plt.show()
+# plotting
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(s_mean, label="mean(r)")
+ax.plot(s_std, label="std(r)")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r")
+ax.set_title(f"Dim = {dim}")
+plt.tight_layout()
+plt.show()
