@@ -10,7 +10,7 @@ from pandas import DataFrame
 path = "/home/rgf3807/PycharmProjects/DynamicalSystems/Izhikevich/results/snn_dim"
 results = {"rep": [], "g": [], "Delta": [], "dim": [], "s_mean": [], "s_std": [], "s_norm": []}
 for file in os.listdir(path):
-    if file[:3] == "ss_":
+    if file[:3] == "ir_":
         data = pickle.load(open(f"{path}/{file}", "rb"))
         results["rep"].append(int(file.split("_")[-1][:-2]))
         results["g"].append(data["g"])
