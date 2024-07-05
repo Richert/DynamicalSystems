@@ -39,7 +39,7 @@ plt.tight_layout()
 # plotting 1D plots
 fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
 ax = axes[0]
-scatterplot(df, x="Delta", y="dim", hue="g", palette="tab10", ax=ax)
+scatterplot(df, x="Delta", y="dim", hue="g", palette="tab10", legend=False, ax=ax)
 lineplot(df, x="Delta", y="dim", hue="g", palette="tab10", ax=ax)
 ax = axes[1]
 scatterplot(df, x="s_norm", y="dim", hue="Delta", style="g", ax=ax)
