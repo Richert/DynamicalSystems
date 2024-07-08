@@ -24,8 +24,10 @@ for file in os.listdir(path):
 df = DataFrame.from_dict(results)
 
 # filter results
-min_g = 0.1
-df = df.loc[df["g"] > min_g, :]
+min_g = 0.0
+max_g = 25.0
+df = df.loc[df["g"] >= min_g, :]
+df = df.loc[df["g"] <= max_g, :]
 
 # reshape results into 2D tables
 dim = df.pivot_table(values="dim", index="g", columns="Delta")
