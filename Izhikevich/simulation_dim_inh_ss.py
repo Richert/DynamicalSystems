@@ -30,9 +30,9 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 12.0 #float(sys.argv[-2])
-Delta = 1.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -41,11 +41,11 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-eta = 70.0
+eta = 100.0
 a = 0.03
 b = -2.0
-d = 120.0
-E_r = 0.0
+d = 100.0
+E_r = -65.0
 tau_s = 6.0
 v_spike = 1000.0
 v_reset = -1000.0
@@ -61,24 +61,20 @@ W = random_connectivity(N, N, p, normalize=True)
 # define inputs
 T = 3000.0
 cutoff = 1000.0
-start = 1000.0
-stop = 1010.0
-amp = 100.0
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), 1))
-inp[int(start/dt):int(stop/dt), 0] += amp
 
 # run the model
 ###############
 
 # initialize model
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g_e": g, "E_e": E_r, "tau_s": tau_s, "v": v_t, "g_i": 0.0}
+             "g_e": 0.0, "E_i": E_r, "tau_s": tau_s, "v": v_t, "g_i": g}
 
 # initialize model
 net = Network(dt, device="cpu")
-net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_e",
+net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
                     input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
                     clear=True)
@@ -94,21 +90,28 @@ eigs = np.abs(np.linalg.eigvals(cov))
 dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
 
 # calculate firing rate statistics
-s_mean = np.mean(s, axis=1) * 1e3/tau_s
-s_std = np.std(s, axis=1) * 1e3/tau_s
+s_mean = np.mean(s, axis=1) / tau_s
+s_std = np.std(s, axis=1) / tau_s
 
 # save results
-pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
-             "tau_s": tau_s, "N": N},
-            open(f"results/snn_dim/ir2_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
+            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/inh_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+                 "wb"))
 
-# plotting
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean, label="mean(r)")
-ax.plot(s_std, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
-plt.tight_layout()
-plt.show()
+# # plotting
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3/tau_s, label="mean(r)")
+# ax.plot(s_std*1e3/tau_s, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim}")
+# plt.tight_layout()
+#
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# plt.tight_layout()
+# plt.show()

@@ -4,11 +4,11 @@
 deltas=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 )
 gs=( 0.0 4.0 8.0 12.0 16.0 20.0 24.0 28.0 32.0 )
 n=20
-batch_size=8
+batch_size=10
 range_end=$(($n-1))
 
 # limit amount of threads that each Python process can work with
-n_threads=10
+n_threads=9
 export OMP_NUM_THREADS=$n_threads
 export OPENBLAS_NUM_THREADS=$n_threads
 export MKL_NUM_THREADS=$n_threads
@@ -23,7 +23,7 @@ for d in "${deltas[@]}"; do
       # python calls
       (
       echo "Starting job #$(($IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
-      python simulation_snn_dim_ir.py $d $g $IDX
+      python simulation_inh_dim_ss.py $d $g $IDX
       sleep 1
       ) &
 

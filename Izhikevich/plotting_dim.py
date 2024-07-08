@@ -2,15 +2,18 @@ import pickle
 from seaborn import heatmap, scatterplot, lineplot
 import matplotlib.pyplot as plt
 import os
+import sys
 import numpy as np
 from pandas import DataFrame
 
+# condition
+condition = str(sys.argv[-1])
 
 # load data
-path = "/home/rgf3807/PycharmProjects/DynamicalSystems/Izhikevich/results/snn_dim"
+path = "/media/fsmresfiles/richard_data/numerics/dimensionality"
 results = {"rep": [], "g": [], "Delta": [], "dim": [], "s_mean": [], "s_std": [], "s_norm": []}
 for file in os.listdir(path):
-    if file[:3] == "ss_":
+    if file[:len(condition)] == condition:
         data = pickle.load(open(f"{path}/{file}", "rb"))
         results["rep"].append(int(file.split("_")[-1][:-2]))
         results["g"].append(data["g"])

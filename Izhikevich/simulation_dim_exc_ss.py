@@ -61,13 +61,9 @@ W = random_connectivity(N, N, p, normalize=True)
 # define inputs
 T = 3000.0
 cutoff = 1000.0
-start = 1000.0
-stop = 1010.0
-amp = 100.0
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), 1))
-inp[int(start/dt):int(stop/dt), 0] += amp
 
 # run the model
 ###############
@@ -94,18 +90,18 @@ eigs = np.abs(np.linalg.eigvals(cov))
 dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
 
 # calculate firing rate statistics
-s_mean = np.mean(s, axis=1) * 1e3/tau_s
-s_std = np.std(s, axis=1) * 1e3/tau_s
+s_mean = np.mean(s, axis=1) / tau_s
+s_std = np.std(s, axis=1) / tau_s
 
 # save results
-pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
-             "tau_s": tau_s, "N": N},
-            open(f"results/snn_dim/ir_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
+            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/exc_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+                 "wb"))
 
 # # plotting
 # fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean, label="mean(r)")
-# ax.plot(s_std, label="std(r)")
+# ax.plot(s_mean*1e3/tau_s, label="mean(r)")
+# ax.plot(s_std*1e3/tau_s, label="std(r)")
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r")
