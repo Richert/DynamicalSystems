@@ -39,7 +39,7 @@ net.update_var(node_vars={f"p/ik_op/{key}": val for key, val in node_vars.items(
 # config
 n_dim = 4
 n_params = 20
-ode = ODESystem.from_template(net, working_dir="config", auto_dir=auto_dir, init_cont=False)
+ode = ODESystem.from_template(net, working_dir="../Izhikevich/config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time to converge to fixed point
 t_sols, t_cont = ode.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params, NDIM=n_dim,
