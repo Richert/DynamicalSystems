@@ -23,6 +23,10 @@ for file in os.listdir(path):
 # create dataframe
 df = DataFrame.from_dict(results)
 
+# filter results
+min_g = 0.1
+df = df.loc[df["g"] > min_g, :]
+
 # reshape results into 2D tables
 dim = df.pivot_table(values="dim", index="g", columns="Delta")
 fr_std = df.pivot_table(values="s_std", index="g", columns="Delta")
