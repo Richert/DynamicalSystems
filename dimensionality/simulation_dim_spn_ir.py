@@ -30,18 +30,18 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 10.0 #float(sys.argv[-2])
-Delta = 8.0 #float(sys.argv[-3])
+rep = 0  #int(sys.argv[-1])
+g = 100.0  #float(sys.argv[-2])
+Delta = 2.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
 p = 0.2
 C = 100.0
 k = 0.7
-v_r = -60.0
-v_t = -40.0
-eta = 100.0
+v_r = -80.0
+v_t = -50.0
+eta = 150.0
 a = 0.03
 b = -2.0
 d = 100.0
@@ -61,9 +61,13 @@ W = random_connectivity(N, N, p, normalize=True)
 # define inputs
 T = 3000.0
 cutoff = 1000.0
+start = 1000.0
+stop = 1010.0
+amp = 100.0
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), 1))
+inp[int(start/dt):int(stop/dt), 0] += amp
 
 # run the model
 ###############
@@ -95,13 +99,13 @@ s_std = np.std(s, axis=1) / tau_s
 
 # save results
 # pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/inh_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/bal_ir_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
 #                  "wb"))
 
-# # plotting
+# plotting
 fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3/tau_s, label="mean(r)")
-ax.plot(s_std*1e3/tau_s, label="std(r)")
+ax.plot(s_mean*1e3, label="mean(r)")
+ax.plot(s_std*1e3, label="std(r)")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("r")

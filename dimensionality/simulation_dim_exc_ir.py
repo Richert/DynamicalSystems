@@ -94,8 +94,8 @@ eigs = np.abs(np.linalg.eigvals(cov))
 dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
 
 # calculate firing rate statistics
-s_mean = np.mean(s, axis=1) * 1e3/tau_s
-s_std = np.std(s, axis=1) * 1e3/tau_s
+s_mean = np.mean(s, axis=1) /tau_s
+s_std = np.std(s, axis=1) /tau_s
 
 # save results
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
@@ -105,8 +105,8 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_me
 
 # # plotting
 # fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean, label="mean(r)")
-# ax.plot(s_std, label="std(r)")
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r")

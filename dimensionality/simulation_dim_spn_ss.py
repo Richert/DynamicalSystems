@@ -30,21 +30,21 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 10.0 #float(sys.argv[-2])
-Delta = 8.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
 
 # model parameters
 N = 1000
 p = 0.2
-C = 100.0
-k = 0.7
-v_r = -60.0
-v_t = -40.0
-eta = 100.0
-a = 0.03
-b = -2.0
-d = 100.0
+C = 50.0
+k = 1.0
+v_r = -80.0
+v_t = -30.0
+eta = 300.0
+a = 0.01
+b = -20.0
+d = 150.0
 E_r = -65.0
 tau_s = 6.0
 v_spike = 1000.0
@@ -94,24 +94,24 @@ s_mean = np.mean(s, axis=1) / tau_s
 s_std = np.std(s, axis=1) / tau_s
 
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/inh_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-#                  "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
+            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/spn_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+                 "wb"))
 
 # # plotting
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3/tau_s, label="mean(r)")
-ax.plot(s_std*1e3/tau_s, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
-plt.tight_layout()
-
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-plt.tight_layout()
-plt.show()
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim}")
+# plt.tight_layout()
+#
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# plt.tight_layout()
+# plt.show()
