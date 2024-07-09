@@ -30,9 +30,10 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 20.0 #float(sys.argv[-2])
-Delta = 3.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
+E_r = float(sys.argv[-4])
 
 # model parameters
 N = 1000
@@ -42,7 +43,6 @@ k = 0.7
 v_r = -70.0
 v_t = -50.0
 eta = 100.0
-E_r = -68.0
 a = 0.03
 b = -2.0
 d = 50.0
@@ -101,49 +101,50 @@ s_mean = np.mean(s, axis=1) / tau_s
 s_std = np.std(s, axis=1) / tau_s
 
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/rev_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-#                  "wb"))
+path = "/media/fsmresfiles/richard_data/numerics/dimensionality"
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
+            open(f"{path}/rev_ss_g{int(g)}_D{int(Delta*10)}_E{int(abs(E_r))}_{rep+1}.p",
+                 "wb"))
 
-# plotting average population dynamics
-_, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
-plt.tight_layout()
-
-# plotting spikes
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-plt.tight_layout()
-
-# plotting spike threshold distribution and fraction of neurons that receive exc vs. inh input
-margin = 25.0
-vs = np.linspace(v_r - margin, v_t + margin, num=N)
-p_thresh = norm.pdf(vs, loc=v_t, scale=Delta)
-p_rest = norm.pdf(vs, loc=v_r, scale=Delta)
-inh_frac = np.mean(E_r < v_rs)
-exc_frac = np.mean(E_r > v_ts)
-bal_frac = 1.0 - inh_frac - exc_frac
-fig, axes = plt.subplots(ncols=2, figsize=(12, 4))
-ax = axes[0]
-ax.plot(vs, p_thresh, label="spike thresholds")
-ax.plot(vs, p_rest, label="resting potentials")
-ax.scatter([E_r], [0.0], s=60.0, c="black", label="reversal potential", marker="d")
-ax.axvline(x=E_r, ymin=0, ymax=1, color="black", linestyle="dashed")
-ax.set_xlabel("v (mV)")
-ax.set_ylabel("p")
-ax.set_title("Distribution of spike thresholds")
-ax = axes[1]
-ax.bar([1, 2, 3], [inh_frac, bal_frac, exc_frac], width=0.75, align="center")
-ax.set_xticks([1, 2, 3], labels=["inh.", "bal.", "exc."])
-ax.set_ylabel("p")
-ax.set_title("Distribution of synapse types")
-plt.tight_layout()
-plt.show()
+# # plotting average population dynamics
+# _, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim}")
+# plt.tight_layout()
+#
+# # plotting spikes
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# plt.tight_layout()
+#
+# # plotting spike threshold distribution and fraction of neurons that receive exc vs. inh input
+# margin = 25.0
+# vs = np.linspace(v_r - margin, v_t + margin, num=N)
+# p_thresh = norm.pdf(vs, loc=v_t, scale=Delta)
+# p_rest = norm.pdf(vs, loc=v_r, scale=Delta)
+# inh_frac = np.mean(E_r < v_rs)
+# exc_frac = np.mean(E_r > v_ts)
+# bal_frac = 1.0 - inh_frac - exc_frac
+# fig, axes = plt.subplots(ncols=2, figsize=(12, 4))
+# ax = axes[0]
+# ax.plot(vs, p_thresh, label="spike thresholds")
+# ax.plot(vs, p_rest, label="resting potentials")
+# ax.scatter([E_r], [0.0], s=60.0, c="black", label="reversal potential", marker="d")
+# ax.axvline(x=E_r, ymin=0, ymax=1, color="black", linestyle="dashed")
+# ax.set_xlabel("v (mV)")
+# ax.set_ylabel("p")
+# ax.set_title("Distribution of spike thresholds")
+# ax = axes[1]
+# ax.bar([1, 2, 3], [inh_frac, bal_frac, exc_frac], width=0.75, align="center")
+# ax.set_xticks([1, 2, 3], labels=["inh.", "bal.", "exc."])
+# ax.set_ylabel("p")
+# ax.set_title("Distribution of synapse types")
+# plt.tight_layout()
+# plt.show()
