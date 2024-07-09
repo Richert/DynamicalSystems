@@ -30,9 +30,9 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 20.0 #float(sys.argv[-2])
-Delta = 4.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -94,24 +94,24 @@ s_mean = np.mean(s, axis=1) / tau_s
 s_std = np.std(s, axis=1) / tau_s
 
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/bal_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-#                  "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
+            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/bal_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+                 "wb"))
 
-# plotting
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3/tau_s, label="mean(r)")
-ax.plot(s_std*1e3/tau_s, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
-plt.tight_layout()
-
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-plt.tight_layout()
-plt.show()
+# # plotting
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3/tau_s, label="mean(r)")
+# ax.plot(s_std*1e3/tau_s, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim}")
+# plt.tight_layout()
+#
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# plt.tight_layout()
+# plt.show()
