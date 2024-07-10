@@ -32,9 +32,9 @@ rs_op:
 ik_op:
   base: OperatorTemplate
   equations:
-    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + g_e*s_e*(E_e - v) + g_i*s_i*(E_i - v)) / C"
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + (g_e*s_e + g_e_in)*(E_e - v) + (g_i*s_i + g_i_in)*(E_i - v)) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
-    - "s' = -s/tau_s + spike + s_ext"
+    - "s' = -s/tau_s + spike"
   variables:
     s: output(0.0)
     v: variable(-60.0)
@@ -55,8 +55,9 @@ ik_op:
     spike: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
+    g_e_in: input(0.0)
+    g_i_in: input(0.0)
     I_ext: input(0.0)
-    s_ext: input(0.0)
 
 # operator for regular-spiking IK neurons
 eic_op:
