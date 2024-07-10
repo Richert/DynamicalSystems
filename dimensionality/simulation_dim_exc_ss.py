@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy, norm
+from scipy.signal import find_peaks
 import sys
 
 
@@ -26,13 +27,37 @@ def gaussian(n, mu: float, delta: float, lb: float, ub: float):
     return samples
 
 
+def fano_factor(spikes: list, max_time: int, tau: int) -> np.ndarray:
+    idx = 0
+    ff = []
+    while idx + tau < max_time:
+        spike_counts = []
+        for s in spikes:
+            spike_counts.append(np.sum(idx <= s < idx + tau))
+        ff.append(np.var(spike_counts)/np.mean(spike_counts))
+        idx += tau
+    return np.asarray(ff)
+
+
+def fano_factor2(spikes: list, max_time: int, tau: int) -> np.ndarray:
+    idx = 0
+    ff = []
+    for s in spikes:
+        spike_counts = []
+        while idx + tau < max_time:
+            spike_counts.append(np.sum(idx <= s < idx + tau))
+            idx += tau
+        ff.append(np.var(spike_counts) / np.mean(spike_counts))
+    return np.asarray(ff)
+
+
 # define parameters
 ###################
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
+rep = 0 #int(sys.argv[-1])
+g = 10.0 #float(sys.argv[-2])
+Delta = 1.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -89,22 +114,57 @@ cov = s.T @ s
 eigs = np.abs(np.linalg.eigvals(cov))
 dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
 
+# extract spikes in network
+spike_counts = []
+for idx in range(s.shape[1]):
+    peaks, _ = find_peaks(s[:, idx])
+    spike_counts.append(peaks)
+
 # calculate firing rate statistics
+taus = [10.0, 100.0, 1000.0]
 s_mean = np.mean(s, axis=1) / tau_s
 s_std = np.std(s, axis=1) / tau_s
+ffs, ffs2 = [], []
+for tau in taus:
+    ffs.append(fano_factor(spike_counts, s.shape[0], int(tau/dts)))
+    ffs2.append(fano_factor2(spike_counts, s.shape[0], int(tau/dts)))
 
 # save results
-pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/exc_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-                 "wb"))
+# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
+#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/exc_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+#                  "wb"))
 
-# # plotting
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean*1e3/tau_s, label="mean(r)")
-# ax.plot(s_std*1e3/tau_s, label="std(r)")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim}")
-# plt.tight_layout()
-# plt.show()
+# plotting average firing rate dynamics
+_, ax = plt.subplots(figsize=(12, 4))
+ax.plot(s_mean*1e3, label="mean(r)")
+ax.plot(s_std*1e3, label="std(r)")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r")
+ax.set_title(f"Dim = {dim}")
+plt.tight_layout()
+
+# plotting spiking dynamics
+_, ax = plt.subplots(figsize=(12, 4))
+im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("steps")
+ax.set_ylabel("neurons")
+plt.tight_layout()
+
+# plotting fano factor distributions at different time scales
+fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
+for tau, ff1, ff2 in zip(taus, ffs, ffs2):
+    ax = axes[0]
+    ax.hist(ff1, label=f"tau = {tau}")
+    ax.set_xlabel("ff")
+    ax.set_ylabel("#")
+    ax = axes[1]
+    ax.hist(ff2, label=f"tau = {tau}")
+    ax.set_xlabel("ff")
+    ax.set_ylabel("#")
+axes[0].set_title("time-specific FFs")
+axes[1].set_title("neuron-specific FFs")
+fig.suptitle("Fano Factor Distributions")
+plt.tight_layout()
+plt.show()
