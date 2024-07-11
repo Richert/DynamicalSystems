@@ -102,9 +102,8 @@ s_std = np.std(s, axis=1) / tau_s
 
 # save results
 path = "/media/fsmresfiles/richard_data/numerics/dimensionality"
-pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-            open(f"{path}/rev_ss_g{int(g)}_D{int(Delta*10)}_E{int(abs(E_r))}_{rep+1}.p",
-                 "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
+             "E_r": E_r}, open(f"{path}/rev_ss_g{int(g)}_D{int(Delta*10)}_E{int(abs(E_r))}_{rep+1}.p", "wb"))
 
 # # plotting average population dynamics
 # _, ax = plt.subplots(figsize=(12, 4))
