@@ -1,8 +1,8 @@
-from rectipy import Network, random_connectivity
+from rectipy import Network, circular_connectivity
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.stats import poisson
+from scipy.stats import poisson, rv_discrete
 from scipy.signal import find_peaks
 import sys
 from custom_functions import *
@@ -13,11 +13,12 @@ from custom_functions import *
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
 g = 10.0 #float(sys.argv[-2])
-Delta = 5.0 #float(sys.argv[-3])
+Delta = 3.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
 p = 0.2
+sigma = 50.0
 C = 50.0
 k = 1.0
 v_r = -80.0
@@ -29,17 +30,21 @@ d = 150.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 6.0
-s_ext = 5.0*1e-3
+s_ext = 7.0*1e-3
 v_spike = 40.0
 v_reset = -55.0
 theta_dist = "gaussian"
+w_dist = "gaussian"
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
 thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 
 # define connectivity
-W = random_connectivity(N, N, p, normalize=True)
+indices = np.arange(0, N, dtype=np.int32)
+pdfs = np.asarray([dist(idx, method=w_dist, zero_val=0.0, sigma=sigma) for idx in indices])
+pdfs /= np.sum(pdfs)
+W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
 # define inputs
 T = 3000.0
@@ -73,6 +78,7 @@ s = obs.to_numpy("out")
 cov = s.T @ s
 eigs = np.abs(np.linalg.eigvals(cov))
 dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
+print(f"Dimensionality = {dim}")
 
 # extract spikes in network
 spike_counts = []
@@ -89,6 +95,14 @@ for idx in range(s.shape[1]):
     # plt.tight_layout()
     # plt.show()
 
+# calculate sequentiality
+print("Starting sequentiality calculation")
+neighborhood = int(sigma*2)
+overlap = 0.0
+seq = sequentiality(spike_counts, neighborhood=neighborhood, overlap=overlap)
+sqi = np.mean(seq)
+print(f"Sequentiality = {sqi}")
+
 # calculate firing rate statistics
 taus = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
 s_mean = np.mean(s, axis=1) / tau_s
@@ -103,6 +117,15 @@ for tau in taus:
 #              "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus},
 #             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/spn_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
 #                  "wb"))
+
+# plotting network connectivity
+_, ax = plt.subplots(figsize=(6, 6))
+im = ax.imshow(W, aspect="auto", interpolation="none", cmap="viridis")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("neuron")
+ax.set_ylabel("neuron")
+ax.set_title("W")
+plt.tight_layout()
 
 # plotting average firing rate dynamics
 _, ax = plt.subplots(figsize=(12, 4))
@@ -139,4 +162,13 @@ axes[1].set_title("neuron-specific FFs")
 axes[1].legend()
 fig.suptitle("Fano Factor Distributions")
 plt.tight_layout()
+
+# plotting sequentiality distribution
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.hist(seq)
+ax.set_xlabel("sequentiality")
+ax.set_ylabel("count")
+ax.set_title(f"Sequentiality = {sqi}")
+plt.tight_layout()
+
 plt.show()
