@@ -10,7 +10,7 @@ condition = "rev_"
 
 # load data
 path = "/media/fsmresfiles/richard_data/numerics/dimensionality"
-results = {"rep": [], "g": [], "Delta": [], "dim": [], "s_mean": [], "s_std": [], "s_norm": []}
+results = {"rep": [], "g": [], "Delta": [], "E_r": [], "dim": [], "s_mean": [], "s_std": [], "s_norm": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
         f_tmp = file.split("_")
