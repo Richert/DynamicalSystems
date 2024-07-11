@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import cauchy, norm, poisson
 from scipy.signal import find_peaks
-from scipy.ndimage import convolve1d
 import sys
 
 
@@ -52,13 +51,21 @@ def fano_factor2(spikes: list, max_time: int, tau: int) -> np.ndarray:
     return np.asarray(ff)
 
 
+def convolve_exp(x: np.ndarray, tau: float, dt: float) -> np.ndarray:
+    y = np.zeros((x.shape[1],))
+    ys = []
+    for step in range(x.shape[0]):
+        y = y + dt*(-y/tau) + x[step, :]
+        ys.append(y)
+    return np.asarray(ys)
+
 # define parameters
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 20.0 #float(sys.argv[-2])
-Delta = 2.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -68,12 +75,13 @@ k = 0.7
 v_r = -60.0
 v_t = -40.0
 eta = 0.0
-s_ext = 100.0*1e-3
 a = 0.03
 b = -2.0
 d = 100.0
-E_r = -65.0
+E_e = 0.0
+E_i = -65.0
 tau_s = 6.0
+s_ext = 2.0*1e-3
 v_spike = 1000.0
 v_reset = -1000.0
 theta_dist = "gaussian"
@@ -90,27 +98,25 @@ T = 3000.0
 cutoff = 1000.0
 dt = 1e-2
 dts = 1e-1
-kernel = np.exp(-np.arange(0, 40.0, step=dt)/tau_s)
-inp = np.zeros((int(T/dt), 1))
+inp = np.zeros((int(T/dt), N))
 inp += poisson.rvs(mu=s_ext, size=inp.shape)
-for idx in range(inp.shape[1]):
-    inp[:, idx] = convolve1d(inp[:, idx], weights=kernel)
-    # fig, ax = plt.subplots(figsize=(12, 4))
-    # ax.plot(inp[:, idx])
-    # plt.show()
+inp = convolve_exp(inp, tau_s, dt)
+# idx = 50
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(inp[:, idx])
+# plt.show()
 
 # run the model
 ###############
 
 # initialize model
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g_e": g, "E_i": E_r, "tau_s": tau_s, "v": v_t, "g_i": g}
+             "g_e": 0.0, "g_i": g, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
 
 # initialize model
 net = Network(dt, device="cpu")
-net.add_diffeq_node("ik", f"/home/rgf3807/PycharmProjects/DynamicalSystems/dimensionality/config/ik_snn/ik",
-                    weights=W, source_var="s", target_var="s_i",
-                    input_var="s_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
+net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
+                    input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
                     clear=True)
 
@@ -140,7 +146,7 @@ for idx in range(s.shape[1]):
     # plt.show()
 
 # calculate firing rate statistics
-taus = [10.0, 20.0, 40.0, 80.0, 160.0]
+taus = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
 s_mean = np.mean(s, axis=1) / tau_s
 s_std = np.std(s, axis=1) / tau_s
 ffs, ffs2 = [], []
@@ -149,43 +155,44 @@ for tau in taus:
     ffs2.append(fano_factor2(spike_counts, s.shape[0], int(tau/dts)))
 
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/inh_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-#                  "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
+             "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus},
+            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/inh_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+                 "wb"))
 
-# plotting average firing rate dynamics
-_, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
-plt.tight_layout()
-
-# plotting spiking dynamics
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-plt.tight_layout()
-
-# plotting fano factor distributions at different time scales
-fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
-for tau, ff1, ff2 in zip(taus, ffs, ffs2):
-    ax = axes[0]
-    ax.hist(ff1, label=f"tau = {tau}")
-    ax.set_xlabel("ff")
-    ax.set_ylabel("#")
-    ax = axes[1]
-    ax.hist(ff2, label=f"tau = {tau}")
-    ax.set_xlabel("ff")
-    ax.set_ylabel("#")
-axes[0].set_title("time-specific FFs")
-axes[0].legend()
-axes[1].set_title("neuron-specific FFs")
-axes[1].legend()
-fig.suptitle("Fano Factor Distributions")
-plt.tight_layout()
-plt.show()
+# # plotting average firing rate dynamics
+# _, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim}")
+# plt.tight_layout()
+#
+# # plotting spiking dynamics
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# plt.tight_layout()
+#
+# # plotting fano factor distributions at different time scales
+# fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
+# for tau, ff1, ff2 in zip(taus, ffs, ffs2):
+#     ax = axes[0]
+#     ax.hist(ff1, label=f"tau = {tau}")
+#     ax.set_xlabel("ff")
+#     ax.set_ylabel("#")
+#     ax = axes[1]
+#     ax.hist(ff2, label=f"tau = {tau}")
+#     ax.set_xlabel("ff")
+#     ax.set_ylabel("#")
+# axes[0].set_title("time-specific FFs")
+# axes[0].legend()
+# axes[1].set_title("neuron-specific FFs")
+# axes[1].legend()
+# fig.suptitle("Fano Factor Distributions")
+# plt.tight_layout()
+# plt.show()

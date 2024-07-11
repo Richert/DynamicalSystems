@@ -78,7 +78,8 @@ eta = 0.0
 a = 0.03
 b = -2.0
 d = 100.0
-E_r = 0.0
+E_e = 0.0
+E_i = -65.0
 tau_s = 6.0
 s_ext = 1.5*1e-3
 v_spike = 1000.0
@@ -110,7 +111,7 @@ inp = convolve_exp(inp, tau_s, dt)
 
 # initialize model
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g_e": g, "E_e": E_r, "tau_s": tau_s, "v": v_t, "g_i": 0.0}
+             "g_e": g, "g_i": 0.0, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
 
 # initialize model
 net = Network(dt, device="cpu")
