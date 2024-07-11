@@ -31,16 +31,16 @@ df = DataFrame.from_dict(results)
 E_rs = np.unique(df.loc[:, "E_r"].values)
 for reversal_potential in E_rs:
 
-    df = df.loc[(df["E_r"] - reversal_potential) < 1e-3, :]
+    df_tmp = df.loc[np.abs(df["E_r"].values - reversal_potential) < 1e-3, :]
 
     fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
     ax = axes[0]
-    scatterplot(df, x="Delta", y="dim", hue="g", palette="tab10", legend=False, ax=ax)
-    lineplot(df, x="Delta", y="dim", hue="g", palette="tab10", ax=ax)
+    scatterplot(df_tmp, x="Delta", y="dim", hue="g", palette="tab10", legend=False, ax=ax)
+    lineplot(df_tmp, x="Delta", y="dim", hue="g", palette="tab10", ax=ax)
     ax = axes[1]
-    scatterplot(df, x="s_norm", y="dim", hue="Delta", style="g", ax=ax)
+    scatterplot(df_tmp, x="s_norm", y="dim", hue="Delta", style="g", ax=ax)
     ax = axes[2]
-    scatterplot(df, x="s_std", y="dim", hue="Delta", style="g", ax=ax)
+    scatterplot(df_tmp, x="s_std", y="dim", hue="Delta", style="g", ax=ax)
     fig.suptitle(f"E_r = {reversal_potential}")
     plt.tight_layout()
 
