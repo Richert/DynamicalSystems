@@ -1,7 +1,5 @@
 import numpy as np
 from scipy.stats import norm, cauchy
-from numba import njit, prange, config
-config.THREADING_LAYER = 'tbb'
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -57,7 +55,6 @@ def convolve_exp(x: np.ndarray, tau: float, dt: float) -> np.ndarray:
     return np.asarray(ys)
 
 
-#@njit(fastmath=True, parallel=True)
 def _sequentiality(events: list) -> list:
     N = len(events)
     s = []
@@ -65,7 +62,7 @@ def _sequentiality(events: list) -> list:
         event_entropy = []
         for e in events[n1]:
             diffs = []
-            for n2 in prange(N):
+            for n2 in range(N):
                 e2 = events[n2]
                 if n1 != n2 and len(e2) > 0:
                     min_idx = np.argmin(np.abs(e2 - e))
@@ -104,7 +101,6 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, sigma: float = 
     raise ValueError("Invalid method.")
 
 
-#@njit()
 def entropy(x: list) -> float:
     x = np.asarray(x)
     values = np.unique(x)
