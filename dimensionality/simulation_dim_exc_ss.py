@@ -5,59 +5,8 @@ import pickle
 from scipy.stats import cauchy, norm, poisson
 from scipy.signal import find_peaks
 import sys
+from custom_functions import *
 
-
-def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
-    samples = np.zeros((n,))
-    for i in range(n):
-        s = cauchy.rvs(loc=eta, scale=delta)
-        while s <= lb or s >= ub:
-            s = cauchy.rvs(loc=eta, scale=delta)
-        samples[i] = s
-    return samples
-
-
-def gaussian(n, mu: float, delta: float, lb: float, ub: float):
-    samples = np.zeros((n,))
-    for i in range(n):
-        s = norm.rvs(loc=mu, scale=delta)
-        while s <= lb or s >= ub:
-            s = norm.rvs(loc=mu, scale=delta)
-        samples[i] = s
-    return samples
-
-
-def fano_factor(spikes: list, max_time: int, tau: int) -> np.ndarray:
-    idx = 0
-    ff = []
-    while idx < max_time:
-        spike_counts = []
-        for s in spikes:
-            spike_counts.append(np.sum((s >= idx) * (s < idx + tau)))
-        ff.append(np.var(spike_counts)/np.mean(spike_counts))
-        idx += tau
-    return np.asarray(ff)
-
-
-def fano_factor2(spikes: list, max_time: int, tau: int) -> np.ndarray:
-    ff = []
-    for s in spikes:
-        spike_counts = []
-        idx = 0
-        while idx < max_time:
-            spike_counts.append(np.sum((s >= idx) * (s < idx + tau)))
-            idx += tau
-        ff.append(np.var(spike_counts) / np.mean(spike_counts))
-    return np.asarray(ff)
-
-
-def convolve_exp(x: np.ndarray, tau: float, dt: float) -> np.ndarray:
-    y = np.zeros((x.shape[1],))
-    ys = []
-    for step in range(x.shape[0]):
-        y = y + dt*(-y/tau) + x[step, :]
-        ys.append(y)
-    return np.asarray(ys)
 
 # define parameters
 ###################

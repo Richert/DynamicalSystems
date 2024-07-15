@@ -12,27 +12,27 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 50.0 #float(sys.argv[-2])
-Delta = 1.0 #float(sys.argv[-3])
+g = 15.0 #float(sys.argv[-2])
+Delta = 2.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
 p = 0.2
-sigma = 50.0
-C = 50.0
-k = 1.0
-v_r = -80.0
-v_t = -30.0
+sigma = 10.0
+C = 100.0
+k = 0.7
+v_r = -60.0
+v_t = -40.0
 eta = 0.0
-a = 0.01
-b = -20.0
-d = 150.0
+a = 0.03
+b = -2.0
+d = 100.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 6.0
-s_ext = 7.0*1e-3
+s_ext = 1.5*1e-3
 v_spike = 40.0
-v_reset = -55.0
+v_reset = -80.0
 theta_dist = "gaussian"
 w_dist = "gaussian"
 
@@ -60,11 +60,11 @@ inp = convolve_exp(inp, tau_s, dt)
 
 # initialize model
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g_e": 0.0, "g_i": g, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
+             "g_e": g, "g_i": 0.0, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
 
 # initialize model
 net = Network(dt, device="cpu")
-net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
+net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_e",
                     input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
                     clear=True)
@@ -97,11 +97,12 @@ for idx in range(s.shape[1]):
 
 # calculate sequentiality
 print("Starting sequentiality calculation")
-neighborhood = int(sigma*2)
+neighborhood = 100
 overlap = 0.0
-max_lag = 200
-n_bins = 80
-seq = sequentiality(spike_counts, neighborhood=neighborhood, overlap=overlap, time_window=max_lag, n_bins=n_bins)
+t_window = 2000
+n_bins = 100
+seq = sequentiality(spike_counts, neighborhood=neighborhood, overlap=overlap, time_window=t_window, n_bins=n_bins,
+                    method="sqi")
 sqi = np.mean(seq)
 print(f"Sequentiality = {sqi}")
 

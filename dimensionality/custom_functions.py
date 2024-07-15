@@ -55,8 +55,9 @@ def convolve_exp(x: np.ndarray, tau: float, dt: float) -> np.ndarray:
     return np.asarray(ys)
 
 
-def _sequentiality(events: list) -> list:
+def _sequentiality(events: list, max_lag: int = 100, n_bins: int = 100) -> list:
     N = len(events)
+    bins = np.linspace(-max_lag, max_lag, num=n_bins)
     s = []
     for n1 in range(N):
         event_entropy = []
@@ -66,13 +67,17 @@ def _sequentiality(events: list) -> list:
                 e2 = events[n2]
                 if n1 != n2 and len(e2) > 0:
                     min_idx = np.argmin(np.abs(e2 - e))
-                    diffs.append(e - e2[min_idx])
-            event_entropy.append(entropy(diffs))
-        s.append(np.mean(np.asarray(event_entropy)))
+                    diff = e - e2[min_idx]
+                    if np.abs(diff) < max_lag:
+                        diffs.append(diff)
+            sh = entropy(diffs, bins=bins)
+            event_entropy.append(sh if np.isfinite(sh) else 0.0)
+        s.append(np.mean(event_entropy) if len(event_entropy) > 0 else 0.0)
     return s
 
 
-def sequentiality(events: list, neighborhood: int, overlap: float = 0.5) -> list:
+def sequentiality(events: list, neighborhood: int, overlap: float = 0.5, time_window: int = 100, n_bins: int = 100,
+                  method: str = "custom") -> list:
     N = len(events)
     seq = []
     idx = 0
@@ -84,7 +89,12 @@ def sequentiality(events: list, neighborhood: int, overlap: float = 0.5) -> list
         idx = stop
 
         # calculate sequentiality
-        seq.extend(_sequentiality(events[start:stop]))
+        if method == "sqi":
+            pe, ts = sqi(events[start:stop], time_window=time_window, n_bins=n_bins)
+            s = np.sqrt(pe*ts)
+        else:
+            s = _sequentiality(events[start:stop], max_lag=time_window, n_bins=n_bins)
+        seq.extend(s)
 
     return seq
 
@@ -101,10 +111,44 @@ def dist(x: int, method: str = "inverse", zero_val: float = 1.0, sigma: float = 
     raise ValueError("Invalid method.")
 
 
-def entropy(x: list) -> float:
-    x = np.asarray(x)
-    values = np.unique(x)
-    counts = np.asarray([np.sum(x == v) for v in values])
-    counts = counts / np.sum(counts)
+def entropy(x: list, bins: np.ndarray) -> float:
+    counts, _ = np.histogram(x, bins=bins)
+    idx = counts > 0
+    ps = counts[idx] / np.sum(counts[idx])
     uniform = np.ones_like(counts) / counts.shape[0]
-    return np.sum(counts * np.log(counts)) / np.sum(uniform * np.log(uniform))
+    return np.sum(ps * np.log(ps)) / np.sum(uniform * np.log(uniform))
+
+
+def sqi(events: list, time_window: int = 100, n_bins: int = 100) -> tuple:
+
+    # preparations
+    N = len(events)
+    step = np.round(time_window/n_bins, decimals=0)
+    bins = np.arange(0, time_window, step=step, dtype=np.int32)
+    max_time = np.max([e[-1] for e in events if len(e) > 0])
+    spikes = np.zeros((N, max_time + 1))
+    for i, e in enumerate(events):
+        spikes[i, e] = 1.0
+
+    # calculations
+    peak_entropy, temporal_sparsity = [], []
+    tbin = bins[0]
+    while tbin < max_time:
+
+        ps, rate_entropy = [], []
+        for ub in bins[1:]:
+            summed_spikes = np.sum(spikes[:, tbin:tbin+ub])
+            ps.append(summed_spikes/N)
+            if summed_spikes > 0:
+                neuron_rates = np.sum(spikes[:, tbin:tbin+ub], axis=1) / summed_spikes
+                idx = neuron_rates > 0
+                rate_entropy.append(-np.sum(neuron_rates[idx] * np.log(neuron_rates[idx])) / np.log(N))
+            tbin += ub
+
+        ps = np.asarray(ps)
+        idx = ps > 0
+        peak_entropy.append(-np.sum(ps[idx] * np.log(ps[idx])) / np.log(n_bins))
+        temporal_sparsity.append(1 - np.mean(rate_entropy))
+
+    pe, ts = np.asarray(peak_entropy), np.asarray(temporal_sparsity)
+    return pe, ts

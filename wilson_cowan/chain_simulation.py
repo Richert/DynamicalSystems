@@ -59,7 +59,8 @@ dt = 1e-3
 dts = 1e-1
 inp = np.zeros((int(T/dt), N)) + 2.0
 start = 200.0*t_scale
-inp[int(start/dt):, :] += 0.5
+amp = -0.4
+inp[int(start/dt):, :] += amp
 
 # perform simulation
 res = net.run(simulation_time=T, step_size=dt, sampling_step_size=dts, solver="scipy", method="DOP853",
