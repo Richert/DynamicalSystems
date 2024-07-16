@@ -12,7 +12,7 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 10.0 #float(sys.argv[-2])
+g = 20.0 #float(sys.argv[-2])
 Delta = 3.0 #float(sys.argv[-3])
 
 # model parameters
@@ -30,7 +30,7 @@ d = 100.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 6.0
-s_ext = 2.0*1e-3
+s_ext = 3.0*1e-3
 v_spike = 40.0
 v_reset = -80.0
 theta_dist = "gaussian"
@@ -60,11 +60,11 @@ inp = convolve_exp(inp, tau_s, dt)
 
 # initialize model
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g_e": g, "g_i": 0.0, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
+             "g_e": 0.0, "g_i": g, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
 
 # initialize model
 net = Network(dt, device="cpu")
-net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_e",
+net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
                     input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
                     clear=True)

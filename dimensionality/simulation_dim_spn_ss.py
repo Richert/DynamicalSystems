@@ -11,9 +11,9 @@ from custom_functions import *
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 10.0 #float(sys.argv[-2])
-Delta = 5.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -99,44 +99,44 @@ for tau in taus:
     ffs2.append(fano_factor2(spike_counts, s.shape[0], int(tau/dts)))
 
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
-#              "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/spn_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-#                  "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
+             "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus},
+            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/spn_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
+                 "wb"))
 
-# plotting average firing rate dynamics
-_, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
-plt.tight_layout()
-
-# plotting spiking dynamics
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-plt.tight_layout()
-
-# plotting fano factor distributions at different time scales
-fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
-for tau, ff1, ff2 in zip(taus, ffs, ffs2):
-    ax = axes[0]
-    ax.hist(ff1, label=f"tau = {tau}")
-    ax.set_xlabel("ff")
-    ax.set_ylabel("#")
-    ax = axes[1]
-    ax.hist(ff2, label=f"tau = {tau}")
-    ax.set_xlabel("ff")
-    ax.set_ylabel("#")
-axes[0].set_title("time-specific FFs")
-axes[0].legend()
-axes[1].set_title("neuron-specific FFs")
-axes[1].legend()
-fig.suptitle("Fano Factor Distributions")
-plt.tight_layout()
-plt.show()
+# # plotting average firing rate dynamics
+# _, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim}")
+# plt.tight_layout()
+#
+# # plotting spiking dynamics
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# plt.tight_layout()
+#
+# # plotting fano factor distributions at different time scales
+# fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
+# for tau, ff1, ff2 in zip(taus, ffs, ffs2):
+#     ax = axes[0]
+#     ax.hist(ff1, label=f"tau = {tau}")
+#     ax.set_xlabel("ff")
+#     ax.set_ylabel("#")
+#     ax = axes[1]
+#     ax.hist(ff2, label=f"tau = {tau}")
+#     ax.set_xlabel("ff")
+#     ax.set_ylabel("#")
+# axes[0].set_title("time-specific FFs")
+# axes[0].legend()
+# axes[1].set_title("neuron-specific FFs")
+# axes[1].legend()
+# fig.suptitle("Fano Factor Distributions")
+# plt.tight_layout()
+# plt.show()

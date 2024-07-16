@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import poisson, rv_discrete
 from scipy.signal import find_peaks
+from scipy.ndimage import gaussian_filter
 import sys
 from custom_functions import *
 
@@ -12,13 +13,14 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 50.0 #float(sys.argv[-2])
-Delta = 1.0 #float(sys.argv[-3])
+g = 10.0 #float(sys.argv[-2])
+Delta = 3.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
 p = 0.2
-sigma = 50.0
+sigma = 10.0
+sigma_inp = 5.0
 C = 50.0
 k = 1.0
 v_r = -80.0
@@ -30,7 +32,7 @@ d = 150.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 6.0
-s_ext = 7.0*1e-3
+s_ext = 5.0*1e-3
 v_spike = 40.0
 v_reset = -55.0
 theta_dist = "gaussian"
@@ -53,7 +55,9 @@ dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
 inp += poisson.rvs(mu=s_ext, size=inp.shape)
-inp = convolve_exp(inp, tau_s, dt)
+# inp = convolve_exp(inp, tau_s, dt)
+inp = gaussian_filter(inp, sigma=[tau_s/2, sigma_inp], truncate=4.0)
+inp /= np.max(inp)
 
 # run the model
 ###############
@@ -75,10 +79,9 @@ obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbos
 s = obs.to_numpy("out")
 
 # calculate dimensionality
-cov = s.T @ s
-eigs = np.abs(np.linalg.eigvals(cov))
-dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
-print(f"Dimensionality = {dim}")
+sigmas = [0]
+windows = [200, 400, 800, 1600, 3200, 6400]
+dims = dimensionality(s, sigmas=sigmas, windows=windows)
 
 # extract spikes in network
 spike_counts = []
@@ -96,14 +99,21 @@ for idx in range(s.shape[1]):
     # plt.show()
 
 # calculate sequentiality
-print("Starting sequentiality calculation")
-neighborhood = int(sigma*2)
-overlap = 0.0
-max_lag = 200
-n_bins = 80
-seq = sequentiality(spike_counts, neighborhood=neighborhood, overlap=overlap, time_window=max_lag, n_bins=n_bins)
-sqi = np.mean(seq)
-print(f"Sequentiality = {sqi}")
+# print("Starting sequentiality calculation")
+# neighborhood = 200
+# overlap = 0.0
+# t_window = 1000
+# max_lag = 500
+# n_bins = 50
+# s1 = sequentiality(spike_counts, neighborhood=neighborhood, overlap=overlap, time_window=t_window, n_bins=n_bins,
+#                    method="sqi")
+# s2 = sequentiality(spike_counts, neighborhood=neighborhood, overlap=overlap, time_window=max_lag, n_bins=n_bins,
+#                    method="custom")
+# print("finished.")
+# sqi = np.mean(s1)
+# seq = np.mean(s2)
+# print(f"SQI = {sqi}")
+# print(f"Seq = {seq}")
 
 # calculate firing rate statistics
 taus = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
@@ -136,7 +146,6 @@ ax.plot(s_std*1e3, label="std(r)")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim}")
 plt.tight_layout()
 
 # plotting spiking dynamics
@@ -164,12 +173,11 @@ ax2.legend()
 fig.suptitle("Fano Factor Distributions")
 plt.tight_layout()
 
-# plotting sequentiality distribution
+# plotting dimensionality as a function of sigma
 fig, ax = plt.subplots(figsize=(8, 4))
-ax.hist(seq)
-ax.set_xlabel("sequentiality")
-ax.set_ylabel("count")
-ax.set_title(f"Sequentiality = {sqi}")
+ax.plot(windows, dims[sigmas[0]])
+ax.set_xlabel("w")
+ax.set_ylabel("dim")
 plt.tight_layout()
 
 plt.show()

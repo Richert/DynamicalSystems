@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import norm, cauchy
+from scipy.ndimage import gaussian_filter1d
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -152,3 +153,36 @@ def sqi(events: list, time_window: int = 100, n_bins: int = 100) -> tuple:
 
     pe, ts = np.asarray(peak_entropy), np.asarray(temporal_sparsity)
     return pe, ts
+
+
+def dimensionality(x: np.ndarray, sigmas: list, windows: list) -> dict:
+
+    N = x.shape[1]
+    ds = {s: [] for s in sigmas}
+    for s in sigmas:
+
+        # apply smoothing
+        if s > 0:
+            x_tmp = np.zeros_like(x)
+            for i in range(N):
+                x_tmp[:, i] = gaussian_filter1d(x[:, i], sigma=s)
+        else:
+            x_tmp = x[:, :]
+
+        # calculate time-window specific dimensionality
+        for w in windows:
+
+            idx = 0
+            d_col = []
+            while idx + w <= x_tmp.shape[0]:
+
+                x_tmp2 = x_tmp[idx:idx+w, :]
+                cov = x_tmp2.T @ x_tmp2
+                eigs = np.abs(np.linalg.eigvals(cov))
+                dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
+                d_col.append(dim)
+                idx += w
+
+            ds[s].append(np.mean(d_col))
+
+    return ds
