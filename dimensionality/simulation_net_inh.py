@@ -12,8 +12,8 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 20.0 #float(sys.argv[-2])
-Delta = 3.0 #float(sys.argv[-3])
+g = 4.0 #float(sys.argv[-2])
+Delta = 4.0 #float(sys.argv[-3])
 
 # model parameters
 N = 1000
@@ -30,7 +30,7 @@ d = 100.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 6.0
-s_ext = 3.0*1e-3
+s_ext = 6.0*1e-3
 v_spike = 40.0
 v_reset = -80.0
 theta_dist = "gaussian"
@@ -76,7 +76,7 @@ s = obs.to_numpy("out")
 
 # calculate dimensionality
 sigmas = [0]
-windows = [50, 100, 200, 400, 800, 1600, 3200, 6400]
+windows = [200, 400, 800, 1600, 3200, 6400]
 dims = dimensionality(s, sigmas=sigmas, windows=windows)
 
 # extract spikes in network
@@ -115,10 +115,10 @@ for idx in range(s.shape[1]):
 taus = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
 s_mean = np.mean(s, axis=1) / tau_s
 s_std = np.std(s, axis=1) / tau_s
-ffs, ffs2 = [], []
-for tau in taus:
-    ffs.append(fano_factor(spike_counts, s.shape[0], int(tau/dts)))
-    ffs2.append(fano_factor2(spike_counts, s.shape[0], int(tau/dts)))
+# ffs, ffs2 = [], []
+# for tau in taus:
+#     ffs.append(fano_factor(spike_counts, s.shape[0], int(tau/dts)))
+#     ffs2.append(fano_factor2(spike_counts, s.shape[0], int(tau/dts)))
 
 # save results
 # pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
@@ -153,21 +153,21 @@ ax.set_ylabel("neurons")
 plt.tight_layout()
 
 # plotting fano factor distributions at different time scales
-fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
-ax1, ax2 = axes
-for tau, ff1, ff2 in zip(taus, ffs, ffs2):
-    ax1.hist(ff1, label=f"tau = {tau}")
-    ax1.set_xlabel("ff")
-    ax1.set_ylabel("#")
-    ax2.hist(ff2, label=f"tau = {tau}")
-    ax2.set_xlabel("ff")
-    ax2.set_ylabel("#")
-ax1.set_title("time-specific FFs")
-ax1.legend()
-ax2.set_title("neuron-specific FFs")
-ax2.legend()
-fig.suptitle("Fano Factor Distributions")
-plt.tight_layout()
+# fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
+# ax1, ax2 = axes
+# for tau, ff1, ff2 in zip(taus, ffs, ffs2):
+#     ax1.hist(ff1, label=f"tau = {tau}")
+#     ax1.set_xlabel("ff")
+#     ax1.set_ylabel("#")
+#     ax2.hist(ff2, label=f"tau = {tau}")
+#     ax2.set_xlabel("ff")
+#     ax2.set_ylabel("#")
+# ax1.set_title("time-specific FFs")
+# ax1.legend()
+# ax2.set_title("neuron-specific FFs")
+# ax2.legend()
+# fig.suptitle("Fano Factor Distributions")
+# plt.tight_layout()
 
 # plotting dimensionality as a function of sigma
 fig, ax = plt.subplots(figsize=(8, 4))

@@ -1,0 +1,35 @@
+%YAML 1.2
+---
+
+# operator templates
+####################
+
+fhn_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = v + u - v^3/3 + I_ext + v_ext"
+    - "u' = alpha*(a - v - b*u)"
+  variables:
+    v: output(0.0)
+    u: variable(0.0)
+    I_ext: input(2.0)
+    v_ext: input(0.0)
+    a: 1.0
+    b: 0.5
+    alpha: 0.05
+
+# node templates
+################
+
+fhn_pop:
+  base: NodeTemplate
+  operators:
+    - fhn_op
+
+# circuit templates
+###################
+
+fhn:
+  base: CircuitTemplate
+  nodes:
+    p: fhn_pop
