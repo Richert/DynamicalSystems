@@ -7,16 +7,17 @@
 fhn_op:
   base: OperatorTemplate
   equations:
-    - "v' = v + u - v^3/3 + I_ext + v_ext"
-    - "u' = alpha*(a - v - b*u)"
+    - "v' = tau* (v + u - v^3/3 + I_ext + g*(v_net - v))"
+    - "u' = (a - v - b*u) / tau"
   variables:
     v: output(0.0)
     u: variable(0.0)
-    I_ext: input(2.0)
-    v_ext: input(0.0)
-    a: 1.0
-    b: 0.5
-    alpha: 0.05
+    I_ext: input(1.0)
+    v_net: input(0.0)
+    a: 0.0
+    b: 0.8
+    g: 1.0
+    tau: 10.0
 
 # node templates
 ################
