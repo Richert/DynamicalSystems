@@ -16,11 +16,9 @@ save_dir="/gpfs/group/kennedy/rgast/results/dimensionality"
 
 # modules and environments
 cd $work_dir
-cd scripts
 source $HOME/.bashrc
 module purge
 mamba activate ds
-export PYTHONPATH="${PYTHONPATH}:$work_dir"
 
 # limit amount of threads that each Python process can work with
 n_threads=16

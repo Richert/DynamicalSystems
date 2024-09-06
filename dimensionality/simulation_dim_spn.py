@@ -110,7 +110,7 @@ p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=N
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
              "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus, "ir_target": ir, "ir_fit": ir_fit,
              "ir_params": p},
-            open(f"{path}/spn_g{int(g)}_D{int(Delta*10)}_{rep+1}.p", "wb"))
+            open(f"{path}/spn_g{int(g)}_D{int(Delta*10)}_{rep+1}.pkl", "wb"))
 
 # # plotting average firing rate dynamics
 # _, ax = plt.subplots(figsize=(12, 4))
