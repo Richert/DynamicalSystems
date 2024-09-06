@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import norm, cauchy
 from scipy.ndimage import gaussian_filter1d
+from scipy.optimize import least_squares
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -155,7 +156,13 @@ def sqi(events: list, time_window: int = 100, n_bins: int = 100) -> tuple:
     return pe, ts
 
 
-def dimensionality(x: np.ndarray, sigmas: list, windows: list) -> dict:
+def get_dim(x: np.ndarray) -> float:
+    cov = x.T @ x
+    eigs = np.abs(np.linalg.eigvals(cov))
+    return np.sum(eigs) ** 2 / np.sum(eigs ** 2)
+
+
+def dimensionality_filtered(x: np.ndarray, sigmas: list, windows: list) -> dict:
 
     N = x.shape[1]
     ds = {s: [] for s in sigmas}
@@ -177,12 +184,33 @@ def dimensionality(x: np.ndarray, sigmas: list, windows: list) -> dict:
             while idx + w <= x_tmp.shape[0]:
 
                 x_tmp2 = x_tmp[idx:idx+w, :]
-                cov = x_tmp2.T @ x_tmp2
-                eigs = np.abs(np.linalg.eigvals(cov))
-                dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
+                dim = get_dim(x_tmp2)
                 d_col.append(dim)
                 idx += w
 
             ds[s].append(np.mean(d_col))
 
     return ds
+
+
+def impulse_response_tau(x: np.ndarray, tau: float, bounds: tuple, loss: str = "linear", **kwargs) -> tuple:
+
+    # preparations
+    f = lambda t, tau: np.exp(-t/tau)
+    residuals = lambda tau, y, f, t: y - f(t, tau)
+    p0 = [tau]
+
+    # find peak to start the fitting procedure from
+    idx = np.argmin(np.abs(x - 1.0)).squeeze()
+    x_tmp = x[idx:]
+    time = np.arange(x_tmp.shape[0])
+
+    # fit
+    res = least_squares(residuals, x0=p0, loss=loss, args=(x_tmp, f, time), bounds=bounds, gtol=None)
+
+    # prediction
+    tau = res["x"][0]
+    y = np.zeros_like(x)
+    y[idx:] = f(time, tau)
+
+    return tau, y

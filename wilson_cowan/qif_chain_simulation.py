@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 cutoff = 50.0
 T = 800.0 + cutoff
 start = 400.0 + cutoff
-amp1 = -5.21
-amp2 = -4.5
+amp1 = -4.3
+amp2 = -3.5
 dt = 0.001
 dts = 0.01
 
@@ -16,10 +16,10 @@ N = 10
 alpha = 0.08
 Delta = 2.0
 eta = 0.0
-J = 15*np.sqrt(Delta)
+J = 18.0
 tau = 1.0
 tau_a = 10.0
-k = 0.05
+k = 2.0
 
 node_vars = {"alpha": alpha, "tau": tau, "tau_a": tau_a, "Delta": Delta, "eta": eta, "J": J}
 
@@ -45,4 +45,10 @@ plt.colorbar(im, ax=ax, shrink=0.7)
 ax.set_xlabel("steps")
 ax.set_ylabel("neurons")
 plt.tight_layout()
+
+# raw time series
+_, ax2 = plt.subplots(figsize=(12, 3))
+res.plot(ax=ax2)
+plt.tight_layout()
+
 plt.show()

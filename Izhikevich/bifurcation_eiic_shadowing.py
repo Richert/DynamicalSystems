@@ -136,6 +136,6 @@ a.run(starting_point='HB1', c='qif2', ICP=[6, 45], NPAR=n_params, NDIM=n_dim, na
 # save results
 ##############
 
-fname = '../results/eiic_shadowing.pkl'
-kwargs = {'deltas': vals}
-a.to_file(fname, **kwargs)
+# fname = '../results/eiic_shadowing.pkl'
+# kwargs = {'deltas': vals}
+# a.to_file(fname, **kwargs)

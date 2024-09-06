@@ -93,7 +93,7 @@ s = obs.to_numpy("out")
 # calculate dimensionality
 sigmas = [0]
 windows = [100, 200, 400, 800, 1600, 3200, 6400]
-dims = dimensionality(s, sigmas=sigmas, windows=windows)
+dims = dimensionality_filtered(s, sigmas=sigmas, windows=windows)
 
 # extract spikes in network
 spike_counts = []

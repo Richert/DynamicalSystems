@@ -1,4 +1,4 @@
-from pyrates.utility.pyauto import PyAuto
+from pycobi import ODESystem
 import numpy as np
 import sys
 sys.path.append('../')
@@ -29,7 +29,7 @@ with parameters:
 # configuration
 codim1 = True
 codim2 = True
-period_mapping = True
+period_mapping = False
 n_grid_points = 100
 n_dim = 4
 n_params = 6
@@ -42,11 +42,11 @@ eta_cont_idx = 3
 path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 fname = 'auto_files'
-a = PyAuto(fname, auto_dir=auto_dir)
+a = ODESystem(eq_file='qif_alpha_mult', auto_dir=auto_dir, working_dir=fname, init_cont=False)
 
 # initial continuation in the adaptation strength alpha
 alpha_0 = [0.0125, 0.025, 0.05, 0.1, 0.2]
-alpha_solutions, alpha_cont = a.run(e='qif_alpha_mult', c='qif', ICP=3, UZR={3: alpha_0}, NDIM=n_dim,
+alpha_solutions, alpha_cont = a.run(c='qif', ICP=3, UZR={3: alpha_0}, NDIM=n_dim,
                                     STOP=['UZ' + str(len(alpha_0))], DSMAX=0.005, NMX=4000, name='s0')
 
 # principle continuation in eta
@@ -58,8 +58,8 @@ solutions_eta.append(a.run(starting_point='EP1', ICP=1, DSMAX=0.005, RL1=0.0, RL
                            bidirectional=True, name='eta_0', NDIM=n_dim))
 
 i = 1
-for point, point_info in alpha_solutions.items():
-    if 'UZ' in point_info['bifurcation']:
+for point in alpha_solutions.index:
+    if 'UZ' in alpha_solutions.loc[point, 'bifurcation'].iloc[0]:
         solutions_eta.append(a.run(starting_point=point, ICP=1, DSMAX=0.005, RL1=0.0, RL0=-12.0, NMX=4000,
                                    origin=alpha_cont, bidirectional=True, name=f"eta_{i}", NDIM=n_dim))
         i += 1
@@ -121,8 +121,8 @@ if codim1:
 # save results #
 ################
 
-fname = '../results/alpha_mult.pkl'
-kwargs = dict()
-if period_mapping:
-    kwargs['tau_e_p_periods'] = period_solutions
-a.to_file(fname, **kwargs)
+# fname = '../results/alpha_mult.pkl'
+# kwargs = dict()
+# if period_mapping:
+#     kwargs['tau_e_p_periods'] = period_solutions
+# a.to_file(fname, **kwargs)

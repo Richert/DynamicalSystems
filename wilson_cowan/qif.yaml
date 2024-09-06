@@ -9,7 +9,7 @@ qif_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
-    - "v' = (v^2 + eta + I_ext + J*tau*(r+r_in) - (pi*tau*r)^2) / tau"
+    - "v' = (v^2 + eta + I_ext + tau*(J*r+r_in) - (pi*tau*r)^2) / tau"
   variables:
     r: output(0.01)
     v: variable(-2.0)
@@ -25,7 +25,7 @@ qif_sd_op:
   base: qif_op
   equations:
     replace:
-      J*tau: J*tau*(1-a)
+      tau*: tau*(1-a)*
     add:
       - "a' = x/tau_a"
       - "x' = alpha*r - 2.*x/tau_a - a/tau_a"

@@ -50,6 +50,10 @@ eic = CircuitTemplate.from_yaml(path_to_yaml_config)
 eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs, 'lts/lts_op/Delta': Delta_lts,
                           'rs/rs_op/r': 0.02, 'rs/rs_op/v': -45.0})
 
+# generate run function
+eic.get_run_func(func_name='eiic_run', file_name='config/eiic_shadowing.f90', step_size=dt, backend='fortran',
+                 auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
+
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
               outputs={'rs': 'rs/rs_op/r', 'fs': 'fs/fs_op/r', 'lts': 'lts/lts_op/r'},

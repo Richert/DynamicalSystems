@@ -34,9 +34,9 @@ eic = CircuitTemplate.from_yaml("config/ik_mf/eic")
 eic.update_var(node_vars={'rs/rs_op/Delta': Delta_rs, 'fs/fs_op/Delta': Delta_fs, 'rs/rs_op/d': d_rs,
                           'rs/rs_op/v': -40.0, 'rs/rs_op/r': 0.05})
 
-# # generate run function
-# eic.get_run_func(func_name='eic_run', file_name='config/eic_shadowing.f90', step_size=dt, backend='fortran',
-#                  auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
+# generate run function
+eic.get_run_func(func_name='eic_run', file_name='config/eic_shadowing.f90', step_size=dt, backend='fortran',
+                 auto=True, vectorize=False, in_place=False, float_precision='float64', solver='scipy')
 
 # run simulation
 res = eic.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
