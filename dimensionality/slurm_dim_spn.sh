@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=dim_spn
-#SBATCH --output=$HOME/SlurmScripts/out/dim_spn.out
-#SBATCH --error=$HOME/SlurmScripts/err/dim_spn.err
+#SBATCH --output=out/dim_spn.out
+#SBATCH --error=err/dim_spn.err
 #SBATCH --time=24:00:00
 #SBATCH --partition=highcpu
 #SBATCH --cpus-per-task=16
@@ -37,21 +37,15 @@ n=20
 batch_size=64
 range_end=$((n-1))
 
-# execute python scripts in batches of batch_size
+# execute python scripts
 for d in "${deltas[@]}"; do
   for g in "${gs[@]}"; do
     for IDX in $(seq 0 $range_end); do
 
-      # python calls
       (
       echo "Starting job #$((IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
       python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
       ) &
-
-      # batch control
-      if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
-            wait -n
-      fi
 
     done
   done
