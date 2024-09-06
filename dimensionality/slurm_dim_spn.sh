@@ -40,10 +40,16 @@ for d in "${deltas[@]}"; do
   for g in "${gs[@]}"; do
     for IDX in $(seq 0 $range_end); do
 
+      # python call
       (
       echo "Starting job #$((IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
-      python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
+      srun python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
       ) &
+
+      # batch control
+      if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
+            wait
+      fi
 
     done
   done
