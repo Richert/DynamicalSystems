@@ -21,12 +21,12 @@ module purge
 mamba activate ds
 
 # limit amount of threads that each Python process can work with
-n_threads=16
-export OMP_NUM_THREADS=$n_threads
-export OPENBLAS_NUM_THREADS=$n_threads
-export MKL_NUM_THREADS=$n_threads
-export NUMEXPR_NUM_THREADS=$n_threads
-export VECLIB_MAXIMUM_THREADS=$n_threads
+#n_threads=16
+#export OMP_NUM_THREADS=$n_threads
+#export OPENBLAS_NUM_THREADS=$n_threads
+#export MKL_NUM_THREADS=$n_threads
+#export NUMEXPR_NUM_THREADS=$n_threads
+#export VECLIB_MAXIMUM_THREADS=$n_threads
 
 # set condition
 deltas=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 )
