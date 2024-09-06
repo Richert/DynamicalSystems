@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name=piano_prep
-#SBATCH --output=out/piano_prep.out
-#SBATCH --error=err/piano_prep.err
+#SBATCH --job-name=dim_spn
+#SBATCH --output=$HOME/SlurmScripts/out/dim_spn.out
+#SBATCH --error=$HOME/SlurmScripts/err/dim_spn.err
 #SBATCH --time=24:00:00
 #SBATCH --partition=highcpu
 #SBATCH --cpus-per-task=16
