@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import norm, cauchy
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import least_squares
+from typing import Union, Iterable, Callable
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
@@ -193,24 +194,60 @@ def dimensionality_filtered(x: np.ndarray, sigmas: list, windows: list) -> dict:
     return ds
 
 
-def impulse_response_tau(x: np.ndarray, tau: float, bounds: tuple, loss: str = "linear", **kwargs) -> tuple:
+def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, p0: Iterable, bounds: tuple,
+                         loss: str = "linear", **kwargs) -> tuple:
 
     # preparations
-    f = lambda t, tau: np.exp(-t/tau)
-    residuals = lambda tau, y, f, t: y - f(t, tau)
-    p0 = [tau]
-
-    # find peak to start the fitting procedure from
-    idx = np.argmin(np.abs(x - 1.0)).squeeze()
-    x_tmp = x[idx:]
-    time = np.arange(x_tmp.shape[0])
+    residuals = lambda p, y, f, t: y - f(t, *tuple(p))
 
     # fit
-    res = least_squares(residuals, x0=p0, loss=loss, args=(x_tmp, f, time), bounds=bounds, gtol=None)
+    res = least_squares(residuals, x0=p0, loss=loss, args=(x, f, time), bounds=bounds, **kwargs)
 
     # prediction
-    tau = res["x"][0]
-    y = np.zeros_like(x)
-    y[idx:] = f(time, tau)
+    p = res["x"]
+    y = f(time, *tuple(p))
 
-    return tau, y
+    return p, y
+
+
+def exponential_kernel(t: Union[float, np.ndarray], d: float, g: float, tau: float):
+    """Mono-exponential kernel function.
+
+    :param t: time in arbitrary units. Can be a vector or a single scalar.
+    :param d: Delay until onset of the kernel response. Must be a scalar.
+    :param g: Scaling of the kernel function. Must be a scalar.
+    :param tau: Decay time constant of the kernel. Must be a scalar.
+    :return: Value of the kernel function at each entry in `t`.
+    """
+    t1 = t - d
+    on = 1.0 * (t1 > 0.0)
+    return on * g * np.exp(-t1 / tau)
+
+
+def alpha(t: Union[float, np.ndarray], d: float, g: float, tau: float):
+    """Alpha kernel function.
+
+    :param t: time in arbitrary units. Can be a vector or a single scalar.
+    :param d: Delay until onset of the kernel response. Must be a scalar.
+    :param g: Scaling of the kernel function. Must be a scalar.
+    :param tau: Time constant of the alpha kernel. Must be a scalar.
+    :return: Value of the kernel function at each entry in `t`.
+    """
+    t1 = t - d
+    on = 1.0 * (t1 > 0.0)
+    return on * g * t1 * np.exp(1 - t1 / tau) / tau
+
+
+def biexponential(t: Union[float, np.ndarray], d: float, g: float, tau_r: float, tau_d: float):
+    """Bi-exponential kernel function.
+
+    :param t: time in arbitrary units. Can be a vector or a single scalar.
+    :param d: Delay until onset of the kernel response. Must be a scalar.
+    :param g: Scaling of the kernel function. Must be a scalar.
+    :param tau_r: Rise time constant of the kernel. Must be a scalar.
+    :param tau_d: Decay time constant of the kernel. Must be a scalar.
+    :return: Value of the kernel function at each entry in `t`.
+    """
+    t1 = t - d
+    on = 1.0 * (t1 > 0.0)
+    return on * g * tau_d * tau_r * (np.exp(-t / tau_d) - np.exp(-t / tau_r)) / (tau_d - tau_r)
