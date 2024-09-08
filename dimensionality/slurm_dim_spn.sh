@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --nodes=4
 #SBATCH --ntasks-per-node=4
-#SBATCH --mem=10G
+#SBATCH --mem=30G
 
 # paths
 work_dir="$HOME/PycharmProjects/DynamicalSystems/dimensionality"
@@ -43,7 +43,7 @@ for d in "${deltas[@]}"; do
       # python call
       (
       echo "Starting job #$((IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
-      srun python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
+      srun --exclusive --ntasks=1 -c 1 python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
       ) &
 
       # batch control
