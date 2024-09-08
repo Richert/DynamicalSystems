@@ -1,12 +1,5 @@
 #!/bin/bash
 
-#SBATCH --job-name=dim_spn
-#SBATCH --output=out/dim_spn.out
-#SBATCH --error=err/dim_spn.err
-#SBATCH --partition=highcpu
-#SBATCH --cpus-per-task=16
-#SBATCH --ntasks-per-node=4
-
 # paths
 work_dir="$HOME/PycharmProjects/DynamicalSystems/dimensionality"
 save_dir="/gpfs/group/kennedy/rgast/results/dimensionality"
@@ -17,30 +10,26 @@ source $HOME/.bashrc
 module purge
 mamba activate ds
 
-# limit amount of threads that each Python process can work with
-#n_threads=16
-#export OMP_NUM_THREADS=$n_threads
-#export OPENBLAS_NUM_THREADS=$n_threads
-#export MKL_NUM_THREADS=$n_threads
-#export NUMEXPR_NUM_THREADS=$n_threads
-#export VECLIB_MAXIMUM_THREADS=$n_threads
-
 # set condition
 deltas=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 )
 gs=( 0.0 4.0 8.0 12.0 16.0 20.0 24.0 28.0 )
 n=20
-batch_size=40
+batch_size=20
 range_end=$((n-1))
 
 # execute python scripts
+counter=0
 for d in "${deltas[@]}"; do
   for g in "${gs[@]}"; do
     for IDX in $(seq 0 $range_end); do
 
       # python call
       (
+      counter=$((counter+1))
       echo "Starting job #$((IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
-      srun --ntasks=1 --nodes=1 --mem=8G --time=00:30:00 --exclusive -c 1 python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
+      srun --ntasks=1 --nodes=1 --mem=8G --time=00:30:00 --cpus-per-task=12 --job-name="dim_spn_$counter" \
+      --output="out/dim_spn_$counter.out" --error="err/dim_spn_$counter.err" --partition="highcpu" --exclusive -c 1 \
+      python simulation_dim_spn.py "$save_dir" "$d" "$g" "$IDX"
       ) &
 
       # batch control
