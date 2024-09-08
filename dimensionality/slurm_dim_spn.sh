@@ -36,7 +36,7 @@ for d in "${deltas[@]}"; do
 
       # batch control
       if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
-            wait -n
+            wait
       fi
 
     done
