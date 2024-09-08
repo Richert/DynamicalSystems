@@ -23,9 +23,11 @@ for d in "${deltas[@]}"; do
   for g in "${gs[@]}"; do
     for IDX in $(seq 0 $range_end); do
 
+      # process counter
+      counter=$((counter+1))
+
       # python call
       (
-      counter=$((counter+1))
       echo "Starting job #$((IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
       srun --ntasks=1 --nodes=1 --mem=8G --time=00:30:00 --cpus-per-task=12 --job-name="dim_spn_$counter" \
       --output="out/dim_spn_$counter.out" --error="err/dim_spn_$counter.err" --partition="highcpu" --exclusive -c 1 \
@@ -34,7 +36,7 @@ for d in "${deltas[@]}"; do
 
       # batch control
       if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
-            wait
+            wait -n
       fi
 
     done
