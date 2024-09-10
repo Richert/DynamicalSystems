@@ -10,7 +10,7 @@ from pandas import DataFrame
 condition = str(sys.argv[-1])
 
 # load data
-path = "/media/fsmresfiles/richard_data/numerics/dimensionality"
+path = "/media/kennedy_labdata/rgast/results/dimensionality"
 results = {"rep": [], "g": [], "Delta": [], "dim": [], "s_mean": [], "s_std": [], "s_norm": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:

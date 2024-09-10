@@ -19,20 +19,20 @@ path = str(sys.argv[-4])
 # model parameters
 N = 1000
 p = 0.2
-C = 50.0
-k = 1.0
-v_r = -80.0
-v_t = -30.0
+C = 100.0
+k = 0.7
+v_r = -60.0
+v_t = -40.0
 eta = 0.0
-a = 0.01
-b = -20.0
-d = 150.0
+a = 0.03
+b = -2.0
+d = 40.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 8.0
-s_ext = 6.0*1e-3
-v_spike = 40.0
-v_reset = -55.0
+s_ext = 10.0*1e-3
+v_spike = 50.0
+v_reset = -80.0
 theta_dist = "gaussian"
 
 # define distribution of etas
@@ -60,7 +60,7 @@ inp = convolve_exp(inp, tau_s, dt)
 
 # initialize model
 node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1/a, "b": b, "kappa": d,
-             "g_e": 0.0, "g_i": g, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
+             "g_e": g, "g_i": 0.0, "E_e": E_e, "E_i": E_i, "tau_s": tau_s, "v": v_t}
 
 # initialize model
 net = Network(dt, device="cpu")
@@ -114,7 +114,7 @@ p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=N
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
              "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
              "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
-            open(f"{path}/spn_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+            open(f"{path}/exc_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # # plotting average firing rate dynamics
 # _, ax = plt.subplots(figsize=(12, 4))
