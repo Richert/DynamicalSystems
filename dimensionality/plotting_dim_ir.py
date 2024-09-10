@@ -48,8 +48,7 @@ ir_tau = df.pivot_table(values="ir_tau", index="g", columns="Delta")
 for data, title in zip([dim_ss, dim_ir, fr_std, fr_norm, ir_tau],
                        ["dim(ss)", "dim(ir)", "std(fr)", "std(fr)/mean(fr)", "tau(ir)"]):
     _, ax = plt.subplots(figsize=(5, 5))
-    im = heatmap(data, ax=ax)
-    plt.colorbar(im, ax=ax)
+    heatmap(data, ax=ax)
     ax.set_xlabel("Delta")
     ax.set_ylabel("g")
     ax.set_title(title)
