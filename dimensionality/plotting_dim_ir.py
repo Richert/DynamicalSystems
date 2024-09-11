@@ -21,8 +21,8 @@ for file in os.listdir(path):
         results["rep"].append(rep)
         results["g"].append(data["g"])
         results["Delta"].append(data["Delta"])
-        results["dim_ss"].append(data["dim"])
-        results["dim_ir"].append(data["dim"])
+        results["dim_ss"].append(data["dim_ss"])
+        results["dim_ir"].append(data["dim_ir"])
         results["s_mean"].append(np.mean(data["s_mean"]))
         results["s_std"].append(np.mean(data["s_std"]))
         results["s_norm"].append(results["s_std"][-1]/results["s_mean"][-1])
@@ -33,7 +33,7 @@ df = DataFrame.from_dict(results)
 
 # filter results
 min_g = 0.0
-max_g = 25.0
+max_g = 30.0
 df = df.loc[df["g"] >= min_g, :]
 df = df.loc[df["g"] <= max_g, :]
 
