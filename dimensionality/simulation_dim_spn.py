@@ -30,7 +30,7 @@ d = 150.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 8.0
-s_ext = 6.0*1e-3
+s_ext = 60.0*1e-3
 v_spike = 40.0
 v_reset = -55.0
 theta_dist = "gaussian"
@@ -43,16 +43,17 @@ thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 W = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
+g_in = 10
 T = 2500.0
 cutoff = 1000.0
 start = 1000.0
 stop = 1010.0
-amp = 10.0*1e-3
+amp = 100.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
-inp += poisson.rvs(mu=s_ext, size=inp.shape)
-inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), :] += poisson.rvs(mu=amp, size=(int((stop-start)/dt), N))
+inp += poisson.rvs(mu=s_ext*g_in*dt, size=inp.shape)
+inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), :] += poisson.rvs(mu=amp*g_in*dt, size=(int((stop-start)/dt), N))
 inp = convolve_exp(inp, tau_s, dt)
 
 # run the model

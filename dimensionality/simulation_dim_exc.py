@@ -26,13 +26,13 @@ v_t = -40.0
 eta = 0.0
 a = 0.03
 b = -2.0
-d = 40.0
+d = 50.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 8.0
 s_ext = 10.0*1e-3
 v_spike = 50.0
-v_reset = -80.0
+v_reset = -90.0
 theta_dist = "gaussian"
 
 # define distribution of etas
@@ -43,6 +43,7 @@ thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 W = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
+g_in = 10
 T = 2500.0
 cutoff = 1000.0
 start = 1000.0
@@ -51,8 +52,8 @@ amp = 10.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
-inp += poisson.rvs(mu=s_ext, size=inp.shape)
-inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), :] += poisson.rvs(mu=amp, size=(int((stop-start)/dt), N))
+inp += poisson.rvs(mu=s_ext*g_in*dt, size=inp.shape)
+inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), :] += poisson.rvs(mu=amp*g_in*dt, size=(int((stop-start)/dt), N))
 inp = convolve_exp(inp, tau_s, dt)
 
 # run the model
@@ -64,7 +65,7 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
 
 # initialize model
 net = Network(dt, device="cpu")
-net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
+net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_e",
                     input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=node_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
                     clear=True)
@@ -99,12 +100,13 @@ for tau in taus:
     ffs2.append(fano_factor2(spike_counts, s_vals.shape[0], int(tau/dts)))
 
 # fit bi-exponential to envelope of impulse response
+window = 1000
 tau = 10.0
 a = 10.0
 d = 3.0
 p0 = [d, a, tau]
 ir = s_mean[int(start/dts):] * 1e3
-ir = ir - np.min(ir)
+ir = ir - np.mean(ir[:-window])
 time = s.index.values[int(start/dts):]
 time = time - np.min(time)
 bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
@@ -117,7 +119,7 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss,
             open(f"{path}/exc_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # # plotting average firing rate dynamics
-# _, ax = plt.subplots(figsize=(12, 4))
+# fig, ax = plt.subplots(figsize=(12, 4))
 # ax.plot(s_mean*1e3, label="mean(r)")
 # ax.plot(s_std*1e3, label="std(r)")
 # ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
@@ -125,17 +127,19 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss,
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim}")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field dynamics")
 # plt.tight_layout()
 #
 # # plotting impulse response
-# _, ax = plt.subplots(figsize=(12, 4))
+# fig, ax = plt.subplots(figsize=(12, 4))
 # ax.plot(ir, label="Target IR")
 # ax.plot(ir_fit, label="Fitted IR")
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r (Hz)")
-# ax.set_title(f"IR time constant: tau = {p[2]} ms")
+# ax.set_title(f"Dim = {dim_ir}, decay time constant: tau = {p[2]} ms")
+# fig.suptitle("Mean-field impulse response")
 # plt.tight_layout()
 #
 # # plotting spiking dynamics
@@ -144,6 +148,7 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss,
 # plt.colorbar(im, ax=ax)
 # ax.set_xlabel("steps")
 # ax.set_ylabel("neurons")
+# ax.set_title("Spiking dynamics")
 # plt.tight_layout()
 #
 # plt.show()
