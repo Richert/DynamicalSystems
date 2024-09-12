@@ -63,13 +63,14 @@ for y, title in zip(["dim_ss", "dim_ir", "ir_tau"], ["dim(ss)", "dim(ir)", "tau(
     plt.tight_layout()
 
 # plotting 1D scatter plots
-for y, title in zip(["dim_ss", "dim_ir", "ir_tau"], ["dim(ss)", "dim(ir)", "tau(ir)"]):
+for xs, y, title in zip([("s_norm", "s_std"), ("s_norm", "s_std"), ("dim_ss", "dim_ir")],
+                        ["dim_ss", "dim_ir", "ir_tau"], ["dim(ss)", "dim(ir)", "tau(ir)"]):
     fig, axes = plt.subplots(ncols=2, figsize=(12, 4))
     ax = axes[0]
-    scatterplot(df, x="s_norm", y=y, hue="Delta", style="g", ax=ax)
+    scatterplot(df, x=xs[0], y=y, hue="Delta", style="g", ax=ax)
     ax.set_title("std(fr)/mean(fr)")
     ax = axes[1]
-    scatterplot(df, x="s_std", y=y, hue="Delta", style="g", ax=ax)
+    scatterplot(df, x=xs[1], y=y, hue="Delta", style="g", ax=ax)
     ax.set_title("std(fr)")
     fig.suptitle(title)
     plt.tight_layout()

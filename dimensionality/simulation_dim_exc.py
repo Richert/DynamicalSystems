@@ -11,10 +11,10 @@ from custom_functions import *
 ###################
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
-path = str(sys.argv[-4])
+rep = 0 #int(sys.argv[-1])
+g = 10.0 #float(sys.argv[-2])
+Delta = 1.0 #float(sys.argv[-3])
+path = "" #str(sys.argv[-4])
 
 # model parameters
 N = 1000
@@ -113,42 +113,42 @@ bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
 p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=None, loss="linear")
 
 # save results
-pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
-             "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-             "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
-            open(f"{path}/exc_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
+#              "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+#              "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
+#             open(f"{path}/exc_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
-# # plotting average firing rate dynamics
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean*1e3, label="mean(r)")
-# ax.plot(s_std*1e3, label="std(r)")
-# ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
-# ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim_ss}")
-# fig.suptitle("Mean-field dynamics")
-# plt.tight_layout()
-#
-# # plotting impulse response
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(ir, label="Target IR")
-# ax.plot(ir_fit, label="Fitted IR")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r (Hz)")
-# ax.set_title(f"Dim = {dim_ir}, decay time constant: tau = {p[2]} ms")
-# fig.suptitle("Mean-field impulse response")
-# plt.tight_layout()
-#
-# # plotting spiking dynamics
-# _, ax = plt.subplots(figsize=(12, 4))
-# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-# plt.colorbar(im, ax=ax)
-# ax.set_xlabel("steps")
-# ax.set_ylabel("neurons")
-# ax.set_title("Spiking dynamics")
-# plt.tight_layout()
-#
-# plt.show()
+# plotting average firing rate dynamics
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(s_mean*1e3, label="mean(r)")
+ax.plot(s_std*1e3, label="std(r)")
+ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
+ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r")
+ax.set_title(f"Dim = {dim_ss}")
+fig.suptitle("Mean-field dynamics")
+plt.tight_layout()
+
+# plotting impulse response
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(ir, label="Target IR")
+ax.plot(ir_fit, label="Fitted IR")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r (Hz)")
+ax.set_title(f"Dim = {dim_ir}, decay time constant: tau = {p[2]} ms")
+fig.suptitle("Mean-field impulse response")
+plt.tight_layout()
+
+# plotting spiking dynamics
+_, ax = plt.subplots(figsize=(12, 4))
+im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("steps")
+ax.set_ylabel("neurons")
+ax.set_title("Spiking dynamics")
+plt.tight_layout()
+
+plt.show()

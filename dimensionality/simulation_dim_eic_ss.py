@@ -12,19 +12,19 @@ from custom_functions import *
 # define parameters
 ###################
 
-# get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 4.0 #float(sys.argv[-2])
-Delta = 3.0 #float(sys.argv[-3])
-
 # general parameters
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
 v_reset = -90.0
 theta_dist = "gaussian"
-N = 100
-g_in = 1
+N = 1000
+g_in = 10
+
+# get sweep condition
+rep = 0 #int(sys.argv[-1])
+g = 1.0/np.sqrt(N) #float(sys.argv[-2])
+Delta = 3.0 #float(sys.argv[-3])
 
 # exc parameters
 p_e = 0.8
@@ -37,7 +37,7 @@ eta_e = 0.0
 a_e = 0.03
 b_e = -2.0
 d_e = 40.0
-s_e = 10.0*1e-3
+s_e = 5.0*1e-3
 tau_s_e = 6.0
 
 # inh parameters
@@ -51,7 +51,7 @@ eta_i = 0.0
 a_i = 0.03
 b_i = -2.0
 d_i = 100.0
-s_i = 10.0*1e-3
+s_i = 5.0*1e-3
 tau_s_i = 10.0
 
 # connectivity parameters
@@ -76,7 +76,7 @@ T = 2500.0
 cutoff = 1000.0
 start = 1000.0
 stop = 1020.0
-amp = 200.0*1e-3
+amp = 50.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
