@@ -63,7 +63,7 @@ for y, title in zip(["dim_ss", "dim_ir", "ir_tau"], ["dim(ss)", "dim(ir)", "tau(
     plt.tight_layout()
 
 # plotting 1D scatter plots
-for xs, y, title in zip([("s_norm", "s_std"), ("s_norm", "s_std"), ("dim_ss", "dim_ir")],
+for xs, y, title in zip([("s_norm", "s_std"), ("s_norm", "s_std"), ("dim_ir", "dim_ir")],
                         ["dim_ss", "dim_ir", "ir_tau"], ["dim(ss)", "dim(ir)", "tau(ir)"]):
     fig, axes = plt.subplots(ncols=2, figsize=(12, 4))
     ax = axes[0]

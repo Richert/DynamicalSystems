@@ -12,7 +12,7 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 10.0 #float(sys.argv[-2])
+g = 3.0 #float(sys.argv[-2])
 Delta = 1.0 #float(sys.argv[-3])
 path = "" #str(sys.argv[-4])
 
@@ -81,7 +81,8 @@ s_vals = s.values[:idx_stop, :]
 dim_ss = get_dim(s_vals)
 
 # calculate dimensionality in the impulse response period
-s_vals = s.values[idx_stop:, :]
+ir_window = int(300.0/dts)
+s_vals = s.values[idx_stop:idx_stop+ir_window, :]
 dim_ir = get_dim(s_vals)
 
 # extract spikes in network
@@ -100,13 +101,12 @@ for tau in taus:
     ffs2.append(fano_factor2(spike_counts, s_vals.shape[0], int(tau/dts)))
 
 # fit bi-exponential to envelope of impulse response
-window = 1000
 tau = 10.0
 a = 10.0
 d = 3.0
 p0 = [d, a, tau]
-ir = s_mean[int(start/dts):] * 1e3
-ir = ir - np.mean(ir[:-window])
+ir = s_mean[idx_stop:] * 1e3
+ir = ir - np.mean(ir[ir_window:])
 time = s.index.values[int(start/dts):]
 time = time - np.min(time)
 bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])

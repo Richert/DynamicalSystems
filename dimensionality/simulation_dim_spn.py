@@ -30,7 +30,7 @@ d = 150.0
 E_e = 0.0
 E_i = -65.0
 tau_s = 8.0
-s_ext = 60.0*1e-3
+s_ext = 40.0*1e-3
 v_spike = 40.0
 v_reset = -55.0
 theta_dist = "gaussian"
@@ -48,7 +48,7 @@ T = 2500.0
 cutoff = 1000.0
 start = 1000.0
 stop = 1010.0
-amp = 100.0*1e-3
+amp = 20.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
@@ -81,7 +81,8 @@ s_vals = s.values[:idx_stop, :]
 dim_ss = get_dim(s_vals)
 
 # calculate dimensionality in the impulse response period
-s_vals = s.values[idx_stop:, :]
+ir_window = int(300.0/dts)
+s_vals = s.values[idx_stop:idx_stop+ir_window, :]
 dim_ir = get_dim(s_vals)
 
 # extract spikes in network
@@ -104,8 +105,8 @@ tau = 10.0
 a = 10.0
 d = 3.0
 p0 = [d, a, tau]
-ir = s_mean[int(start/dts):] * 1e3
-ir = ir - np.min(ir)
+ir = s_mean[idx_stop:] * 1e3
+ir = ir - np.mean(ir[ir_window:])
 time = s.index.values[int(start/dts):]
 time = time - np.min(time)
 bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
@@ -118,7 +119,7 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss,
             open(f"{path}/spn_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # # plotting average firing rate dynamics
-# _, ax = plt.subplots(figsize=(12, 4))
+# fig, ax = plt.subplots(figsize=(12, 4))
 # ax.plot(s_mean*1e3, label="mean(r)")
 # ax.plot(s_std*1e3, label="std(r)")
 # ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
@@ -126,17 +127,19 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss,
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim}")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field dynamics")
 # plt.tight_layout()
 #
 # # plotting impulse response
-# _, ax = plt.subplots(figsize=(12, 4))
+# fig, ax = plt.subplots(figsize=(12, 4))
 # ax.plot(ir, label="Target IR")
 # ax.plot(ir_fit, label="Fitted IR")
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r (Hz)")
-# ax.set_title(f"IR time constant: tau = {p[2]} ms")
+# ax.set_title(f"Dim = {dim_ir}, decay time constant: tau = {p[2]} ms")
+# fig.suptitle("Mean-field impulse response")
 # plt.tight_layout()
 #
 # # plotting spiking dynamics
@@ -145,6 +148,7 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss,
 # plt.colorbar(im, ax=ax)
 # ax.set_xlabel("steps")
 # ax.set_ylabel("neurons")
+# ax.set_title("Spiking dynamics")
 # plt.tight_layout()
 #
 # plt.show()

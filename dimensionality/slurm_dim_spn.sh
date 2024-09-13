@@ -12,7 +12,7 @@ mamba activate ds
 
 # set condition
 deltas=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 )
-gs=( 0.0 4.0 8.0 12.0 16.0 20.0 24.0 28.0 )
+gs=( 0.0 3.0 6.0 9.0 12.0 15.0 18.0 21.0 )
 n=20
 batch_size=20
 range_end=$((n-1))
