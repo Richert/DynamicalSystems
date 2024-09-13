@@ -14,6 +14,7 @@ from custom_functions import *
 rep = int(sys.argv[-1])
 g = float(sys.argv[-2])
 Delta = float(sys.argv[-3])
+path = str(sys.argv[-4])
 
 # model parameters
 N = 1000
@@ -25,13 +26,13 @@ v_t = -40.0
 eta = 0.0
 a = 0.03
 b = -2.0
-d = 100.0
+d = 50.0
 E_e = 0.0
 E_i = -65.0
-tau_s = 6.0
-s_ext = 2.0*1e-3
-v_spike = 1000.0
-v_reset = -1000.0
+tau_s = 8.0
+s_ext = 50.0*1e-3
+v_spike = 50.0
+v_reset = -90.0
 theta_dist = "gaussian"
 
 # define distribution of etas
@@ -42,17 +43,18 @@ thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 W = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
-T = 3000.0
+g_in = 10
+T = 2500.0
 cutoff = 1000.0
+start = 1000.0
+stop = 1010.0
+amp = 25.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
-inp += poisson.rvs(mu=s_ext, size=inp.shape)
+inp += poisson.rvs(mu=s_ext*g_in*dt, size=inp.shape)
+inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), :] += poisson.rvs(mu=amp*g_in*dt, size=(int((stop-start)/dt), N))
 inp = convolve_exp(inp, tau_s, dt)
-# idx = 50
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(inp[:, idx])
-# plt.show()
 
 # run the model
 ###############
@@ -71,51 +73,73 @@ net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False,
               cutoff=int(cutoff/dt))
-s = obs.to_numpy("out")
+s = obs.to_dataframe("out")
 
-# calculate dimensionality
-cov = s.T @ s
-eigs = np.abs(np.linalg.eigvals(cov))
-dim = np.sum(eigs) ** 2 / np.sum(eigs ** 2)
+# calculate dimensionality in the steady-state period
+idx_stop = int(start/dts)
+s_vals = s.values[:idx_stop, :]
+dim_ss = get_dim(s_vals)
+
+# calculate dimensionality in the impulse response period
+ir_window = int(300.0/dts)
+s_vals = s.values[idx_stop:idx_stop+ir_window, :]
+dim_ir = get_dim(s_vals)
 
 # extract spikes in network
 spike_counts = []
 for idx in range(s.shape[1]):
-    peaks, _ = find_peaks(s[:, idx])
+    peaks, _ = find_peaks(s_vals[:, idx])
     spike_counts.append(peaks)
-
-    # fig, ax = plt.subplots(figsize=(12, 4))
-    # ax.plot(s[:, idx]/np.max(s[:, idx]))
-    # for p in peaks:
-    #     ax.axvline(x=p, ymin=0.0, ymax=1.0, color="black", linestyle="dashed")
-    # ax.set_xlabel("steps")
-    # ax.set_ylabel("s")
-    # plt.tight_layout()
-    # plt.show()
 
 # calculate firing rate statistics
 taus = [5.0, 10.0, 20.0, 40.0, 80.0, 160.0, 320.0]
-s_mean = np.mean(s, axis=1) / tau_s
-s_std = np.std(s, axis=1) / tau_s
+s_mean = np.mean(s.values, axis=1) / tau_s
+s_std = np.std(s.values, axis=1) / tau_s
 ffs, ffs2 = [], []
 for tau in taus:
-    ffs.append(fano_factor(spike_counts, s.shape[0], int(tau/dts)))
-    ffs2.append(fano_factor2(spike_counts, s.shape[0], int(tau/dts)))
+    ffs.append(fano_factor(spike_counts, s_vals.shape[0], int(tau/dts)))
+    ffs2.append(fano_factor2(spike_counts, s_vals.shape[0], int(tau/dts)))
+
+# fit bi-exponential to envelope of impulse response
+tau = 10.0
+a = 10.0
+d = 3.0
+p0 = [d, a, tau]
+ir = s_mean[idx_stop:] * 1e3
+ir = ir - np.mean(ir[ir_window:])
+time = s.index.values[int(start/dts):]
+time = time - np.min(time)
+bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
+p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=None, loss="linear")
 
 # save results
-pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std,
-             "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus},
-            open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/inh_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-                 "wb"))
+pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
+             "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+             "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
+            open(f"{path}/inh_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # # plotting average firing rate dynamics
-# _, ax = plt.subplots(figsize=(12, 4))
+# fig, ax = plt.subplots(figsize=(12, 4))
 # ax.plot(s_mean*1e3, label="mean(r)")
 # ax.plot(s_std*1e3, label="std(r)")
+# ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
+# ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim}")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field dynamics")
+# plt.tight_layout()
+#
+# # plotting impulse response
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(ir, label="Target IR")
+# ax.plot(ir_fit, label="Fitted IR")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.set_title(f"Dim = {dim_ir}, decay time constant: tau = {p[2]} ms")
+# fig.suptitle("Mean-field impulse response")
 # plt.tight_layout()
 #
 # # plotting spiking dynamics
@@ -124,23 +148,7 @@ pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_me
 # plt.colorbar(im, ax=ax)
 # ax.set_xlabel("steps")
 # ax.set_ylabel("neurons")
+# ax.set_title("Spiking dynamics")
 # plt.tight_layout()
 #
-# # plotting fano factor distributions at different time scales
-# fig, axes = plt.subplots(ncols=2, figsize=(8, 4))
-# for tau, ff1, ff2 in zip(taus, ffs, ffs2):
-#     ax = axes[0]
-#     ax.hist(ff1, label=f"tau = {tau}")
-#     ax.set_xlabel("ff")
-#     ax.set_ylabel("#")
-#     ax = axes[1]
-#     ax.hist(ff2, label=f"tau = {tau}")
-#     ax.set_xlabel("ff")
-#     ax.set_ylabel("#")
-# axes[0].set_title("time-specific FFs")
-# axes[0].legend()
-# axes[1].set_title("neuron-specific FFs")
-# axes[1].legend()
-# fig.suptitle("Fano Factor Distributions")
-# plt.tight_layout()
 # plt.show()
