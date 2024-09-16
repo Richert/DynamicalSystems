@@ -26,7 +26,7 @@ for d in "${deltas[@]}"; do
       # python calls
       (
       echo "Starting job #$(($IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
-      python simulation_dim_spn.py $save_dir $d $g $IDX
+      python simulation_dim_inh2.py $save_dir $d $g $IDX
       sleep 1
       ) &
 

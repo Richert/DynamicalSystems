@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # set condition
-deltas=( 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 )
-gs=( 0.0 4.0 8.0 12.0 16.0 20.0 24.0 28.0 )
+deltas=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 )
+gs=( 0.0 3.0 6.0 9.0 12.0 15.0 18.0 21.0 )
 n=20
 batch_size=10
 range_end=$(($n-1))
+
+# directories
+save_dir="/media/richard/results/dimensionality"
 
 # limit amount of threads that each Python process can work with
 n_threads=9
@@ -23,7 +26,7 @@ for d in "${deltas[@]}"; do
       # python calls
       (
       echo "Starting job #$(($IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
-      python simulation_dim_exc_ss.py $d $g $IDX
+      python simulation_dim_exc.py $save_dir $d $g $IDX
       sleep 1
       ) &
 
