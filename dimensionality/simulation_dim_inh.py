@@ -80,11 +80,6 @@ idx_stop = int(start/dts)
 s_vals = s.values[:idx_stop, :]
 dim_ss = get_dim(s_vals)
 
-# calculate dimensionality in the impulse response period
-ir_window = int(300.0/dts)
-s_vals = s.values[idx_stop:idx_stop+ir_window, :]
-dim_ir = get_dim(s_vals)
-
 # extract spikes in network
 spike_counts = []
 for idx in range(s.shape[1]):
@@ -101,6 +96,7 @@ for tau in taus:
     ffs2.append(fano_factor2(spike_counts, s_vals.shape[0], int(tau/dts)))
 
 # fit bi-exponential to envelope of impulse response
+ir_window = int(300.0/dts)
 tau = 10.0
 a = 10.0
 d = 3.0
@@ -111,6 +107,11 @@ time = s.index.values[int(start/dts):]
 time = time - np.min(time)
 bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
 p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=None, loss="linear")
+
+# calculate dimensionality in the impulse response period
+ir_window = int(100.0*p[2])
+s_vals = s.values[idx_stop:idx_stop+ir_window, :]
+dim_ir = get_dim(s_vals)
 
 # save results
 pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
