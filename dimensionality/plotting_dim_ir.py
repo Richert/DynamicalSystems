@@ -1,6 +1,4 @@
 import pickle
-from matplotlib import use
-use("TkAgg")
 from seaborn import heatmap, scatterplot, lineplot
 import matplotlib.pyplot as plt
 import os
