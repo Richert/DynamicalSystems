@@ -1,12 +1,13 @@
 import pickle
+from matplotlib import use
+use("TkAgg")
 from seaborn import heatmap, scatterplot, lineplot
 import matplotlib.pyplot as plt
-from matplotlib import use
 import os
 import sys
 import numpy as np
 from pandas import DataFrame
-use("TkAgg")
+
 
 # condition
 condition = str(sys.argv[-1])
