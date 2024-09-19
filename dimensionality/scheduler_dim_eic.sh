@@ -1,12 +1,15 @@
 #!/bin/bash
 
 # set condition
-reversals=( -68.0 -64.0 -60.0 -56.0 -52.0 )
-deltas=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 )
-gs=( 0.0 4.0 8.0 12.0 16.0 20.0 24.0 )
+deltas_e=( 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 )
+deltas_i=( 1.0 4.0 8.0 )
+gs=( 0.0 3.0 6.0 9.0 12.0 15.0 18.0 21.0 )
 n=20
 batch_size=10
 range_end=$(($n-1))
+
+# directories
+save_dir="/media/richard/results/dimensionality"
 
 # limit amount of threads that each Python process can work with
 n_threads=9
@@ -17,15 +20,15 @@ export NUMEXPR_NUM_THREADS=$n_threads
 export VECLIB_MAXIMUM_THREADS=$n_threads
 
 # execute python scripts in batches of batch_size
-for e in "${reversals[@]}"; do
-  for d in "${deltas[@]}"; do
+for d_i in "${deltas_i[@]}"; do
+  for d_e in "${deltas_e[@]}"; do
     for g in "${gs[@]}"; do
       for IDX in `seq 0 $range_end`; do
 
         # python calls
         (
-        echo "Starting job #$(($IDX+1)) of ${n} jobs for e = ${e}, g = ${g}, and delta = ${d}."
-        python simulation_rev_ss.py $e $d $g $IDX
+        echo "Starting job #$(($IDX+1)) of ${n} jobs for g = ${g}, delta_e = ${d_e}, and delta_i = ${d_i}."
+        python simulation_dim_eic.py $save_dir $d_i $d_e $g $IDX
         sleep 1
         ) &
 

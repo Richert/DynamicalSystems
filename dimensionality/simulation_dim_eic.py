@@ -8,23 +8,28 @@ from scipy.signal import find_peaks
 import sys
 from custom_functions import *
 
-
 # define parameters
 ###################
 
-# general parameters
+# meta parameters
+device = "cpu"
+theta_dist = "gaussian"
+
+# general model parameters
+N = 1000
+p = 0.2
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
 v_reset = -90.0
-theta_dist = "gaussian"
-N = 1000
-g_in = 10
+g_in = 10.0
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 1.0/np.sqrt(N) #float(sys.argv[-2])
-Delta = 3.0 #float(sys.argv[-3])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2]) / (N*p)
+Delta_e = float(sys.argv[-3])
+Delta_i = float(sys.argv[-4])
+path = str(sys.argv[-5])
 
 # exc parameters
 p_e = 0.8
@@ -36,8 +41,8 @@ v_t_e = -40.0
 eta_e = 0.0
 a_e = 0.03
 b_e = -2.0
-d_e = 40.0
-s_e = 5.0*1e-3
+d_e = 50.0
+s_e = 15.0*1e-3
 tau_s_e = 6.0
 
 # inh parameters
@@ -50,20 +55,20 @@ v_t_i = -55.0
 eta_i = 0.0
 a_i = 0.03
 b_i = -2.0
-d_i = 100.0
-s_i = 5.0*1e-3
+d_i = 150.0
+s_i = 10.0*1e-3
 tau_s_i = 10.0
 
 # connectivity parameters
-p_ee = 0.2 # 0.2
-p_ii = 0.3 # 0.3
-p_ie = 0.3 # 0.3
-p_ei = 0.2 # 0.2
+p_ee = 0.8*p # 0.2
+p_ii = 1.2*p # 0.3
+p_ie = 0.8*p # 0.3
+p_ei = 1.2*p # 0.2
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas_e = f(N_e, mu=v_t_e, delta=Delta, lb=v_r_e, ub=2*v_t_e-v_r_e)
-thetas_i = f(N_i, mu=v_t_i, delta=Delta, lb=v_r_i, ub=2*v_t_i-v_r_i)
+thetas_e = f(N_e, mu=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e-v_r_e)
+thetas_i = f(N_i, mu=v_t_i, delta=Delta_i, lb=v_r_i, ub=2*v_t_i-v_r_i)
 
 # random connectivity
 W_ee = random_connectivity(N_e, N_e, p_ee, normalize=False)
@@ -75,8 +80,8 @@ W_ii = random_connectivity(N_i, N_i, p_ii, normalize=False)
 T = 2500.0
 cutoff = 1000.0
 start = 1000.0
-stop = 1020.0
-amp = 50.0*1e-3
+stop = 1010.0
+amp = 20.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
@@ -116,7 +121,7 @@ eic.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i",
                           target_nodes=[f"exc/exc_{i}" for i in range(N_e)], weight=W_ei)
 
 # initialize model
-net = Network(dt, device="cpu")
+net = Network(dt, device=device)
 net.add_diffeq_node("eic", eic, input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v",
                     to_file=False, op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, clear=True, N=N,
                     record_vars=["v"])
@@ -133,10 +138,6 @@ s.iloc[:, N_e:] /= tau_s_i
 idx_stop = int(start/dts)
 s_vals = s.values[:idx_stop, :N_e]
 dim_ss = get_dim(s_vals)
-
-# calculate dimensionality in the impulse response period
-s_vals = s.values[idx_stop:, :N_e]
-dim_ir = get_dim(s_vals)
 
 # extract spikes in network
 spike_counts = []
@@ -156,76 +157,83 @@ s_mean = np.mean(s_vals, axis=1)
 s_std = np.std(s_vals, axis=1)
 
 # fit bi-exponential to envelope of impulse response
+ir_window = int(300.0/dts)
 tau = 10.0
 a = 10.0
 d = 3.0
 p0 = [d, a, tau]
 ir = s_mean[int(start/dts):] * 1e3
-ir = ir - np.min(ir)
+ir = ir - np.mean(ir[ir_window:])
 time = s.index.values[int(start/dts):]
 time = time - np.min(time)
 bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
 p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=None, loss="linear")
 
+# calculate dimensionality in the impulse response period
+ir_window = int(100.0*p[2])
+s_vals = s.values[idx_stop:idx_stop+ir_window, :N_e]
+dim_ir = get_dim(s_vals)
+
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim": dim, "s_mean": s_mean, "s_std": s_std},
-#             open(f"/media/fsmresfiles/richard_data/numerics/dimensionality/bal_ss_g{int(g)}_D{int(Delta*10)}_{rep+1}.p",
-#                  "wb"))
+pickle.dump({"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i, "dim_ss": dim_ss, "dim_ir": dim_ir,
+             "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+             "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
+            open(f"{path}/spn_g{int(g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
 
-# plotting firing rate dynamics
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
-ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim_ss}")
-fig.suptitle("Mean-field rate dynamics")
-plt.tight_layout()
-
-# plotting impulse response
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(ir, label="Target IR")
-ax.plot(ir_fit, label="Fitted IR")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.set_title(f"Dim = {dim_ir}, time constant: tau = {p[2]} ms")
-fig.suptitle("Mean-field impulse response")
-plt.tight_layout()
-
-# plotting spikes
-fig, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-fig.suptitle("Spiking dynamics")
-plt.tight_layout()
-
-# plotting membrane potential dynamics
-_, axes = plt.subplots(nrows=2, figsize=(12, 8))
-ax = axes[0]
-ax.plot(np.mean(v, axis=1))
-ax.set_ylabel("v (mV)")
-ax.set_title("Mean-field membrane potential dynamics")
-ax = axes[1]
-for neuron_idx in np.random.choice(N, replace=False, size=(5,)):
-    ax.plot(v[:, neuron_idx], label=f"neuron {neuron_idx}")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("v (mV)")
-ax.set_title("Single neuron traces")
-plt.tight_layout()
-
-# plotting input
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(inp.T, aspect="auto")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("time")
-ax.set_ylabel("neurons")
-ax.set_title("Extrinsic input")
-plt.tight_layout()
-plt.show()
+# # plotting firing rate dynamics
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
+# ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field rate dynamics")
+# plt.tight_layout()
+#
+# # plotting impulse response
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(ir, label="Target IR")
+# ax.plot(ir_fit, label="Fitted IR")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.set_title(f"Dim = {dim_ir}, time constant: tau = {p[2]} ms")
+# fig.suptitle("Mean-field impulse response")
+# plt.tight_layout()
+#
+# # plotting spikes
+# fig, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# fig.suptitle("Spiking dynamics")
+# plt.tight_layout()
+#
+# # plotting membrane potential dynamics
+# _, axes = plt.subplots(nrows=2, figsize=(12, 8))
+# ax = axes[0]
+# ax.plot(np.mean(v, axis=1))
+# ax.set_ylabel("v (mV)")
+# ax.set_title("Mean-field membrane potential dynamics")
+# ax = axes[1]
+# for neuron_idx in np.random.choice(N, replace=False, size=(5,)):
+#     ax.plot(v[:, neuron_idx], label=f"neuron {neuron_idx}")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("v (mV)")
+# ax.set_title("Single neuron traces")
+# plt.tight_layout()
+#
+# # plotting input
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(inp.T, aspect="auto")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("time")
+# ax.set_ylabel("neurons")
+# ax.set_title("Extrinsic input")
+# plt.tight_layout()
+# plt.show()
