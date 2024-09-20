@@ -26,11 +26,12 @@ condition = [str(sys.argv[2+i]) for i in range(len(sys.argv[2:]))]
 results = {"rep": [], "g": [], "Delta": [], "dim_ss": [], "dim_ir": [], "s_mean": [], "s_std": [], "s_norm": [],
            "ir_tau": [], "cond": []}
 for file in os.listdir(path):
-    if file[:len(condition[0])] in condition:
+    c = file.split("_")[0]
+    if c in condition:
         data = pickle.load(open(f"{path}/{file}", "rb"))
         rep = file.split("_")[-1]
         rep = int(rep.split(".")[0])
-        results["cond"].append(file[:len(condition[0])])
+        results["cond"].append(c)
         results["rep"].append(rep)
         results["g"].append(data["g"])
         results["Delta"].append(data["Delta"])
