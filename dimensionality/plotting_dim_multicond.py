@@ -8,7 +8,7 @@ from pandas import DataFrame
 
 # figure settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
-plt.rcParams["font.family"] = "Times New Roman"
+# plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=False)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 400
@@ -90,10 +90,10 @@ grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df, x="tau_ir", y="dim_ir", hue="Delta", ax=ax)
+    scatterplot(df, x="ir_tau", y="dim_ir", hue="Delta", ax=ax)
     ax.set_title(c.split("_")[0])
     ax = fig.add_subplot(grid[1, i])
-    scatterplot(df, x="tau_ir", y="dim_ir", hue="g", ax=ax)
+    scatterplot(df, x="ir_tau", y="dim_ir", hue="g", ax=ax)
     ax.set_xlabel("tau(ir)")
     ax.set_ylabel("dim(ir)")
 fig.suptitle("Network Dimensionality vs Decay Time Consteant in the Impulse Response Condition")
