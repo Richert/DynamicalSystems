@@ -9,7 +9,7 @@ from pandas import DataFrame
 # figure settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
-plt.rc('text', usetex=True)
+plt.rc('text', usetex=False)
 plt.rcParams['figure.constrained_layout.use'] = True
 plt.rcParams['figure.dpi'] = 400
 plt.rcParams['font.size'] = 10.0
