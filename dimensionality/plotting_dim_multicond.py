@@ -16,7 +16,9 @@ plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
-markersize = 8.0
+markersize = 9.0
+rowsize = 3
+colsize= 4
 
 # condition
 path = str(sys.argv[1])
@@ -52,7 +54,7 @@ df = df.loc[df["g"] >= min_g, :]
 df = df.loc[df["g"] <= max_g, :]
 
 # plotting 1D scatter plot for firing rate heterogeneity vs dimensionality in the steady state
-fig = plt.figure(figsize=(int(4*len(condition)), 4))
+fig = plt.figure(figsize=(colsize*len(condition), 2*rowsize))
 grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
@@ -71,7 +73,7 @@ fig.canvas.draw()
 plt.savefig(f'{path}/figures/dimensionality_ss.pdf')
 
 # plotting 1D scatter plot for firing rate heterogeneity vs dimensionality during the impulse response
-fig = plt.figure(figsize=(int(4*len(condition)), 4))
+fig = plt.figure(figsize=(colsize*len(condition), 2*rowsize))
 grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
@@ -90,7 +92,7 @@ fig.canvas.draw()
 plt.savefig(f'{path}/figures/dimensionality_ir.pdf')
 
 # plotting 1D scatter plot for impulse response decay vs dimensionality during the impulse response
-fig = plt.figure(figsize=(int(4*len(condition)), 4))
+fig = plt.figure(figsize=(colsize*len(condition), 2*rowsize))
 grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
