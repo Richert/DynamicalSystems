@@ -16,7 +16,7 @@ plt.rcParams['font.size'] = 10.0
 plt.rcParams['axes.titlesize'] = 10
 plt.rcParams['axes.labelsize'] = 10
 plt.rcParams['lines.linewidth'] = 1.0
-markersize = 1.5
+markersize = 2.0
 
 # condition
 path = str(sys.argv[1])
@@ -56,10 +56,10 @@ grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", ax=ax)
+    scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", ax=ax, markersize=markersize)
     ax.set_title(c.split("_")[0])
     ax = fig.add_subplot(grid[1, i])
-    scatterplot(df, x="s_norm", y="dim_ss", hue="g", ax=ax)
+    scatterplot(df, x="s_norm", y="dim_ss", hue="g", ax=ax, markersize=markersize)
     ax.set_xlabel("std(r)/mean(r)")
     ax.set_ylabel("dim(ss)")
 fig.suptitle("Network Dimensionality in the Steady-State Condition")
@@ -73,10 +73,10 @@ grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df, x="s_norm", y="dim_ir", hue="Delta", ax=ax)
+    scatterplot(df, x="s_norm", y="dim_ir", hue="Delta", ax=ax, markersize=markersize)
     ax.set_title(c.split("_")[0])
     ax = fig.add_subplot(grid[1, i])
-    scatterplot(df, x="s_norm", y="dim_ir", hue="g", ax=ax)
+    scatterplot(df, x="s_norm", y="dim_ir", hue="g", ax=ax, markersize=markersize)
     ax.set_xlabel("std(r)/mean(r)")
     ax.set_ylabel("dim(ir)")
 fig.suptitle("Network Dimensionality in the Impulse Response Condition")
@@ -90,10 +90,10 @@ grid = fig.add_gridspec(nrows=2, ncols=len(condition))
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df, x="ir_tau", y="dim_ir", hue="Delta", ax=ax)
+    scatterplot(df, x="ir_tau", y="dim_ir", hue="Delta", ax=ax, markersize=markersize)
     ax.set_title(c.split("_")[0])
     ax = fig.add_subplot(grid[1, i])
-    scatterplot(df, x="ir_tau", y="dim_ir", hue="g", ax=ax)
+    scatterplot(df, x="ir_tau", y="dim_ir", hue="g", ax=ax, markersize=markersize)
     ax.set_xlabel("tau(ir)")
     ax.set_ylabel("dim(ir)")
 fig.suptitle("Network Dimensionality vs Decay Time Consteant in the Impulse Response Condition")
