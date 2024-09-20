@@ -26,7 +26,7 @@ g_in = 10.0
 
 # get sweep condition
 rep = int(sys.argv[-1])
-g = float(sys.argv[-2]) / (N*p)
+g = float(sys.argv[-2])
 Delta_e = float(sys.argv[-3])
 Delta_i = float(sys.argv[-4])
 path = str(sys.argv[-5])
@@ -60,6 +60,7 @@ s_i = 10.0*1e-3
 tau_s_i = 10.0
 
 # connectivity parameters
+g_norm = g / (N*p)
 p_ee = 0.8*p # 0.2
 p_ii = 1.2*p # 0.3
 p_ie = 0.8*p # 0.3
@@ -96,9 +97,9 @@ inp = convolve_exp(inp, tau_s_e, dt)
 # initialize operators
 op = OperatorTemplate.from_yaml("config/ik_snn/ik_op")
 exc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_theta": thetas_e, "eta": eta_e, "tau_u": 1/a_e, "b": b_e, "kappa": d_e,
-            "g_e": g, "E_i": E_i, "tau_s": tau_s_e, "v": v_t_e, "g_i": g, "E_e": E_e}
+            "g_e": g_norm, "E_i": E_i, "tau_s": tau_s_e, "v": v_t_e, "g_i": g_norm, "E_e": E_e}
 inh_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_theta": thetas_i, "eta": eta_i, "tau_u": 1/a_i, "b": b_i, "kappa": d_i,
-            "g_e": g, "E_i": E_i, "tau_s": tau_s_i, "v": v_t_i, "g_i": g, "E_e": E_e}
+            "g_e": g_norm, "E_i": E_i, "tau_s": tau_s_i, "v": v_t_i, "g_i": g_norm, "E_e": E_e}
 
 # initialize E and I network
 n = NodeTemplate(name="node", operators=[op])
