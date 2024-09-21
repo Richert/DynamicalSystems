@@ -20,6 +20,8 @@ markersize = 9.0
 rowsize = 3
 colsize= 4
 
+titles = {"exc": "glutamatergic", "inh": "gabaergic, inh.", "spn": "SPNs, e/i", "inh2": "gabaergic, e/i" }
+
 # condition
 path = str(sys.argv[1])
 condition = [str(sys.argv[2+i]) for i in range(len(sys.argv[2:]))]
@@ -62,7 +64,7 @@ for i, c in enumerate(condition):
     scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="Delta", ax=ax, s=markersize)
     ax.set_xlabel("")
     ax.set_ylabel("dim(ss)")
-    ax.set_title(c.split("_")[0])
+    ax.set_title(titles[c.split("_")[0]])
     ax = fig.add_subplot(grid[1, i])
     scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="g", ax=ax, s=markersize)
     ax.set_xlabel("std(r)/mean(r)")
@@ -81,7 +83,7 @@ for i, c in enumerate(condition):
     scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="Delta", ax=ax, s=markersize)
     ax.set_xlabel("")
     ax.set_ylabel("dim(ir)")
-    ax.set_title(c.split("_")[0])
+    ax.set_title(titles[c.split("_")[0]])
     ax = fig.add_subplot(grid[1, i])
     scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="g", ax=ax, s=markersize)
     ax.set_xlabel("std(r)/mean(r)")
@@ -100,7 +102,7 @@ for i, c in enumerate(condition):
     scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="Delta", ax=ax, s=markersize)
     ax.set_xlabel("")
     ax.set_ylabel("dim(ir)")
-    ax.set_title(c.split("_")[0])
+    ax.set_title(titles[c.split("_")[0]])
     ax = fig.add_subplot(grid[1, i])
     scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="g", ax=ax, s=markersize)
     ax.set_xlabel("tau(ir)")
