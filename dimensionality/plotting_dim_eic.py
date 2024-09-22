@@ -63,7 +63,7 @@ grid = fig.add_gridspec(nrows=2, ncols=len(deltas))
 for i, d in enumerate(deltas):
     df_tmp = df.loc[df["Delta_i"] == d, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="Delta", ax=ax, s=markersize)
+    scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="Delta_e", ax=ax, s=markersize)
     ax.set_xlabel("")
     ax.set_ylabel("dim(ss)")
     ax.set_title(f"Delta_i = {d}")
@@ -82,7 +82,7 @@ grid = fig.add_gridspec(nrows=2, ncols=len(deltas))
 for i, d in enumerate(deltas):
     df_tmp = df.loc[df["Delta_i"] == d, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="Delta", ax=ax, s=markersize)
+    scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="Delta_e", ax=ax, s=markersize)
     ax.set_xlabel("")
     ax.set_ylabel("dim(ir)")
     ax.set_title(f"Delta_i = {d}")
@@ -101,7 +101,7 @@ grid = fig.add_gridspec(nrows=2, ncols=len(deltas))
 for i, d in enumerate(deltas):
     df_tmp = df.loc[df["Delta_i"] == d, :]
     ax = fig.add_subplot(grid[0, i])
-    scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="Delta", ax=ax, s=markersize)
+    scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="Delta_e", ax=ax, s=markersize)
     ax.set_xlabel("")
     ax.set_ylabel("dim(ir)")
     ax.set_title(f"Delta_i = {d}")
