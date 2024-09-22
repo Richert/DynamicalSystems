@@ -11,10 +11,10 @@ from custom_functions import *
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 9.0 #float(sys.argv[-2])
-Delta = 8.0 ##float(sys.argv[-3])
-path = "" #str(sys.argv[-4])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
+path = str(sys.argv[-4])
 
 # model parameters
 N = 1000
