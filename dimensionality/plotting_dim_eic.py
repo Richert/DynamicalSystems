@@ -27,10 +27,10 @@ titles = {"exc": "glutamatergic", "inh": "gabaergic, inh.", "spn": "SPNs, e/i", 
 path = str(sys.argv[1])
 
 # load data
-results = {"rep": [], "g": [], "Delta": [], "dim_ss": [], "dim_ir": [], "s_mean": [], "s_std": [], "s_norm": [],
+results = {"rep": [], "g": [], "Delta_e": [], "Delta_i": [], "dim_ss": [], "dim_ir": [], "s_mean": [], "s_std": [], "s_norm": [],
            "ir_tau": []}
 for file in os.listdir(path):
-    if file[:4] == "eic_":
+    if "eic_" in file:
         data = pickle.load(open(f"{path}/{file}", "rb"))
         rep = file.split("_")[-1]
         rep = int(rep.split(".")[0])
@@ -61,7 +61,7 @@ deltas = np.unique(df.loc[:, "Delta_i"].values)
 fig = plt.figure(figsize=(colsize*len(deltas), 2*rowsize))
 grid = fig.add_gridspec(nrows=2, ncols=len(deltas))
 for i, d in enumerate(deltas):
-    df_tmp = df.loc[df["cond"] == c, :]
+    df_tmp = df.loc[df["Delta_i"] == d, :]
     ax = fig.add_subplot(grid[0, i])
     scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="Delta", ax=ax, s=markersize)
     ax.set_xlabel("")
@@ -80,7 +80,7 @@ plt.savefig(f'{path}/figures/dimensionality_ss_eic.pdf')
 fig = plt.figure(figsize=(colsize*len(deltas), 2*rowsize))
 grid = fig.add_gridspec(nrows=2, ncols=len(deltas))
 for i, d in enumerate(deltas):
-    df_tmp = df.loc[df["cond"] == c, :]
+    df_tmp = df.loc[df["Delta_i"] == d, :]
     ax = fig.add_subplot(grid[0, i])
     scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="Delta", ax=ax, s=markersize)
     ax.set_xlabel("")
@@ -99,7 +99,7 @@ plt.savefig(f'{path}/figures/dimensionality_ir_eic.pdf')
 fig = plt.figure(figsize=(colsize*len(deltas), 2*rowsize))
 grid = fig.add_gridspec(nrows=2, ncols=len(deltas))
 for i, d in enumerate(deltas):
-    df_tmp = df.loc[df["cond"] == c, :]
+    df_tmp = df.loc[df["Delta_i"] == d, :]
     ax = fig.add_subplot(grid[0, i])
     scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="Delta", ax=ax, s=markersize)
     ax.set_xlabel("")
