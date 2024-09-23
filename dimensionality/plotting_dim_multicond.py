@@ -20,7 +20,8 @@ markersize = 9.0
 rowsize = 3
 colsize= 4
 
-titles = {"exc": "glutamatergic", "inh": "gabaergic, inh.", "spn": "SPNs, e/i", "inh2": "gabaergic, e/i" }
+titles = {"exc": "glutamatergic", "inh": "gabaergic, inh.", "spn": "SPNs, e/i", "inh2": "gabaergic, e/i",
+          "spn2": "SPNs, e/i, fixed W"}
 
 # condition
 path = str(sys.argv[1])
