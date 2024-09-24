@@ -1,7 +1,8 @@
 import numpy as np
 from scipy.stats import norm, cauchy
 from scipy.ndimage import gaussian_filter1d
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares, curve_fit
+from scipy.signal import find_peaks
 from typing import Union, Iterable, Callable
 
 
@@ -194,20 +195,27 @@ def dimensionality_filtered(x: np.ndarray, sigmas: list, windows: list) -> dict:
     return ds
 
 
-def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, p0: Iterable, bounds: tuple,
-                         loss: str = "linear", **kwargs) -> tuple:
+def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, bounds: tuple, find_peaks_kwargs: dict,
+                         **kwargs) -> tuple:
 
-    # preparations
-    residuals = lambda p, y, f, t: y - f(t, *tuple(p))
+    # extract signal peaks
+    peaks = get_peaks(x, **find_peaks_kwargs)
 
     # fit
-    res = least_squares(residuals, x0=p0, loss=loss, args=(x, f, time), bounds=bounds, **kwargs)
+    p = curve_fit(f, [time[idx] for idx in peaks], [x[idx] for idx in peaks], bounds=bounds, **kwargs)
 
     # prediction
-    p = res["x"]
-    y = f(time, *tuple(p))
+    y = f(time, *tuple(p[0]))
 
-    return p, y
+    return p[0], y, peaks
+
+
+def get_peaks(x: np.ndarray, prominence: float = 0.01, epsilon: float = 1e-3, **kwargs):
+    peaks, _ = find_peaks(x, prominence=prominence, **kwargs)
+    if len(peaks) == 1:
+        idx = np.argwhere(x[peaks[0]:] < x[peaks[0]]-epsilon).squeeze()[0]
+        peaks = np.arange(peaks[0], idx).tolist()
+    return peaks
 
 
 def exponential_kernel(t: Union[float, np.ndarray], d: float, g: float, tau: float):

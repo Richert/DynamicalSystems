@@ -3,8 +3,7 @@ from pyrates import CircuitTemplate, NodeTemplate, OperatorTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.stats import poisson
-from scipy.signal import find_peaks
+from scipy.stats import poisson, expon
 import sys
 from custom_functions import *
 
@@ -16,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 1000
+N = 100
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -26,8 +25,8 @@ g_in = 10.0
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
 g = 15.0 #float(sys.argv[-2])
-Delta_e = 2.0 #float(sys.argv[-3])
-Delta_i = 2.0 #float(sys.argv[-4])
+Delta_e = 4.0 #float(sys.argv[-3])
+Delta_i = 4.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
 # exc parameters
@@ -59,10 +58,10 @@ s_i = 10.0*1e-3
 tau_s_i = 10.0
 
 # connectivity parameters
-p_ee = 0.1
-p_ii = 0.4
-p_ie = 0.2
-p_ei = 0.3
+p_ee = 0.2 #0.1
+p_ii = 0.2 #0.4
+p_ie = 0.2 #0.3
+p_ei = 0.2 #0.4
 g_ee = g / (N_e * p_ee)
 g_ii = g / (N_i * p_ii)
 g_ei = g / (N_i * p_ei)
@@ -158,17 +157,19 @@ s_mean = np.mean(s_vals, axis=1)
 s_std = np.std(s_vals, axis=1)
 
 # fit bi-exponential to envelope of impulse response
-ir_window = int(300.0/dts)
+ir_window = int(100.0/dts)
 tau = 10.0
 a = 10.0
 d = 3.0
 p0 = [d, a, tau]
-ir = s_mean[int(start/dts):] * 1e3
-ir = ir - np.mean(ir[ir_window:])
+s_vals = s.values[idx_stop:, :]
+C = s_vals @ s_vals.T
+ir = np.mean(C[:ir_window, :], axis=0)
 time = s.index.values[int(start/dts):]
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
-p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=None, loss="linear")
+bounds = ([0.0, 1.0, 1e-1], [5e2, 3e2, 5e2])
+p, ir_fit, peaks = impulse_response_fit(ir, time, f=exponential_kernel, bounds=bounds, p0=p0,
+                                        find_peaks_kwargs={"prominence": 10.0, "epsilon": 5.0})
 
 # calculate dimensionality in the impulse response period
 ir_window = int(100.0*p[2])
@@ -198,6 +199,7 @@ plt.tight_layout()
 fig, ax = plt.subplots(figsize=(12, 4))
 ax.plot(ir, label="Target IR")
 ax.plot(ir_fit, label="Fitted IR")
+ax.scatter(peaks, ir[peaks], color="red", marker="*", s=4.0)
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("r (Hz)")
@@ -227,6 +229,15 @@ ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("v (mV)")
 ax.set_title("Single neuron traces")
+plt.tight_layout()
+
+# plotting time covariance during impulse response
+fig, ax = plt.subplots(figsize=(12, 4))
+im = ax.imshow(s_vals @ s_vals.T, aspect="auto", interpolation="none", cmap="Greys")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("steps")
+ax.set_ylabel("steps")
+ax.set_title(f"Impulse Response Recurrence Plot: Dim = {dim_time_ir}")
 plt.tight_layout()
 
 # plotting input

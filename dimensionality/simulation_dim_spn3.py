@@ -12,13 +12,26 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 6.0 #float(sys.argv[-2])
-Delta = 3.0 #float(sys.argv[-3])
+g = 50.0 #float(sys.argv[-2])
+Delta = 2.0 #float(sys.argv[-3])
 path = "" #str(sys.argv[-4])
+
+# simulation parameters
+T = 2500.0
+cutoff = 1000.0
+start = 1000.0
+dt = 1e-2
+dts = 1e-1
+
+# input parameters
+g_in = 10
+p_in = 0.1
+amp = 60.0*1e-3
+dur = 10.0
 
 # model parameters
 N = 1000
-p = 0.2
+p = 0.3
 C = 50.0
 k = 1.0
 v_r = -80.0
@@ -28,9 +41,9 @@ a = 0.01
 b = -20.0
 d = 150.0
 E_e = 0.0
-E_i = -65.0
+E_i = -50.0
 tau_s = 8.0
-s_ext = 200.0*1e-3
+s_ext = 45.0*1e-3
 v_spike = 40.0
 v_reset = -55.0
 theta_dist = "gaussian"
@@ -43,17 +56,13 @@ thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2*v_t-v_r)
 W = random_connectivity(N, N, p, normalize=True)
 
 # define inputs
-g_in = 10
-T = 2500.0
-cutoff = 1000.0
-start = 1000.0
-stop = 1010.0
-amp = 20.0*1e-3
-dt = 1e-2
-dts = 1e-1
+stop = start + dur
+in_idx = np.random.choice(N, size=(int(N*p_in),), replace=False)
 inp = np.zeros((int(T/dt), N))
-inp += s_ext*g_in*dt
-inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), :] += amp*g_in*dt
+inp += poisson.rvs(mu=s_ext*g_in*dt, size=inp.shape)
+inp[int((cutoff + start)/dt):int((cutoff + stop)/dt), in_idx] += (
+    poisson.rvs(mu=amp*g_in*dt, size=(int((stop-start)/dt), len(in_idx))))
+inp = convolve_exp(inp, tau_s, dt)
 
 # run the model
 ###############
