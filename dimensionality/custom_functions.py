@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.distutils.system_info import flame_info
 from scipy.stats import norm, cauchy
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import least_squares, curve_fit
@@ -195,22 +196,22 @@ def dimensionality_filtered(x: np.ndarray, sigmas: list, windows: list) -> dict:
     return ds
 
 
-def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, bounds: tuple, find_peaks_kwargs: dict,
-                         **kwargs) -> tuple:
+def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, bounds: tuple, **kwargs) -> tuple:
 
-    # extract signal peaks
-    peaks = get_peaks(x, **find_peaks_kwargs)
+    # normalize signal
+    x -= np.min(x)
+    x /= np.max(x)
 
     # fit
-    p = curve_fit(f, [time[idx] for idx in peaks], [x[idx] for idx in peaks], bounds=bounds, **kwargs)
+    p = curve_fit(f, time, x, bounds=bounds, **kwargs)
 
     # prediction
     y = f(time, *tuple(p[0]))
 
-    return p[0], y, peaks
+    return p[0], y
 
 
-def get_peaks(x: np.ndarray, prominence: float = 0.01, epsilon: float = 1e-3, **kwargs):
+def get_peaks(x: np.ndarray, prominence: float = 0.5, epsilon: float = 1e-3, **kwargs):
     peaks, _ = find_peaks(x, prominence=prominence, **kwargs)
     if len(peaks) == 1:
         idx = np.argwhere(x[peaks[0]:] < x[peaks[0]]-epsilon).squeeze()[0]
@@ -218,44 +219,47 @@ def get_peaks(x: np.ndarray, prominence: float = 0.01, epsilon: float = 1e-3, **
     return peaks
 
 
-def exponential_kernel(t: Union[float, np.ndarray], d: float, g: float, tau: float):
+def exponential_kernel(t: Union[float, np.ndarray], offset: float, delay: float, scale: float, tau: float):
     """Mono-exponential kernel function.
 
     :param t: time in arbitrary units. Can be a vector or a single scalar.
-    :param d: Delay until onset of the kernel response. Must be a scalar.
-    :param g: Scaling of the kernel function. Must be a scalar.
+    :param offset: Constant offset of the kernel. Must be a scalar.
+    :param delay: Delay until onset of the kernel response. Must be a scalar.
+    :param scale: Scaling of the kernel function. Must be a scalar.
     :param tau: Decay time constant of the kernel. Must be a scalar.
     :return: Value of the kernel function at each entry in `t`.
     """
-    t1 = t - d
+    t1 = t - delay
     on = 1.0 * (t1 > 0.0)
-    return on * g * np.exp(-t1 / tau)
+    return offset + on * scale * np.exp(-t1 / tau)
 
 
-def alpha(t: Union[float, np.ndarray], d: float, g: float, tau: float):
-    """Alpha kernel function.
+def alpha(t: Union[float, np.ndarray], offset: float, delay: float, scale: float, tau: float):
+    """Mono-exponential kernel function.
 
     :param t: time in arbitrary units. Can be a vector or a single scalar.
-    :param d: Delay until onset of the kernel response. Must be a scalar.
-    :param g: Scaling of the kernel function. Must be a scalar.
-    :param tau: Time constant of the alpha kernel. Must be a scalar.
+    :param offset: Constant offset of the kernel. Must be a scalar.
+    :param delay: Delay until onset of the kernel response. Must be a scalar.
+    :param scale: Scaling of the kernel function. Must be a scalar.
+    :param tau: Decay time constant of the kernel. Must be a scalar.
     :return: Value of the kernel function at each entry in `t`.
     """
-    t1 = t - d
+    t1 = t - delay
     on = 1.0 * (t1 > 0.0)
-    return on * g * t1 * np.exp(1 - t1 / tau) / tau
+    return offset + on * scale * t1 * np.exp(1 - t1 / tau) / tau
 
 
-def biexponential(t: Union[float, np.ndarray], d: float, g: float, tau_r: float, tau_d: float):
-    """Bi-exponential kernel function.
+def biexponential(t: Union[float, np.ndarray], offset: float, delay: float, scale: float, tau_r: float, tau_d: float):
+    """Mono-exponential kernel function.
 
     :param t: time in arbitrary units. Can be a vector or a single scalar.
-    :param d: Delay until onset of the kernel response. Must be a scalar.
-    :param g: Scaling of the kernel function. Must be a scalar.
+    :param offset: Constant offset of the kernel. Must be a scalar.
+    :param delay: Delay until onset of the kernel response. Must be a scalar.
+    :param scale: Scaling of the kernel function. Must be a scalar.
     :param tau_r: Rise time constant of the kernel. Must be a scalar.
     :param tau_d: Decay time constant of the kernel. Must be a scalar.
     :return: Value of the kernel function at each entry in `t`.
     """
-    t1 = t - d
+    t1 = t - delay
     on = 1.0 * (t1 > 0.0)
-    return on * g * tau_d * tau_r * (np.exp(-t / tau_d) - np.exp(-t / tau_r)) / (tau_d - tau_r)
+    return offset + on * scale * tau_d * tau_r * (np.exp(-t1 / tau_d) - np.exp(-t1 / tau_r)) / (tau_d - tau_r)

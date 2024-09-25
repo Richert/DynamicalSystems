@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 100
+N = 1000
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -23,11 +23,11 @@ v_reset = -90.0
 g_in = 10.0
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 15.0 #float(sys.argv[-2])
-Delta_e = 4.0 #float(sys.argv[-3])
-Delta_i = 4.0 #float(sys.argv[-4])
-path = "" #str(sys.argv[-5])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta_e = float(sys.argv[-3])
+Delta_i = float(sys.argv[-4])
+path = str(sys.argv[-5])
 
 # exc parameters
 p_e = 0.8
@@ -80,8 +80,8 @@ thetas_i = f(N_i, mu=v_t_i, delta=Delta_i, lb=v_r_i, ub=2*v_t_i-v_r_i)
 T = 2500.0
 cutoff = 1000.0
 start = 1000.0
-stop = 1010.0
-amp = 20.0*1e-3
+stop = 1020.0
+amp = 5.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
@@ -157,22 +157,20 @@ s_mean = np.mean(s_vals, axis=1)
 s_std = np.std(s_vals, axis=1)
 
 # fit bi-exponential to envelope of impulse response
-ir_window = int(100.0/dts)
+ir_window = int(300.0/dts)
 tau = 10.0
-a = 10.0
-d = 3.0
-p0 = [d, a, tau]
-s_vals = s.values[idx_stop:, :]
-C = s_vals @ s_vals.T
-ir = np.mean(C[:ir_window, :], axis=0)
-time = s.index.values[int(start/dts):]
+scale = 0.5
+delay = 5.0
+offset = 0.1
+p0 = [offset, delay, scale, tau]
+ir = np.mean(s.values[idx_stop:idx_stop+ir_window, :N_e] * 1e3, axis=1)
+time = s.index.values[idx_stop:idx_stop+ir_window]
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 1e-1], [5e2, 3e2, 5e2])
-p, ir_fit, peaks = impulse_response_fit(ir, time, f=exponential_kernel, bounds=bounds, p0=p0,
-                                        find_peaks_kwargs={"prominence": 10.0, "epsilon": 5.0})
+bounds = ([0.0, 1.0, 0.0, 1e-1], [1.0, 20.0, 1.0, 5e2])
+p, ir_fit = impulse_response_fit(ir, time, f=alpha, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(100.0*p[2])
+ir_window = int(1e2*p[-1])
 s_vals = s.values[idx_stop:idx_stop+ir_window, :N_e]
 dim_ir = get_dim(s_vals)
 
@@ -199,11 +197,10 @@ plt.tight_layout()
 fig, ax = plt.subplots(figsize=(12, 4))
 ax.plot(ir, label="Target IR")
 ax.plot(ir_fit, label="Fitted IR")
-ax.scatter(peaks, ir[peaks], color="red", marker="*", s=4.0)
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("r (Hz)")
-ax.set_title(f"Dim = {dim_ir}, time constant: tau = {p[2]} ms")
+ax.set_title(f"Dim = {dim_ir}, tau = {p[-1]} ms")
 fig.suptitle("Mean-field impulse response")
 plt.tight_layout()
 
@@ -237,7 +234,7 @@ im = ax.imshow(s_vals @ s_vals.T, aspect="auto", interpolation="none", cmap="Gre
 plt.colorbar(im, ax=ax)
 ax.set_xlabel("steps")
 ax.set_ylabel("steps")
-ax.set_title(f"Impulse Response Recurrence Plot: Dim = {dim_time_ir}")
+ax.set_title(f"Impulse Response Recurrence Plot")
 plt.tight_layout()
 
 # plotting input

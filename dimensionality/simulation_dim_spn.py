@@ -14,7 +14,7 @@ from custom_functions import *
 rep = int(sys.argv[-1])
 g = float(sys.argv[-2])
 Delta = float(sys.argv[-3])
-path = str(sys.argv[-4])
+path = str(sys.argv[-5])
 
 # model parameters
 N = 1000
@@ -47,8 +47,8 @@ g_in = 10
 T = 2500.0
 cutoff = 1000.0
 start = 1000.0
-stop = 1010.0
-amp = 20.0*1e-3
+stop = 1020.0
+amp = 5.0*1e-3
 dt = 1e-2
 dts = 1e-1
 inp = np.zeros((int(T/dt), N))
@@ -98,71 +98,71 @@ for tau in taus:
 # fit bi-exponential to envelope of impulse response
 ir_window = int(300.0/dts)
 tau = 10.0
-a = 10.0
-d = 3.0
-p0 = [d, a, tau]
-ir = s_mean[idx_stop:] * 1e3
-ir = ir - np.mean(ir[ir_window:])
-time = s.index.values[int(start/dts):]
+scale = 0.5
+delay = 5.0
+offset = 0.1
+p0 = [offset, delay, scale,tau]
+ir = np.mean(s.values[idx_stop:idx_stop+ir_window, :] * 1e3, axis=1)
+time = s.index.values[idx_stop:idx_stop+ir_window]
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 1e-1], [1e2, 3e2, 5e2])
-p, ir_fit = impulse_response_fit(ir, time, f=alpha, p0=p0, bounds=bounds, gtol=None, loss="linear")
+bounds = ([0.0, 2.0, 0.0, 1e-1], [1.0, 20.0, 1.0, 5e2])
+p, ir_fit = impulse_response_fit(ir, time, f=alpha, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(100.0*p[2])
+ir_window = int(1e2*p[-1])
 s_vals = s.values[idx_stop:idx_stop+ir_window, :]
 dim_ir = get_dim(s_vals)
 
-# # save results
-# pickle.dump({"g": g, "Delta": Delta, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
-#              "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-#              "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
-#             open(f"{path}/spn_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+# save results
+pickle.dump({"g": g, "Delta": Delta, "E_i": E_i, "theta_dist": theta_dist, "dim_ss": dim_ss, "dim_ir": dim_ir,
+             "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+             "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
+            open(f"{path}/spn_g{int(g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
-# figure settings
-print(f"Plotting backend: {plt.rcParams['backend']}")
-# plt.rcParams["font.family"] = "Times New Roman"
-plt.rc('text', usetex=False)
-plt.rcParams['figure.constrained_layout.use'] = True
-plt.rcParams['figure.dpi'] = 200
-plt.rcParams['font.size'] = 12
-plt.rcParams['axes.titlesize'] = 12
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['lines.linewidth'] = 1.0
-
-fig, axes = plt.subplots(nrows=3, figsize=(12, 7.5))
-
-# plotting average firing rate dynamics
-ax = axes[1]
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
-ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.set_title(f"dim(ss) = {np.round(dim_ss, decimals=1)}")
-
-# plotting impulse response
-ax = axes[2]
-ax.plot(ir, label="Target IR")
-ax.plot(ir_fit, label="Fitted IR")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.set_title(f"dim(ir) = {np.round(dim_ir, decimals=1)}, tau(ir) = {np.round(p[2], decimals=1)} ms")
-
-# plotting spiking dynamics
-ax = axes[0]
-sample_neurons = np.random.choice(np.arange(N), size=(100,), replace=False)
-im = ax.imshow(s.iloc[:, sample_neurons].T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-ax.set_title("Spiking dynamics")
-
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
-fig.canvas.draw()
-plt.savefig(f'{path}/spn_dynamics.pdf')
-
-plt.show()
+# # figure settings
+# print(f"Plotting backend: {plt.rcParams['backend']}")
+# # plt.rcParams["font.family"] = "Times New Roman"
+# plt.rc('text', usetex=False)
+# plt.rcParams['figure.constrained_layout.use'] = True
+# plt.rcParams['figure.dpi'] = 200
+# plt.rcParams['font.size'] = 12
+# plt.rcParams['axes.titlesize'] = 12
+# plt.rcParams['axes.labelsize'] = 12
+# plt.rcParams['lines.linewidth'] = 1.0
+#
+# fig, axes = plt.subplots(nrows=3, figsize=(12, 7.5))
+#
+# # plotting average firing rate dynamics
+# ax = axes[1]
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
+# ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.set_title(f"dim(ss) = {np.round(dim_ss, decimals=1)}")
+#
+# # plotting impulse response
+# ax = axes[2]
+# ax.plot(ir, label="Target IR")
+# ax.plot(ir_fit, label="Fitted IR")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.set_title(f"dim(ir) = {np.round(dim_ir, decimals=1)}, tau(ir) = {np.round(p[-1], decimals=1)} ms")
+#
+# # plotting spiking dynamics
+# ax = axes[0]
+# sample_neurons = np.random.choice(np.arange(N), size=(100,), replace=False)
+# im = ax.imshow(s.iloc[:, sample_neurons].T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# ax.set_title("Spiking dynamics")
+#
+# fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+# fig.canvas.draw()
+# # plt.savefig(f'{path}/spn_dynamics.pdf')
+#
+# plt.show()
