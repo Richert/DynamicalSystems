@@ -18,9 +18,6 @@ n=20
 batch_size=20
 range_end=$((n-1))
 
-# create random connectivity matrix
-python create_connectivity.py
-
 # execute python scripts
 counter=0
 for r in "${reversals[@]}"; do
