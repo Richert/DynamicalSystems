@@ -33,7 +33,7 @@ for r in "${reversals[@]}"; do
 
         # python call
         (
-        echo "Starting job #$((IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
+        echo "Starting job #$((IDX+1)) of ${n} jobs for E_i = ${r}, g = ${g}, and delta = ${d}."
         srun --ntasks=1 --nodes=1 --mem=8G --time=00:30:00 --cpus-per-task=16 --job-name="dim_spn" \
         --output="out/dim_spn_$counter.out" --error="err/dim_spn_$counter.err" --partition="highcpu" --exclusive -c 1 \
         python simulation_dim_spn2.py "$save_dir" "$r" "$d" "$g" "$IDX"
