@@ -175,74 +175,74 @@ s_vals = s.values[idx_stop:idx_stop+ir_window, :N_e]
 dim_ir = get_dim(s_vals)
 
 # save results
-# pickle.dump({"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i, "dim_ss": dim_ss, "dim_ir": dim_ir,
-#              "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-#              "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
-#             open(f"{path}/eic_g{int(g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
+pickle.dump({"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i, "dim_ss": dim_ss, "dim_ir": dim_ir,
+             "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+             "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
+            open(f"{path}/eic_g{int(g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
 
-# plotting firing rate dynamics
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
-ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim_ss}")
-fig.suptitle("Mean-field rate dynamics")
-plt.tight_layout()
-
-# plotting impulse response
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(ir, label="Target IR")
-ax.plot(ir_fit, label="Fitted IR")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.set_title(f"Dim = {dim_ir}, tau = {p[-1]} ms")
-fig.suptitle("Mean-field impulse response")
-plt.tight_layout()
-
-# plotting spikes
-fig, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-fig.suptitle("Spiking dynamics")
-plt.tight_layout()
-
-# plotting membrane potential dynamics
-_, axes = plt.subplots(nrows=2, figsize=(12, 8))
-ax = axes[0]
-ax.plot(np.mean(v, axis=1))
-ax.set_ylabel("v (mV)")
-ax.set_title("Mean-field membrane potential dynamics")
-ax = axes[1]
-for neuron_idx in np.random.choice(N, replace=False, size=(5,)):
-    ax.plot(v[:, neuron_idx], label=f"neuron {neuron_idx}")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("v (mV)")
-ax.set_title("Single neuron traces")
-plt.tight_layout()
-
-# plotting time covariance during impulse response
-fig, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s_vals @ s_vals.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("steps")
-ax.set_title(f"Impulse Response Recurrence Plot")
-plt.tight_layout()
-
-# plotting input
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(inp.T, aspect="auto")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("time")
-ax.set_ylabel("neurons")
-ax.set_title("Extrinsic input")
-plt.tight_layout()
-plt.show()
+# # plotting firing rate dynamics
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
+# ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field rate dynamics")
+# plt.tight_layout()
+#
+# # plotting impulse response
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(ir, label="Target IR")
+# ax.plot(ir_fit, label="Fitted IR")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.set_title(f"Dim = {dim_ir}, tau = {p[-1]} ms")
+# fig.suptitle("Mean-field impulse response")
+# plt.tight_layout()
+#
+# # plotting spikes
+# fig, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# fig.suptitle("Spiking dynamics")
+# plt.tight_layout()
+#
+# # plotting membrane potential dynamics
+# _, axes = plt.subplots(nrows=2, figsize=(12, 8))
+# ax = axes[0]
+# ax.plot(np.mean(v, axis=1))
+# ax.set_ylabel("v (mV)")
+# ax.set_title("Mean-field membrane potential dynamics")
+# ax = axes[1]
+# for neuron_idx in np.random.choice(N, replace=False, size=(5,)):
+#     ax.plot(v[:, neuron_idx], label=f"neuron {neuron_idx}")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("v (mV)")
+# ax.set_title("Single neuron traces")
+# plt.tight_layout()
+#
+# # plotting time covariance during impulse response
+# fig, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s_vals @ s_vals.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("steps")
+# ax.set_title(f"Impulse Response Recurrence Plot")
+# plt.tight_layout()
+#
+# # plotting input
+# _, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(inp.T, aspect="auto")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("time")
+# ax.set_ylabel("neurons")
+# ax.set_title("Extrinsic input")
+# plt.tight_layout()
+# plt.show()
