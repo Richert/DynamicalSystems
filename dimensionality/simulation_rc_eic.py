@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # reservoir computing parameters
-gamma = 1e-4
+alpha = 1e-4
 
 # general model parameters
 N = 50
@@ -173,9 +173,10 @@ s_std = np.std(s_vals, axis=1)
 inp = np.zeros((int((dur + window) / dt), N))
 inp_neurons = np.random.choice(N_e, size=(int(N_e*p_in),))
 dur = int(dur/dt)
+dur2 = int(dur*dts)
 
 # collect network responses to stimulation
-states, covariances, targets = [], [], []
+states, targets = [], []
 for trial in range(n_train):
 
     # choose trial type
@@ -191,21 +192,17 @@ for trial in range(n_train):
 
     # get network response
     obs = net.run(inputs=inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False,
-                  cutoff=int(dur * dts))
+                  cutoff=dur2)
     res = obs.to_numpy("out")
 
     # save trial results
-    start = int(np.random.uniform(high=window-dur)/dts)
-    states.append(res[start:start+int(dur*dts), :N_e])
-    covariances.append(get_c(s, alpha=gamma))
+    start = np.random.choice(int(window/dts)-dur2)
+    states.append(res[start:start+dur2, :N_e])
     target = np.zeros_like(states[-1]) if noinp else np.ones_like(states[-1])
     targets.append(target)
 
 # train readout weights
-signal_mean = np.mean(states, axis=0)
-C_inv = np.linalg.inv(np.mean(covariances, axis=0))
-w_tmp = signal_mean.T @ C_inv
-W_r = targets @ w_tmp
+W_r = ridge(np.concatenate(states, axis=0).T, np.concatenate(targets, axis=0).T, alpha=alpha)
 
 # simulation 3: RC testing
 ##########################
@@ -215,7 +212,9 @@ amps = np.linspace(0.0, max_amp, n_test)
 
 results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-           "test_ir": [], "test_amp": [], "test_trial": [], "test_prediction": [], "test_target": []}
+           "test_ir": [], "test_amp": [], "test_trial": [], "test_prediction": [], "test_target": [],
+           }
+
 for amp in amps:
     for trial in range(n_test):
 
@@ -235,15 +234,15 @@ for amp in amps:
         res = obs.to_dataframe("out")
 
         # get readout
-        prediction = res.values @ W_r
-        target = np.zeros_like(states[-1]) if noinp else np.ones_like(states[-1])
+        prediction = W_r @ res.values[:, :N_e].T
+        target = np.zeros_like(prediction) if noinp else np.ones_like(prediction)
 
         # calculate network dimensionality
         dim_ir = get_dim(res.values[:, :N_e])
 
         # save trial results
-        results["test_prediction"].append(prediction)
-        results["test_target"].append(target)
+        results["test_prediction"].append(prediction.squeeze())
+        results["test_target"].append(target.squeeze())
         results["test_trial"].append(trial)
         results["test_amp"].append(amp)
         results["test_ir"].append(dim_ir)
@@ -276,8 +275,8 @@ plt.tight_layout()
 
 # plotting test predictions
 fig, ax = plt.subplots(figsize=(12, 4))
-preds = np.stack(results["test_predictions"], axis=0)
-targs = np.stack(results["test_targets"], axis=0)
+preds = np.concatenate(results["test_prediction"], axis=0)
+targs = np.concatenate(results["test_target"], axis=0)
 ax.plot(preds, label="predictions")
 ax.plot(targs, label="targets")
 ax.set_xlabel("test steps")

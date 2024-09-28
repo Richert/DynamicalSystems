@@ -7,10 +7,9 @@ from scipy.signal import find_peaks
 from typing import Union, Iterable, Callable
 
 
-def get_c(X: np.ndarray, alpha: float = 1e-4):
-    """
-    """
-    return X @ X.T + alpha*np.eye(X.shape[0])
+def ridge(X: np.ndarray, y: np.ndarray, alpha: float) -> np.ndarray:
+    I = np.eye(X.shape[0])
+    return np.transpose(np.dot(np.linalg.pinv(np.dot(X, X.T) + alpha*I), np.dot(X, y.T)))
 
 
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
