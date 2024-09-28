@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # set condition
-deltas_i=( 0.4 1.6 4.8 )
-deltas_e=( 0.2 0.4 0.8 1.6 3.2 6.4 )
+deltas_i=( 0.5 1.5 4.5 )
+deltas_e=( 0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 )
 gs=( 0.0 4.0 8.0 12.0 16.0 20.0 )
 n=20
 batch_size=10

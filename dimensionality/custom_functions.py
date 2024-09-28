@@ -7,6 +7,12 @@ from scipy.signal import find_peaks
 from typing import Union, Iterable, Callable
 
 
+def get_c(X: np.ndarray, alpha: float = 1e-4):
+    """
+    """
+    return X @ X.T + alpha*np.eye(X.shape[0])
+
+
 def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     samples = np.zeros((n,))
     for i in range(n):
