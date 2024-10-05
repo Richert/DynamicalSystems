@@ -214,22 +214,22 @@ p0 = [offset, delay, scale, tau]
 time = s.index.values
 time = time - np.min(time)
 bounds = ([0.0, 1.0, 0.0, 1.0], [1.0, 100.0, 1.0, 2e2])
-p, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
+params, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(1e2*p[-1])
+ir_window = int(1e2*params[-1])
 dim_ir = get_dim(s.values[:ir_window, :])
 
 # save results
-results = {"g": g, "Delta_e": Delta,
+results = {"g": g, "Delta": Delta,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-           "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": p, "mean_ir0": np.mean(ir_mean0, axis=1),
+           "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": np.mean(ir_mean0, axis=1),
            "mean_ir1": np.mean(ir_mean1, axis=1), "std_ir1": np.mean(ir_std1, axis=1),
            "mean_ir2": np.mean(ir_mean2, axis=1), "std_ir2": np.mean(ir_std2, axis=1)
            }
 
 # save results
-pickle.dump(results, open(f"{path}/exc_g{int(g)}_D{int(Delta)}_p{int(10 * p)}_{rep + 1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/cc_exc_g{int(g)}_D{int(Delta)}_p{int(10 * p)}_{rep + 1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
@@ -268,7 +268,7 @@ pickle.dump(results, open(f"{path}/exc_g{int(g)}_D{int(Delta)}_p{int(10 * p)}_{r
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("SR")
-# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(p[-1], decimals=1)}")
+# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}")
 #
 # plt.tight_layout()
 # plt.show()
