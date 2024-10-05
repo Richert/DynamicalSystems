@@ -3,7 +3,7 @@ from pyrates import CircuitTemplate, NodeTemplate, OperatorTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.stats import poisson, expon
+from scipy.stats import poisson
 import sys
 from custom_functions import *
 
@@ -14,11 +14,8 @@ from custom_functions import *
 device = "cpu"
 theta_dist = "gaussian"
 
-# reservoir computing parameters
-alpha = 1e-4
-
 # general model parameters
-N = 100
+N = 1000
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -27,27 +24,23 @@ g_in = 10.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 3.0 #float(sys.argv[-2])
-Delta_e = 1.0 #float(sys.argv[-3])
-Delta_i = 1.0 #float(sys.argv[-4])
+g = 2.0 #float(sys.argv[-2])
+Delta_e = 0.1 #float(sys.argv[-3])
+Delta_i = 0.2 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
 dts = 1e-1
-p_in = 0.2
-p_noin = 0.2
-min_amp = 1.0*1e-3
-max_amp = 10.0*1e3
+p_in = 0.6
 dur = 20.0
-window = 480.0
-n_train = 100
-n_test = 10
-cutoff = 500.0
-steady_state = 2000.0
+window = 1000.0
+n_trials = 10
+amplitudes = np.linspace(1e-4, 1e-2, num=3)
+cutoff = 1000.0
 
 # exc parameters
-p_e = 0.9
+p_e = 0.8
 N_e = int(N*p_e)
 C_e = 100.0
 k_e = 0.7
@@ -132,15 +125,20 @@ net.add_diffeq_node("eic", eic, input_var="g_e_in", output_var="s", spike_var="s
 ############################
 
 # define input
-T = cutoff + steady_state
+T = cutoff + window
 inp = np.zeros((int(T/dt), N))
 inp[:, :N_e] += poisson.rvs(mu=s_e*g_in*dt, size=(inp.shape[0], N_e))
 inp[:, N_e:] += poisson.rvs(mu=s_i*g_in*dt, size=(inp.shape[0], N_i))
 inp = convolve_exp(inp, tau_s_e, dt)
 
-# perform simulation
-obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False,
-              cutoff=int(cutoff/dt))
+# perform cutoff simulation
+_ = net.run(inputs=inp[:int(cutoff/dt), :], sampling_steps=int(dts/dt), record_output=False, verbose=False,
+            enable_grad=False)
+y0 = {key: val[:] for key, val in net.state.items()}
+
+# perform steady-state simulation
+obs = net.run(inputs=inp[int(cutoff/dt):, :], sampling_steps=int(dts/dt), record_output=True, verbose=False,
+              enable_grad=False)
 s = obs.to_dataframe("out")
 s.iloc[:, :N_e] /= tau_s_e
 s.iloc[:, N_e:] /= tau_s_i
@@ -166,86 +164,98 @@ s_vals = s.values[:, :N_e]
 s_mean = np.mean(s_vals, axis=1)
 s_std = np.std(s_vals, axis=1)
 
-# simulation 2: RC training
-###########################
+# simulation 2: impulse response
+################################
 
 # preparations
-inp = np.zeros((int((dur + window) / dt), N))
 inp_neurons = np.random.choice(N_e, size=(int(N_e*p_in),))
-dur = int(dur/dt)
-dur2 = int(dur*dts)
+in_split = int(0.5*len(inp_neurons))
+dur_tmp = int(dur/dt)
 
 # collect network responses to stimulation
-states, targets = [], []
-for trial in range(n_train):
-
-    # choose trial type
-    noinp = np.random.rand() < p_noin
-
-    # generate trial input
-    amp = np.random.uniform(low=min_amp, high=max_amp)
-    inp[:, :N_e] = poisson.rvs(mu=s_e * g_in * dt, size=(inp.shape[0], N_e))
-    inp[:, N_e:] = poisson.rvs(mu=s_i * g_in * dt, size=(inp.shape[0], N_i))
-    if not noinp:
-        inp[:dur, inp_neurons] += poisson.rvs(mu=amp * g_in * dt, size=(dur, len(inp_neurons)))
-    inp = convolve_exp(inp, tau_s_e, dt)
-
-    # get network response
-    obs = net.run(inputs=inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False,
-                  cutoff=dur2)
-    res = obs.to_numpy("out")
-
-    # save trial results
-    start = np.random.choice(int(window/dts)-dur2)
-    states.append(res[start:start+dur2, :N_e])
-    target = np.zeros((states[-1].shape[0], 1)) if noinp else np.ones((states[-1].shape[0], 1))
-    targets.append(target)
-
-# train readout weights
-W_r = ridge(np.concatenate(states, axis=0).T, np.concatenate(targets, axis=0).T, alpha=alpha)
-
-# simulation 3: RC testing
-##########################
-
-# define input conditions
-amps = np.linspace(0.0, max_amp, n_test)
-
 results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-           "test_ir": [], "test_amp": [], "test_trial": [], "test_prediction": [], "test_target": [],
+           "amp_ir": [], "dim_ir1": [], "dim_ir2": [], "sep_ir": [], "mean_ir1": [], "std_ir1": [],
+           "mean_ir2": [], "std_ir2": []
            }
+for amp in amplitudes:
 
-for amp in amps:
-    for trial in range(n_test):
+    d1s, d2s, ir1s, ir2s = [], [], [], []
 
-        # choose trial type
-        noinp = amp < min_amp
+    for trial in range(n_trials):
 
-        # generate trial input
-        inp[:, :N_e] = poisson.rvs(mu=s_e * g_in * dt, size=(inp.shape[0], N_e))
-        inp[:, N_e:] = poisson.rvs(mu=s_i * g_in * dt, size=(inp.shape[0], N_i))
-        if not noinp:
-            inp[:dur, inp_neurons] += poisson.rvs(mu=amp * g_in * dt, size=(dur, len(inp_neurons)))
-        inp = convolve_exp(inp, tau_s_e, dt)
+        # input 1
+        #########
 
-        # get network response
-        obs = net.run(inputs=inp, sampling_steps=int(dts / dt), record_output=True, verbose=False, enable_grad=False,
-                      cutoff=int(dur * dts))
-        res = obs.to_dataframe("out")
+        # generate random input for first trial
+        inp = np.zeros((int(window / dt), N))
+        inp[:, :N_e] += poisson.rvs(mu=s_e * g_in * dt, size=(inp.shape[0], N_e))
+        inp[:, N_e:] += poisson.rvs(mu=s_i * g_in * dt, size=(inp.shape[0], N_i))
+        inp[:dur_tmp, inp_neurons[:in_split]] += poisson.rvs(mu=amp * g_in * dt, size=(dur_tmp, in_split))
 
-        # get readout
-        prediction = W_r @ res.values[:, :N_e].T
-        target = np.zeros_like(prediction) if noinp else np.ones_like(prediction)
+        # get network response to input
+        obs = net.run(inputs=convolve_exp(inp, tau_s_e, dt), sampling_steps=int(dts / dt), record_output=True,
+                      verbose=False, enable_grad=False)
+        ir1 = obs.to_numpy("out") * 1e3/tau_s_e
+        ir1s.append(ir1)
 
-        # calculate network dimensionality
-        dim_ir = get_dim(res.values[:, :N_e])
+        # calculate dimensionality
+        d1s.append(get_dim(ir1[:, :N_e]))
 
-        # save trial results
-        results["test_prediction"].append(prediction.squeeze())
-        results["test_target"].append(target.squeeze())
-        results["test_trial"].append(trial)
-        results["test_amp"].append(amp)
-        results["test_ir"].append(dim_ir)
+        # input 2
+        #########
+
+        # set initial state
+        net.reset(state=y0)
+
+        # generate random input for first trial
+        inp = np.zeros((int(window / dt), N))
+        inp[:, :N_e] += poisson.rvs(mu=s_e * g_in * dt, size=(inp.shape[0], N_e))
+        inp[:, N_e:] += poisson.rvs(mu=s_i * g_in * dt, size=(inp.shape[0], N_i))
+        inp[:dur_tmp, inp_neurons[in_split:]] += poisson.rvs(mu=amp * g_in * dt, size=(dur_tmp, in_split))
+
+        # get network response to input
+        obs = net.run(inputs=convolve_exp(inp, tau_s_e, dt), sampling_steps=int(dts / dt), record_output=True,
+                      verbose=False, enable_grad=False)
+        ir2 = obs.to_numpy("out") * 1e3/tau_s_e
+        ir2s.append(ir2)
+
+        # calculate dimensionality
+        d2 = get_dim(ir2[:, :N_e])
+        d2s.append(d2)
+
+        # test plotting
+        ###############
+
+        # fig, ax = plt.subplots(figsize=(12, 4))
+        # ax.plot(np.mean(ir1, axis=1), label="IR1")
+        # ax.plot(np.mean(ir2, axis=1), label="IR2")
+        # ax.set_xlabel("steps")
+        # ax.set_ylabel("r")
+        # ax.legend()
+        # plt.tight_layout()
+        # plt.show()
+
+    # calculate trial-averaged network response
+    ir1 = np.asarray(ir1s)
+    ir2 = np.asarray(ir2s)
+    ir_mean1 = np.mean(ir1, axis=0)
+    ir_std1 = np.std(ir1, axis=0)
+    ir_mean2 = np.mean(ir2, axis=0)
+    ir_std2 = np.std(ir2, axis=0)
+
+    # calculate separability
+    sep = separability(ir_mean1, ir_mean2, metric="correlation")
+
+    # save trial-averaged results
+    results["amp_ir"].append(amp)
+    results["dim_ir1"].append(np.mean(d1s))
+    results["dim_ir2"].append(np.mean(d2s))
+    results["mean_ir1"].append(np.mean(ir_mean1, axis=1))
+    results["std_ir1"].append(np.mean(ir_std1, axis=1))
+    results["mean_ir2"].append(np.mean(ir_mean2, axis=1))
+    results["std_ir2"].append(np.mean(ir_std2, axis=1))
+    results["sep_ir"].append(sep)
 
 # save results
 # pickle.dump({"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i, "dim_ss": dim_ss, "dim_ir": dim_ir,
@@ -273,16 +283,23 @@ ax.set_ylabel("neurons")
 fig.suptitle("Spiking dynamics")
 plt.tight_layout()
 
-# plotting test predictions
-fig, ax = plt.subplots(figsize=(12, 4))
-preds = np.concatenate(results["test_prediction"], axis=0)
-targs = np.concatenate(results["test_target"], axis=0)
-ax.plot(preds, label="predictions")
-ax.plot(targs, label="targets")
-ax.set_xlabel("test steps")
-ax.set_ylabel("y")
-ax.set_title("Test predictions")
-ax.legend()
-plt.tight_layout()
+# plotting impulse response
+fig, axes = plt.subplots(nrows=len(amplitudes), ncols=2, figsize=(12, 2*len(amplitudes)))
+fig.suptitle("Impulse response")
+for i, amp in enumerate(amplitudes):
+    ax = axes[i, 0]
+    ir_mean = results["mean_ir2"][i] - s_mean
+    ax.plot(ir_mean, label="mean")
+    ax.plot(results["std_ir2"][i] / ir_mean, label="std")
+    ax.set_xlabel("steps")
+    ax.set_ylabel("r (Hz)")
+    ax.legend()
+    ax.set_title(f"Avg. impulse amplitude = {amp} pA")
+    ax = axes[i, 1]
+    ax.plot(results["sep_ir"][i])
+    ax.set_xlabel("steps")
+    ax.set_ylabel("separability")
+    ax.set_title(f"Dim = {np.round(results['dim_ir1'][i], decimals=1)}")
 
+plt.tight_layout()
 plt.show()

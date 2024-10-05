@@ -4,7 +4,16 @@ from scipy.stats import norm, cauchy
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import least_squares, curve_fit
 from scipy.signal import find_peaks
+from scipy.spatial.distance import cdist
 from typing import Union, Iterable, Callable
+
+
+def separability(x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    sep = []
+    for j in range(x.shape[0]):
+        d = cdist(x[j:j+1, :], y[j:j+1, :], **kwargs).squeeze()
+        sep.append(d)
+    return np.asarray(sep)
 
 
 def ridge(X: np.ndarray, y: np.ndarray, alpha: float) -> np.ndarray:

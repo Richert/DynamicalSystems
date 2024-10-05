@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 200
+N = 500
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -24,13 +24,13 @@ g_in = 10.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 4.0 #float(sys.argv[-2])
-Delta_e = 0.0 #float(sys.argv[-3])
-Delta_i = 0.0 #float(sys.argv[-4])
+g = 5.0 #float(sys.argv[-2])
+Delta_e = 1.0 #float(sys.argv[-3])
+Delta_i = 1.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
 # exc parameters
-p_e = 0.9
+p_e = 0.8
 N_e = int(N*p_e)
 C_e = 100.0
 k_e = 0.7
