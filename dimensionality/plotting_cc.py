@@ -52,7 +52,7 @@ df = DataFrame.from_dict(results)
 
 # plotting line plots
 fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
-for ax, y, title in zip(axes, ["dim", "s_mean", "s_norm"], ["Participation Ratio", "mean(fr)", "std(fr)/mean(fr)"]):
+for ax, y, title in zip(axes, ["dim_ss", "s_mean", "s_norm"], ["Participation Ratio", "mean(fr)", "std(fr)/mean(fr)"]):
     lineplot(df, x="g", hue="Delta", y=y, ax=ax)
     ax.set_title(title)
 plt.tight_layout()
