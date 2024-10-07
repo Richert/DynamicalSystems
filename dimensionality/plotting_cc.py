@@ -21,7 +21,9 @@ for file in os.listdir(path):
         data = pickle.load(open(f"{path}/{file}", "rb"))
 
         # condition information
-        results["rep"].append(int(file.split("_")[-1][:-2]))
+        rep = file.split("_")[-1]
+        rep = int(rep.split(".")[0])
+        results["rep"].append(rep)
         results["g"].append(data["g"])
         results["Delta"].append(data["Delta"])
         results["p"].append(data["p"])
