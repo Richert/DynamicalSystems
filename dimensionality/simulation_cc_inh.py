@@ -218,7 +218,7 @@ ir_window = int(1e2*params[-1])
 dim_ir = get_dim(s.values[:ir_window, :])
 
 # save results
-results = {"g": g, "Delta": Delta,
+results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
@@ -227,7 +227,7 @@ results = {"g": g, "Delta": Delta,
            }
 
 # save results
-# pickle.dump(results, open(f"{path}/cc_inh_g{int(g)}_D{int(Delta)}_p{int(10 * p)}_{rep + 1}.pkl", "wb"))
+# pickle.dump(results, open(f"{path}/cc_inh_g{int(10*g)}_D{int(10*Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
 
 # plotting firing rate dynamics
 fig, ax = plt.subplots(figsize=(12, 4))

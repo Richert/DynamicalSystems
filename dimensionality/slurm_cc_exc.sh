@@ -32,7 +32,7 @@ for p in "${ps[@]}"; do
         (
         echo "Starting job #$((IDX+1)) of ${n} jobs for p = ${p}, g = ${g} and delta = ${d}."
         srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=16 --job-name="cc_exc" \
-        --output="out/cc_exc_$counter.out" --error="err/cc_exc_$counter.err" --partition="highcpu" --exclusive -c 1 \
+        --output="out/cc_exc_$counter.out" --error="err/cc_exc_$counter.err" --partition="gpu" --exclusive -c 1 \
         python simulation_cc_exc.py "$save_dir" "$p" "$d" "$g" "$IDX"
         ) &
 

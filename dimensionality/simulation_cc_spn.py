@@ -11,7 +11,7 @@ from custom_functions import *
 ###################
 
 # meta parameters
-device = "cpu"
+device = "cuda"
 theta_dist = "gaussian"
 
 # general model parameters
@@ -57,18 +57,18 @@ W = random_connectivity(N, N, p, normalize=False)
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas_e = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
+thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # initialize the model
 ######################
 
 # initialize operators
 op = OperatorTemplate.from_yaml("config/ik_snn/ik_op")
-exc_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas_e, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
+exc_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
             "g_e": 0.0, "E_i": E_i, "tau_s": tau_s, "v": v_t, "g_i": g, "E_e": E_e}
 
 # initialize model
-net = Network(dt, device="cpu")
+net = Network(dt, device=device)
 net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
                     input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=exc_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
@@ -216,20 +216,28 @@ time = time - np.min(time)
 bounds = ([0.0, 1.0, 0.0, 1.0], [1.0, 100.0, 1.0, 2e2])
 params, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
 
+# fit impulse response of mean-field
+ir0 = np.mean(ir_mean0, axis=1)
+ir1 = np.mean(ir_mean1, axis=1)
+ir2 = np.mean(ir_mean2, axis=1)
+diff = (ir0 - ir1)**2
+params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p0)
+
 # calculate dimensionality in the impulse response period
 ir_window = int(1e2*params[-1])
 dim_ir = get_dim(s.values[:ir_window, :])
 
 # save results
-results = {"g": g, "Delta": Delta,
+results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-           "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": np.mean(ir_mean0, axis=1),
-           "mean_ir1": np.mean(ir_mean1, axis=1), "std_ir1": np.mean(ir_std1, axis=1),
-           "mean_ir2": np.mean(ir_mean2, axis=1), "std_ir2": np.mean(ir_std2, axis=1)
+           "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
+           "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
+           "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
+           "mf_params_ir": params_mf
            }
 
 # save results
-pickle.dump(results, open(f"{path}/cc_spn_g{int(g)}_D{int(Delta)}_p{int(10 * p)}_{rep + 1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/cc_spn_g{int(10*g)}_D{int(10*Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
