@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 200
+N = 1000
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -23,11 +23,11 @@ v_reset = -90.0
 g_in = 10.0
 
 # get sweep condition
-rep = 0 # int(sys.argv[-1])
-g = 0.5 #float(sys.argv[-2])
-Delta = 2.0 #float(sys.argv[-3])
-p = 0.2 #float(sys.argv[-4])
-path = "" #str(sys.argv[-5])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
+p = float(sys.argv[-4])
+path = str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
@@ -35,7 +35,7 @@ dts = 1e-1
 p_in = 0.6
 dur = 20.0
 window = 1000.0
-n_trials = 5
+n_trials = 10
 amp = 1e-2
 cutoff = 1000.0
 
@@ -68,7 +68,7 @@ exc_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 
             "g_e": 0.0, "E_i": E_i, "tau_s": tau_s, "v": v_t, "g_i": g, "E_e": E_e}
 
 # initialize model
-net = Network(dt, device="cpu")
+net = Network(dt, device=device)
 net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target_var="s_i",
                     input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                     node_vars=exc_vars.copy(), op="ik_op", spike_reset=v_reset, spike_threshold=v_spike,
@@ -227,48 +227,48 @@ results = {"g": g, "Delta": Delta, "p": p,
            }
 
 # save results
-# pickle.dump(results, open(f"{path}/cc_inh_g{int(10*g)}_D{int(10*Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/cc_inh_g{int(10*g)}_D{int(10*Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
 
-# plotting firing rate dynamics
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim_ss}")
-fig.suptitle("Mean-field rate dynamics")
-plt.tight_layout()
-
-# plotting spikes
-fig, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-fig.suptitle("Spiking dynamics")
-plt.tight_layout()
-
-# plotting impulse response
-fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
-fig.suptitle("Impulse response")
-ax = axes[0]
-ax.plot(ir0, label="no input")
-ax.plot(ir1, label="input")
-ax.plot(diff, label="diff.")
-ax.plot(ir_mf, label="diff. fit")
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.legend()
-ax.set_title(f"Impulse Response")
-ax = axes[1]
-ax.plot(sep, label="combined IR")
-ax.plot(ir_fit, label="exp. fit")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("SR")
-ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}, "
-             f"tau_mf = {np.round(params_mf[-1], decimals=1)}")
-
-plt.tight_layout()
-plt.show()
+# # plotting firing rate dynamics
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field rate dynamics")
+# plt.tight_layout()
+#
+# # plotting spikes
+# fig, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# fig.suptitle("Spiking dynamics")
+# plt.tight_layout()
+#
+# # plotting impulse response
+# fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
+# fig.suptitle("Impulse response")
+# ax = axes[0]
+# ax.plot(ir0, label="no input")
+# ax.plot(ir1, label="input")
+# ax.plot(diff, label="diff.")
+# ax.plot(ir_mf, label="diff. fit")
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.legend()
+# ax.set_title(f"Impulse Response")
+# ax = axes[1]
+# ax.plot(sep, label="combined IR")
+# ax.plot(ir_fit, label="exp. fit")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("SR")
+# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}, "
+#              f"tau_mf = {np.round(params_mf[-1], decimals=1)}")
+#
+# plt.tight_layout()
+# plt.show()

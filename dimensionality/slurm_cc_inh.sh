@@ -31,9 +31,9 @@ for p in "${ps[@]}"; do
         # python call
         (
         echo "Starting job #$((IDX+1)) of ${n} jobs for p = ${p}, g = ${g} and delta = ${d}."
-        srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=1 --job-name="cc_exc" \
-        --output="out/cc_exc_$counter.out" --error="err/cc_exc_$counter.err" --partition="gpu" --exclusive -c 1 \
-        python simulation_cc_exc.py "$save_dir" "$p" "$d" "$g" "$IDX"
+        srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=12 --job-name="cc_inh" \
+        --output="out/cc_inh_$counter.out" --error="err/cc_inh_$counter.err" --partition="highcpu" --exclusive -c 1 \
+        python simulation_cc_inh.py "$save_dir" "$p" "$d" "$g" "$IDX"
         ) &
 
         # batch control
