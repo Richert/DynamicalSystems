@@ -9,9 +9,9 @@ from custom_functions import impulse_response_fit, alpha
 
 # condition
 condition = str(sys.argv[-1])
+path = str(sys.argv[-2])
 
 # load data
-path = "/media/kennedy_labdata/rgast/results/dimensionality"
 results = {"rep": [], "g": [], "Delta": [], "p": [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
            "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": []}
 for file in os.listdir(path):
