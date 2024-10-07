@@ -221,7 +221,7 @@ ir_window = int(1e2*params[-1])
 dim_ir = get_dim(s.values[:ir_window, :])
 
 # save results
-results = {"g": g, "Delta": Delta,
+results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": np.mean(ir_mean0, axis=1),
            "mean_ir1": np.mean(ir_mean1, axis=1), "std_ir1": np.mean(ir_std1, axis=1),
