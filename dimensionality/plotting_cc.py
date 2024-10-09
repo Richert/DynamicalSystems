@@ -23,11 +23,10 @@ for file in os.listdir(path):
         # condition information
         f = file.split("_")
         rep = int(f[-1].split(".")[0])
-        p = float(f[-2][1:])/10.0
         results["rep"].append(rep)
         results["g"].append(data["g"])
         results["Delta"].append(data["Delta"])
-        results["p"].append(p)
+        results["p"].append(data["p"])
 
         # steady-state analysis
         results["dim_ss"].append(data["dim_ss"])
@@ -52,6 +51,7 @@ df = DataFrame.from_dict(results)
 
 # plotting line plots for steady state regime
 ps = np.unique(df.loc[:, "p"].values)
+print(f"ps = {ps.tolist()}")
 fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
 for i, p in enumerate(ps):
     df_tmp = df.loc[df["p"] == p, :]
@@ -76,7 +76,7 @@ fig.suptitle("Impulse Response")
 plt.tight_layout()
 
 # plotting scatter plots
-fig, axes = plt.subplots(ncols=3, nrows=2, figsize=(12, 4))
+fig, axes = plt.subplots(ncols=3, nrows=2, figsize=(12, 6))
 ax = axes[0, 0]
 scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[1, 0]
