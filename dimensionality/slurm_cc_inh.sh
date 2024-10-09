@@ -31,8 +31,8 @@ for p in "${ps[@]}"; do
         # python call
         (
         echo "Starting job #$((IDX+1)) of ${n} jobs for p = ${p}, g = ${g} and delta = ${d}."
-        srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=10 --job-name="cc_inh" \
-        --output="out/cc_inh_$counter.out" --error="err/cc_inh_$counter.err" --partition="shared" --exclusive -c 1 \
+        srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=16 --job-name="cc_inh" \
+        --output="out/cc_inh_$counter.out" --error="err/cc_inh_$counter.err" --partition="highcpu" --exclusive -c 1 \
         python simulation_cc_inh.py "$save_dir" "$p" "$d" "$g" "$IDX"
         ) &
 
