@@ -53,7 +53,7 @@ df = DataFrame.from_dict(results)
 # plotting line plots for steady state regime
 ps = np.unique(df.loc[:, "p"].values)
 fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
-for i, p in zip(ps):
+for i, p in enumerate(ps):
     df_tmp = df.loc[df["p"] == p, :]
     for j, y in enumerate(["dim_ss", "s_mean", "s_norm"]):
         ax = axes[i, j]
@@ -65,7 +65,7 @@ plt.tight_layout()
 
 # plotting line plots for impulse response
 fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
-for i, p in zip(ps):
+for i, p in enumerate(ps):
     df_tmp = df.loc[df["p"] == p, :]
     for j, y in enumerate(["dim_ir", "tau_ir", "amp_ir"]):
         ax = axes[i, j]
