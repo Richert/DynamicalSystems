@@ -50,27 +50,46 @@ df = DataFrame.from_dict(results)
 # df = df.loc[df["g"] >= min_g, :]
 # df = df.loc[df["g"] <= max_g, :]
 
-# plotting line plots
-fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
-for ax, y, title in zip(axes, ["dim_ss", "s_mean", "s_norm"], ["Participation Ratio", "mean(fr)", "std(fr)/mean(fr)"]):
-    lineplot(df, x="g", hue="Delta", y=y, ax=ax)
-    ax.set_title(title)
+# plotting line plots for steady state regime
+ps = np.unique(df.loc[:, "p"].values)
+fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
+for i, p in zip(ps):
+    df_tmp = df.loc[df["p"] == p, :]
+    for j, y in enumerate(["dim_ss", "s_mean", "s_norm"]):
+        ax = axes[i, j]
+        lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax)
+        if j == 1:
+            ax.set_title(f"p = {np.round(p, decimals=2)}")
+fig.suptitle("Steady-Sate Dynamics")
+plt.tight_layout()
+
+# plotting line plots for impulse response
+fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
+for i, p in zip(ps):
+    df_tmp = df.loc[df["p"] == p, :]
+    for j, y in enumerate(["dim_ir", "tau_ir", "amp_ir"]):
+        ax = axes[i, j]
+        lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax)
+        if j == 1:
+            ax.set_title(f"p = {np.round(p, decimals=2)}")
+fig.suptitle("Impulse Response")
 plt.tight_layout()
 
 # plotting scatter plots
 fig, axes = plt.subplots(ncols=3, nrows=2, figsize=(12, 4))
 ax = axes[0, 0]
-scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", palette="tab10", legend=True, ax=ax)
+scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[1, 0]
-scatterplot(df, x="s_norm", y="dim_ss", hue="g", palette="tab10", legend=True, ax=ax)
+scatterplot(df, x="s_norm", y="dim_ss", hue="g", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[0, 1]
-scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", palette="tab10", legend=True, ax=ax)
+scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[1, 1]
-scatterplot(df, x="dim_ir", y="dim_ss", hue="g", palette="tab10", legend=True, ax=ax)
+scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[0, 1]
-scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", palette="tab10", legend=True, ax=ax)
+scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[1, 1]
-scatterplot(df, x="dim_ir", y="tau_ir", hue="g", palette="tab10", legend=True, ax=ax)
+scatterplot(df, x="dim_ir", y="tau_ir", hue="g", style="p", palette="tab10", legend=True, ax=ax)
+fig.suptitle("Control of Dimensionality")
 plt.tight_layout()
 
 plt.show()
