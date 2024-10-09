@@ -52,7 +52,7 @@ s_e = 15.0*1e-3
 tau_s = 6.0
 
 # connectivity parameters
-g = g / np.sqrt(N * p)
+g_norm = g / np.sqrt(N * p)
 W = random_connectivity(N, N, p, normalize=False)
 
 # define distribution of etas
@@ -65,7 +65,7 @@ thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
 # initialize operators
 op = OperatorTemplate.from_yaml("config/ik_snn/ik_op")
 exc_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u": 1 / a, "b": b, "kappa": d,
-            "g_e": 0.0, "E_i": E_i, "tau_s": tau_s, "v": v_t, "g_i": g, "E_e": E_e}
+            "g_e": 0.0, "E_i": E_i, "tau_s": tau_s, "v": v_t, "g_i": g_norm, "E_e": E_e}
 
 # initialize model
 net = Network(dt, device=device)
@@ -227,7 +227,7 @@ results = {"g": g, "Delta": Delta, "p": p,
            }
 
 # save results
-pickle.dump(results, open(f"{path}/cc_inh_g{int(10*g)}_D{int(10*Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/cc_inh_g{int(10*g)}_D{int(10*Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
