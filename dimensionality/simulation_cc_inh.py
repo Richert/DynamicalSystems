@@ -11,7 +11,7 @@ from custom_functions import *
 ###################
 
 # meta parameters
-device = "cpu"
+device = "gpu"
 theta_dist = "gaussian"
 
 # general model parameters
