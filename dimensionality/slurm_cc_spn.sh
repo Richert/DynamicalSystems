@@ -11,16 +11,16 @@ module purge
 mamba activate ds
 
 # set condition
-deltas=( 0.1 0.2 0.4 0.8 1.6 3.2 6.4 )
-gs=( 0.0 0.4 0.8 1.2 1.6 2.0 2.4 )
-ps=( 0.05 0.1 0.2 )
+deltas=( 0.5 1.0 1.5 2.0 2.5 3.0 )
+gs=( 0.0 0.4 0.8 1.2 1.6 2.0 )
+es=( -65.0 -60.0 -55.0 -50.0 )
 n=20
 batch_size=20
 range_end=$((n-1))
 
 # execute python scripts
 counter=0
-for p in "${ps[@]}"; do
+for e_r in "${es[@]}"; do
   for d in "${deltas[@]}"; do
     for g in "${gs[@]}"; do
       for IDX in $(seq 0 $range_end); do
@@ -30,14 +30,14 @@ for p in "${ps[@]}"; do
 
         # python call
         (
-        echo "Starting job #$((IDX+1)) of ${n} jobs for p = ${p}, g = ${g} and delta = ${d}."
-        srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=1 --job-name="cc_spn" \
-        --output="out/cc_spn_$counter.out" --error="err/cc_spn_$counter.err" --partition="gpu" --exclusive -c 1 \
-        python simulation_cc_spn.py "$save_dir" "$p" "$d" "$g" "$IDX"
+        echo "Starting job #$((IDX+1)) of ${n} jobs for E_r = ${e_r}, g = ${g} and Delta = ${d}."
+        srun --ntasks=1 --nodes=1 --mem=8G --time=00:45:00 --cpus-per-task=12 --job-name="cc_spn" \
+        --output="out/cc_spn_$counter.out" --error="err/cc_spn_$counter.err" --partition="shared" --exclusive -c 1 \
+        python simulation_cc_spn.py "$save_dir" "$e_r" "$d" "$g" "$IDX"
         ) &
 
         # batch control
-        if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
+        if [[ $(jobs -r -e_r | wc -l) -ge $batch_size ]]; then
               wait
         fi
 
