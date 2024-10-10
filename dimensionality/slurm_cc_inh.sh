@@ -11,8 +11,8 @@ module purge
 mamba activate ds
 
 # set condition
-deltas=( 0.1 0.2 0.4 0.8 1.6 3.2 6.4 )
-gs=( 0.0 0.3 0.6 0.9 1.2 1.5 1.8 )
+deltas=( 0.5 1.0 1.5 2.0 1.5 2.0 )
+gs=( 0.0 0.3 0.6 0.9 1.2 1.5 1.8 2.1 )
 ps=( 0.05 0.1 0.2 )
 n=20
 batch_size=10
@@ -31,8 +31,8 @@ for p in "${ps[@]}"; do
         # python call
         (
         echo "Starting job #$((IDX+1)) of ${n} jobs for p = ${p}, g = ${g} and delta = ${d}."
-        srun --ntasks=1 --nodes=1 --mem=8G --time=01:00:00 --cpus-per-task=16 --job-name="cc_inh" \
-        --output="out/cc_inh_$counter.out" --error="err/cc_inh_$counter.err" --partition="highcpu" --exclusive -c 1 \
+        srun --ntasks=1 --nodes=1 --mem=8G --time=00:50:00 --cpus-per-task=12 --job-name="cc_inh" \
+        --output="out/cc_inh_$counter.out" --error="err/cc_inh_$counter.err" --partition="shared" --exclusive -c 1 \
         python simulation_cc_inh.py "$save_dir" "$p" "$d" "$g" "$IDX"
         ) &
 
