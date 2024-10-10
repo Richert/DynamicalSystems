@@ -37,7 +37,7 @@ for e_r in "${es[@]}"; do
         ) &
 
         # batch control
-        if [[ $(jobs -r -e_r | wc -l) -ge $batch_size ]]; then
+        if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
               wait
         fi
 
