@@ -1,11 +1,12 @@
 import pickle
-from seaborn import heatmap, scatterplot, lineplot
+import matplotlib
+matplotlib.use('TkAgg')
+from seaborn import scatterplot, lineplot
 import matplotlib.pyplot as plt
 import os
 import sys
 import numpy as np
 from pandas import DataFrame
-from custom_functions import impulse_response_fit, alpha
 
 # condition
 condition = str(sys.argv[-1])
@@ -51,7 +52,6 @@ df = DataFrame.from_dict(results)
 
 # plotting line plots for steady state regime
 ps = np.unique(df.loc[:, "p"].values)
-print(f"ps = {ps.tolist()}")
 fig = plt.figure(figsize=(12, 3*len(ps)))
 grid = fig.add_gridspec(nrows=len(ps), ncols=3)
 for i, p in enumerate(ps):
