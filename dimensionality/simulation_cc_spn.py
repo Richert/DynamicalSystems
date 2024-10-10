@@ -16,7 +16,7 @@ theta_dist = "gaussian"
 
 # general model parameters
 N = 1000
-p = 0.2
+p = 0.1
 E_e = 0.0
 v_spike = 40.0
 v_reset = -55.0
