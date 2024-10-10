@@ -1,6 +1,6 @@
 import pickle
 import matplotlib.pyplot as plt
-plt.switch_backend('agg')
+plt.switch_backend('tkagg')
 from seaborn import scatterplot, lineplot
 import os
 import sys
