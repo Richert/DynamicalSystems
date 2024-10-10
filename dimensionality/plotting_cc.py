@@ -52,11 +52,12 @@ df = DataFrame.from_dict(results)
 # plotting line plots for steady state regime
 ps = np.unique(df.loc[:, "p"].values)
 print(f"ps = {ps.tolist()}")
-fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
+fig = plt.figure(figsize=(12, 3*len(ps)))
+grid = fig.add_gridspec(nrows=len(ps), ncols=3)
 for i, p in enumerate(ps):
     df_tmp = df.loc[df["p"] == p, :]
     for j, y in enumerate(["dim_ss", "s_mean", "s_norm"]):
-        ax = axes[i, j]
+        ax = fig.add_subplot(grid[i, j])
         lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax)
         if j == 1:
             ax.set_title(f"p = {np.round(p, decimals=2)}")
@@ -64,11 +65,12 @@ fig.suptitle("Steady-Sate Dynamics")
 plt.tight_layout()
 
 # plotting line plots for impulse response
-fig, axes = plt.subplots(ncols=3, nrows=len(ps), figsize=(12, 3*len(ps)))
+fig = plt.figure(figsize=(12, 3*len(ps)))
+grid = fig.add_gridspec(nrows=len(ps), ncols=3)
 for i, p in enumerate(ps):
     df_tmp = df.loc[df["p"] == p, :]
     for j, y in enumerate(["dim_ir", "tau_ir", "amp_ir"]):
-        ax = axes[i, j]
+        ax = fig.add_subplot(grid[i, j])
         lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax)
         if j == 1:
             ax.set_title(f"p = {np.round(p, decimals=2)}")
