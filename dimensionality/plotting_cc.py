@@ -86,9 +86,9 @@ ax = axes[0, 1]
 scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style="p", palette="tab10", legend=True, ax=ax)
 ax = axes[1, 1]
 scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style="p", palette="tab10", legend=True, ax=ax)
-ax = axes[0, 1]
+ax = axes[0, 2]
 scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", style="p", palette="tab10", legend=True, ax=ax)
-ax = axes[1, 1]
+ax = axes[1, 2]
 scatterplot(df, x="dim_ir", y="tau_ir", hue="g", style="p", palette="tab10", legend=True, ax=ax)
 fig.suptitle("Control of Dimensionality")
 plt.tight_layout()
