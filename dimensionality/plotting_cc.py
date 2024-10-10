@@ -1,8 +1,8 @@
 import pickle
 import matplotlib
 matplotlib.use('TkAgg')
-from seaborn import scatterplot, lineplot
 import matplotlib.pyplot as plt
+from seaborn import scatterplot, lineplot
 import os
 import sys
 import numpy as np
