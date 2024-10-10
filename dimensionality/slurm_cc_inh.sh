@@ -15,7 +15,7 @@ deltas=( 0.5 1.0 1.5 2.0 1.5 2.0 )
 gs=( 0.0 0.3 0.6 0.9 1.2 1.5 1.8 2.1 )
 ps=( 0.05 0.1 0.2 )
 n=20
-batch_size=10
+batch_size=20
 range_end=$((n-1))
 
 # execute python scripts
