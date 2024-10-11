@@ -28,7 +28,7 @@ for p in "${ps[@]}"; do
         # python calls
         (
         echo "Starting job #$((IDX+1)) of ${n} jobs for p = ${p}, g = ${g}, and delta = ${d}."
-        python simulation_cc_exc.py $save_dir $p $d $g $IDX
+        python simulation_dim_exc.py $save_dir $p $d $g $IDX
         sleep 1
         ) &
 
