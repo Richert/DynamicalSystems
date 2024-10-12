@@ -1,5 +1,5 @@
 from rectipy import Network, random_connectivity
-from pyrates import CircuitTemplate, NodeTemplate, OperatorTemplate
+from pyrates import OperatorTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
