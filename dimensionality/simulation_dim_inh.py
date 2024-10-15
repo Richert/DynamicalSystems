@@ -216,7 +216,9 @@ params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p
 
 # calculate dimensionality in the impulse response period
 ir_window = int(1e2*params[-1])
-dim_ir = get_dim(s.values[:ir_window, :])
+dim_ir1 = get_dim(ir_mean1[:ir_window, :])
+dim_ir2 = get_dim(ir_mean2[:ir_window, :])
+dim_ir = (dim_ir1 + dim_ir2)/2
 
 # save results
 results = {"g": g, "Delta": Delta, "p": p,
