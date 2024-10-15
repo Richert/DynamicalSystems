@@ -228,7 +228,7 @@ results = {"g": g, "Delta": Delta, "p": p,
            }
 
 # save results
-pickle.dump(results, open(f"{path}/dim2_inh_g{int(10*g)}_D{int(10*Delta)}_s{int(s_e)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim2_inh_g{int(10*g)}_D{int(Delta)}_s{int(s_e)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
