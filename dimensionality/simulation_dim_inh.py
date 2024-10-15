@@ -16,6 +16,7 @@ theta_dist = "gaussian"
 
 # general model parameters
 N = 1000
+p = 0.2
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -26,7 +27,7 @@ g_in = 10.0
 rep = int(sys.argv[-1])
 g = float(sys.argv[-2])
 Delta = float(sys.argv[-3])
-p = float(sys.argv[-4])
+s_e = float(sys.argv[-4])
 path = str(sys.argv[-5])
 
 # input parameters
@@ -35,7 +36,7 @@ dts = 1e-1
 p_in = 0.6
 dur = 20.0
 window = 1000.0
-n_trials = 5
+n_trials = 10
 amp = 1e-2
 cutoff = 1000.0
 
@@ -48,7 +49,7 @@ eta = 0.0
 a = 0.03
 b = -2.0
 d = 50.0
-s_e = 40.0*1e-3
+s_e_norm = s_e*1e-3
 tau_s = 6.0
 
 # connectivity parameters
@@ -124,7 +125,7 @@ dur_tmp = int(dur/dt)
 ir1s, ir2s, ir0s = [], [], []
 for trial in range(n_trials):
 
-    noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
+    noise = poisson.rvs(mu=s_e_norm*g_in*dt, size=(int(window/dt), N))
 
     # no input
     ##########
