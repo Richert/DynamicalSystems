@@ -81,7 +81,7 @@ net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target
 # define input
 T = cutoff + window
 inp = np.zeros((int(T/dt), N))
-inp[:, :] += poisson.rvs(mu=s_e*g_in*dt, size=(int(T/dt), N))
+inp[:, :] += poisson.rvs(mu=s_e_norm*g_in*dt, size=(int(T/dt), N))
 inp = convolve_exp(inp, tau_s, dt)
 
 # perform cutoff simulation
@@ -228,7 +228,7 @@ results = {"g": g, "Delta": Delta, "p": p,
            }
 
 # save results
-pickle.dump(results, open(f"{path}/dim_inh_g{int(10*g)}_D{int(10*Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim2_inh_g{int(10*g)}_D{int(10*Delta)}_s{int(s_e)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
