@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 500
+N = 200
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -24,10 +24,20 @@ g_in = 10.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 5.0 #float(sys.argv[-2])
+g = 1.0 #float(sys.argv[-2])
 Delta_e = 1.0 #float(sys.argv[-3])
 Delta_i = 1.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
+
+# input parameters
+dt = 1e-2
+dts = 1e-1
+p_in = 0.6
+dur = 20.0
+window = 1000.0
+n_trials = 5
+amp = 1e-2
+cutoff = 1000.0
 
 # exc parameters
 p_e = 0.8
@@ -76,22 +86,8 @@ f = gaussian if theta_dist == "gaussian" else lorentzian
 thetas_e = f(N_e, mu=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e-v_r_e)
 thetas_i = f(N_i, mu=v_t_i, delta=Delta_i, lb=v_r_i, ub=2*v_t_i-v_r_i)
 
-# define inputs
-T = 2500.0
-cutoff = 1000.0
-start = 1000.0
-stop = 1020.0
-amp = 10.0*1e-3
-dt = 1e-2
-dts = 1e-1
-inp = np.zeros((int(T/dt), N))
-inp[:, :N_e] += poisson.rvs(mu=s_e*g_in*dt, size=(inp.shape[0], N_e))
-inp[:, N_e:] += poisson.rvs(mu=s_i*g_in*dt, size=(inp.shape[0], N_i))
-inp[int((cutoff+start)/dt):int((cutoff+stop)/dt), :N_e] += poisson.rvs(mu=amp*g_in*dt, size=(int((stop-start)/dt), N_e))
-inp = convolve_exp(inp, tau_s_e, dt)
-
-# run the model
-###############
+# initialize the model
+######################
 
 # initialize operators
 op = OperatorTemplate.from_yaml("config/ik_snn/ik_op")
@@ -123,25 +119,31 @@ eic.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i",
 # initialize model
 net = Network(dt, device=device)
 net.add_diffeq_node("eic", eic, input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v",
-                    to_file=False, op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, clear=True, N=N,
-                    record_vars=["v"])
+                    to_file=False, op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, clear=True, N=N)
+
+# simulation 1: steady-state
+############################
+
+# define input
+T = cutoff + window
+inp = np.zeros((int(T/dt), N))
+inp[:, :N_e] += poisson.rvs(mu=s_e*g_in*dt, size=(inp.shape[0], N_e))
+inp[:, N_e:] += poisson.rvs(mu=s_i*g_in*dt, size=(inp.shape[0], N_i))
+inp = convolve_exp(inp, tau_s_e, dt)
 
 # perform simulation
 obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False,
-              cutoff=int(cutoff/dt), record_vars=[("eic", "v", False)])
+              cutoff=int(cutoff/dt))
 s = obs.to_dataframe("out")
-v = obs.to_numpy(("eic", "v"))
 s.iloc[:, :N_e] /= tau_s_e
 s.iloc[:, N_e:] /= tau_s_i
 
 # calculate dimensionality in the steady-state period
-idx_stop = int(start/dts)
-s_vals = s.values[:idx_stop, :N_e]
-dim_ss = get_dim(s_vals)
+dim_ss = get_dim(s.values[:, :N_e])
 
 # extract spikes in network
 spike_counts = []
-s_vals = s.values[:idx_stop, :]
+s_vals = s.values
 for idx in range(s_vals.shape[1]):
     peaks, _ = find_peaks(s_vals[:, idx])
     spike_counts.append(peaks)
@@ -156,52 +158,134 @@ s_vals = s.values[:, :N_e]
 s_mean = np.mean(s_vals, axis=1)
 s_std = np.std(s_vals, axis=1)
 
+# simulation 2: impulse response
+################################
+
+# preparations
+inp_neurons = np.random.choice(N_e, size=(int(N_e*p_in),))
+in_split = int(0.5*len(inp_neurons))
+dur_tmp = int(dur/dt)
+
+# collect network responses to stimulation
+ir1s, ir2s, ir0s = [], [], []
+for trial in range(n_trials):
+
+    noise_e = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N_e))
+    noise_i = poisson.rvs(mu=s_i*g_in*dt, size=(int(window/dt), N_i))
+    y0 = {key: val[:] for key, val in net.state.items()}
+
+    # no input
+    ##########
+
+    # set initial state
+    # net.reset(state=y0)
+
+    # generate random input
+    inp = np.zeros((int(window / dt), N))
+    inp[:, :N_e] += noise_e
+    inp[:, N_e:] += noise_i
+
+    # get network response to input
+    obs = net.run(inputs=convolve_exp(inp, tau_s_e, dt), sampling_steps=int(dts / dt), record_output=True,
+                  verbose=False, enable_grad=False)
+    ir0 = obs.to_numpy("out")[:, :N_e] * 1e3 / tau_s_e
+    ir0s.append(ir0)
+
+    # input 1
+    #########
+
+    # set initial state
+    # net.reset(state=y0)
+
+    # generate random input
+    inp = np.zeros((int(window / dt), N))
+    inp[:, :N_e] += noise_e
+    inp[:, N_e:] += noise_i
+    inp[:dur_tmp, inp_neurons[:in_split]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
+
+    # get network response to input
+    obs = net.run(inputs=convolve_exp(inp, tau_s_e, dt), sampling_steps=int(dts / dt), record_output=True,
+                  verbose=False, enable_grad=False)
+    ir1 = obs.to_numpy("out")[:, :N_e] * 1e3 / tau_s_e
+    ir1s.append(ir1)
+
+    # input 2
+    #########
+
+    # set initial state
+    # net.reset(state=y0)
+
+    ## generate random input
+    inp = np.zeros((int(window / dt), N))
+    inp[:, :N_e] += noise_e
+    inp[:, N_e:] += noise_i
+    inp[:dur_tmp, inp_neurons[in_split:]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
+
+    # get network response to input
+    obs = net.run(inputs=convolve_exp(inp, tau_s_e, dt), sampling_steps=int(dts / dt), record_output=True,
+                  verbose=False, enable_grad=False)
+    ir2 = obs.to_numpy("out")[:, :N_e] * 1e3 / tau_s_e
+    ir2s.append(ir2)
+
+# calculate trial-averaged network response
+ir0 = np.asarray(ir0s)
+ir1 = np.asarray(ir1s)
+ir2 = np.asarray(ir2s)
+ir_mean0 = np.mean(ir0, axis=0)
+ir_mean1 = np.mean(ir1, axis=0)
+ir_mean2 = np.mean(ir2, axis=0)
+ir_std1 = np.std(ir1, axis=0)
+ir_std2 = np.std(ir2, axis=0)
+
+# calculate separability
+sep_12 = separability(ir_mean1, ir_mean2, metric="cosine")
+sep_01 = separability(ir_mean1, ir_mean0, metric="cosine")
+sep_02 = separability(ir_mean2, ir_mean0, metric="cosine")
+sep = sep_12*sep_01*sep_02
+
 # fit bi-exponential to envelope of impulse response
-ir_window = int(300.0/dts)
 tau = 10.0
 scale = 0.5
 delay = 5.0
 offset = 0.1
 p0 = [offset, delay, scale, tau]
-ir = np.mean(s.values[idx_stop:idx_stop+ir_window, :N_e] * 1e3, axis=1)
-time = s.index.values[idx_stop:idx_stop+ir_window]
+time = s.index.values
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 0.0, 1e-1], [1.0, 20.0, 1.0, 5e2])
-p, ir_fit = impulse_response_fit(ir, time, f=alpha, bounds=bounds, p0=p0)
+bounds = ([0.0, 1.0, 0.0, 1.0], [1.0, 100.0, 1.0, 2e2])
+params, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
+
+# fit impulse response of mean-field
+ir0 = np.mean(ir_mean0, axis=1)
+ir1 = np.mean(ir_mean1, axis=1)
+ir2 = np.mean(ir_mean2, axis=1)
+diff = (ir0 - ir1)**2
+params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(1e2*p[-1])
-s_vals = s.values[idx_stop:idx_stop+ir_window, :N_e]
-dim_ir = get_dim(s_vals)
+ir_window = int(1e2*params[-1])
+dim_ir1 = get_dim(ir_mean1[:ir_window, :])
+dim_ir2 = get_dim(ir_mean2[:ir_window, :])
+dim_ir = (dim_ir1 + dim_ir2)/2
 
 # save results
-# pickle.dump({"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i, "dim_ss": dim_ss, "dim_ir": dim_ir,
-#              "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-#              "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
-#             open(f"{path}/eic_g{int(g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
+results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
+           "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+           "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
+           "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
+           "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
+           "mf_params_ir": params_mf
+           }
+# pickle.dump(results, open(f"{path}/dim_eic_g{int(g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
 
 # plotting firing rate dynamics
 fig, ax = plt.subplots(figsize=(12, 4))
 ax.plot(s_mean*1e3, label="mean(r)")
 ax.plot(s_std*1e3, label="std(r)")
-ax.axvline(x=int(start/dts), linestyle="dashed", color="black")
-ax.axvline(x=int(stop/dts), linestyle="dashed", color="black")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("r")
 ax.set_title(f"Dim = {dim_ss}")
 fig.suptitle("Mean-field rate dynamics")
-plt.tight_layout()
-
-# plotting impulse response
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(ir, label="Target IR")
-ax.plot(ir_fit, label="Fitted IR")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.set_title(f"Dim = {dim_ir}, tau = {p[-1]} ms")
-fig.suptitle("Mean-field impulse response")
 plt.tight_layout()
 
 # plotting spikes
@@ -213,36 +297,24 @@ ax.set_ylabel("neurons")
 fig.suptitle("Spiking dynamics")
 plt.tight_layout()
 
-# plotting membrane potential dynamics
-_, axes = plt.subplots(nrows=2, figsize=(12, 8))
+# plotting impulse response
+fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
+fig.suptitle("Impulse response")
 ax = axes[0]
-ax.plot(np.mean(v, axis=1))
-ax.set_ylabel("v (mV)")
-ax.set_title("Mean-field membrane potential dynamics")
+ax.plot(results["mean_ir0"], label="no input")
+ax.plot(results["mean_ir1"], label="input 1")
+ax.plot(results["mean_ir2"], label="input 2")
+ax.set_xlabel("steps")
+ax.set_ylabel("r (Hz)")
+ax.legend()
+ax.set_title(f"Impulse Response")
 ax = axes[1]
-for neuron_idx in np.random.choice(N, replace=False, size=(5,)):
-    ax.plot(v[:, neuron_idx], label=f"neuron {neuron_idx}")
+ax.plot(sep, label="combined IR")
+ax.plot(ir_fit, label="exp. fit")
 ax.legend()
 ax.set_xlabel("steps")
-ax.set_ylabel("v (mV)")
-ax.set_title("Single neuron traces")
-plt.tight_layout()
+ax.set_ylabel("SR")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}")
 
-# plotting time covariance during impulse response
-fig, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s_vals @ s_vals.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("steps")
-ax.set_title(f"Impulse Response Recurrence Plot")
-plt.tight_layout()
-
-# plotting input
-_, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(inp.T, aspect="auto")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("time")
-ax.set_ylabel("neurons")
-ax.set_title("Extrinsic input")
 plt.tight_layout()
 plt.show()

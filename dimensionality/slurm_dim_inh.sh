@@ -32,7 +32,7 @@ for s_e in "${inp[@]}"; do
         (
         echo "Starting job #$((IDX+1)) of ${n} jobs for s_e = ${s_e}, g = ${g} and delta = ${d}."
         srun --ntasks=1 --nodes=1 --mem=8G --time=01:30:00 --cpus-per-task=12 --job-name="dim_inh" \
-        --output="out/dim_inh_$counter.out" --error="err/dim_inh_$counter.err" --partition="shared" --exclusive -c 1 \
+        --output="out/dim_inh_$counter.out" --error="err/dim_inh_$counter.err" --partition="highcpu" --exclusive -c 1 \
         python simulation_dim_inh.py "$save_dir" "$s_e" "$d" "$g" "$IDX"
         ) &
 

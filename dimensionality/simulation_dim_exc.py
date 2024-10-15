@@ -1,5 +1,5 @@
 from rectipy import Network, random_connectivity
-from pyrates import CircuitTemplate, NodeTemplate, OperatorTemplate
+from pyrates import OperatorTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -225,7 +225,9 @@ params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p
 
 # calculate dimensionality in the impulse response period
 ir_window = int(1e2*params[-1])
-dim_ir = get_dim(s.values[:ir_window, :])
+dim_ir1 = get_dim(ir_mean1[:ir_window, :])
+dim_ir2 = get_dim(ir_mean2[:ir_window, :])
+dim_ir = (dim_ir1 + dim_ir2)/2
 
 # save results
 results = {"g": g, "Delta": Delta, "p": p,
@@ -235,8 +237,6 @@ results = {"g": g, "Delta": Delta, "p": p,
            "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
            "mf_params_ir": params_mf
            }
-
-# save results
 pickle.dump(results, open(f"{path}/dim2_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
