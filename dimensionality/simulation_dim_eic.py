@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 200
+N = 1000
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -24,7 +24,7 @@ g_in = 10.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 1.0 #float(sys.argv[-2])
+g = 3.0 #float(sys.argv[-2])
 Delta_e = 1.0 #float(sys.argv[-3])
 Delta_i = 1.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
@@ -50,7 +50,7 @@ eta_e = 0.0
 a_e = 0.03
 b_e = -2.0
 d_e = 50.0
-s_e = 15.0*1e-3
+s_e = 20.0*1e-3
 tau_s_e = 6.0
 
 # inh parameters
@@ -64,7 +64,7 @@ eta_i = 0.0
 a_i = 0.03
 b_i = -2.0
 d_i = 50.0
-s_i = 15.0*1e-3
+s_i = 20.0*1e-3
 tau_s_i = 10.0
 
 # connectivity parameters
@@ -170,15 +170,12 @@ dur_tmp = int(dur/dt)
 ir1s, ir2s, ir0s = [], [], []
 for trial in range(n_trials):
 
+    # define background input
     noise_e = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N_e))
     noise_i = poisson.rvs(mu=s_i*g_in*dt, size=(int(window/dt), N_i))
-    y0 = {key: val[:] for key, val in net.state.items()}
 
     # no input
     ##########
-
-    # set initial state
-    # net.reset(state=y0)
 
     # generate random input
     inp = np.zeros((int(window / dt), N))
@@ -194,9 +191,6 @@ for trial in range(n_trials):
     # input 1
     #########
 
-    # set initial state
-    # net.reset(state=y0)
-
     # generate random input
     inp = np.zeros((int(window / dt), N))
     inp[:, :N_e] += noise_e
@@ -211,9 +205,6 @@ for trial in range(n_trials):
 
     # input 2
     #########
-
-    # set initial state
-    # net.reset(state=y0)
 
     ## generate random input
     inp = np.zeros((int(window / dt), N))
@@ -301,9 +292,10 @@ plt.tight_layout()
 fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
 fig.suptitle("Impulse response")
 ax = axes[0]
-ax.plot(results["mean_ir0"], label="no input")
-ax.plot(results["mean_ir1"], label="input 1")
-ax.plot(results["mean_ir2"], label="input 2")
+ax.plot(ir0, label="no input")
+ax.plot(ir1, label="input")
+ax.plot(diff, label="diff.")
+ax.plot(ir_mf, label="diff. fit")
 ax.set_xlabel("steps")
 ax.set_ylabel("r (Hz)")
 ax.legend()
@@ -314,7 +306,8 @@ ax.plot(ir_fit, label="exp. fit")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("SR")
-ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}, "
+             f"tau_mf = {np.round(params_mf[-1], decimals=1)}")
 
 plt.tight_layout()
 plt.show()

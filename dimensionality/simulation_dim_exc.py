@@ -237,7 +237,7 @@ results = {"g": g, "Delta": Delta, "p": p,
            "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
            "mf_params_ir": params_mf
            }
-pickle.dump(results, open(f"{path}/dim2_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))

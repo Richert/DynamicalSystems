@@ -8,19 +8,20 @@ from pandas import DataFrame
 
 # figure settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
-# plt.rcParams["font.family"] = "Times New Roman"
-plt.rc('text', usetex=False)
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
 plt.rcParams['figure.constrained_layout.use'] = True
-plt.rcParams['figure.dpi'] = 400
-plt.rcParams['font.size'] = 10.0
-plt.rcParams['axes.titlesize'] = 10
-plt.rcParams['axes.labelsize'] = 10
+plt.rcParams['figure.dpi'] = 200
+plt.rcParams['font.size'] = 12.0
+plt.rcParams['axes.titlesize'] = 12
+plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
-markersize = 9.0
+markersize = 15.0
 rowsize = 3
 colsize= 4
+cmap = "ch:"
 
-titles = {"exc": "glutamatergic", "inh": "gabaergic, inh.", "spn": "SPNs, e/i", "inh2": "gabaergic, e/i",
+titles = {"exc": "glutamatergic", "inh": "gabaergic", "spn": "SPNs, e/i", "inh2": "gabaergic, e/i",
           "spn2": "SPNs, e/i, fixed W"}
 
 # condition
@@ -57,60 +58,80 @@ df = df.loc[df["g"] >= min_g, :]
 df = df.loc[df["g"] <= max_g, :]
 
 # plotting 1D scatter plot for firing rate heterogeneity vs dimensionality in the steady state
-fig = plt.figure(figsize=(colsize*len(condition), 2*rowsize))
-grid = fig.add_gridspec(nrows=2, ncols=len(condition))
+fig = plt.figure(1, figsize=(colsize*2, len(condition)*rowsize))
+grid = fig.add_gridspec(nrows=len(condition), ncols=2)
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
-    ax = fig.add_subplot(grid[0, i])
-    scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="Delta", ax=ax, s=markersize)
+    ax = fig.add_subplot(grid[i, 0])
+    scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="Delta", ax=ax, s=markersize, palette=cmap)
     ax.set_xlabel("")
-    ax.set_ylabel("dim(ss)")
+    if i == 0:
+        ax.set_ylabel(r"$D(r)$")
+    else:
+        ax.set_ylabel("")
+    if i == len(condition)-1:
+        ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+    else:
+        ax.set_xlabel("")
     ax.set_title(titles[c.split("_")[0]])
-    ax = fig.add_subplot(grid[1, i])
-    scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="g", ax=ax, s=markersize)
-    ax.set_xlabel("std(r)/mean(r)")
-    ax.set_ylabel("dim(ss)")
-fig.suptitle("Network Dimensionality in the Steady-State Condition")
+    ax = fig.add_subplot(grid[i, 1])
+    scatterplot(df_tmp, x="s_norm", y="dim_ss", hue="g", ax=ax, s=markersize, palette=cmap)
+    ax.set_ylabel("")
+    if i == len(condition) - 1:
+        ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+    else:
+        ax.set_xlabel("")
+fig.suptitle("Steady-State Network Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/dimensionality_ss.pdf')
+plt.savefig(f'{path}/figures/scatter_ss.pdf')
 
 # plotting 1D scatter plot for firing rate heterogeneity vs dimensionality during the impulse response
-fig = plt.figure(figsize=(colsize*len(condition), 2*rowsize))
-grid = fig.add_gridspec(nrows=2, ncols=len(condition))
+fig = plt.figure(2, figsize=(colsize*2, len(condition)*rowsize))
+grid = fig.add_gridspec(nrows=len(condition), ncols=2)
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
-    ax = fig.add_subplot(grid[0, i])
-    scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="Delta", ax=ax, s=markersize)
+    ax = fig.add_subplot(grid[i, 0])
+    scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="Delta", ax=ax, s=markersize, palette=cmap)
     ax.set_xlabel("")
-    ax.set_ylabel("dim(ir)")
+    if i == 0:
+        ax.set_ylabel(r"$D(r)$")
+    else:
+        ax.set_ylabel("")
+    if i == len(condition)-1:
+        ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+    else:
+        ax.set_xlabel("")
     ax.set_title(titles[c.split("_")[0]])
-    ax = fig.add_subplot(grid[1, i])
-    scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="g", ax=ax, s=markersize)
-    ax.set_xlabel("std(r)/mean(r)")
-    ax.set_ylabel("dim(ir)")
-fig.suptitle("Network Dimensionality in the Impulse Response Condition")
+    ax = fig.add_subplot(grid[i, 1])
+    scatterplot(df_tmp, x="s_norm", y="dim_ir", hue="g", ax=ax, s=markersize, palette=cmap)
+    ax.set_ylabel("")
+    if i == len(condition) - 1:
+        ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+    else:
+        ax.set_xlabel("")
+fig.suptitle("Impulse Response Network Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/dimensionality_ir.pdf')
+plt.savefig(f'{path}/figures/scatter_ir.pdf')
 
-# plotting 1D scatter plot for impulse response decay vs dimensionality during the impulse response
-fig = plt.figure(figsize=(colsize*len(condition), 2*rowsize))
-grid = fig.add_gridspec(nrows=2, ncols=len(condition))
+# plotting 1D line plot
+fig = plt.figure(3, figsize=(colsize, len(condition)*rowsize))
+grid = fig.add_gridspec(nrows=len(condition), ncols=1)
 for i, c in enumerate(condition):
     df_tmp = df.loc[df["cond"] == c, :]
-    ax = fig.add_subplot(grid[0, i])
-    scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="Delta", ax=ax, s=markersize)
-    ax.set_xlabel("")
-    ax.set_ylabel("dim(ir)")
+    ax = fig.add_subplot(grid[i, 0])
+    scatterplot(df_tmp, x="Delta", y="dim_ss", hue="g", palette=cmap, legend=False, ax=ax, s=markersize)
+    lineplot(df_tmp, x="Delta", y="dim_ss", hue="g", palette=cmap, ax=ax)
+    ax.set_ylabel(r"$D(r)$")
+    if i == len(condition) - 1:
+        ax.set_xlabel(r"$\Delta$")
+    else:
+        ax.set_xlabel("")
     ax.set_title(titles[c.split("_")[0]])
-    ax = fig.add_subplot(grid[1, i])
-    scatterplot(df_tmp, x="ir_tau", y="dim_ir", hue="g", ax=ax, s=markersize)
-    ax.set_xlabel("tau(ir)")
-    ax.set_ylabel("dim(ir)")
-fig.suptitle("Network Dimensionality vs Decay Time Consteant in the Impulse Response Condition")
+fig.suptitle("ABC")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/time_constant_ir.pdf')
+plt.savefig(f'{path}/figures/line_ss.pdf')
 
 plt.show()
