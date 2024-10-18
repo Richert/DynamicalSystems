@@ -196,26 +196,29 @@ sep_01 = separability(ir_mean1, ir_mean0, metric="cosine")
 sep_02 = separability(ir_mean2, ir_mean0, metric="cosine")
 sep = sep_12*sep_01*sep_02
 
-# fit impulse response of spiking neurons
-tau = 10.0
-scale = 0.5
+# fit dual-exponential to envelope of impulse response
+tau_r = 10.0
+tau_s = 50.0
+tau_f = 10.0
+scale_s = 0.5
+scale_f = 0.5
 delay = 5.0
 offset = 0.1
-p0 = [offset, delay, scale, tau]
+p0 = [offset, delay, scale_s, scale_f, tau_r, tau_s, tau_f]
 time = s.index.values
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 0.0, 1.0], [1.0, 100.0, 1.0, 2e2])
-params, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
+bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 1e2])
+params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # fit impulse response of mean-field
 ir0 = np.mean(ir_mean0, axis=1)
 ir1 = np.mean(ir_mean1, axis=1)
 ir2 = np.mean(ir_mean2, axis=1)
 diff = (ir0 - ir1)**2
-params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p0)
+params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(1e2*params[-1])
+ir_window = int(20.0*params[-2])
 dim_ir1 = get_dim(ir_mean1[:ir_window, :])
 dim_ir2 = get_dim(ir_mean2[:ir_window, :])
 dim_ir = (dim_ir1 + dim_ir2)/2

@@ -205,7 +205,7 @@ diff = (ir0 - ir1)**2
 params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(1e2*params[-1])
+ir_window = int(20.0*params[-2])
 dim_ir1 = get_dim(ir_mean1[:ir_window, :])
 dim_ir2 = get_dim(ir_mean2[:ir_window, :])
 dim_ir = (dim_ir1 + dim_ir2)/2
