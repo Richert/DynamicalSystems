@@ -27,7 +27,7 @@ for r in "${reversals[@]}"; do
 
         # python calls
         (
-        echo "Starting job #$(($IDX+1)) of ${n} jobs for g = ${g} and delta = ${d}."
+        echo "Starting job #$(($IDX+1)) of ${n} jobs for E_r = ${r}, g = ${g} and delta = ${d}."
         python simulation_dim_spn.py "$save_dir" "$r" "$d" "$g" "$IDX"
         sleep 1
         ) &
