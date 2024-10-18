@@ -19,7 +19,7 @@ plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 15.0
 rowsize = 3
-colsize= 4
+colsize= 3
 cmap = "ch:"
 
 # condition
@@ -60,10 +60,10 @@ for file in os.listdir(path):
 df = DataFrame.from_dict(results)
 
 # filter results
-# min_g = 0.0
-# max_g = 25.0
-# df = df.loc[df["g"] >= min_g, :]
-# df = df.loc[df["g"] <= max_g, :]
+min_p = 0.0
+max_p = 0.3
+df = df.loc[df["p"] >= min_p, :]
+df = df.loc[df["p"] <= max_p, :]
 
 # plotting line plots for steady state regime
 ps = np.unique(df.loc[:, "p"].values)
@@ -77,7 +77,9 @@ for i, p in enumerate(ps):
         if j == 1:
             ax.set_title(f"p = {np.round(p, decimals=2)}")
 fig.suptitle("Steady-Sate Dynamics")
-plt.tight_layout()
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/steady_state_dynamics.pdf')
 
 # plotting line plots for impulse response
 fig = plt.figure(figsize=(12, 3*len(ps)))
@@ -90,32 +92,56 @@ for i, p in enumerate(ps):
         if j == 1:
             ax.set_title(f"p = {np.round(p, decimals=2)}")
 fig.suptitle("Impulse Response")
-plt.tight_layout()
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/impulse_response.pdf')
 
 # plotting scatter plots for dimensionality
-fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(12, 6))
-ax = axes[0, 0]
-scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
-ax = axes[1, 0]
-scatterplot(df, x="s_norm", y="dim_ss", hue="g", style="p", palette=cmap, legend=True, ax=ax)
-ax = axes[0, 1]
-scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
-ax = axes[1, 1]
-scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style="p", palette=cmap, legend=True, ax=ax)
-fig.suptitle("Control of Dimensionality")
-plt.tight_layout()
+fig = plt.figure(figsize=(2*rowsize, 2*colsize))
+grid = fig.add_gridspec(ncols=2, nrows=2)
+ax = fig.add_subplot(grid[0, 0])
+scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+ax.set_ylabel(r"$D$")
+ax = fig.add_subplot(grid[0, 1])
+scatterplot(df, x="s_norm", y="dim_ss", hue="g", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+ax.set_ylabel(r"")
+ax = fig.add_subplot(grid[1, 0])
+scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+ax.set_xlabel(r"$D_{ir}$")
+ax.set_ylabel(r"$D_{ss}$")
+ax = fig.add_subplot(grid[1, 1])
+scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+ax.set_xlabel(r"$D_{ir}$")
+ax.set_ylabel(r"")
+fig.suptitle("Dimensionality: Steady-State vs. Impulse Response")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/dimensionality_ir_ss.pdf')
 
 # plotting scatter plots for impulse response time constants
-fig, axes = plt.subplots(ncols=2, nrows=2, figsize=(12, 6))
-ax = axes[0, 0]
+fig = plt.figure(figsize=(2*rowsize, 2*colsize))
+grid = fig.add_gridspec(ncols=2, nrows=2)
+ax = fig.add_subplot(grid[0, 0])
 scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
-ax = axes[1, 0]
+ax.set_xlabel(r"$D_{ir}$")
+ax.set_ylabel(r"$\tau$")
+ax = fig.add_subplot(grid[0, 1])
 scatterplot(df, x="dim_ir", y="tau_ir", hue="g", style="p", palette=cmap, legend=True, ax=ax)
-ax = axes[0, 1]
-scatterplot(df, x="dim_ir", y="tau_mf", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
-ax = axes[1, 1]
-scatterplot(df, x="dim_ir", y="tau_mf", hue="g", style="p", palette=cmap, legend=True, ax=ax)
-fig.suptitle("Impulse Response Time Constant")
-plt.tight_layout()
+ax.set_xlabel(r"$D_{ir}$")
+ax.set_ylabel(r"$\tau$")
+ax = fig.add_subplot(grid[1, 0])
+scatterplot(df, x="dim_ss", y="tau_ir", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
+ax.set_xlabel(r"$D_{ss}$")
+ax.set_ylabel(r"$\tau$")
+ax = fig.add_subplot(grid[1, 1])
+scatterplot(df, x="dim_ss", y="tau_ir", hue="g", style="p", palette=cmap, legend=True, ax=ax)
+ax.set_xlabel(r"$D_{ss}$")
+ax.set_ylabel(r"$\tau$")
+fig.suptitle("Dimensionality vs. Impulse Response Time Constant")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/dimensionality_tau.pdf')
 
 plt.show()

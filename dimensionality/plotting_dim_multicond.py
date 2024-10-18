@@ -18,7 +18,7 @@ plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 15.0
 rowsize = 3
-colsize= 4
+colsize= 3
 cmap = "ch:"
 
 titles = {"exc": "glutamatergic", "inh": "gabaergic", "spn": "SPNs, e/i", "inh2": "gabaergic, e/i",
@@ -129,7 +129,7 @@ for i, c in enumerate(condition):
     else:
         ax.set_xlabel("")
     ax.set_title(titles[c.split("_")[0]])
-fig.suptitle("ABC")
+fig.suptitle("ABCD")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/line_ss.pdf')

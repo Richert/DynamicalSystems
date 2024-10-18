@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from scipy.stats import poisson
+from scipy.ndimage import gaussian_filter1d
 import sys
 from custom_functions import *
 
@@ -23,11 +24,11 @@ v_reset = -90.0
 g_in = 10.0
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
-p = float(sys.argv[-4])
-path = str(sys.argv[-5])
+rep = 0 #int(sys.argv[-1])
+g = 2.0 #float(sys.argv[-2])
+Delta = 8.0 #float(sys.argv[-3])
+p = 0.1 #float(sys.argv[-4])
+path = "" #str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
@@ -205,26 +206,29 @@ sep_01 = separability(ir_mean1, ir_mean0, metric="cosine")
 sep_02 = separability(ir_mean2, ir_mean0, metric="cosine")
 sep = sep_12*sep_01*sep_02
 
-# fit bi-exponential to envelope of impulse response
-tau = 10.0
-scale = 0.5
+# fit dual-exponential to envelope of impulse response
+tau_r = 10.0
+tau_s = 50.0
+tau_f = 10.0
+scale_s = 0.5
+scale_f = 0.5
 delay = 5.0
 offset = 0.1
-p0 = [offset, delay, scale, tau]
+p0 = [offset, delay, scale_s, scale_f, tau_r, tau_s, tau_f]
 time = s.index.values
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 0.0, 1.0], [1.0, 100.0, 1.0, 2e2])
-params, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
+bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 1e2])
+params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # fit impulse response of mean-field
 ir0 = np.mean(ir_mean0, axis=1)
 ir1 = np.mean(ir_mean1, axis=1)
 ir2 = np.mean(ir_mean2, axis=1)
 diff = (ir0 - ir1)**2
-params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p0)
+params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(1e2*params[-1])
+ir_window = int(30.0*params[-2])
 dim_ir1 = get_dim(ir_mean1[:ir_window, :])
 dim_ir2 = get_dim(ir_mean2[:ir_window, :])
 dim_ir = (dim_ir1 + dim_ir2)/2
@@ -237,46 +241,47 @@ results = {"g": g, "Delta": Delta, "p": p,
            "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
            "mf_params_ir": params_mf
            }
-pickle.dump(results, open(f"{path}/dim_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
+# pickle.dump(results, open(f"{path}/dim_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
-# # plotting firing rate dynamics
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean*1e3, label="mean(r)")
-# ax.plot(s_std*1e3, label="std(r)")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim_ss}")
-# fig.suptitle("Mean-field rate dynamics")
-# plt.tight_layout()
-#
-# # plotting spikes
-# fig, ax = plt.subplots(figsize=(12, 4))
-# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-# plt.colorbar(im, ax=ax)
-# ax.set_xlabel("steps")
-# ax.set_ylabel("neurons")
-# fig.suptitle("Spiking dynamics")
-# plt.tight_layout()
-#
-# # plotting impulse response
-# fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
-# fig.suptitle("Impulse response")
-# ax = axes[0]
-# ax.plot(results["mean_ir0"], label="no input")
-# ax.plot(results["mean_ir1"], label="input 1")
-# ax.plot(results["mean_ir2"], label="input 2")
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r (Hz)")
-# ax.legend()
-# ax.set_title(f"Impulse Response")
-# ax = axes[1]
-# ax.plot(sep, label="combined IR")
-# ax.plot(ir_fit, label="exp. fit")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("SR")
-# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}")
-#
-# plt.tight_layout()
-# plt.show()
+# plotting firing rate dynamics
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(s_mean*1e3, label="mean(r)")
+ax.plot(s_std*1e3, label="std(r)")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r")
+ax.set_title(f"Dim = {dim_ss}")
+fig.suptitle("Mean-field rate dynamics")
+plt.tight_layout()
+
+# plotting spikes
+fig, ax = plt.subplots(figsize=(12, 4))
+im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("steps")
+ax.set_ylabel("neurons")
+fig.suptitle("Spiking dynamics")
+plt.tight_layout()
+
+# plotting impulse response
+fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
+fig.suptitle("Impulse response")
+ax = axes[0]
+ax.plot(results["mean_ir0"], label="no input")
+ax.plot(results["mean_ir1"], label="input 1")
+ax.plot(results["mean_ir2"], label="input 2")
+ax.set_xlabel("steps")
+ax.set_ylabel("r (Hz)")
+ax.legend()
+ax.set_title(f"Impulse Response")
+ax = axes[1]
+ax.plot(sep, label="target IR")
+ax.plot(ir_fit, label="fitted IR")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("SR")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
+             f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
+
+plt.tight_layout()
+plt.show()

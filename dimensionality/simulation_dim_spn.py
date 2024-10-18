@@ -16,7 +16,7 @@ theta_dist = "gaussian"
 
 # general model parameters
 N = 1000
-p = 0.1
+p = 0.2
 E_e = 0.0
 v_spike = 40.0
 v_reset = -55.0
@@ -125,13 +125,9 @@ ir1s, ir2s, ir0s = [], [], []
 for trial in range(n_trials):
 
     noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
-    y0 = {key: val[:] for key, val in net.state.items()}
 
     # no input
     ##########
-
-    # set initial state
-    # net.reset(state=y0)
 
     # generate random input for first trial
     inp = np.zeros((int(window / dt), N))
@@ -145,9 +141,6 @@ for trial in range(n_trials):
 
     # input 1
     #########
-
-    # set initial state
-    # net.reset(state=y0)
 
     # generate random input for first trial
     inp = np.zeros((int(window / dt), N))
@@ -163,9 +156,6 @@ for trial in range(n_trials):
     # input 2
     #########
 
-    # set initial state
-    # net.reset(state=y0)
-
     # generate random input for first trial
     inp = np.zeros((int(window / dt), N))
     inp[:, :] += noise
@@ -176,18 +166,6 @@ for trial in range(n_trials):
                   verbose=False, enable_grad=False)
     ir2 = obs.to_numpy("out") * 1e3 / tau_s
     ir2s.append(ir2)
-
-    # test plotting
-    ###############
-
-    # fig, ax = plt.subplots(figsize=(12, 4))
-    # ax.plot(np.mean(ir1, axis=1), label="IR1")
-    # ax.plot(np.mean(ir2, axis=1), label="IR2")
-    # ax.set_xlabel("steps")
-    # ax.set_ylabel("r")
-    # ax.legend()
-    # plt.tight_layout()
-    # plt.show()
 
 # calculate trial-averaged network response
 ir0 = np.asarray(ir0s)
@@ -205,23 +183,26 @@ sep_01 = separability(ir_mean1, ir_mean0, metric="cosine")
 sep_02 = separability(ir_mean2, ir_mean0, metric="cosine")
 sep = sep_12*sep_01*sep_02
 
-# fit bi-exponential to envelope of impulse response
-tau = 10.0
-scale = 0.5
+# fit dual-exponential to envelope of impulse response
+tau_r = 10.0
+tau_s = 50.0
+tau_f = 10.0
+scale_s = 0.5
+scale_f = 0.5
 delay = 5.0
 offset = 0.1
-p0 = [offset, delay, scale, tau]
+p0 = [offset, delay, scale_s, scale_f, tau_r, tau_s, tau_f]
 time = s.index.values
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 0.0, 1.0], [1.0, 100.0, 1.0, 2e2])
-params, ir_fit = impulse_response_fit(sep, time, f=alpha, bounds=bounds, p0=p0)
+bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 1e2])
+params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # fit impulse response of mean-field
 ir0 = np.mean(ir_mean0, axis=1)
 ir1 = np.mean(ir_mean1, axis=1)
 ir2 = np.mean(ir_mean2, axis=1)
 diff = (ir0 - ir1)**2
-params_mf, ir_mf = impulse_response_fit(diff, time, f=alpha, bounds=bounds, p0=p0)
+params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
 ir_window = int(1e2*params[-1])
@@ -239,7 +220,7 @@ results = {"g": g, "Delta": Delta, "p": p,
            }
 
 # save results
-pickle.dump(results, open(f"{path}/dim_spn_g{int(10*g)}_D{int(10*Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim_spn_g{int(10*g)}_D{int(Delta)}_E{int(np.abs(E_i))}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
@@ -273,12 +254,13 @@ pickle.dump(results, open(f"{path}/dim_spn_g{int(10*g)}_D{int(10*Delta)}_p{int(1
 # ax.legend()
 # ax.set_title(f"Impulse Response")
 # ax = axes[1]
-# ax.plot(sep, label="combined IR")
-# ax.plot(ir_fit, label="exp. fit")
+# ax.plot(sep, label="target IR")
+# ax.plot(ir_fit, label="fitted IR")
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("SR")
-# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}")
+# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
+#              f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
 #
 # plt.tight_layout()
 # plt.show()

@@ -277,3 +277,21 @@ def biexponential(t: Union[float, np.ndarray], offset: float, delay: float, scal
     t1 = t - delay
     on = 1.0 * (t1 > 0.0)
     return offset + on * scale * tau_d * tau_r * (np.exp(-t1 / tau_d) - np.exp(-t1 / tau_r)) / (tau_d - tau_r)
+
+def dualexponential(t: Union[float, np.ndarray], offset: float, delay: float, scale_s: float, scale_f: float,
+                    tau_r: float, tau_s: float, tau_f: float):
+    """Mono-exponential kernel function.
+
+    :param t: time in arbitrary units. Can be a vector or a single scalar.
+    :param offset: Constant offset of the kernel. Must be a scalar.
+    :param delay: Delay until onset of the kernel response. Must be a scalar.
+    :param scale_s: Scaling of the slow part of the kernel function. Must be a scalar.
+    :param scale_f: Scaling of the fast part of the kernel function. Must be a scalar.
+    :param tau_r: Rise time constant of the kernel. Must be a scalar.
+    :param tau_s: Slow decay time constant of the kernel. Must be a scalar.
+    :param tau_f: Fast decay time constant of the kernel. Must be a scalar.
+    :return: Value of the kernel function at each entry in `t`.
+    """
+    t1 = t - delay
+    on = 1.0 * (t1 > 0.0)
+    return offset + on * (1 - np.exp(-t1 / tau_r)) * (scale_s * np.exp(-t1 / tau_s) + scale_f * np.exp(-t1 / tau_f))
