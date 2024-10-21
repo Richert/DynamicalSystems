@@ -224,7 +224,7 @@ dim_ir2 = get_dim(ir_mean2[:ir_window, :])
 dim_ir = (dim_ir1 + dim_ir2)/2
 
 # save results
-results = {"g": g, "Delta": Delta, "p": p,
+results = {"g": g, "Delta": Delta, "p": p, "s_e": s_e,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),

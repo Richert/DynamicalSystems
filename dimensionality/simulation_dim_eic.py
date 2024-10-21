@@ -24,9 +24,9 @@ g_in = 10.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 3.0 #float(sys.argv[-2])
-Delta_e = 1.0 #float(sys.argv[-3])
-Delta_i = 1.0 #float(sys.argv[-4])
+g = 2.0 #float(sys.argv[-2])
+Delta_e = 2.0 #float(sys.argv[-3])
+Delta_i = 2.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
 # input parameters
@@ -309,8 +309,8 @@ ax.plot(ir_fit, label="exp. fit")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("SR")
-ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}, "
-             f"tau_mf = {np.round(params_mf[-1], decimals=1)}")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_s = {np.round(params[-2], decimals=1)}, "
+             f"beta_s = {np.round(params_mf[-5], decimals=1)}")
 
 plt.tight_layout()
 plt.show()

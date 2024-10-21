@@ -23,11 +23,12 @@ colsize= 3
 cmap = "ch:"
 
 # condition
-condition = str(sys.argv[-1])
-path = str(sys.argv[-2])
+iv = str(sys.argv[-1])
+condition = str(sys.argv[-2])
+path = str(sys.argv[-3])
 
 # load data
-results = {"rep": [], "g": [], "Delta": [], "p": [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
+results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
            "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [], "tau_mf": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
@@ -41,7 +42,8 @@ for file in os.listdir(path):
         results["rep"].append(rep)
         results["g"].append(data["g"])
         results["Delta"].append(data["Delta"])
-        results["p"].append(data["p"])
+        results[iv].append(data[iv])
+        # results[iv].append(float(f[-2][1:]))
 
         # steady-state analysis
         results["dim_ss"].append(data["dim_ss"])
@@ -60,37 +62,37 @@ for file in os.listdir(path):
 df = DataFrame.from_dict(results)
 
 # filter results
-min_p = 0.0
-max_p = 0.3
-df = df.loc[df["p"] >= min_p, :]
-df = df.loc[df["p"] <= max_p, :]
+min_iv = 0.0
+max_iv = 1.0
+df = df.loc[df[iv] >= min_iv, :]
+df = df.loc[df[iv] <= max_iv, :]
 
 # plotting line plots for steady state regime
-ps = np.unique(df.loc[:, "p"].values)
-fig = plt.figure(figsize=(12, 3*len(ps)))
-grid = fig.add_gridspec(nrows=len(ps), ncols=3)
-for i, p in enumerate(ps):
-    df_tmp = df.loc[df["p"] == p, :]
+ivs = np.unique(df.loc[:, iv].values)
+fig = plt.figure(figsize=(12, 3*len(ivs)))
+grid = fig.add_gridspec(nrows=len(ivs), ncols=3)
+for i, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
     for j, y in enumerate(["dim_ss", "s_mean", "s_norm"]):
         ax = fig.add_subplot(grid[i, j])
         lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap)
         if j == 1:
-            ax.set_title(f"p = {np.round(p, decimals=2)}")
+            ax.set_title(f"{iv} = {np.round(p, decimals=2)}")
 fig.suptitle("Steady-Sate Dynamics")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/steady_state_dynamics.pdf')
 
 # plotting line plots for impulse response
-fig = plt.figure(figsize=(12, 3*len(ps)))
-grid = fig.add_gridspec(nrows=len(ps), ncols=3)
-for i, p in enumerate(ps):
-    df_tmp = df.loc[df["p"] == p, :]
+fig = plt.figure(figsize=(12, 3*len(ivs)))
+grid = fig.add_gridspec(nrows=len(ivs), ncols=3)
+for i, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
     for j, y in enumerate(["dim_ir", "tau_ir", "amp_ir"]):
         ax = fig.add_subplot(grid[i, j])
         lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap)
         if j == 1:
-            ax.set_title(f"p = {np.round(p, decimals=2)}")
+            ax.set_title(f"{iv} = {np.round(p, decimals=2)}")
 fig.suptitle("Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
@@ -100,19 +102,19 @@ plt.savefig(f'{path}/figures/impulse_response.pdf')
 fig = plt.figure(figsize=(2*rowsize, 2*colsize))
 grid = fig.add_gridspec(ncols=2, nrows=2)
 ax = fig.add_subplot(grid[0, 0])
-scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
 ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
 ax.set_ylabel(r"$D$")
 ax = fig.add_subplot(grid[0, 1])
-scatterplot(df, x="s_norm", y="dim_ss", hue="g", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+scatterplot(df, x="s_norm", y="dim_ss", hue="g", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
 ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
 ax.set_ylabel(r"")
 ax = fig.add_subplot(grid[1, 0])
-scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
 ax.set_xlabel(r"$D_{ir}$")
 ax.set_ylabel(r"$D_{ss}$")
 ax = fig.add_subplot(grid[1, 1])
-scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style="p", palette=cmap, legend=True, ax=ax, s=markersize)
+scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
 ax.set_xlabel(r"$D_{ir}$")
 ax.set_ylabel(r"")
 fig.suptitle("Dimensionality: Steady-State vs. Impulse Response")
@@ -124,19 +126,19 @@ plt.savefig(f'{path}/figures/dimensionality_ir_ss.pdf')
 fig = plt.figure(figsize=(2*rowsize, 2*colsize))
 grid = fig.add_gridspec(ncols=2, nrows=2)
 ax = fig.add_subplot(grid[0, 0])
-scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
+scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax)
 ax.set_xlabel(r"$D_{ir}$")
 ax.set_ylabel(r"$\tau$")
 ax = fig.add_subplot(grid[0, 1])
-scatterplot(df, x="dim_ir", y="tau_ir", hue="g", style="p", palette=cmap, legend=True, ax=ax)
+scatterplot(df, x="dim_ir", y="tau_ir", hue="g", style=iv, palette=cmap, legend=True, ax=ax)
 ax.set_xlabel(r"$D_{ir}$")
 ax.set_ylabel(r"$\tau$")
 ax = fig.add_subplot(grid[1, 0])
-scatterplot(df, x="dim_ss", y="tau_ir", hue="Delta", style="p", palette=cmap, legend=True, ax=ax)
+scatterplot(df, x="dim_ss", y="tau_ir", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax)
 ax.set_xlabel(r"$D_{ss}$")
 ax.set_ylabel(r"$\tau$")
 ax = fig.add_subplot(grid[1, 1])
-scatterplot(df, x="dim_ss", y="tau_ir", hue="g", style="p", palette=cmap, legend=True, ax=ax)
+scatterplot(df, x="dim_ss", y="tau_ir", hue="g", style=iv, palette=cmap, legend=True, ax=ax)
 ax.set_xlabel(r"$D_{ss}$")
 ax.set_ylabel(r"$\tau$")
 fig.suptitle("Dimensionality vs. Impulse Response Time Constant")
