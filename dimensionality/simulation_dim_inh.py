@@ -168,18 +168,6 @@ for trial in range(n_trials):
     ir2 = obs.to_numpy("out") * 1e3 / tau_s
     ir2s.append(ir2)
 
-    # test plotting
-    ###############
-
-    # fig, ax = plt.subplots(figsize=(12, 4))
-    # ax.plot(np.mean(ir1, axis=1), label="IR1")
-    # ax.plot(np.mean(ir2, axis=1), label="IR2")
-    # ax.set_xlabel("steps")
-    # ax.set_ylabel("r")
-    # ax.legend()
-    # plt.tight_layout()
-    # plt.show()
-
 # calculate trial-averaged network response
 ir0 = np.asarray(ir0s)
 ir1 = np.asarray(ir1s)
@@ -224,7 +212,7 @@ dim_ir2 = get_dim(ir_mean2[:ir_window, :])
 dim_ir = (dim_ir1 + dim_ir2)/2
 
 # save results
-results = {"g": g, "Delta": Delta, "p": p, "s_e": s_e,
+results = {"g": g, "Delta": Delta, "p": p, "s_ext": s_e,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),

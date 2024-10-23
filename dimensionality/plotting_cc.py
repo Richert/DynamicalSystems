@@ -42,8 +42,8 @@ for file in os.listdir(path):
         results["rep"].append(rep)
         results["g"].append(data["g"])
         results["Delta"].append(data["Delta"])
-        results[iv].append(data[iv])
-        # results[iv].append(float(f[-2][1:]))
+        # results[iv].append(data[iv])
+        results[iv].append(float(f[-2][1:]))
 
         # steady-state analysis
         results["dim_ss"].append(data["dim_ss"])
@@ -53,7 +53,7 @@ for file in os.listdir(path):
 
         # impulse response analysis
         results["dim_ir"].append(data["dim_ir"])
-        results["tau_ir"].append(data["params_ir"][-1])
+        results["tau_ir"].append(data["params_ir"][-2])
         results["offset_ir"].append(data["params_ir"][0])
         results["amp_ir"].append(data["params_ir"][2])
         results["tau_mf"].append(data["mf_params_ir"][-1])
@@ -61,11 +61,11 @@ for file in os.listdir(path):
 # create dataframe
 df = DataFrame.from_dict(results)
 
-# filter results
-min_iv = 0.0
-max_iv = 1.0
-df = df.loc[df[iv] >= min_iv, :]
-df = df.loc[df[iv] <= max_iv, :]
+# # filter results
+# min_iv = 0.0
+# max_iv = 15.0
+# df = df.loc[df[iv] >= min_iv, :]
+# df = df.loc[df[iv] <= max_iv, :]
 
 # plotting line plots for steady state regime
 ivs = np.unique(df.loc[:, iv].values)
@@ -121,6 +121,10 @@ fig.suptitle("Dimensionality: Steady-State vs. Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/dimensionality_ir_ss.pdf')
+
+# filter results
+min_alpha = 0.2
+df = df.loc[df["amp_ir"] >= min_alpha, :]
 
 # plotting scatter plots for impulse response time constants
 fig = plt.figure(figsize=(2*rowsize, 2*colsize))
