@@ -16,7 +16,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 1000
+N = 200
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -36,7 +36,7 @@ dts = 1e-1
 p_in = 0.6
 dur = 20.0
 window = 1000.0
-n_trials = 10
+n_trials = 3
 amp = 1e-2
 cutoff = 1000.0
 
