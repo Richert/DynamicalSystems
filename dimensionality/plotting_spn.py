@@ -23,9 +23,9 @@ colsize= 3
 cmap = "ch:"
 
 # condition
-iv = str(sys.argv[-1])
-condition = str(sys.argv[-2])
-path = str(sys.argv[-3])
+iv = "E_r"
+condition = "dim_spn"
+path = str(sys.argv[-1])
 
 # load data
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
@@ -61,42 +61,37 @@ for file in os.listdir(path):
 # create dataframe
 df = DataFrame.from_dict(results)
 
-# # filter results
-# min_iv = 0.0
-# max_iv = 15.0
-# df = df.loc[df[iv] >= min_iv, :]
-# df = df.loc[df[iv] <= max_iv, :]
-
-# plotting line plots for steady state regime
+# plot of average firing rates
 ivs = np.unique(df.loc[:, iv].values)
-fig = plt.figure(figsize=(12, 3*len(ivs)))
-grid = fig.add_gridspec(nrows=len(ivs), ncols=3)
+fig = plt.figure(figsize=(12, 4))
+grid = fig.add_gridspec(nrows=1, ncols=3)
 for i, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
-    for j, y in enumerate(["dim_ss", "s_mean", "s_norm"]):
-        ax = fig.add_subplot(grid[i, j])
-        lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap)
-        if j == 1:
-            ax.set_title(f"{iv} = {np.round(p, decimals=2)}")
-fig.suptitle("Steady-Sate Dynamics")
+    ax = fig.add_subplot(grid[0, i])
+    lineplot(df_tmp, x="g", hue="Delta", y="s_mean", ax=ax, palette=cmap)
+    ax.set_title(rf"$E_r = {np.round(p, decimals=0)}$ mV")
+    ax.set_xlabel("conductance (nS)")
+    ax.set_ylabel("firing rate (Hz)")
+fig.suptitle("Steady-Sate Firing Rates of SPNs")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/steady_state_dynamics.pdf')
+plt.savefig(f'{path}/figures/spn_firing_rates.pdf')
 
-# plotting line plots for impulse response
-fig = plt.figure(figsize=(12, 3*len(ivs)))
-grid = fig.add_gridspec(nrows=len(ivs), ncols=3)
-for i, p in enumerate(ivs):
+# plotting line plots for network dimensionality
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(nrows=2, ncols=len(ivs))
+for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
-    for j, y in enumerate(["dim_ir", "tau_ir", "amp_ir"]):
+    for i, (y, ylabel) in enumerate(zip(["dim_ss", "dim_ir"], [r"steady-sate dim.", r"impulse response dim."])):
         ax = fig.add_subplot(grid[i, j])
         lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap)
-        if j == 1:
-            ax.set_title(f"{iv} = {np.round(p, decimals=2)}")
-fig.suptitle("Impulse Response")
+        ax.set_title(fr"$E_r = {np.round(p, decimals=0)}$ mV")
+        ax.set_xlabel("conductance (nS)")
+        ax.set_ylabel(ylabel)
+fig.suptitle("Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/impulse_response.pdf')
+plt.savefig(f'{path}/figures/spn_dimensionality.pdf')
 
 # plotting scatter plots for dimensionality
 fig = plt.figure(figsize=(2*rowsize, 2*colsize))

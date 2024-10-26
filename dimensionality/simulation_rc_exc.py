@@ -33,11 +33,12 @@ path = "" #str(sys.argv[-5])
 # input parameters
 dt = 1e-2
 dts = 1e-1
-p_in = 0.6
 dur = 20.0
 window = 1000.0
+n_patterns = 2
+p_in = n_patterns/(n_patterns+1)
 n_trials = 50
-amp = 1e-2
+amp = 30.0*1e-3
 cutoff = 1000.0
 
 # exc parameters
@@ -118,59 +119,69 @@ s_std = np.std(s_vals, axis=1)
 
 # preparations
 inp_neurons = np.random.choice(N, size=(int(N*p_in),))
-in_split = int(0.5*len(inp_neurons))
+in_split = int(len(inp_neurons)/n_patterns)
 dur_tmp = int(dur/dt)
+noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
 
 # collect network responses to stimulation
 responses, targets = [], []
-condition = {0: [], 1: [], 2: []}
+condition = {i: [] for i in range(n_patterns + 1)}
 for trial in range(n_trials):
 
     # choose input condition
-    noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
     c = np.random.choice(list(condition.keys()))
 
     # generate random input for trial
-    inp = np.zeros((int(window / dt), N))
-    inp[:, :] += noise
-    if c == 1:
-        inp[:dur_tmp, inp_neurons[:in_split]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
-    elif c == 2:
-        inp[:dur_tmp, inp_neurons[in_split:]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
+    inp = np.zeros((int(window / dt), N)) + noise
+    if c > 0:
+        inp[:dur_tmp, inp_neurons[(c-1)*in_split:c*in_split]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
+    inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
-    obs = net.run(inputs=convolve_exp(inp, tau_s, dt), sampling_steps=int(dts/dt), record_output=True,
-                  verbose=False, enable_grad=False)
+    obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
     responses.extend(ir)
     condition[c].append(ir)
 
     # generate target
-    target = np.zeros((int(window/dts), 2))
-    if c == 1:
-        target[:, 0] = 1.0
-    elif c == 2:
-        target[:, 1] = 1.0
+    target = np.zeros((int(window/dts), n_patterns))
+    if c > 0:
+        target[:, c-1] = 1.0
     targets.extend(target)
+
+    # # test plotting
+    # fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+    # ax = axes[0]
+    # ax.plot(np.mean(ir, axis=1))
+    # ax.set_ylabel("r")
+    # ax.set_xlabel("steps")
+    # ax.set_title(f"Input condition {c}")
+    # ax = axes[1]
+    # ax.imshow(inp.T, interpolation="none", cmap="viridis", aspect="auto")
+    # ax.set_xlabel("steps")
+    # ax.set_ylabel("neurons")
+    # plt.tight_layout()
+    # plt.show()
 
 # get readout weights
 W_r = ridge(np.asarray(responses).T, np.asarray(targets).T, alpha=alpha)
 
 # calculate trial-averaged network response
-ir0 = np.asarray(condition[0])
-ir1 = np.asarray(condition[1])
-ir2 = np.asarray(condition[2])
-ir_mean0 = np.mean(ir0, axis=0)
-ir_mean1 = np.mean(ir1, axis=0)
-ir_mean2 = np.mean(ir2, axis=0)
-ir_std1 = np.std(ir1, axis=0)
-ir_std2 = np.std(ir2, axis=0)
+impulse_responses = {}
+for c in list(condition.keys()):
+    ir = np.asarray(condition[c])
+    ir_mean = np.mean(ir, axis=0)
+    ir_std = np.std(ir, axis=0)
+    impulse_responses[c] = {"mean": ir_mean, "std": ir_std}
 
 # calculate separability
-sep_12 = separability(ir_mean1, ir_mean2, metric="cosine")
-sep_01 = separability(ir_mean1, ir_mean0, metric="cosine")
-sep_02 = separability(ir_mean2, ir_mean0, metric="cosine")
-sep = sep_12*sep_01*sep_02
+seps = []
+sep = 1.0
+for c1 in list(condition.keys()):
+    for c2 in list(condition.keys()):
+        if c1 != c2:
+            sep_tmp = separability(impulse_responses[c1]["mean"], impulse_responses[c2]["mean"], metric="cosine")
+            sep *= sep_tmp
 
 # fit dual-exponential to envelope of impulse response
 tau_r = 10.0
@@ -188,42 +199,35 @@ params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bound
 
 # calculate dimensionality in the impulse response period
 ir_window = int(20.0*params[-2])
-dim_ir1 = get_dim(ir_mean1[:ir_window, :])
-dim_ir2 = get_dim(ir_mean2[:ir_window, :])
-dim_ir = (dim_ir1 + dim_ir2)/2
+dim_irs = []
+for c in condition:
+    if c > 0:
+        dim_irs.append(get_dim(impulse_responses[c]["mean"][:ir_window, :]))
+dim_ir = np.mean(dim_irs)
 
 # simulation 3: testing
 #######################
 
 # collect network responses to stimulation
 responses, targets, loss = [], [], []
-condition = [0, 1, 2]
-for c in condition:
-
-    # choose input condition
-    noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
+for c in list(condition.keys()):
 
     # generate random input for trial
-    inp = np.zeros((int(window / dt), N))
-    inp[:, :] += noise
-    if c == 1:
-        inp[:dur_tmp, inp_neurons[:in_split]] += poisson.rvs(mu=amp * g_in * dt, size=(dur_tmp, in_split))
-    elif c == 2:
-        inp[:dur_tmp, inp_neurons[in_split:]] += poisson.rvs(mu=amp * g_in * dt, size=(dur_tmp, in_split))
+    inp = np.zeros((int(window / dt), N)) + noise
+    if c > 0:
+        inp[:dur_tmp, inp_neurons[(c-1)*in_split:c*in_split]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
 
     # get network response to input
     obs = net.run(inputs=convolve_exp(inp, tau_s, dt), sampling_steps=int(dts / dt), record_output=True,
                   verbose=False, enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
-    pred = ir @ W_r.T
+    pred = (W_r @ ir.T).T
     responses.extend(pred)
 
     # generate target
-    target = np.zeros((int(window/dts), 2))
-    if c == 1:
-        target[:, 0] = 1.0
-    elif c == 2:
-        target[:, 1] = 1.0
+    target = np.zeros((int(window/dts), n_patterns))
+    if c > 0:
+        target[:, c-1] = 1.0
     targets.extend(target)
 
     # calculate performance
@@ -237,10 +241,7 @@ loss = np.asarray(loss)
 results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
-           "mean_ir1": np.mean(ir_mean1, axis=1), "std_ir1": np.mean(ir_std1, axis=1),
-           "mean_ir2": np.mean(ir_mean2, axis=1), "std_ir2": np.mean(ir_std2, axis=1),
-           "mean_ir0": np.mean(ir_mean0, axis=1),
-           "predictions": responses, "targets": targets, "loss": loss
+           "impulse_responses": impulse_responses, "predictions": responses, "targets": targets, "loss": loss
            }
 
 # save results
@@ -270,13 +271,11 @@ plt.tight_layout()
 fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
 fig.suptitle("Impulse response")
 ax = axes[0]
-ax.plot(results["mean_ir0"], label="no input")
-ax.plot(results["mean_ir1"], label="input 1")
-ax.plot(results["mean_ir2"], label="input 2")
+for c in condition:
+    ax.plot(np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
 ax.set_xlabel("steps")
 ax.set_ylabel("r (Hz)")
 ax.legend()
-ax.set_title(f"Impulse Response")
 ax = axes[1]
 ax.plot(sep, label="target IR")
 ax.plot(ir_fit, label="fitted IR")
@@ -288,13 +287,13 @@ ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.roun
 plt.tight_layout()
 
 # plotting predictions
-fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+fig, axes = plt.subplots(nrows=n_patterns, figsize=(12, n_patterns*2))
 fig.suptitle("Input Classification Performance")
-for i in range(2):
+for i in range(n_patterns):
     ax = axes[i]
-    ax.plot(targets[:, i], label="target")
-    ax.plot(responses[:, i], label="prediction")
-    ax.plot(loss[:, i], label="squared error")
+    ax.plot(targets[:, i], label="target", color="black")
+    ax.plot(responses[:, i], label="prediction", color="royalblue")
+    ax.plot(loss[:, i], label="squared error", color="red")
     ax.set_xlabel("steps")
     ax.set_ylabel("Out")
     ax.set_title(f"Pattern {i+1}")

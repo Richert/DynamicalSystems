@@ -126,7 +126,6 @@ ir1s, ir2s, ir0s = [], [], []
 for trial in range(n_trials):
 
     noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
-    y0 = {key: val[:] for key, val in net.state.items()}
 
     # no input
     ##########
