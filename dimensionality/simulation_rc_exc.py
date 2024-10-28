@@ -22,24 +22,25 @@ E_i = -65.0
 v_spike = 50.0
 v_reset = -90.0
 g_in = 10.0
+tau_out = 50.0
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 2.0 #float(sys.argv[-2])
-Delta = 8.0 #float(sys.argv[-3])
+rep = 0 #int(sys.argv[-1])inp.shape
+g = 1.0 #float(sys.argv[-2])
+Delta = 2.0 #float(sys.argv[-3])
 p = 0.1 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
-
 # input parameters
 dt = 1e-2
 dts = 1e-1
 dur = 20.0
-window = 1000.0
+window = 500.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns+1)
 n_trials = 50
-amp = 30.0*1e-3
-cutoff = 1000.0
+amp = 20.0*1e-3
+init_cutoff = 1000.0
+inp_cutoff = 100.0
 
 # exc parameters
 C = 100.0
@@ -80,18 +81,14 @@ net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target
 ############################
 
 # define input
-T = cutoff + window
+T = init_cutoff + inp_cutoff + window
 inp = np.zeros((int(T/dt), N))
-inp[:, :] += poisson.rvs(mu=s_e*g_in*dt, size=(int(T/dt), N))
+inp += poisson.rvs(mu=s_e*g_in*dt, size=inp.shape)
 inp = convolve_exp(inp, tau_s, dt)
 
-# perform cutoff simulation
-_ = net.run(inputs=inp[:int(cutoff/dt), :], sampling_steps=int(dts/dt), record_output=False, verbose=False,
-            enable_grad=False)
-
 # perform steady-state simulation
-obs = net.run(inputs=inp[int(cutoff/dt):, :], sampling_steps=int(dts/dt), record_output=True, verbose=False,
-              enable_grad=False)
+obs = net.run(inputs=inp[int(inp_cutoff/dt):, :], sampling_steps=int(dts/dt), record_output=True, verbose=False,
+              cutoff=int(init_cutoff/dt), enable_grad=False)
 s = obs.to_dataframe("out")
 s.iloc[:, :] /= tau_s
 
@@ -120,8 +117,10 @@ s_std = np.std(s_vals, axis=1)
 # preparations
 inp_neurons = np.random.choice(N, size=(int(N*p_in),))
 in_split = int(len(inp_neurons)/n_patterns)
-dur_tmp = int(dur/dt)
-noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
+start = int(inp_cutoff/dt)
+stop = int((inp_cutoff+dur)/dt)
+noise = poisson.rvs(mu=s_e*g_in*dt, size=(int((inp_cutoff + window)/dt), N))
+y0 = {v: val[:] for v, val in net.state.items()}
 
 # collect network responses to stimulation
 responses, targets = [], []
@@ -130,17 +129,20 @@ for trial in range(n_trials):
 
     # choose input condition
     c = np.random.choice(list(condition.keys()))
+    net.reset(state=y0)
 
     # generate random input for trial
-    inp = np.zeros((int(window / dt), N)) + noise
+    inp = np.zeros((int((inp_cutoff + window)/dt), N))
+    inp += noise
     if c > 0:
-        inp[:dur_tmp, inp_neurons[(c-1)*in_split:c*in_split]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
+        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += poisson.rvs(mu=amp*g_in*dt,
+                                                                               size=(stop-start, in_split))
     inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
-    obs = net.run(inputs=inp, sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False)
+    obs = net.run(inputs=inp[start:], sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
-    responses.extend(ir)
+    responses.extend(convolve_exp(ir, tau_out, dts))
     condition[c].append(ir)
 
     # generate target
@@ -212,17 +214,22 @@ dim_ir = np.mean(dim_irs)
 responses, targets, loss = [], [], []
 for c in list(condition.keys()):
 
+    net.reset(state=y0)
+
     # generate random input for trial
-    inp = np.zeros((int(window / dt), N)) + noise
+    inp = np.zeros((int((inp_cutoff + window) / dt), N))
+    inp += noise
     if c > 0:
-        inp[:dur_tmp, inp_neurons[(c-1)*in_split:c*in_split]] += poisson.rvs(mu=amp*g_in*dt, size=(dur_tmp, in_split))
+        inp[start:stop, inp_neurons[(c - 1) * in_split:c * in_split]] += poisson.rvs(mu=amp * g_in * dt,
+                                                                                     size=(stop - start, in_split))
+    inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
-    obs = net.run(inputs=convolve_exp(inp, tau_s, dt), sampling_steps=int(dts / dt), record_output=True,
-                  verbose=False, enable_grad=False)
+    obs = net.run(inputs=inp[start:], sampling_steps=int(dts / dt), record_output=True, verbose=False,
+                  enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
-    pred = (W_r @ ir.T).T
-    responses.extend(pred)
+    pred = W_r @ convolve_exp(ir, tau_out, dts).T
+    responses.extend(pred.T)
 
     # generate target
     target = np.zeros((int(window/dts), n_patterns))
@@ -231,7 +238,7 @@ for c in list(condition.keys()):
     targets.extend(target)
 
     # calculate performance
-    loss.extend((target - pred)**2)
+    loss.extend((target - pred.T)**2)
 
 responses = np.asarray(responses)
 targets = np.asarray(targets)
@@ -287,10 +294,11 @@ ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.roun
 plt.tight_layout()
 
 # plotting predictions
-fig, axes = plt.subplots(nrows=n_patterns, figsize=(12, n_patterns*2))
+fig = plt.figure(figsize=(12, n_patterns*2))
+grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
 fig.suptitle("Input Classification Performance")
 for i in range(n_patterns):
-    ax = axes[i]
+    ax = fig.add_subplot(grid[i, 0])
     ax.plot(targets[:, i], label="target", color="black")
     ax.plot(responses[:, i], label="prediction", color="royalblue")
     ax.plot(loss[:, i], label="squared error", color="red")

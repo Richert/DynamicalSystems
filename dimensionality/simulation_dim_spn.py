@@ -25,7 +25,7 @@ g_in = 10.0
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
 g = 10.0 #float(sys.argv[-2])
-Delta = 0.0 #float(sys.argv[-3])
+Delta = 2.0 #float(sys.argv[-3])
 E_i = -60.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
@@ -237,19 +237,18 @@ plt.tight_layout()
 fig, ax = plt.subplots(figsize=(12, 4))
 im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
 plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
+ax.set_xlabel("time steps")
 ax.set_ylabel("neurons")
 fig.suptitle("Spiking dynamics")
 plt.tight_layout()
 
 # plotting impulse response
 fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
-fig.suptitle("Impulse response")
 ax = axes[0]
 ax.plot(results["mean_ir0"], label="no input")
 ax.plot(results["mean_ir1"], label="input 1")
 ax.plot(results["mean_ir2"], label="input 2")
-ax.set_xlabel("steps")
+ax.set_xlabel("time steps")
 ax.set_ylabel("r (Hz)")
 ax.legend()
 ax.set_title(f"Impulse Response")
@@ -257,10 +256,10 @@ ax = axes[1]
 ax.plot(sep, label="target IR")
 ax.plot(ir_fit, label="fitted IR")
 ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("SR")
-ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
-             f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
+ax.set_xlabel("time steps")
+ax.set_ylabel("input separation")
+# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
+#              f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
 
 plt.tight_layout()
 plt.show()

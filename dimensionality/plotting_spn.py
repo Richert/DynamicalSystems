@@ -18,14 +18,12 @@ plt.rcParams['axes.titlesize'] = 12
 plt.rcParams['axes.labelsize'] = 12
 plt.rcParams['lines.linewidth'] = 1.0
 markersize = 15.0
-rowsize = 3
-colsize= 3
 cmap = "ch:"
 
 # condition
 iv = "E_r"
 condition = "dim_spn"
-path = str(sys.argv[-1])
+path = "/home/richard-gast/Documents/data/dimensionality"
 
 # load data
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
@@ -68,81 +66,100 @@ grid = fig.add_gridspec(nrows=1, ncols=3)
 for i, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     ax = fig.add_subplot(grid[0, i])
-    lineplot(df_tmp, x="g", hue="Delta", y="s_mean", ax=ax, palette=cmap)
+    l = lineplot(df_tmp, x="g", hue="Delta", y="s_mean", ax=ax, palette=cmap, legend=True if i == 2 else False)
     ax.set_title(rf"$E_r = {np.round(p, decimals=0)}$ mV")
-    ax.set_xlabel("conductance (nS)")
-    ax.set_ylabel("firing rate (Hz)")
+    ax.set_xlabel(r"conductance $g$ (nS)")
+    if i == 0:
+        ax.set_ylabel(r"firing rate $r$ (Hz)")
+    else:
+        ax.set_ylabel("")
+    if i == 2:
+        leg = l.axes.get_legend()
+        leg.set_title(r"$\Delta$ (mV)")
 fig.suptitle("Steady-Sate Firing Rates of SPNs")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/spn_firing_rates.pdf')
 
-# plotting line plots for network dimensionality
+# line plots for network dimensionality
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(nrows=2, ncols=len(ivs))
 for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
-    for i, (y, ylabel) in enumerate(zip(["dim_ss", "dim_ir"], [r"steady-sate dim.", r"impulse response dim."])):
+    for i, (y, ylabel) in enumerate(zip(["dim_ss", "dim_ir"], [r"$D$ (steady-sate)", r"$D$ (impulse response)"])):
         ax = fig.add_subplot(grid[i, j])
-        lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap)
-        ax.set_title(fr"$E_r = {np.round(p, decimals=0)}$ mV")
-        ax.set_xlabel("conductance (nS)")
-        ax.set_ylabel(ylabel)
-fig.suptitle("Dimensionality")
+        l = lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap, legend=True if j == 2 else False)
+        ax.set_xlabel(r"conductance $g$ (nS)")
+        if j == 0:
+            ax.set_ylabel(ylabel)
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(fr"$E_r = {np.round(p, decimals=0)}$ mV")
+        if j == 2:
+            leg = l.axes.get_legend()
+            leg.set_title(r"$\Delta$ (mV)")
+fig.suptitle("Dimensionality of Steady-State vs. Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/spn_dimensionality.pdf')
 
-# plotting scatter plots for dimensionality
-fig = plt.figure(figsize=(2*rowsize, 2*colsize))
-grid = fig.add_gridspec(ncols=2, nrows=2)
-ax = fig.add_subplot(grid[0, 0])
-scatterplot(df, x="s_norm", y="dim_ss", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
-ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
-ax.set_ylabel(r"$D$")
-ax = fig.add_subplot(grid[0, 1])
-scatterplot(df, x="s_norm", y="dim_ss", hue="g", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
-ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
-ax.set_ylabel(r"")
-ax = fig.add_subplot(grid[1, 0])
-scatterplot(df, x="dim_ir", y="dim_ss", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
-ax.set_xlabel(r"$D_{ir}$")
-ax.set_ylabel(r"$D_{ss}$")
-ax = fig.add_subplot(grid[1, 1])
-scatterplot(df, x="dim_ir", y="dim_ss", hue="g", style=iv, palette=cmap, legend=True, ax=ax, s=markersize)
-ax.set_xlabel(r"$D_{ir}$")
-ax.set_ylabel(r"")
-fig.suptitle("Dimensionality: Steady-State vs. Impulse Response")
+# scatter plots for firing rate heterogeneity vs dimensionality in steady state
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="s_norm", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D$ (steady-state)")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(fr"$E_r = {np.round(p, decimals=0)}$ mV")
+        if i == 1:
+            ax.set_xlabel(r"$\mathrm{std}(r) / \mathrm{mean}(r)$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Steady-State Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/dimensionality_ir_ss.pdf')
+plt.savefig(f'{path}/figures/spn_dimensionality_ss.pdf')
 
-# filter results
-min_alpha = 0.2
-df = df.loc[df["amp_ir"] >= min_alpha, :]
+# filter results for scatter plots
+min_tau = 20.0
+df = df.loc[df["tau_ir"] >= min_tau, :]
 
-# plotting scatter plots for impulse response time constants
-fig = plt.figure(figsize=(2*rowsize, 2*colsize))
-grid = fig.add_gridspec(ncols=2, nrows=2)
-ax = fig.add_subplot(grid[0, 0])
-scatterplot(df, x="dim_ir", y="tau_ir", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax)
-ax.set_xlabel(r"$D_{ir}$")
-ax.set_ylabel(r"$\tau$")
-ax = fig.add_subplot(grid[0, 1])
-scatterplot(df, x="dim_ir", y="tau_ir", hue="g", style=iv, palette=cmap, legend=True, ax=ax)
-ax.set_xlabel(r"$D_{ir}$")
-ax.set_ylabel(r"$\tau$")
-ax = fig.add_subplot(grid[1, 0])
-scatterplot(df, x="dim_ss", y="tau_ir", hue="Delta", style=iv, palette=cmap, legend=True, ax=ax)
-ax.set_xlabel(r"$D_{ss}$")
-ax.set_ylabel(r"$\tau$")
-ax = fig.add_subplot(grid[1, 1])
-scatterplot(df, x="dim_ss", y="tau_ir", hue="g", style=iv, palette=cmap, legend=True, ax=ax)
-ax.set_xlabel(r"$D_{ss}$")
-ax.set_ylabel(r"$\tau$")
-fig.suptitle("Dimensionality vs. Impulse Response Time Constant")
+# scatter plots for firing rate heterogeneity vs dimensionality
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="dim_ir", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D$ (steady-state)")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(fr"$E_r = {np.round(p, decimals=0)}$ mV")
+        if i == 1:
+            ax.set_xlabel(r"$D$ (impulse response)")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Steady-State vs. Impulse Response Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/dimensionality_tau.pdf')
+plt.savefig(f'{path}/figures/spn_dimensionality_ir.pdf')
 
 plt.show()
