@@ -22,23 +22,24 @@ E_i = -65.0
 v_spike = 50.0
 v_reset = -90.0
 g_in = 10.0
-tau_out = 50.0
+tau_out = 20.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])inp.shape
-g = 1.0 #float(sys.argv[-2])
+g = 1.25 #float(sys.argv[-2])
 Delta = 2.0 #float(sys.argv[-3])
 p = 0.1 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
+
 # input parameters
 dt = 1e-2
 dts = 1e-1
-dur = 20.0
+dur = 10.0
 window = 500.0
 n_patterns = 2
-p_in = n_patterns/(n_patterns+1)
+p_in = n_patterns/(n_patterns*3)
 n_trials = 50
-amp = 20.0*1e-3
+amp = 45.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
 
@@ -121,6 +122,8 @@ start = int(inp_cutoff/dt)
 stop = int((inp_cutoff+dur)/dt)
 noise = poisson.rvs(mu=s_e*g_in*dt, size=(int((inp_cutoff + window)/dt), N))
 y0 = {v: val[:] for v, val in net.state.items()}
+inputs ={1: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split)),
+         2: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split))}
 
 # collect network responses to stimulation
 responses, targets = [], []
@@ -135,21 +138,20 @@ for trial in range(n_trials):
     inp = np.zeros((int((inp_cutoff + window)/dt), N))
     inp += noise
     if c > 0:
-        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += poisson.rvs(mu=amp*g_in*dt,
-                                                                               size=(stop-start, in_split))
+        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += inputs[c]
     inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
     obs = net.run(inputs=inp[start:], sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
-    responses.extend(convolve_exp(ir, tau_out, dts))
+    responses.append(convolve_exp(ir, tau_out, dts))
     condition[c].append(ir)
 
     # generate target
     target = np.zeros((int(window/dts), n_patterns))
     if c > 0:
         target[:, c-1] = 1.0
-    targets.extend(target)
+    targets.append(target)
 
     # # test plotting
     # fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
@@ -164,9 +166,6 @@ for trial in range(n_trials):
     # ax.set_ylabel("neurons")
     # plt.tight_layout()
     # plt.show()
-
-# get readout weights
-W_r = ridge(np.asarray(responses).T, np.asarray(targets).T, alpha=alpha)
 
 # calculate trial-averaged network response
 impulse_responses = {}
@@ -201,17 +200,23 @@ params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bound
 
 # calculate dimensionality in the impulse response period
 ir_window = int(20.0*params[-2])
+ir_start = int(10.0*params[2])
 dim_irs = []
 for c in condition:
     if c > 0:
         dim_irs.append(get_dim(impulse_responses[c]["mean"][:ir_window, :]))
 dim_ir = np.mean(dim_irs)
 
+# get readout weights
+responses = np.concatenate([r[ir_start:ir_start+ir_window, :] for r in responses], axis=0)
+targets = np.concatenate([t[ir_start:ir_start+ir_window, :] for t in targets], axis=0)
+W_r = ridge(responses.T, targets.T, alpha=alpha)
+
 # simulation 3: testing
 #######################
 
 # collect network responses to stimulation
-responses, targets, loss = [], [], []
+test_responses, test_targets, loss = [], [], []
 for c in list(condition.keys()):
 
     net.reset(state=y0)
@@ -220,35 +225,34 @@ for c in list(condition.keys()):
     inp = np.zeros((int((inp_cutoff + window) / dt), N))
     inp += noise
     if c > 0:
-        inp[start:stop, inp_neurons[(c - 1) * in_split:c * in_split]] += poisson.rvs(mu=amp * g_in * dt,
-                                                                                     size=(stop - start, in_split))
+        inp[start:stop, inp_neurons[(c - 1) * in_split:c * in_split]] += inputs[c]
     inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
     obs = net.run(inputs=inp[start:], sampling_steps=int(dts / dt), record_output=True, verbose=False,
                   enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
-    pred = W_r @ convolve_exp(ir, tau_out, dts).T
-    responses.extend(pred.T)
+    pred = (W_r @ convolve_exp(ir, tau_out, dts)[ir_start:ir_start+ir_window, :].T).T
+    test_responses.extend(pred)
 
     # generate target
-    target = np.zeros((int(window/dts), n_patterns))
+    target = np.zeros((pred.shape[0], n_patterns))
     if c > 0:
         target[:, c-1] = 1.0
-    targets.extend(target)
+    test_targets.extend(target)
 
     # calculate performance
-    loss.extend((target - pred.T)**2)
+    loss.extend((target - pred)**2)
 
-responses = np.asarray(responses)
-targets = np.asarray(targets)
+test_responses = np.asarray(test_responses)
+test_targets = np.asarray(test_targets)
 loss = np.asarray(loss)
 
 # save results
 results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
-           "impulse_responses": impulse_responses, "predictions": responses, "targets": targets, "loss": loss
+           "impulse_responses": impulse_responses, "predictions": test_responses, "targets": test_targets, "loss": loss
            }
 
 # save results
@@ -296,12 +300,27 @@ plt.tight_layout()
 # plotting predictions
 fig = plt.figure(figsize=(12, n_patterns*2))
 grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
-fig.suptitle("Input Classification Performance")
+fig.suptitle("Test Performance")
 for i in range(n_patterns):
     ax = fig.add_subplot(grid[i, 0])
-    ax.plot(targets[:, i], label="target", color="black")
-    ax.plot(responses[:, i], label="prediction", color="royalblue")
+    ax.plot(test_targets[:, i], label="target", color="black")
+    ax.plot(test_responses[:, i], label="prediction", color="royalblue")
     ax.plot(loss[:, i], label="squared error", color="red")
+    ax.set_xlabel("steps")
+    ax.set_ylabel("Out")
+    ax.set_title(f"Pattern {i+1}")
+    ax.legend()
+plt.tight_layout()
+
+fig = plt.figure(figsize=(12, n_patterns*2))
+grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
+fig.suptitle("Training Performance")
+plot_length = 50000
+responses = responses[:plot_length, :] @ W_r.T
+for i in range(n_patterns):
+    ax = fig.add_subplot(grid[i, 0])
+    ax.plot(targets[:plot_length, i], label="target", color="black")
+    ax.plot(responses[:, i], label="prediction", color="royalblue")
     ax.set_xlabel("steps")
     ax.set_ylabel("Out")
     ax.set_title(f"Pattern {i+1}")
