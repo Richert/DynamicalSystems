@@ -41,9 +41,9 @@ for file in os.listdir(path):
         rep = int(f[-1].split(".")[0])
         results["rep"].append(rep)
         results["g"].append(data["g"])
-        results["Delta"].append(data["Delta"])
-        # results[iv].append(data[iv])
-        results[iv].append(float(f[-2][1:]))
+        results["Delta"].append(data["Delta_e"])
+        results[iv].append(data[iv])
+        # results[iv].append(float(f[-2][1:]))
 
         # steady-state analysis
         results["dim_ss"].append(data["dim_ss"])

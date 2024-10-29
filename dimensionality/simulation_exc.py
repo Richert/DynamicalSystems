@@ -100,9 +100,13 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 15.0
 cmap = "ch:"
 
+# create figure
+fig = plt.figure(figsize=(12, 7))
+grid = fig.add_gridspec(nrows=6, ncols=4)
+
 # plotting firing rate dynamics
-fig, axes = plt.subplots(nrows=3, figsize=(12, 8), layout="constrained")
-ax = axes[0]
+
+ax = fig.add_subplot(grid[:2, :3])
 ax.plot(np.mean(s, axis=1), label=r"$\mathrm{mean}(r)$")
 ax.plot(np.std(s, axis=1), label=r"$\mathrm{std}(r)$")
 ax.axvline(x=start, color="black", linestyle="dashed")
@@ -111,19 +115,43 @@ ax.set_xlim([cutoff, T])
 ax.legend()
 ax.set_xlabel("time (ms)")
 ax.set_ylabel(r"$r$ (Hz)")
-ax.set_title(f"Mean-Field Spike Rate Dynamics")
+ax.set_title(f"Mean-Field Dynamics")
 
 # plotting spikes
 neurons = np.random.choice(N, size=200, replace=False)
-ax2 = axes[1]
-im = ax2.imshow(s.iloc[:, neurons].T, aspect="auto", interpolation="none", cmap="Greys")
+ax2 = fig.add_subplot(grid[2:4, :3])
+ax2.imshow(s.iloc[:, neurons].T, aspect="auto", interpolation="none", cmap="Greys")
 xticks = [(tick-cutoff)*10 for tick in ax.get_xticks()]
 xlabels = [int(tick) for tick in ax.get_xticks()]
 ax2.set_xticks(xticks, labels=xlabels)
 ax2.set_xlim([0, int((T-cutoff)/dts)])
 ax2.set_xlabel("time (ms)")
 ax2.set_ylabel("neurons")
-ax2.set_title("")
+ax2.set_title("Spikes")
+
+# plotting input
+ax3 = fig.add_subplot(grid[4:, :3])
+ax3.imshow(inp[::int(dts/dt), neurons].T, aspect="auto", interpolation="none", cmap="Greys")
+ax3.set_xticks(xticks, labels=xlabels)
+ax3.set_xlim([0, int((T-cutoff)/dts)])
+ax3.set_xlabel("time (ms)")
+ax3.set_ylabel("neurons")
+ax3.set_title("Input")
+
+# plotting connectivity
+ax4 = fig.add_subplot(grid[:3, 3])
+im = ax4.imshow(W[neurons, :][:, neurons], aspect="auto", interpolation="none", cmap="viridis")
+ax4.set_xlabel("neurons")
+ax4.set_ylabel("neurons")
+ax4.set_title(rf"$W$ for $p = {p}$")
+
+# plotting connectivity
+ax5 = fig.add_subplot(grid[3:, 3])
+ax5.hist(thetas[neurons], bins=10)
+ax5.set_xlabel(r"spike threshold (mV)")
+ax5.set_ylabel(r"count")
+ax5.set_title(r"$\mathcal{N}(\bar \theta = $" + rf"${v_t}$" + r"$\mathrm{mV}, \sigma^2 = $" +
+              f"${Delta}$" + r"$\mathrm{mV})$")
 
 # save figure
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
