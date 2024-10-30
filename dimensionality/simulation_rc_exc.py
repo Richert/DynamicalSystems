@@ -26,8 +26,8 @@ tau_out = 20.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])inp.shape
-g = 1.25 #float(sys.argv[-2])
-Delta = 2.0 #float(sys.argv[-3])
+g = 1.0 #float(sys.argv[-2])
+Delta = 0.0 #float(sys.argv[-3])
 p = 0.1 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
@@ -38,7 +38,8 @@ dur = 10.0
 window = 500.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns*3)
-n_trials = 50
+n_train = 100
+n_test = 10
 amp = 45.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
@@ -120,19 +121,18 @@ inp_neurons = np.random.choice(N, size=(int(N*p_in),))
 in_split = int(len(inp_neurons)/n_patterns)
 start = int(inp_cutoff/dt)
 stop = int((inp_cutoff+dur)/dt)
-noise = poisson.rvs(mu=s_e*g_in*dt, size=(int((inp_cutoff + window)/dt), N))
 y0 = {v: val[:] for v, val in net.state.items()}
 inputs ={1: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split)),
          2: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split))}
+noise = poisson.rvs(mu=s_e*g_in*dt, size=(int((inp_cutoff + window)/dt), N))
 
 # collect network responses to stimulation
 responses, targets = [], []
 condition = {i: [] for i in range(n_patterns + 1)}
-for trial in range(n_trials):
+for trial in range(n_train + n_test):
 
     # choose input condition
     c = np.random.choice(list(condition.keys()))
-    net.reset(state=y0)
 
     # generate random input for trial
     inp = np.zeros((int((inp_cutoff + window)/dt), N))
@@ -166,6 +166,12 @@ for trial in range(n_trials):
     # ax.set_ylabel("neurons")
     # plt.tight_layout()
     # plt.show()
+
+responses = np.asarray(responses)
+targets = np.asarray(targets)
+
+# processing of simulation results
+##################################
 
 # calculate trial-averaged network response
 impulse_responses = {}
@@ -207,52 +213,34 @@ for c in condition:
         dim_irs.append(get_dim(impulse_responses[c]["mean"][:ir_window, :]))
 dim_ir = np.mean(dim_irs)
 
-# get readout weights
-responses = np.concatenate([r[ir_start:ir_start+ir_window, :] for r in responses], axis=0)
-targets = np.concatenate([t[ir_start:ir_start+ir_window, :] for t in targets], axis=0)
-W_r = ridge(responses.T, targets.T, alpha=alpha)
+# reservoir computing
+train_window = 10
+readout_weights, y_pred, y_targ, loss = [], [], [], []
+for i in range(int(ir_window/train_window)+1):
 
-# simulation 3: testing
-#######################
+    # training
+    train_responses = np.concatenate([r[i*train_window:(i+1)*train_window, :] for r in responses[:n_train]], axis=0)
+    train_targets = np.concatenate([t[i*train_window:(i+1)*train_window, :] for t in targets[:n_train]], axis=0)
+    W_r = ridge(train_responses.T, train_targets.T, alpha=alpha).T
+    readout_weights.append(W_r)
 
-# collect network responses to stimulation
-test_responses, test_targets, loss = [], [], []
-for c in list(condition.keys()):
+    # testing
+    test_responses = np.concatenate([r[i*train_window:(i+1)*train_window, :] for r in responses[n_train:]], axis=0)
+    test_targets = np.concatenate([t[i*train_window:(i+1)*train_window, :] for t in targets[n_train:]], axis=0)
+    predictions = test_responses @ W_r
+    y_pred.append(predictions)
+    y_targ.append(test_targets)
+    loss.append(np.mean((test_targets - predictions)**2, axis=0))
 
-    net.reset(state=y0)
-
-    # generate random input for trial
-    inp = np.zeros((int((inp_cutoff + window) / dt), N))
-    inp += noise
-    if c > 0:
-        inp[start:stop, inp_neurons[(c - 1) * in_split:c * in_split]] += inputs[c]
-    inp = convolve_exp(inp, tau_s, dt)
-
-    # get network response to input
-    obs = net.run(inputs=inp[start:], sampling_steps=int(dts / dt), record_output=True, verbose=False,
-                  enable_grad=False)
-    ir = obs.to_numpy("out") * 1e3 / tau_s
-    pred = (W_r @ convolve_exp(ir, tau_out, dts)[ir_start:ir_start+ir_window, :].T).T
-    test_responses.extend(pred)
-
-    # generate target
-    target = np.zeros((pred.shape[0], n_patterns))
-    if c > 0:
-        target[:, c-1] = 1.0
-    test_targets.extend(target)
-
-    # calculate performance
-    loss.extend((target - pred)**2)
-
-test_responses = np.asarray(test_responses)
-test_targets = np.asarray(test_targets)
+y_pred = np.concatenate(y_pred)
+y_targ = np.concatenate(y_targ)
 loss = np.asarray(loss)
 
 # save results
 results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
-           "impulse_responses": impulse_responses, "predictions": test_responses, "targets": test_targets, "loss": loss
+           "impulse_responses": impulse_responses, "predictions": y_pred, "targets": y_targ, "W_out": readout_weights
            }
 
 # save results
@@ -297,33 +285,43 @@ ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.roun
              f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
 plt.tight_layout()
 
-# plotting predictions
+# plotting test data predictions
 fig = plt.figure(figsize=(12, n_patterns*2))
 grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
-fig.suptitle("Test Performance")
+fig.suptitle("Test Predictions")
 for i in range(n_patterns):
     ax = fig.add_subplot(grid[i, 0])
-    ax.plot(test_targets[:, i], label="target", color="black")
-    ax.plot(test_responses[:, i], label="prediction", color="royalblue")
-    ax.plot(loss[:, i], label="squared error", color="red")
+    ax.plot(y_targ[:, i], label="target", color="black")
+    ax.plot(y_pred[:, i], label="prediction", color="royalblue")
     ax.set_xlabel("steps")
     ax.set_ylabel("Out")
     ax.set_title(f"Pattern {i+1}")
     ax.legend()
 plt.tight_layout()
 
+# plotting test loss
 fig = plt.figure(figsize=(12, n_patterns*2))
 grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
-fig.suptitle("Training Performance")
-plot_length = 50000
-responses = responses[:plot_length, :] @ W_r.T
+fig.suptitle("Test Loss")
 for i in range(n_patterns):
     ax = fig.add_subplot(grid[i, 0])
-    ax.plot(targets[:plot_length, i], label="target", color="black")
-    ax.plot(responses[:, i], label="prediction", color="royalblue")
-    ax.set_xlabel("steps")
-    ax.set_ylabel("Out")
+    ax.plot(loss[:, i])
+    ax.set_xlabel("lag (ms)")
+    ax.set_ylabel("MSE")
     ax.set_title(f"Pattern {i+1}")
     ax.legend()
+plt.tight_layout()
+
+# plotting fitted weights
+fig = plt.figure(figsize=(12, 8))
+grid = fig.add_gridspec(nrows=2, ncols=1)
+for i in range(n_patterns):
+    ax = fig.add_subplot(grid[i, 0])
+    im = ax.imshow(np.asarray(readout_weights)[:, :, i], aspect="auto", cmap="viridis", interpolation="none")
+    plt.colorbar(im, ax=ax)
+    ax.set_xlabel("neurons")
+    ax.set_ylabel("time lags")
+    ax.set_title(f"Readout for pattern {i+1}")
+fig.suptitle("Readout weights")
 plt.tight_layout()
 plt.show()

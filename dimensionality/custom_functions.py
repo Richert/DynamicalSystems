@@ -173,8 +173,14 @@ def sqi(events: list, time_window: int = 100, n_bins: int = 100) -> tuple:
     return pe, ts
 
 
-def get_dim(x: np.ndarray) -> float:
-    cov = x.T @ x
+def get_dim(x: np.ndarray, center: bool = True) -> float:
+    if center:
+        x_tmp = np.zeros_like(x)
+        for i in range(x.shape[1]):
+            x_tmp[:, i] = x[:, i] - np.mean(x[:, i])
+    else:
+        x_tmp = x
+    cov = x_tmp.T @ x_tmp
     eigs = np.abs(np.linalg.eigvals(cov))
     return np.sum(eigs) ** 2 / np.sum(eigs ** 2)
 
