@@ -26,21 +26,21 @@ tau_out = 20.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])inp.shape
-g = 1.0 #float(sys.argv[-2])
-Delta = 0.0 #float(sys.argv[-3])
-p = 0.1 #float(sys.argv[-4])
+g = 1.5 #float(sys.argv[-2])
+Delta = 4.0 #float(sys.argv[-3])
+p = 0.05 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
 dts = 1e-1
-dur = 10.0
+dur = 20.0
 window = 500.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns*3)
 n_train = 100
 n_test = 10
-amp = 45.0*1e-3
+amp = 60.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
 
@@ -62,7 +62,7 @@ W = random_connectivity(N, N, p, normalize=False)
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas_e = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
+thetas_e = f(N, loc=v_t, scale=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # initialize the model
 ######################
@@ -122,9 +122,8 @@ in_split = int(len(inp_neurons)/n_patterns)
 start = int(inp_cutoff/dt)
 stop = int((inp_cutoff+dur)/dt)
 y0 = {v: val[:] for v, val in net.state.items()}
-inputs ={1: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split)),
-         2: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split))}
-noise = poisson.rvs(mu=s_e*g_in*dt, size=(int((inp_cutoff + window)/dt), N))
+inputs ={1: lambda: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split)),
+         2: lambda: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split))}
 
 # collect network responses to stimulation
 responses, targets = [], []
@@ -135,16 +134,17 @@ for trial in range(n_train + n_test):
     c = np.random.choice(list(condition.keys()))
 
     # generate random input for trial
+    noise = poisson.rvs(mu=s_e * g_in * dt, size=(int((inp_cutoff + window) / dt), N))
     inp = np.zeros((int((inp_cutoff + window)/dt), N))
     inp += noise
     if c > 0:
-        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += inputs[c]
+        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += inputs[c]()
     inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
     obs = net.run(inputs=inp[start:], sampling_steps=int(dts/dt), record_output=True, verbose=False, enable_grad=False)
     ir = obs.to_numpy("out") * 1e3 / tau_s
-    responses.append(convolve_exp(ir, tau_out, dts))
+    responses.append(ir)
     condition[c].append(ir)
 
     # generate target
@@ -205,8 +205,7 @@ bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 
 params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(20.0*params[-2])
-ir_start = int(10.0*params[2])
+ir_window = int(2*params[-2]/dts)
 dim_irs = []
 for c in condition:
     if c > 0:
@@ -214,9 +213,9 @@ for c in condition:
 dim_ir = np.mean(dim_irs)
 
 # reservoir computing
-train_window = 10
+train_window = 50
 readout_weights, y_pred, y_targ, loss = [], [], [], []
-for i in range(int(ir_window/train_window)+1):
+for i in range(int(window/(dts*train_window))+1):
 
     # training
     train_responses = np.concatenate([r[i*train_window:(i+1)*train_window, :] for r in responses[:n_train]], axis=0)
@@ -240,7 +239,8 @@ loss = np.asarray(loss)
 results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
-           "impulse_responses": impulse_responses, "predictions": y_pred, "targets": y_targ, "W_out": readout_weights
+           "impulse_responses": impulse_responses, "predictions": y_pred, "targets": y_targ, "W_out": readout_weights,
+           "loss": loss
            }
 
 # save results

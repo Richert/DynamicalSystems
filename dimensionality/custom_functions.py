@@ -21,22 +21,22 @@ def ridge(X: np.ndarray, y: np.ndarray, alpha: float) -> np.ndarray:
     return np.transpose(np.dot(np.linalg.pinv(np.dot(X, X.T) + alpha*I), np.dot(X, y.T)))
 
 
-def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
+def lorentzian(n: int, loc: float, scale: float, lb: float, ub: float):
     samples = np.zeros((n,))
     for i in range(n):
-        s = cauchy.rvs(loc=eta, scale=delta)
+        s = cauchy.rvs(loc=loc, scale=scale)
         while s <= lb or s >= ub:
-            s = cauchy.rvs(loc=eta, scale=delta)
+            s = cauchy.rvs(loc=loc, scale=scale)
         samples[i] = s
     return samples
 
 
-def gaussian(n, mu: float, delta: float, lb: float, ub: float):
+def gaussian(n, loc: float, scale: float, lb: float, ub: float):
     samples = np.zeros((n,))
     for i in range(n):
-        s = norm.rvs(loc=mu, scale=delta)
+        s = norm.rvs(loc=loc, scale=scale)
         while s <= lb or s >= ub:
-            s = norm.rvs(loc=mu, scale=delta)
+            s = norm.rvs(loc=loc, scale=scale)
         samples[i] = s
     return samples
 
@@ -173,15 +173,18 @@ def sqi(events: list, time_window: int = 100, n_bins: int = 100) -> tuple:
     return pe, ts
 
 
-def get_dim(x: np.ndarray, center: bool = True) -> float:
+def get_cov(x: np.ndarray, center: bool = True) -> np.ndarray:
     if center:
         x_tmp = np.zeros_like(x)
         for i in range(x.shape[1]):
             x_tmp[:, i] = x[:, i] - np.mean(x[:, i])
     else:
         x_tmp = x
-    cov = x_tmp.T @ x_tmp
-    eigs = np.abs(np.linalg.eigvals(cov))
+    return x_tmp.T @ x_tmp
+
+def get_dim(x: np.ndarray, center: bool = True) -> float:
+    C = get_cov(x, center)
+    eigs = np.abs(np.linalg.eigvals(C))
     return np.sum(eigs) ** 2 / np.sum(eigs ** 2)
 
 

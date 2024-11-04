@@ -24,11 +24,11 @@ v_reset = -90.0
 g_in = 10.0
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 2.0 #float(sys.argv[-2])
-Delta = 8.0 #float(sys.argv[-3])
-p = 0.1 #float(sys.argv[-4])
-path = "" #str(sys.argv[-5])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
+p = float(sys.argv[-4])
+path = str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
@@ -58,7 +58,7 @@ W = random_connectivity(N, N, p, normalize=False)
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas_e = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
+thetas_e = f(N, loc=v_t, scale=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # initialize the model
 ######################
@@ -221,45 +221,45 @@ results = {"g": g, "Delta": Delta, "p": p,
            }
 pickle.dump(results, open(f"{path}/dim2_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
-# plotting firing rate dynamics
-fig, ax = plt.subplots(figsize=(12, 4))
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim_ss}")
-fig.suptitle("Mean-field rate dynamics")
-plt.tight_layout()
-
-# plotting spikes
-fig, ax = plt.subplots(figsize=(12, 4))
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-fig.suptitle("Spiking dynamics")
-plt.tight_layout()
-
-# plotting impulse response
-fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
-fig.suptitle("Impulse response")
-ax = axes[0]
-ax.plot(results["mean_ir0"], label="no input")
-ax.plot(results["mean_ir1"], label="input 1")
-ax.plot(results["mean_ir2"], label="input 2")
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.legend()
-ax.set_title(f"Impulse Response")
-ax = axes[1]
-ax.plot(sep, label="target IR")
-ax.plot(ir_fit, label="fitted IR")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("SR")
-ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
-             f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
-
-plt.tight_layout()
-plt.show()
+# # plotting firing rate dynamics
+# fig, ax = plt.subplots(figsize=(12, 4))
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title(f"Dim = {dim_ss}")
+# fig.suptitle("Mean-field rate dynamics")
+# plt.tight_layout()
+#
+# # plotting spikes
+# fig, ax = plt.subplots(figsize=(12, 4))
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# fig.suptitle("Spiking dynamics")
+# plt.tight_layout()
+#
+# # plotting impulse response
+# fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
+# fig.suptitle("Impulse response")
+# ax = axes[0]
+# ax.plot(results["mean_ir0"], label="no input")
+# ax.plot(results["mean_ir1"], label="input 1")
+# ax.plot(results["mean_ir2"], label="input 2")
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.legend()
+# ax.set_title(f"Impulse Response")
+# ax = axes[1]
+# ax.plot(sep, label="target IR")
+# ax.plot(ir_fit, label="fitted IR")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("SR")
+# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
+#              f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
+#
+# plt.tight_layout()
+# plt.show()
