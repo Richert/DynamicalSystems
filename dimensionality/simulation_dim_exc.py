@@ -16,7 +16,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 200
+N = 1000
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -36,7 +36,7 @@ dts = 1e-1
 p_in = 0.6
 dur = 20.0
 window = 1000.0
-n_trials = 3
+n_trials = 10
 amp = 1e-2
 cutoff = 1000.0
 
@@ -93,13 +93,17 @@ obs = net.run(inputs=inp[int(cutoff/dt):, :], sampling_steps=int(dts/dt), record
               enable_grad=False)
 s = obs.to_dataframe("out")
 s.iloc[:, :] /= tau_s
+s_vals = s.values
 
 # calculate dimensionality in the steady-state period
-dim_ss = get_dim(s.values)
+dim_ss = get_dim(s_vals, center=True) / N
+s_vals_tmp = s_vals[:, np.sum(s_vals, axis=0) > 0.0]
+dim_ss_r = get_dim(s_vals_tmp, center=True)
+dim_ss_nc = get_dim(s_vals, center=False)
+N_ss = s_vals_tmp.shape[1]
 
 # extract spikes in network
 spike_counts = []
-s_vals = s.values
 for idx in range(s_vals.shape[1]):
     peaks, _ = find_peaks(s_vals[:, idx])
     spike_counts.append(peaks)
@@ -207,9 +211,19 @@ params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bo
 
 # calculate dimensionality in the impulse response period
 ir_window = int(20.0*params[-2])
-dim_ir1 = get_dim(ir_mean1[:ir_window, :])
-dim_ir2 = get_dim(ir_mean2[:ir_window, :])
+dim_ir1 = get_dim(ir_mean1[:ir_window, :], center=True)
+dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=True)
 dim_ir = (dim_ir1 + dim_ir2)/2
+ir_mean1_tmp = ir_mean1[:ir_window, np.sum(ir_mean1[:ir_window, :], axis=0) > 0]
+ir_mean2_tmp = ir_mean2[:ir_window, np.sum(ir_mean1[:ir_window, :], axis=0) > 0]
+dim_ir1 = get_dim(ir_mean1_tmp, center=True)
+dim_ir2 = get_dim(ir_mean2_tmp, center=True)
+dim_ir_r = (dim_ir1 + dim_ir2)/2
+N_ir1 = ir_mean1_tmp.shape[1]
+N_ir2 = ir_mean2_tmp.shape[1]
+dim_ir1 = get_dim(ir_mean1[:ir_window, :], center=False)
+dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=False)
+dim_ir_nc = (dim_ir1 + dim_ir2)/2
 
 # save results
 results = {"g": g, "Delta": Delta, "p": p,
@@ -217,7 +231,8 @@ results = {"g": g, "Delta": Delta, "p": p,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
            "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
-           "mf_params_ir": params_mf
+           "mf_params_ir": params_mf, "dim_ss_reduced": dim_ss_r, "dim_ir_reduced": dim_ir_r,
+           "dim_ss_nc": dim_ss_nc, "dim_ir_nc": dim_ir_nc, "N": N, "N_ss": N_ss, "N_ir1": N_ir1, "N_ir2": N_ir2
            }
 pickle.dump(results, open(f"{path}/dim2_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
@@ -228,7 +243,7 @@ pickle.dump(results, open(f"{path}/dim2_exc_g{int(100*g)}_D{int(Delta)}_p{int(10
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim_ss}")
+# ax.set_title(f"Dim = {np.round(dim_ss, 2)}, Dim2 = {np.round(dim_ss_r, 2)}")
 # fig.suptitle("Mean-field rate dynamics")
 # plt.tight_layout()
 #
@@ -258,7 +273,7 @@ pickle.dump(results, open(f"{path}/dim2_exc_g{int(100*g)}_D{int(Delta)}_p{int(10
 # ax.legend()
 # ax.set_xlabel("steps")
 # ax.set_ylabel("SR")
-# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
+# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=2)}, Dim2 = {np.round(results['dim_ir_reduced'], decimals=2)}, "
 #              f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
 #
 # plt.tight_layout()

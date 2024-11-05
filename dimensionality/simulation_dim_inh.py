@@ -58,7 +58,7 @@ W = random_connectivity(N, N, p, normalize=False)
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas = f(N, mu=v_t, delta=Delta, lb=v_r, ub=2 * v_t - v_r)
+thetas = f(N, loc=v_t, scale=Delta, lb=v_r, ub=2 * v_t - v_r)
 
 # initialize the model
 ######################
