@@ -22,7 +22,7 @@ cmap = "ch:"
 
 # condition
 iv = "p"
-condition = "dim_exc"
+condition = "dim2_exc"
 path = "/home/richard-gast/Documents/data/dimensionality"
 
 # load data
@@ -36,25 +36,26 @@ for file in os.listdir(path):
 
         # condition information
         f = file.split("_")
-        rep = int(f[-1].split(".")[0])
-        results["rep"].append(rep)
-        results["g"].append(data["g"])
-        results["Delta"].append(data["Delta"])
-        # results[iv].append(data[iv])
-        results[iv].append(float(f[-2][1:]))
+        if "N" in data:
+            rep = int(f[-1].split(".")[0])
+            results["rep"].append(rep)
+            results["g"].append(data["g"])
+            results["Delta"].append(data["Delta"])
+            # results[iv].append(data[iv])
+            results[iv].append(float(f[-2][1:]))
 
-        # steady-state analysis
-        results["dim_ss"].append(data["dim_ss"])
-        results["s_mean"].append(np.mean(data["s_mean"])*1e3)
-        results["s_std"].append(np.mean(data["s_std"]))
-        results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
+            # steady-state analysis
+            results["dim_ss"].append(data["dim_ss"]*data["N"])
+            results["s_mean"].append(np.mean(data["s_mean"])*1e3)
+            results["s_std"].append(np.mean(data["s_std"]))
+            results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
 
-        # impulse response analysis
-        results["dim_ir"].append(data["dim_ir"])
-        results["tau_ir"].append(data["params_ir"][-2])
-        results["offset_ir"].append(data["params_ir"][0])
-        results["amp_ir"].append(data["params_ir"][2])
-        results["tau_mf"].append(data["mf_params_ir"][-1])
+            # impulse response analysis
+            results["dim_ir"].append(data["dim_ir"])
+            results["tau_ir"].append(data["params_ir"][-2])
+            results["offset_ir"].append(data["params_ir"][0])
+            results["amp_ir"].append(data["params_ir"][2])
+            results["tau_mf"].append(data["mf_params_ir"][-1])
 
 # create dataframe
 df = DataFrame.from_dict(results)

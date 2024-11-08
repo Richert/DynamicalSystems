@@ -83,8 +83,8 @@ W_ii = random_connectivity(N_i, N_i, p_ii, normalize=False)
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas_e = f(N_e, mu=v_t_e, delta=Delta_e, lb=v_r_e, ub=2*v_t_e-v_r_e)
-thetas_i = f(N_i, mu=v_t_i, delta=Delta_i, lb=v_r_i, ub=2*v_t_i-v_r_i)
+thetas_e = f(N_e, loc=v_t_e, scale=Delta_e, lb=v_r_e, ub=2*v_t_e-v_r_e)
+thetas_i = f(N_i, loc=v_t_i, scale=Delta_i, lb=v_r_i, ub=2*v_t_i-v_r_i)
 
 # initialize the model
 ######################
@@ -139,7 +139,12 @@ s.iloc[:, :N_e] /= tau_s_e
 s.iloc[:, N_e:] /= tau_s_i
 
 # calculate dimensionality in the steady-state period
-dim_ss = get_dim(s.values[:, :N_e])
+s_vals = s.values[:, :N_e]
+dim_ss = get_dim(s_vals, center=True)
+s_vals_tmp = s_vals[:, np.sum(s_vals, axis=0) > 0.0]
+dim_ss_r = get_dim(s_vals_tmp, center=True)
+dim_ss_nc = get_dim(s_vals, center=False)
+N_ss = s_vals_tmp.shape[1]
 
 # extract spikes in network
 spike_counts = []
@@ -257,9 +262,19 @@ params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bo
 
 # calculate dimensionality in the impulse response period
 ir_window = int(20.0*params[-2])
-dim_ir1 = get_dim(ir_mean1[:ir_window, :])
-dim_ir2 = get_dim(ir_mean2[:ir_window, :])
+dim_ir1 = get_dim(ir_mean1[:ir_window, :], center=True)
+dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=True)
 dim_ir = (dim_ir1 + dim_ir2)/2
+ir_mean1_tmp = ir_mean1[:ir_window, np.sum(ir_mean1[:ir_window, :], axis=0) > 0]
+ir_mean2_tmp = ir_mean2[:ir_window, np.sum(ir_mean1[:ir_window, :], axis=0) > 0]
+dim_ir1 = get_dim(ir_mean1_tmp, center=True)
+dim_ir2 = get_dim(ir_mean2_tmp, center=True)
+dim_ir_r = (dim_ir1 + dim_ir2)/2
+N_ir1 = ir_mean1_tmp.shape[1]
+N_ir2 = ir_mean2_tmp.shape[1]
+dim_ir1 = get_dim(ir_mean1[:ir_window, :], center=False)
+dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=False)
+dim_ir_nc = (dim_ir1 + dim_ir2)/2
 
 # save results
 results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
@@ -267,9 +282,10 @@ results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
            "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
-           "mf_params_ir": params_mf
+           "mf_params_ir": params_mf, "dim_ss_reduced": dim_ss_r, "dim_ir_reduced": dim_ir_r,
+           "dim_ss_nc": dim_ss_nc, "dim_ir_nc": dim_ir_nc, "N": N, "N_ss": N_ss, "N_ir1": N_ir1, "N_ir2": N_ir2
            }
-pickle.dump(results, open(f"{path}/dim_eic_g{int(100*g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim2_eic_g{int(10*g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))

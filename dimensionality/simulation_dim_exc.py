@@ -96,7 +96,7 @@ s.iloc[:, :] /= tau_s
 s_vals = s.values
 
 # calculate dimensionality in the steady-state period
-dim_ss = get_dim(s_vals, center=True) / N
+dim_ss = get_dim(s_vals, center=True)
 s_vals_tmp = s_vals[:, np.sum(s_vals, axis=0) > 0.0]
 dim_ss_r = get_dim(s_vals_tmp, center=True)
 dim_ss_nc = get_dim(s_vals, center=False)
