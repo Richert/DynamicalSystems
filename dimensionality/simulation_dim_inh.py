@@ -16,7 +16,6 @@ theta_dist = "gaussian"
 
 # general model parameters
 N = 1000
-p = 0.2
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -27,7 +26,7 @@ g_in = 10.0
 rep = int(sys.argv[-1])
 g = float(sys.argv[-2])
 Delta = float(sys.argv[-3])
-s_e = float(sys.argv[-4])
+p = float(sys.argv[-4])
 path = str(sys.argv[-5])
 
 # input parameters
@@ -49,7 +48,7 @@ eta = 0.0
 a = 0.03
 b = -2.0
 d = 50.0
-s_e_norm = s_e*1e-3
+s_e = 45.0*1e-3
 tau_s = 6.0
 
 # connectivity parameters
@@ -81,7 +80,7 @@ net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target
 # define input
 T = cutoff + window
 inp = np.zeros((int(T/dt), N))
-inp[:, :] += poisson.rvs(mu=s_e_norm*g_in*dt, size=(int(T/dt), N))
+inp[:, :] += poisson.rvs(mu=s_e*g_in*dt, size=(int(T/dt), N))
 inp = convolve_exp(inp, tau_s, dt)
 
 # perform cutoff simulation
@@ -93,13 +92,17 @@ obs = net.run(inputs=inp[int(cutoff/dt):, :], sampling_steps=int(dts/dt), record
               enable_grad=False)
 s = obs.to_dataframe("out")
 s.iloc[:, :] /= tau_s
+s_vals = s.values
 
 # calculate dimensionality in the steady-state period
-dim_ss = get_dim(s.values)
+dim_ss = get_dim(s_vals, center=True)
+s_vals_tmp = s_vals[:, np.sum(s_vals, axis=0) > 0.0]
+dim_ss_r = get_dim(s_vals_tmp, center=True)
+dim_ss_nc = get_dim(s_vals, center=False)
+N_ss = s_vals_tmp.shape[1]
 
 # extract spikes in network
 spike_counts = []
-s_vals = s.values
 for idx in range(s_vals.shape[1]):
     peaks, _ = find_peaks(s_vals[:, idx])
     spike_counts.append(peaks)
@@ -125,7 +128,7 @@ dur_tmp = int(dur/dt)
 ir1s, ir2s, ir0s = [], [], []
 for trial in range(n_trials):
 
-    noise = poisson.rvs(mu=s_e_norm*g_in*dt, size=(int(window/dt), N))
+    noise = poisson.rvs(mu=s_e*g_in*dt, size=(int(window/dt), N))
 
     # no input
     ##########
@@ -207,21 +210,30 @@ params_mf, ir_mf = impulse_response_fit(diff, time, f=dualexponential, bounds=bo
 
 # calculate dimensionality in the impulse response period
 ir_window = int(20.0*params[-2])
-dim_ir1 = get_dim(ir_mean1[:ir_window, :])
-dim_ir2 = get_dim(ir_mean2[:ir_window, :])
+dim_ir1 = get_dim(ir_mean1[:ir_window, :], center=True)
+dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=True)
 dim_ir = (dim_ir1 + dim_ir2)/2
+ir_mean1_tmp = ir_mean1[:ir_window, np.sum(ir_mean1[:ir_window, :], axis=0) > 0]
+ir_mean2_tmp = ir_mean2[:ir_window, np.sum(ir_mean1[:ir_window, :], axis=0) > 0]
+dim_ir1 = get_dim(ir_mean1_tmp, center=True)
+dim_ir2 = get_dim(ir_mean2_tmp, center=True)
+dim_ir_r = (dim_ir1 + dim_ir2)/2
+N_ir1 = ir_mean1_tmp.shape[1]
+N_ir2 = ir_mean2_tmp.shape[1]
+dim_ir1 = get_dim(ir_mean1[:ir_window, :], center=False)
+dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=False)
+dim_ir_nc = (dim_ir1 + dim_ir2)/2
 
 # save results
-results = {"g": g, "Delta": Delta, "p": p, "s_ext": s_e,
+results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
            "mean_ir2": ir2, "std_ir2": np.mean(ir_std2, axis=1),
-           "mf_params_ir": params_mf
+           "mf_params_ir": params_mf, "dim_ss_reduced": dim_ss_r, "dim_ir_reduced": dim_ir_r,
+           "dim_ss_nc": dim_ss_nc, "dim_ir_nc": dim_ir_nc, "N": N, "N_ss": N_ss, "N_ir1": N_ir1, "N_ir2": N_ir2
            }
-
-# save results
-pickle.dump(results, open(f"{path}/dim_inh_g{int(10*g)}_D{int(Delta)}_s{int(s_e)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim2_inh_g{int(10*g)}_D{int(Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))
