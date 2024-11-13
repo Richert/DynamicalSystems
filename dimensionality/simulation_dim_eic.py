@@ -139,12 +139,20 @@ s.iloc[:, :N_e] /= tau_s_e
 s.iloc[:, N_e:] /= tau_s_i
 
 # calculate dimensionality in the steady-state period
+epsilon = 1e-2
 s_vals = s.values[:, :N_e]
 dim_ss = get_dim(s_vals, center=True)
-s_vals_tmp = s_vals[:, np.sum(s_vals, axis=0) > 0.0]
+s_vals_tmp = s_vals[:, np.mean(s_vals, axis=0)*1e3 > epsilon]
 dim_ss_r = get_dim(s_vals_tmp, center=True)
 dim_ss_nc = get_dim(s_vals, center=False)
 N_ss = s_vals_tmp.shape[1]
+# fig, ax = plt.subplots(figsize=(8, 4))
+# ax.hist(np.log(np.mean(s_vals, axis=0)*1e3 + 1e-3), bins=50)
+# ax.axvline(x=np.log(epsilon*1e3))
+# ax.set_xlabel("log(rates)")
+# ax.set_ylabel("count")
+# ax.set_title(f"Removed neurons: {N_e  - N_ss}")
+# plt.show()
 
 # extract spikes in network
 spike_counts = []

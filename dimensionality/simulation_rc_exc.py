@@ -14,6 +14,7 @@ from custom_functions import *
 device = "cpu"
 theta_dist = "gaussian"
 alpha = 1e-4
+epsilon = 1e-2
 
 # general model parameters
 N = 1000
@@ -26,7 +27,7 @@ tau_out = 20.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])inp.shape
-g = 1.5 #float(sys.argv[-2])
+g = 1.0 #float(sys.argv[-2])
 Delta = 4.0 #float(sys.argv[-3])
 p = 0.05 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
@@ -35,12 +36,12 @@ path = "" #str(sys.argv[-5])
 dt = 1e-2
 dts = 1e-1
 dur = 20.0
-window = 500.0
+window = 1000.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns*3)
 n_train = 100
 n_test = 10
-amp = 60.0*1e-3
+amp = 20.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
 
@@ -93,13 +94,17 @@ obs = net.run(inputs=inp[int(inp_cutoff/dt):, :], sampling_steps=int(dts/dt), re
               cutoff=int(init_cutoff/dt), enable_grad=False)
 s = obs.to_dataframe("out")
 s.iloc[:, :] /= tau_s
+s_vals = s.values
 
 # calculate dimensionality in the steady-state period
-dim_ss = get_dim(s.values)
+dim_ss = get_dim(s_vals, center=True)
+s_vals_tmp = s_vals[:, np.sum(s_vals, axis=0) > 0.0]
+dim_ss_r = get_dim(s_vals_tmp, center=True)
+dim_ss_nc = get_dim(s_vals, center=False)
+N_ss = s_vals_tmp.shape[1]
 
 # extract spikes in network
 spike_counts = []
-s_vals = s.values
 for idx in range(s_vals.shape[1]):
     peaks, _ = find_peaks(s_vals[:, idx])
     spike_counts.append(peaks)
@@ -113,8 +118,8 @@ for tau in taus:
 s_mean = np.mean(s_vals, axis=1)
 s_std = np.std(s_vals, axis=1)
 
-# simulation 2: training
-########################
+# simulation 2: impulse response
+################################
 
 # preparations
 inp_neurons = np.random.choice(N, size=(int(N*p_in),))
@@ -167,6 +172,8 @@ for trial in range(n_train + n_test):
     # plt.tight_layout()
     # plt.show()
 
+    print(f"Finished {trial + 1} of {n_train + n_test} trials.")
+
 responses = np.asarray(responses)
 targets = np.asarray(targets)
 
@@ -206,11 +213,20 @@ params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bound
 
 # calculate dimensionality in the impulse response period
 ir_window = int(2*params[-2]/dts)
-dim_irs = []
+dim_irs, dim_irs_reduced, dim_irs_nc, neuron_dropout = [], [], [], []
 for c in condition:
     if c > 0:
-        dim_irs.append(get_dim(impulse_responses[c]["mean"][:ir_window, :]))
+        ir = impulse_responses[c]["mean"][:ir_window, :]
+        ir_reduced = ir[:, np.mean(ir, axis=0) > epsilon]
+        dim_irs.append(get_dim(ir, center=True))
+        dim_irs_reduced.append(get_dim(ir_reduced, center=True))
+        dim_irs_nc.append(get_dim(ir, center=False))
+        neuron_dropout.append(ir_reduced.shape[1])
+
 dim_ir = np.mean(dim_irs)
+dim_ir_reduced = np.mean(dim_irs_reduced)
+dim_ir_nc = np.mean(dim_irs_nc)
+neuron_dropout = np.mean(neuron_dropout)
 
 # reservoir computing
 train_window = 50
@@ -240,7 +256,8 @@ results = {"g": g, "Delta": Delta, "p": p,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
            "impulse_responses": impulse_responses, "predictions": y_pred, "targets": y_targ, "W_out": readout_weights,
-           "loss": loss
+           "loss": loss, "dim_ir_reduced": dim_ir_reduced, "dim_ss_reduced": dim_ss_r, "dim_ir_nc": dim_ir_nc,
+           "dim_ss_nc": dim_ss_nc, "N_ss": N_ss, "N_ir": neuron_dropout, "N": N
            }
 
 # save results
@@ -253,7 +270,7 @@ ax.plot(s_std*1e3, label="std(r)")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("r")
-ax.set_title(f"Dim = {dim_ss}")
+ax.set_title(f"Dim = {dim_ss}, Dim_r = {dim_ss_r}, dropout = {N - N_ss}")
 fig.suptitle("Mean-field rate dynamics")
 plt.tight_layout()
 
@@ -281,8 +298,8 @@ ax.plot(ir_fit, label="fitted IR")
 ax.legend()
 ax.set_xlabel("steps")
 ax.set_ylabel("SR")
-ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau_f = {np.round(params[-1], decimals=1)}, "
-             f"tau_s = {np.round(params[-2], decimals=1)}, beta_s = {np.round(params[-5], decimals=1)}")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-2], decimals=1)},"
+             f"Dim_r = {np.round(results['dim_ir_reduced'], decimals=1)}")
 plt.tight_layout()
 
 # plotting test data predictions
