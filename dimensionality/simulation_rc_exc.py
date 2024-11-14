@@ -17,7 +17,7 @@ alpha = 1e-4
 epsilon = 1e-2
 
 # general model parameters
-N = 500
+N = 1000
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -38,9 +38,9 @@ dts = 1e-1
 dur = 20.0
 window = 1000.0
 n_patterns = 2
-p_in = n_patterns/(n_patterns*3)
-n_train = 50
-n_test = 10
+p_in = n_patterns/(n_patterns+1)
+n_train = 80
+n_test = 20
 amp = 30.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
