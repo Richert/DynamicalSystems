@@ -17,7 +17,7 @@ alpha = 1e-4
 epsilon = 1e-2
 
 # general model parameters
-N = 1000
+N = 500
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -26,11 +26,11 @@ g_in = 10.0
 tau_out = 20.0
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
-p = float(sys.argv[-4])
-path = str(sys.argv[-5])
+rep = 0 #int(sys.argv[-1])
+g = 2.0 #float(sys.argv[-2])
+Delta = 2.0 #float(sys.argv[-3])
+p = 0.1 #float(sys.argv[-4])
+path = "" #str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
@@ -39,8 +39,8 @@ dur = 20.0
 window = 1000.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns+1)
-n_train = 80
-n_test = 20
+n_train = 50
+n_test = 10
 amp = 30.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
@@ -127,8 +127,8 @@ in_split = int(len(inp_neurons)/n_patterns)
 start = int(inp_cutoff/dt)
 stop = int((inp_cutoff+dur)/dt)
 y0 = {v: val[:] for v, val in net.state.items()}
-inputs ={1: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split)),
-         2: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split))}
+inputs ={1: lambda: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split)),
+         2: lambda: poisson.rvs(mu=amp*g_in*dt, size=(stop-start, in_split))}
 noise = poisson.rvs(mu=s_e * g_in * dt, size=(int((inp_cutoff + window) / dt), N))
 
 # collect network responses to stimulation
@@ -143,7 +143,7 @@ for trial in range(n_train + n_test):
     inp = np.zeros((int((inp_cutoff + window)/dt), N))
     inp += noise
     if c > 0:
-        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += inputs[c]
+        inp[start:stop, inp_neurons[(c-1)*in_split:c*in_split]] += inputs[c]()
     inp = convolve_exp(inp, tau_s, dt)
 
     # get network response to input
@@ -254,93 +254,93 @@ results = {"g": g, "Delta": Delta, "p": p,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
            "impulse_responses": impulse_responses, "predictions": y_pred, "targets": y_targ, "W_out": readout_weights,
            "dim_ir_reduced": dim_ir_reduced, "dim_ss_reduced": dim_ss_r, "dim_ir_nc": dim_ir_nc,
-           "dim_ss_nc": dim_ss_nc, "N_ss": N_ss, "N_ir": neuron_dropout, "N": N
+           "dim_ss_nc": dim_ss_nc, "N_ss": N_ss, "N_ir": neuron_dropout, "N": N, "rc_lag": train_step*dts
            }
 
 # save results
-pickle.dump(results, open(f"{path}/rc_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
+# pickle.dump(results, open(f"{path}/rc_exc_g{int(100*g)}_D{int(Delta)}_p{int(100*p)}_{rep+1}.pkl", "wb"))
 
 # preparations for plotting
-# y_pred = np.concatenate(y_pred)
-# y_targ = np.concatenate(y_targ)
-# loss = np.asarray(loss)
+y_pred = np.concatenate(y_pred)
+y_targ = np.concatenate(y_targ)
+loss = np.asarray(loss)
 
-# # plotting firing rate dynamics
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean*1e3, label="mean(r)")
-# ax.plot(s_std*1e3, label="std(r)")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim_ss}, Dim_r = {dim_ss_r}, dropout = {N - N_ss}")
-# fig.suptitle("Mean-field rate dynamics")
-# plt.tight_layout()
-#
-# # plotting spikes
-# fig, ax = plt.subplots(figsize=(12, 4))
-# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-# plt.colorbar(im, ax=ax)
-# ax.set_xlabel("steps")
-# ax.set_ylabel("neurons")
-# fig.suptitle("Spiking dynamics")
-# plt.tight_layout()
-#
-# # plotting impulse response
-# fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
-# fig.suptitle("Impulse response")
-# ax = axes[0]
-# for c in condition:
-#     ax.plot(np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r (Hz)")
-# ax.legend()
-# ax = axes[1]
-# ax.plot(sep, label="target IR")
-# ax.plot(ir_fit, label="fitted IR")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("SR")
-# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-2], decimals=1)},"
-#              f"Dim_r = {np.round(results['dim_ir_reduced'], decimals=1)}")
-# plt.tight_layout()
-#
-# # plotting test data predictions
-# fig = plt.figure(figsize=(12, n_patterns*2))
-# grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
-# fig.suptitle("Test Predictions")
-# for i in range(n_patterns):
-#     ax = fig.add_subplot(grid[i, 0])
-#     ax.plot(y_targ[:, i], label="target", color="black")
-#     ax.plot(y_pred[:, i], label="prediction", color="royalblue")
-#     ax.set_xlabel("steps")
-#     ax.set_ylabel("Out")
-#     ax.set_title(f"Pattern {i+1}")
-#     ax.legend()
-# plt.tight_layout()
-#
-# # plotting test loss
-# fig = plt.figure(figsize=(12, n_patterns*2))
-# grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
-# fig.suptitle("Test Loss")
-# for i in range(n_patterns):
-#     ax = fig.add_subplot(grid[i, 0])
-#     ax.plot(loss[:, i])
-#     ax.set_xlabel("lag (ms)")
-#     ax.set_ylabel("MSE")
-#     ax.set_title(f"Pattern {i+1}")
-#     ax.legend()
-# plt.tight_layout()
-#
-# # plotting fitted weights
-# fig = plt.figure(figsize=(12, 8))
-# grid = fig.add_gridspec(nrows=2, ncols=1)
-# for i in range(n_patterns):
-#     ax = fig.add_subplot(grid[i, 0])
-#     im = ax.imshow(np.asarray(readout_weights)[:, :, i], aspect="auto", cmap="viridis", interpolation="none")
-#     plt.colorbar(im, ax=ax)
-#     ax.set_xlabel("neurons")
-#     ax.set_ylabel("time lags")
-#     ax.set_title(f"Readout for pattern {i+1}")
-# fig.suptitle("Readout weights")
-# plt.tight_layout()
-# plt.show()
+# plotting firing rate dynamics
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(s_mean*1e3, label="mean(r)")
+ax.plot(s_std*1e3, label="std(r)")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r")
+ax.set_title(f"Dim = {dim_ss}, Dim_r = {dim_ss_r}, dropout = {N - N_ss}")
+fig.suptitle("Mean-field rate dynamics")
+plt.tight_layout()
+
+# plotting spikes
+fig, ax = plt.subplots(figsize=(12, 4))
+im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("steps")
+ax.set_ylabel("neurons")
+fig.suptitle("Spiking dynamics")
+plt.tight_layout()
+
+# plotting impulse response
+fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
+fig.suptitle("Impulse response")
+ax = axes[0]
+for c in condition:
+    ax.plot(np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
+ax.set_xlabel("steps")
+ax.set_ylabel("r (Hz)")
+ax.legend()
+ax = axes[1]
+ax.plot(sep, label="target IR")
+ax.plot(ir_fit, label="fitted IR")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("SR")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-2], decimals=1)},"
+             f"Dim_r = {np.round(results['dim_ir_reduced'], decimals=1)}")
+plt.tight_layout()
+
+# plotting test data predictions
+fig = plt.figure(figsize=(12, n_patterns*2))
+grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
+fig.suptitle("Test Predictions")
+for i in range(n_patterns):
+    ax = fig.add_subplot(grid[i, 0])
+    ax.plot(y_targ[:, i], label="target", color="black")
+    ax.plot(y_pred[:, i], label="prediction", color="royalblue")
+    ax.set_xlabel("steps")
+    ax.set_ylabel("Out")
+    ax.set_title(f"Pattern {i+1}")
+    ax.legend()
+plt.tight_layout()
+
+# plotting test loss
+fig = plt.figure(figsize=(12, n_patterns*2))
+grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
+fig.suptitle("Test Loss")
+for i in range(n_patterns):
+    ax = fig.add_subplot(grid[i, 0])
+    ax.plot(loss[:, i])
+    ax.set_xlabel("lag (ms)")
+    ax.set_ylabel("MSE")
+    ax.set_title(f"Pattern {i+1}")
+    ax.legend()
+plt.tight_layout()
+
+# plotting fitted weights
+fig = plt.figure(figsize=(12, 8))
+grid = fig.add_gridspec(nrows=2, ncols=1)
+for i in range(n_patterns):
+    ax = fig.add_subplot(grid[i, 0])
+    im = ax.imshow(np.asarray(readout_weights)[:, :, i], aspect="auto", cmap="viridis", interpolation="none")
+    plt.colorbar(im, ax=ax)
+    ax.set_xlabel("neurons")
+    ax.set_ylabel("time lags")
+    ax.set_title(f"Readout for pattern {i+1}")
+fig.suptitle("Readout weights")
+plt.tight_layout()
+plt.show()
