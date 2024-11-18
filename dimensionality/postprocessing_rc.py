@@ -7,7 +7,7 @@ from scipy.ndimage import gaussian_filter1d
 # condition
 iv = "p"
 condition = "rc_exc"
-path = "/home/richard-gast/Documents/data/dimensionality"
+path = "/media/richard/results/dimensionality"
 
 # loss meta parameters
 sigma = 5
