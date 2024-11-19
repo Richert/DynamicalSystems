@@ -53,8 +53,8 @@ for file in os.listdir(path):
             targets = data["targets"]
             loss = np.asarray([np.mean((t-p)**2) for t, p in zip(predictions, targets)])[start:]
             loss_smoothed = np.asarray(gaussian_filter1d(loss, sigma=sigma))
-            results["min_loss"].append(np.min(loss_smoothed))
-            results["max_loss"].append(np.max(loss_smoothed))
+            results["min_loss"].append(np.nanmin(loss_smoothed))
+            results["max_loss"].append(np.nanmax(loss_smoothed))
             try:
                 idx = np.argwhere(loss_smoothed > threshold).squeeze()[0]
             except IndexError:
