@@ -25,6 +25,8 @@ cmap = "ch:"
 iv = "p"
 condition = "rc_exc"
 path = "/home/richard-gast/Documents/data/dimensionality"
+dim_centered = True
+file_ending = "centered" if dim_centered else "nc"
 
 # create dataframe
 df = read_pickle(f"{path}/{condition}_summary.pkl")
@@ -53,14 +55,14 @@ for i, (y, ylabel) in enumerate(zip(["s_mean", "s_norm"], [r"$\bar s / \tau_s$",
 fig.suptitle("Steady-Sate Firing Rates of Excitatory Networks")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_firing_rates.pdf')
+plt.savefig(f'{path}/figures/exc_firing_rates_rc.pdf')
 
 # line plots for network dimensionality
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(nrows=2, ncols=len(ivs))
 for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
-    for i, (y, ylabel) in enumerate(zip(["dim_ss", "dim_ir"], [r"$D_{ss}(C)$", r"$D_{ir}(C)$"])):
+    for i, (y, ylabel) in enumerate(zip([f"dim_ss_{file_ending}", f"dim_ir_{file_ending}"], [r"$D_{ss}(C)$", r"$D_{ir}(C)$"])):
         ax = fig.add_subplot(grid[i, j])
         l = lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap, legend=True if j == 2 else False)
         if j == 0:
@@ -78,7 +80,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Dimensionality of Steady-State vs. Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_rc_{file_ending}.pdf')
 
 # line plots for reservoir computing
 fig = plt.figure(figsize=(12, 6))
@@ -105,31 +107,6 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/exc_reservoir_computing.pdf')
 
-# scatter plots for network dimensionality vs. time constant
-fig = plt.figure(figsize=(6, 5))
-grid = fig.add_gridspec(nrows=2, ncols=2)
-df_tmp = df.loc[df[iv] == ivs[0], :]
-ax = fig.add_subplot(grid[1, 0])
-lineplot(df_tmp, x="g", hue="Delta", y="dim_ss", ax=ax, palette=cmap, legend=False)
-ax.set_ylabel(r"$D_{ss}$")
-ax.set_xlabel(r"conductance $g$ (nS)")
-ax.set_title("(A) (B) (C) (D) (E) (F)")
-ax = fig.add_subplot(grid[0, 1])
-l = lineplot(df_tmp, x="g", hue="Delta", y="dim_ir", ax=ax, palette=cmap, legend=True)
-ax.set_ylabel(r"$D_{ir}$")
-ax.set_xlabel(r"conductance $g$ (nS)")
-ax.set_title("Impulse response dimensionality")
-leg = l.axes.get_legend()
-leg.set_title(r"$\Delta$ (mV)")
-ax = fig.add_subplot(grid[1, 1])
-lineplot(df_tmp, x="g", hue="Delta", y="tau_ir", ax=ax, palette=cmap, legend=False)
-ax.set_ylabel(r"$\tau_{ir}$")
-ax.set_xlabel(r"conductance $g$ (nS)")
-ax.set_title("Impulse response time")
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
-fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_2.pdf')
-
 # scatter plots for firing rate heterogeneity vs dimensionality in steady state
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
@@ -137,7 +114,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="s_norm", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="s_norm", y=f"dim_ss_{file_ending}", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D(C)$")
@@ -155,7 +132,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Steady-State Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_ss.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_ss_rc_{file_ending}.pdf')
 
 # filter results for scatter plots
 min_tau = 20.0
@@ -168,7 +145,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x=f"dim_ir_{file_ending}", y=f"dim_ss_{file_ending}", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D_{ss}(C)$")
@@ -186,7 +163,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Steady-State vs. Impulse Response Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_ir.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_ir_rc_{file_ending}.pdf')
 
 # scatter plots for impulse response time constant vs dimensionality
 fig = plt.figure(figsize=(12, 6))
@@ -195,7 +172,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x=f"dim_ir_{file_ending}", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$\tau_{ir}$ (ms)")
@@ -213,7 +190,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Impulse Response Dimensionality vs. Decay Time Constant")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_tau.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_tau_rc_{file_ending}.pdf')
 
 # scatter plots for impulse response time constant vs rc performance
 fig = plt.figure(figsize=(12, 6))
@@ -222,7 +199,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_nc", y="tau_rc", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x=f"dim_ir_{file_ending}", y="tau_rc", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$\tau_{rc}$ (ms)")
@@ -240,6 +217,6 @@ for j, p in enumerate(ivs):
 fig.suptitle("Impulse Response Dimensionality vs. Reservoir Computing Memory")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_rc.pdf')
+plt.savefig(f'{path}/figures/exc_reservoir_computing_2_{file_ending}.pdf')
 
 plt.show()

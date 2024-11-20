@@ -24,6 +24,8 @@ cmap = "ch:"
 iv = "p"
 condition = "dim2_exc"
 path = "/home/richard-gast/Documents/data/dimensionality"
+dim_centered = True
+file_ending = "centered" if dim_centered else "_nc"
 
 # load data
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
@@ -45,13 +47,13 @@ for file in os.listdir(path):
             results[iv].append(float(f[-2][1:]))
 
             # steady-state analysis
-            results["dim_ss"].append(data["dim_ss"]*data["N"])
+            results["dim_ss"].append(data["dim_ss"] if dim_centered else data["dim_ss_nc"])
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
 
             # impulse response analysis
-            results["dim_ir"].append(data["dim_ir"])
+            results["dim_ir"].append(data["dim_ir"] if dim_centered else data["dim_ir_nc"])
             results["tau_ir"].append(data["params_ir"][-2])
             results["offset_ir"].append(data["params_ir"][0])
             results["amp_ir"].append(data["params_ir"][2])
@@ -109,32 +111,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Dimensionality of Steady-State vs. Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality.pdf')
-
-# scatter plots for network dimensionality vs. time constant
-fig = plt.figure(figsize=(6, 5))
-grid = fig.add_gridspec(nrows=2, ncols=2)
-df_tmp = df.loc[df[iv] == ivs[0], :]
-ax = fig.add_subplot(grid[1, 0])
-lineplot(df_tmp, x="g", hue="Delta", y="dim_ss", ax=ax, palette=cmap, legend=False)
-ax.set_ylabel(r"$D_{ss}$")
-ax.set_xlabel(r"conductance $g$ (nS)")
-ax.set_title("(A) (B) (C) (D) (E) (F)")
-ax = fig.add_subplot(grid[0, 1])
-l = lineplot(df_tmp, x="g", hue="Delta", y="dim_ir", ax=ax, palette=cmap, legend=True)
-ax.set_ylabel(r"$D_{ir}$")
-ax.set_xlabel(r"conductance $g$ (nS)")
-ax.set_title("Impulse response dimensionality")
-leg = l.axes.get_legend()
-leg.set_title(r"$\Delta$ (mV)")
-ax = fig.add_subplot(grid[1, 1])
-lineplot(df_tmp, x="g", hue="Delta", y="tau_ir", ax=ax, palette=cmap, legend=False)
-ax.set_ylabel(r"$\tau_{ir}$")
-ax.set_xlabel(r"conductance $g$ (nS)")
-ax.set_title("Impulse response time")
-fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
-fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_2.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_{file_ending}.pdf')
 
 # scatter plots for firing rate heterogeneity vs dimensionality in steady state
 fig = plt.figure(figsize=(12, 6))
@@ -161,7 +138,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Steady-State Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_ss.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_ss_{file_ending}.pdf')
 
 # filter results for scatter plots
 min_tau = 20.0
@@ -192,7 +169,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Steady-State vs. Impulse Response Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_ir.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_ir_{file_ending}.pdf')
 
 # scatter plots for impulse response time constant vs dimensionality
 fig = plt.figure(figsize=(12, 6))
@@ -219,6 +196,6 @@ for j, p in enumerate(ivs):
 fig.suptitle("Impulse Response Dimensionality vs. Decay Time Constant")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/exc_dimensionality_tau.pdf')
+plt.savefig(f'{path}/figures/exc_dimensionality_tau_{file_ending}.pdf')
 
 plt.show()

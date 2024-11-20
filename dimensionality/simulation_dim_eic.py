@@ -25,8 +25,8 @@ g_in = 10.0
 # get sweep condition
 rep = int(sys.argv[-1])
 g = float(sys.argv[-2])
-Delta_e = float(sys.argv[-3])
-Delta_i = float(sys.argv[-4])
+Delta = float(sys.argv[-3])
+ei_ratio = float(sys.argv[-4])
 path = str(sys.argv[-5])
 
 # input parameters
@@ -72,10 +72,10 @@ p_ee = 0.1
 p_ii = 0.4
 p_ie = 0.2
 p_ei = 0.4
-g_ee = g / np.sqrt(N_e * p_ee)
+g_ee = ei_ratio * g / np.sqrt(N_e * p_ee)
 g_ii = g / np.sqrt(N_i * p_ii)
 g_ei = g / np.sqrt(N_i * p_ei)
-g_ie = g / np.sqrt(N_e * p_ie)
+g_ie = ei_ratio * g / np.sqrt(N_e * p_ie)
 W_ee = random_connectivity(N_e, N_e, p_ee, normalize=False)
 W_ie = random_connectivity(N_i, N_e, p_ie, normalize=False)
 W_ei = random_connectivity(N_e, N_i, p_ei, normalize=False)
@@ -83,8 +83,8 @@ W_ii = random_connectivity(N_i, N_i, p_ii, normalize=False)
 
 # define distribution of etas
 f = gaussian if theta_dist == "gaussian" else lorentzian
-thetas_e = f(N_e, loc=v_t_e, scale=Delta_e, lb=v_r_e, ub=2*v_t_e-v_r_e)
-thetas_i = f(N_i, loc=v_t_i, scale=Delta_i, lb=v_r_i, ub=2*v_t_i-v_r_i)
+thetas_e = f(N_e, loc=v_t_e, scale=Delta, lb=v_r_e, ub=2*v_t_e-v_r_e)
+thetas_i = f(N_i, loc=v_t_i, scale=Delta, lb=v_r_i, ub=2*v_t_i-v_r_i)
 
 # initialize the model
 ######################
@@ -285,7 +285,7 @@ dim_ir2 = get_dim(ir_mean2[:ir_window, :], center=False)
 dim_ir_nc = (dim_ir1 + dim_ir2)/2
 
 # save results
-results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
+results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "dim_ss": dim_ss, "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ir": dim_ir, "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params, "mean_ir0": ir0,
            "mean_ir1": ir1, "std_ir1": np.mean(ir_std1, axis=1),
@@ -293,7 +293,7 @@ results = {"g": g, "Delta_e": Delta_e, "Delta_i": Delta_i,
            "mf_params_ir": params_mf, "dim_ss_reduced": dim_ss_r, "dim_ir_reduced": dim_ir_r,
            "dim_ss_nc": dim_ss_nc, "dim_ir_nc": dim_ir_nc, "N": N, "N_ss": N_ss, "N_ir1": N_ir1, "N_ir2": N_ir2
            }
-pickle.dump(results, open(f"{path}/dim2_eic_g{int(10*g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim2_eic_g{int(10*g)}_D{int(Delta)}_EI{10*int(ei_ratio)}_{rep+1}.pkl", "wb"))
 
 # # plotting firing rate dynamics
 # fig, ax = plt.subplots(figsize=(12, 4))

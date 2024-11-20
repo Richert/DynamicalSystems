@@ -23,7 +23,6 @@ E_i = -65.0
 v_spike = 50.0
 v_reset = -90.0
 g_in = 10.0
-tau_out = 20.0
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])

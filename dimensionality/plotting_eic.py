@@ -24,10 +24,12 @@ cmap = "ch:"
 iv = "Delta_i"
 condition = "dim2_eic"
 path = "/home/richard-gast/Documents/data/dimensionality"
+dim_centered = False
+file_ending = "centered" if dim_centered else "_nc"
 
 # load data
 results = {"rep": [], "g": [], "Delta_e": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
-           "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [], "tau_mf": [], "dim_ss_nc": [], "dim_ir_nc": []}
+           "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [], "tau_mf": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
 
@@ -44,15 +46,13 @@ for file in os.listdir(path):
             results[iv].append(data[iv])
 
             # steady-state analysis
-            results["dim_ss"].append(data["dim_ss"])
-            results["dim_ss_nc"].append(data["dim_ss_nc"])
+            results["dim_ss"].append(data["dim_ss"] if dim_centered else data["dim_ss_nc"])
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
 
             # impulse response analysis
-            results["dim_ir"].append(data["dim_ir"])
-            results["dim_ir_nc"].append(data["dim_ir_nc"])
+            results["dim_ir"].append(data["dim_ir"] if dim_centered else data["dim_ir_nc"])
             results["tau_ir"].append(data["params_ir"][-2])
             results["offset_ir"].append(data["params_ir"][0])
             results["amp_ir"].append(data["params_ir"][2])
@@ -111,7 +111,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Dimensionality of Steady-State vs. Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/eic_dimensionality.pdf')
+plt.savefig(f'{path}/figures/eic_dimensionality_{file_ending}.pdf')
 
 # scatter plots for firing rate heterogeneity vs dimensionality in steady state
 fig = plt.figure(figsize=(12, 6))
@@ -138,7 +138,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Steady-State Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/eic_dimensionality_ss.pdf')
+plt.savefig(f'{path}/figures/eic_dimensionality_ss_{file_ending}.pdf')
 
 # scatter plots for firing rate heterogeneity vs dimensionality
 fig = plt.figure(figsize=(12, 6))
@@ -165,7 +165,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Steady-State vs. Impulse Response Dimensionality")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/eic_dimensionality_ir.pdf')
+plt.savefig(f'{path}/figures/eic_dimensionality_ir_{file_ending}.pdf')
 
 # scatter plots for impulse response time constant vs dimensionality
 fig = plt.figure(figsize=(12, 6))
@@ -174,7 +174,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta_e", "g"], [r"$\Delta_e$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_nc", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ir", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$\tau_{ir}$ (ms)")
@@ -192,7 +192,7 @@ for j, p in enumerate(ivs):
 fig.suptitle("Impulse Response Dimensionality vs. Decay Time Constant")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/eic_dimensionality_tau.pdf')
+plt.savefig(f'{path}/figures/eic_dimensionality_tau_{file_ending}.pdf')
 
 # scatter plots for impulse response time constant vs dimensionality
 fig = plt.figure(figsize=(12, 6))
@@ -201,7 +201,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta_e", "g"], [r"$\Delta_e$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_nc", y="sep_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ir", y="sep_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$S_{ir}$ (ms)")
@@ -219,6 +219,6 @@ for j, p in enumerate(ivs):
 fig.suptitle("Impulse Response Dimensionality vs. Impulse Response Separability")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/eic_dimensionality_sep.pdf')
+plt.savefig(f'{path}/figures/eic_dimensionality_sep_{file_ending}.pdf')
 
 plt.show()
