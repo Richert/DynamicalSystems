@@ -10,6 +10,13 @@ from custom_functions import *
 # define parameters
 ###################
 
+# get sweep condition
+rep = 0 #int(sys.argv[-1])
+g = 1.0 #float(sys.argv[-2])
+Delta = 2.0 #float(sys.argv[-3])
+ei_ratio = 1.0 #float(sys.argv[-4])
+path = "" #str(sys.argv[-5])
+
 # meta parameters
 device = "cpu"
 theta_dist = "gaussian"
@@ -23,7 +30,7 @@ train_window = 60
 train_step = 20
 sigma = 5
 threshold = 0.05
-noise_lvl = 1.0 * 1e-3
+noise_lvl = 0.0 * 1e-3
 
 # general model parameters
 N = 1000
@@ -32,13 +39,6 @@ E_i = -65.0
 v_spike = 50.0
 v_reset = -90.0
 g_in = 10.0
-
-# get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 2.0 #float(sys.argv[-2])
-Delta = 2.0 #float(sys.argv[-3])
-ei_ratio = 1.0 #float(sys.argv[-4])
-path = "" #str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
@@ -193,12 +193,11 @@ noise_e = poisson.rvs(mu=s_e * g_in * dt, size=(int((inp_cutoff + window) / dt),
 noise_i = poisson.rvs(mu=s_i * g_in * dt, size=(int((inp_cutoff + window) / dt), N_i))
 
 # definition of targets
-target_1 = np.zeros((int(window/dts),))
-target_1[int(delay_1/dts)] = 1.0
-target_1 = gaussian_filter1d(target_1, sigma=int(delay_1*0.1))
-target_2 = np.zeros((int(window/dts),))
-target_2[int(delay_2/dts)] = 1.0
-target_2 = gaussian_filter1d(target_2, sigma=int(delay_2*0.1))
+t = np.linspace(0, window*1e-3, int(window/dts))
+f1 = 6.0
+f2 = 12.0
+target_1 = np.sin(2.0*np.pi*f1*t)
+target_2 = np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]
 
 # collect network responses to stimulation
@@ -228,9 +227,9 @@ for trial in range(n_train + n_test):
     if c > 0:
         target[:, c-1] = 1.0
     targets_patrec.append(target)
-    target = np.zeros((int(window/dts), 1))
+    target = np.zeros((int(window/dts), 2))
     if c > 0:
-        target[:, 0] = targets[c-1]
+        target[:, c-1] = targets[c-1]
     targets_funcgen.append(target)
     conditions.append(c)
 
@@ -343,14 +342,13 @@ neuron_dropout = np.mean(neuron_dropout)
 
 # calculate the prediction performance in the function generation task
 w_readout = ridge(np.reshape(responses[:n_train], (n_train*int(window/dts), N_e)).T,
-                  np.reshape(targets_funcgen[:n_train], (n_train*int(window/dts), 1)).T,
+                  np.reshape(targets_funcgen[:n_train], (n_train*int(window/dts), 2)).T,
                   alpha=alpha)
 
-# calculate the prediction performance in the function generation task
 funcgen_fit, funcgen_predictions = [], []
 for r, t in zip(responses[n_train:], targets_funcgen[n_train:]):
     funcgen_fit.append(K @ t)
-    # w_readout = t.T @ w
+    #w_readout = t.T @ w
     funcgen_predictions.append(r @ w_readout.T)
 
 # calculate the prediction performance in the pattern recognition task
@@ -473,18 +471,20 @@ plt.tight_layout()
 
 # predictions and fit for function generation task
 n_trials = 5
-fig, axes = plt.subplots(nrows=n_trials, figsize=(12, 2*n_trials))
+fig, axes = plt.subplots(nrows=n_trials, ncols=n_patterns, figsize=(12, 2*n_trials))
 fig.suptitle("Function Generation Predictions")
 for i in range(n_trials):
     trial = np.random.choice(len(conditions[n_train:]))
-    ax = axes[i]
-    ax.plot(targets_funcgen[n_train:][trial, :, 0], label="target", color="black")
-    ax.plot(funcgen_fit[trial][:, 0], label="fit", linestyle="dashed", color="royalblue")
-    ax.plot(funcgen_predictions[trial][:, 0], label="prediction", color="darkorange")
-    ax.set_ylabel("readout")
-    ax.set_xlabel("steps")
-    ax.legend()
-    ax.set_title(f"Input condition {conditions[n_train:][trial]}")
+    c = conditions[n_train:][trial]
+    for j in range(n_patterns):
+        ax = axes[i, j]
+        ax.plot(targets_funcgen[n_train:][trial, :, j], label="target", color="black")
+        ax.plot(funcgen_fit[trial][:, j], label="fit", linestyle="dashed", color="royalblue")
+        ax.plot(funcgen_predictions[trial][:, j], label="prediction", color="darkorange")
+        ax.set_ylabel("readout")
+        ax.set_xlabel("steps")
+        ax.legend()
+        ax.set_title(f"Input condition {c}")
 plt.tight_layout()
 
 # kernel statistics

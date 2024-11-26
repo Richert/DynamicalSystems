@@ -27,6 +27,7 @@ condition = "rc_exc"
 path = "/home/richard-gast/Documents/data/dimensionality"
 dim_centered = True
 file_ending = "centered" if dim_centered else "nc"
+dim = "" if dim_centered else "_nc"
 
 # create dataframe
 df = read_pickle(f"{path}/{condition}_summary.pkl")
@@ -62,7 +63,7 @@ fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(nrows=2, ncols=len(ivs))
 for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
-    for i, (y, ylabel) in enumerate(zip([f"dim_ss_{file_ending}", f"dim_ir_{file_ending}"], [r"$D_{ss}(C)$", r"$D_{ir}(C)$"])):
+    for i, (y, ylabel) in enumerate(zip([f"dim_ss{dim}", f"dim_ir{dim}"], [r"$D_{ss}(C)$", r"$D_{ir}(C)$"])):
         ax = fig.add_subplot(grid[i, j])
         l = lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap, legend=True if j == 2 else False)
         if j == 0:
@@ -114,7 +115,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="s_norm", y=f"dim_ss_{file_ending}", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="s_norm", y=f"dim_ss{dim}", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D(C)$")
@@ -145,7 +146,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x=f"dim_ir_{file_ending}", y=f"dim_ss_{file_ending}", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x=f"dim_ir{dim}", y=f"dim_ss{dim}", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D_{ss}(C)$")
@@ -172,7 +173,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x=f"dim_ir_{file_ending}", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x=f"dim_ir{dim}", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$\tau_{ir}$ (ms)")
@@ -199,7 +200,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x=f"dim_ir_{file_ending}", y="tau_rc", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x=f"dim_ir{dim}", y="tau_rc", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$\tau_{rc}$ (ms)")
