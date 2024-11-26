@@ -228,9 +228,9 @@ for trial in range(n_train + n_test):
     if c > 0:
         target[:, c-1] = 1.0
     targets_patrec.append(target)
-    target = np.zeros((int(window/dts), 1))
+    target = np.zeros((int(window/dts), n_patterns))
     if c > 0:
-        target[:, 0] = targets[c-1]
+        target[:, c-1] = targets[c-1]
     targets_funcgen.append(target)
     conditions.append(c)
 
@@ -350,7 +350,6 @@ w_readout = ridge(np.reshape(responses[:n_train], (n_train*int(window/dts), N_e)
 funcgen_fit, funcgen_predictions = [], []
 for r, t in zip(responses[n_train:], targets_funcgen[n_train:]):
     funcgen_fit.append(K @ t)
-    # w_readout = t.T @ w
     funcgen_predictions.append(r @ w_readout.T)
 
 # calculate the prediction performance in the pattern recognition task
@@ -473,18 +472,20 @@ plt.tight_layout()
 
 # predictions and fit for function generation task
 n_trials = 5
-fig, axes = plt.subplots(nrows=n_trials, figsize=(12, 2*n_trials))
+fig, axes = plt.subplots(nrows=n_trials, ncols=n_patterns, figsize=(12, 2*n_trials))
 fig.suptitle("Function Generation Predictions")
 for i in range(n_trials):
     trial = np.random.choice(len(conditions[n_train:]))
-    ax = axes[i]
-    ax.plot(targets_funcgen[n_train:][trial, :, 0], label="target", color="black")
-    ax.plot(funcgen_fit[trial][:, 0], label="fit", linestyle="dashed", color="royalblue")
-    ax.plot(funcgen_predictions[trial][:, 0], label="prediction", color="darkorange")
-    ax.set_ylabel("readout")
-    ax.set_xlabel("steps")
-    ax.legend()
-    ax.set_title(f"Input condition {conditions[n_train:][trial]}")
+    c = conditions[n_train:][trial]
+    for j in range(n_patterns):
+        ax = axes[i, j]
+        ax.plot(targets_funcgen[n_train:][trial, :, j], label="target", color="black")
+        ax.plot(funcgen_fit[trial][:, j], label="fit", linestyle="dashed", color="royalblue")
+        ax.plot(funcgen_predictions[trial][:, j], label="prediction", color="darkorange")
+        ax.set_ylabel("readout")
+        ax.set_xlabel("steps")
+        ax.legend()
+        ax.set_title(f"Input condition {c}")
 plt.tight_layout()
 
 # kernel statistics
