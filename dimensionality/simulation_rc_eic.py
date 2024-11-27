@@ -10,6 +10,13 @@ from custom_functions import *
 # define parameters
 ###################
 
+# get sweep condition
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
+ei_ratio = float(sys.argv[-4])
+path = str(sys.argv[-5])
+
 # meta parameters
 device = "cpu"
 theta_dist = "gaussian"
@@ -17,13 +24,13 @@ epsilon = 1e-2
 
 # rc parameters
 alpha = 1e-4
-delay_1 = 100.0
-delay_2 = 500.0
+f1 = 9.0
+f2 = 14.0
 train_window = 60
 train_step = 20
 sigma = 5
-threshold = 0.05
-noise_lvl = 1.0 * 1e-3
+threshold = 0.1
+noise_lvl = 0.0 * 1e-3
 
 # general model parameters
 N = 1000
@@ -33,13 +40,6 @@ v_spike = 50.0
 v_reset = -90.0
 g_in = 10.0
 
-# get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 2.0 #float(sys.argv[-2])
-Delta = 2.0 #float(sys.argv[-3])
-ei_ratio = 1.0 #float(sys.argv[-4])
-path = "" #str(sys.argv[-5])
-
 # input parameters
 dt = 1e-2
 dts = 1e-1
@@ -47,8 +47,8 @@ dur = 20.0
 window = 1000.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns+1)
-n_train = 40
-n_test = 10
+n_train = 50
+n_test = 20
 amp = 30.0*1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
@@ -193,12 +193,9 @@ noise_e = poisson.rvs(mu=s_e * g_in * dt, size=(int((inp_cutoff + window) / dt),
 noise_i = poisson.rvs(mu=s_i * g_in * dt, size=(int((inp_cutoff + window) / dt), N_i))
 
 # definition of targets
-target_1 = np.zeros((int(window/dts),))
-target_1[int(delay_1/dts)] = 1.0
-target_1 = gaussian_filter1d(target_1, sigma=int(delay_1*0.1))
-target_2 = np.zeros((int(window/dts),))
-target_2[int(delay_2/dts)] = 1.0
-target_2 = gaussian_filter1d(target_2, sigma=int(delay_2*0.1))
+t = np.linspace(0, window*1e-3, int(window/dts))
+target_1 = np.sin(2.0*np.pi*f1*t)
+target_2 = np.sin(2.0*np.pi*f2*t)
 targets = [target_1, target_2]
 
 # collect network responses to stimulation
@@ -228,9 +225,9 @@ for trial in range(n_train + n_test):
     if c > 0:
         target[:, c-1] = 1.0
     targets_patrec.append(target)
-    target = np.zeros((int(window/dts), n_patterns))
+    target = np.zeros((int(window/dts), 1))
     if c > 0:
-        target[:, c-1] = targets[c-1]
+        target[:, 0] = targets[c-1]
     targets_funcgen.append(target)
     conditions.append(c)
 
@@ -277,6 +274,7 @@ for r, c in zip(responses[:n_train], conditions[:n_train]):
         dim_r = get_dim(r_tmp, center=True) / N_tmp
         dim_ir_col.append([dim_c, dim_r, dim_nc])
     cs.append(get_cov(r, center=False, alpha=alpha))
+dim_irs = np.mean(np.asarray(dim_ir_col), axis=0)
 
 # calculate the network kernel
 mean_response = np.mean(responses[:n_train], axis=0)
@@ -342,11 +340,15 @@ dim_sep_nc = np.mean(dim_sep_nc)
 neuron_dropout = np.mean(neuron_dropout)
 
 # calculate the prediction performance in the function generation task
+funcgen_amp = np.zeros((targets_funcgen.shape[1],))
+funcgen_amp[:int(0.9*len(funcgen_amp))] = np.linspace(1.0, 0.0, num=int(0.9*len(funcgen_amp)))
+for i in range(targets_funcgen.shape[0]):
+    for j in range(targets_funcgen.shape[-1]):
+        targets_funcgen[i, :, j] *= funcgen_amp
 w_readout = ridge(np.reshape(responses[:n_train], (n_train*int(window/dts), N_e)).T,
                   np.reshape(targets_funcgen[:n_train], (n_train*int(window/dts), 1)).T,
                   alpha=alpha)
 
-# calculate the prediction performance in the function generation task
 funcgen_fit, funcgen_predictions = [], []
 for r, t in zip(responses[n_train:], targets_funcgen[n_train:]):
     funcgen_fit.append(K @ t)
@@ -368,139 +370,146 @@ for i in range(int(window/(dts*train_step))+1):
     patrec_targets.append(test_targets)
 
 # save results
-# pickle.dump({"g": g, "Delta": Delta, "ei_ratio": ei_ratio, "dim_ss": dim_ss, "dim_ir": dim_ir,
-#              "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-#              "ir_target": ir, "ir_fit": ir_fit, "ir_params": p},
-#             open(f"{path}/eic_g{int(g)}_De{int(Delta_e)}_Di{int(Delta_i)}_{rep+1}.pkl", "wb"))
+results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
+           "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
+           "dim_ss": dim_ss_nc, "dim_ss_reduced": dim_ss_r, "dim_ss_centered": dim_ss,
+           "dim_ir": dim_irs[2], "dim_ir_reduced": dim_irs[1], "dim_ir_centered": dim_irs[0],
+           "dim_sep": dim_sep_nc, "dim_sep_reduced": dim_sep_reduced, "dim_sep_centered": dim_sep,
+           "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
+           "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
+           "funcgen_predictions": funcgen_predictions, "funcgen_targets": targets_funcgen,
+           "patrec_predictions": patrec_predictions, "patrec_targets": patrec_targets,
+           "patrec_lag": train_step*dts, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
+           }
+pickle.dump(results, open(f"{path}/rc_eic_EI{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # plotting
 ##########
 
-# steady-state dynamics
-fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
-ax = axes[0]
-ax.plot(s_mean*1e3, label="mean(r)")
-ax.plot(s_std*1e3, label="std(r)")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("r")
-ax.set_title("Mean-field rate dynamics")
-ax = axes[1]
-im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("neurons")
-ax.set_title("Spiking dynamics")
-fig.suptitle(f"D = {dim_ss}, D_r = {dim_ss_r}, D_nc = {dim_ss_nc}")
-plt.tight_layout()
-
-# impulse response dynamics
-fig, axes = plt.subplots(nrows=2, figsize=(12, 5))
-ax = axes[0]
-for c in condition:
-    ax.plot(np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
-ax.set_xlabel("steps")
-ax.set_ylabel("r (Hz)")
-ax.set_title("Mean-field response")
-ax.legend()
-ax = axes[1]
-ax.plot(sep, label="target IR")
-ax.plot(ir_fit, label="fitted IR")
-ax.legend()
-ax.set_xlabel("steps")
-ax.set_ylabel("S")
-ax.set_title("Input Separability")
-fig.suptitle(f"D = {dim_sep}, D_r = {dim_sep_reduced}, D_nc = {dim_sep_nc}")
-plt.tight_layout()
-
-# network kernels
-dim_irs = np.mean(np.asarray(dim_ir_col), axis=0)
-fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
-ax = axes[0]
-im = ax.imshow(C_mean, aspect="auto", interpolation="none", cmap="viridis")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("neurons")
-ax.set_ylabel("neurons")
-ax.set_title("Neural Covariances")
-ax = axes[1]
-im = ax.imshow(K, aspect="auto", interpolation="none", cmap="viridis")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("steps")
-ax.set_title("Network Response Kernel")
-ax = axes[2]
-im = ax.imshow(G, aspect="auto", interpolation="none", cmap="viridis")
-plt.colorbar(im, ax=ax)
-ax.set_xlabel("steps")
-ax.set_ylabel("steps")
-ax.set_title("Network Response Variance")
-fig.suptitle(f"D = {dim_irs[0]}, D_r = {dim_irs[1]}, D_nc = {dim_irs[2]}")
-plt.tight_layout()
-
-# predictions for pattern recognition task
-loss = np.asarray([np.mean((t-p)**2) for t, p in zip(patrec_targets, patrec_predictions)])
-loss_smoothed = np.asarray(gaussian_filter1d(loss, sigma=sigma))
-try:
-    idx = np.argwhere(loss_smoothed > threshold).squeeze()[0]
-except IndexError:
-    idx = 0
-patrec_predictions = np.concatenate(patrec_predictions)
-patrec_targets = np.concatenate(patrec_targets)
-fig = plt.figure(figsize=(12, n_patterns*3))
-grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
-fig.suptitle("Pattern Recognition Predictions")
-for i in range(n_patterns):
-    ax = fig.add_subplot(grid[i, 0])
-    ax.plot(patrec_targets[:, i], label="target", color="black")
-    ax.plot(patrec_predictions[:, i], label="prediction", color="royalblue")
-    ax.set_xlabel("steps")
-    ax.set_ylabel("readout")
-    ax.set_title(f"Pattern {i+1}")
-    ax.legend()
-plt.tight_layout()
-
-# plotting loss for pattern recognition task
-fig, ax = plt.subplots(figsize=(12, 4))
-fig.suptitle("Pattern Recognition Loss")
-ax.plot(loss)
-ax.plot(loss_smoothed)
-ax.axhline(y=threshold, color="black", linestyle="dashed")
-ax.set_xlabel("lag (ms)")
-ax.set_ylabel("MSE")
-ax.set_title(f"tau = {idx*2.0}")
-plt.tight_layout()
-
-# predictions and fit for function generation task
-n_trials = 5
-fig, axes = plt.subplots(nrows=n_trials, ncols=n_patterns, figsize=(12, 2*n_trials))
-fig.suptitle("Function Generation Predictions")
-for i in range(n_trials):
-    trial = np.random.choice(len(conditions[n_train:]))
-    c = conditions[n_train:][trial]
-    for j in range(n_patterns):
-        ax = axes[i, j]
-        ax.plot(targets_funcgen[n_train:][trial, :, j], label="target", color="black")
-        ax.plot(funcgen_fit[trial][:, j], label="fit", linestyle="dashed", color="royalblue")
-        ax.plot(funcgen_predictions[trial][:, j], label="prediction", color="darkorange")
-        ax.set_ylabel("readout")
-        ax.set_xlabel("steps")
-        ax.legend()
-        ax.set_title(f"Input condition {c}")
-plt.tight_layout()
-
-# kernel statistics
-_, axes = plt.subplots(nrows=3, figsize=(12, 9))
-ax = axes[0]
-ax.plot(K_mean)
-ax.set_ylabel("mean(K)")
-ax = axes[1]
-ax.plot(K_var)
-ax.set_ylabel("var(K)")
-ax = axes[2]
-ax.plot(K_diag)
-ax.set_xlabel("steps")
-ax.set_ylabel("diag(K)")
-fig.suptitle("Kernel statistics")
-plt.tight_layout()
-
-plt.show()
+# # steady-state dynamics
+# fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
+# ax = axes[0]
+# ax.plot(s_mean*1e3, label="mean(r)")
+# ax.plot(s_std*1e3, label="std(r)")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r")
+# ax.set_title("Mean-field rate dynamics")
+# ax = axes[1]
+# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("neurons")
+# ax.set_title("Spiking dynamics")
+# fig.suptitle(f"D = {dim_ss}, D_r = {dim_ss_r}, D_nc = {dim_ss_nc}")
+# plt.tight_layout()
+#
+# # impulse response dynamics
+# fig, axes = plt.subplots(nrows=2, figsize=(12, 5))
+# ax = axes[0]
+# for c in condition:
+#     ax.plot(np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
+# ax.set_xlabel("steps")
+# ax.set_ylabel("r (Hz)")
+# ax.set_title("Mean-field response")
+# ax.legend()
+# ax = axes[1]
+# ax.plot(sep, label="target IR")
+# ax.plot(ir_fit, label="fitted IR")
+# ax.legend()
+# ax.set_xlabel("steps")
+# ax.set_ylabel("S")
+# ax.set_title("Input Separability")
+# fig.suptitle(f"D = {dim_sep}, D_r = {dim_sep_reduced}, D_nc = {dim_sep_nc}")
+# plt.tight_layout()
+#
+# # network kernels
+# fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
+# ax = axes[0]
+# im = ax.imshow(C_mean, aspect="auto", interpolation="none", cmap="viridis")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("neurons")
+# ax.set_ylabel("neurons")
+# ax.set_title("Neural Covariances")
+# ax = axes[1]
+# im = ax.imshow(K, aspect="auto", interpolation="none", cmap="viridis")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("steps")
+# ax.set_title("Network Response Kernel")
+# ax = axes[2]
+# im = ax.imshow(G, aspect="auto", interpolation="none", cmap="viridis")
+# plt.colorbar(im, ax=ax)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("steps")
+# ax.set_title("Network Response Variance")
+# fig.suptitle(f"D = {dim_irs[0]}, D_r = {dim_irs[1]}, D_nc = {dim_irs[2]}")
+# plt.tight_layout()
+#
+# # predictions for pattern recognition task
+# loss = np.asarray([np.mean((t-p)**2) for t, p in zip(patrec_targets, patrec_predictions)])
+# loss_smoothed = np.asarray(gaussian_filter1d(loss, sigma=sigma))
+# try:
+#     idx = np.argwhere(loss_smoothed > threshold).squeeze()[0]
+# except IndexError:
+#     idx = 0
+# patrec_predictions = np.concatenate(patrec_predictions)
+# patrec_targets = np.concatenate(patrec_targets)
+# fig = plt.figure(figsize=(12, n_patterns*3))
+# grid = fig.add_gridspec(nrows=n_patterns, ncols=1)
+# fig.suptitle("Pattern Recognition Predictions")
+# for i in range(n_patterns):
+#     ax = fig.add_subplot(grid[i, 0])
+#     ax.plot(patrec_targets[:, i], label="target", color="black")
+#     ax.plot(patrec_predictions[:, i], label="prediction", color="royalblue")
+#     ax.set_xlabel("steps")
+#     ax.set_ylabel("readout")
+#     ax.set_title(f"Pattern {i+1}")
+#     ax.legend()
+# plt.tight_layout()
+#
+# # plotting loss for pattern recognition task
+# fig, ax = plt.subplots(figsize=(12, 4))
+# fig.suptitle("Pattern Recognition Loss")
+# ax.plot(loss)
+# ax.plot(loss_smoothed)
+# ax.axhline(y=threshold, color="black", linestyle="dashed")
+# ax.set_xlabel("lag (ms)")
+# ax.set_ylabel("MSE")
+# ax.set_title(f"tau = {idx*2.0}")
+# plt.tight_layout()
+#
+# # predictions and fit for function generation task
+# n_trials = 5
+# fig, axes = plt.subplots(nrows=n_trials, figsize=(12, 2*n_trials))
+# fig.suptitle("Function Generation Predictions")
+# for i in range(n_trials):
+#     trial = np.random.choice(len(conditions[n_train:]))
+#     c = conditions[n_train:][trial]
+#     ax = axes[i]
+#     ax.plot(targets_funcgen[n_train:][trial, :, 0], label="target", color="black")
+#     ax.plot(funcgen_fit[trial][:, 0], label="fit", linestyle="dashed", color="royalblue")
+#     ax.plot(funcgen_predictions[trial][:, 0], label="prediction", color="darkorange")
+#     ax.set_ylabel("readout")
+#     ax.set_xlabel("steps")
+#     ax.legend()
+#     ax.set_title(f"Input condition {c}")
+#     ax.set_ylim([-1.1, 1.1])
+# plt.tight_layout()
+#
+# # kernel statistics
+# _, axes = plt.subplots(nrows=3, figsize=(12, 9))
+# ax = axes[0]
+# ax.plot(K_mean)
+# ax.set_ylabel("mean(K)")
+# ax = axes[1]
+# ax.plot(K_var)
+# ax.set_ylabel("var(K)")
+# ax = axes[2]
+# ax.plot(K_diag)
+# ax.set_xlabel("steps")
+# ax.set_ylabel("diag(K)")
+# fig.suptitle("Kernel statistics")
+# plt.tight_layout()
+#
+# plt.show()
