@@ -3,7 +3,7 @@ from pyrates import CircuitTemplate, NodeTemplate, OperatorTemplate
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
-from scipy.stats import poisson, expon
+from scipy.stats import poisson
 import sys
 from custom_functions import *
 
@@ -381,7 +381,7 @@ results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "patrec_predictions": patrec_predictions, "patrec_targets": patrec_targets,
            "patrec_lag": train_step*dts, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
            }
-pickle.dump(results, open(f"{path}/rc_eic_EI{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/rc_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # plotting
 ##########
