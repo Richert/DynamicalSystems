@@ -377,7 +377,7 @@ results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "dim_sep": dim_sep_nc, "dim_sep_reduced": dim_sep_reduced, "dim_sep_centered": dim_sep,
            "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
            "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
-           "funcgen_predictions": funcgen_predictions, "funcgen_targets": targets_funcgen,
+           "funcgen_predictions": funcgen_predictions, "funcgen_targets": targets_funcgen[n_train:],
            "patrec_predictions": patrec_predictions, "patrec_targets": patrec_targets,
            "patrec_lag": train_step*dts, "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
            }
