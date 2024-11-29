@@ -6,7 +6,7 @@ from pandas import DataFrame
 # condition
 iv = "Delta_i"
 condition = "dim2_eic"
-path = "/home/richard-gast/Documents/data/dimensionality"
+path = "/media/richard/results/dimensionality"
 
 # load data
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
