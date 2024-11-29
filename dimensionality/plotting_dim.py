@@ -1,58 +1,224 @@
-import pickle
-from seaborn import heatmap, scatterplot, lineplot
 import matplotlib.pyplot as plt
-import os
-import sys
+plt.switch_backend('tkagg')
+from seaborn import scatterplot, lineplot
 import numpy as np
-from pandas import DataFrame
+from pandas import read_pickle
+
+# figure settings
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['figure.dpi'] = 200
+plt.rcParams['font.size'] = 12.0
+plt.rcParams['axes.titlesize'] = 12
+plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['lines.linewidth'] = 1.0
+markersize = 15.0
+cmap = "ch:"
 
 # condition
-condition = str(sys.argv[-1])
-
-# load data
-path = "/media/kennedy_labdata/rgast/results/dimensionality"
-results = {"rep": [], "g": [], "Delta": [], "dim": [], "s_mean": [], "s_std": [], "s_norm": []}
-for file in os.listdir(path):
-    if file[:len(condition)] == condition:
-        data = pickle.load(open(f"{path}/{file}", "rb"))
-        results["rep"].append(int(file.split("_")[-1][:-2]))
-        results["g"].append(data["g"])
-        results["Delta"].append(data["Delta"])
-        results["dim"].append(data["dim"])
-        results["s_mean"].append(np.mean(data["s_mean"]))
-        results["s_std"].append(np.mean(data["s_std"]))
-        results["s_norm"].append(results["s_std"][-1]/results["s_mean"][-1])
+iv = "Delta_i"
+iv_str = "\Delta_i"
+iv_unit = "mV"
+task_condition= "dim"
+neuron_type = "eic"
+condition = f"{task_condition}_{neuron_type}"
+path = "/home/richard-gast/Documents/data/dimensionality"
 
 # create dataframe
-df = DataFrame.from_dict(results)
+df = read_pickle(f"{path}/{condition}_summary.pkl")
 
-# filter results
-min_g = 0.0
-max_g = 25.0
-df = df.loc[df["g"] >= min_g, :]
-df = df.loc[df["g"] <= max_g, :]
+# filter out parts of the parameter regime
+df = df.loc[df["g"] > 0.0, :]
 
-# reshape results into 2D tables
-dim = df.pivot_table(values="dim", index="g", columns="Delta")
-fr_std = df.pivot_table(values="s_std", index="g", columns="Delta")
-fr_norm = df.pivot_table(values="s_norm", index="g", columns="Delta")
+# plot of firing rate statistics
+ivs = np.unique(df.loc[:, iv].values)
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(nrows=2, ncols=3)
+for i, (y, ylabel) in enumerate(zip(["s_mean", "s_norm"], [r"$\bar s / \tau_s$", r"$\mathrm{std}(s) / \bar s$"])):
+    for j, p in enumerate(ivs):
+        df_tmp = df.loc[df[iv] == p, :]
+        ax = fig.add_subplot(grid[i, j])
+        l = lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap, legend=True if j == 2 else False)
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+            ax.set_xlabel("")
+        else:
+            ax.set_xlabel(r"conductance $g$ (nS)")
+        if j == 0:
+            ax.set_ylabel(ylabel)
+        else:
+            ax.set_ylabel("")
+        if j == 2:
+            leg = l.axes.get_legend()
+            leg.set_title(r"$\Delta$ (mV)")
+fig.suptitle("Steady-Sate Firing Rates of Inhibitory Networks")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_firing_rates.pdf')
 
-# plotting 2D plots
-fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
-for ax, data, title in zip(axes, [dim, fr_std, fr_norm], ["Participation Ratio", "std(fr)", "std(fr)/mean(fr)"]
-                           ):
-    heatmap(data, ax=ax)
-    ax.set_title(title)
-plt.tight_layout()
+# line plots for network dimensionality
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(nrows=2, ncols=len(ivs))
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (y, ylabel) in enumerate(zip(["dim_ss", "dim_ir"], [r"$D_{ss}(C)$", r"$D_{ir}(C)$"])):
+        ax = fig.add_subplot(grid[i, j])
+        l = lineplot(df_tmp, x="g", hue="Delta", y=y, ax=ax, palette=cmap, legend=True if j == 2 else False)
+        if j == 0:
+            ax.set_ylabel(ylabel)
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+            ax.set_xlabel("")
+        else:
+            ax.set_xlabel(r"conductance $g$ (nS)")
+        if j == 2:
+            leg = l.axes.get_legend()
+            leg.set_title(r"$\Delta$ (mV)")
+fig.suptitle("Dimensionality of Steady-State vs. Impulse Response")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_dimensionality.pdf')
 
-# plotting 1D plots
-fig, axes = plt.subplots(ncols=3, figsize=(12, 4))
-ax = axes[0]
-scatterplot(df, x="Delta", y="dim", hue="g", palette="tab10", legend=False, ax=ax)
-lineplot(df, x="Delta", y="dim", hue="g", palette="tab10", ax=ax)
-ax = axes[1]
-scatterplot(df, x="s_norm", y="dim", hue="Delta", style="g", ax=ax)
-ax = axes[2]
-scatterplot(df, x="s_std", y="dim", hue="Delta", style="g", ax=ax)
-plt.tight_layout()
+# scatter plots for firing rate heterogeneity vs dimensionality in steady state
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="s_norm", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D_{ss}(C)$")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+        if i == 1:
+            ax.set_xlabel(r"$\mathrm{std}(s) / \bar s$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Steady-State Dimensionality")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_dimensionality_ss.pdf')
+
+# filter results for scatter plots
+min_tau = 20.0
+df = df.loc[df["tau_ir"] >= min_tau, :]
+
+# scatter plots for firing rate heterogeneity vs dimensionality
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="dim_ir", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D_{ss}(C)$")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+        if i == 1:
+            ax.set_xlabel(r"$D_{ir}(C)$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Steady-State vs. Impulse Response Dimensionality")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_dimensionality_ir.pdf')
+
+# scatter plots for impulse response time constant vs dimensionality
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="dim_ir", y="tau_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$\tau_{ir}$ (ms)")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+        if i == 1:
+            ax.set_xlabel(r"$D_{ir}(C)$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Impulse Response Dimensionality vs. Decay Time Constant")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_dimensionality_tau.pdf')
+
+# scatter plots for centering effects on dimensionality
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="dim_ss", y="dim_ss_nc", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D_{ss}(C_{nc})$")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+        if i == 1:
+            ax.set_xlabel(r"$D_{ss}(C)$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Centered vs. non-centered Steady-State Dimensionality")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_centering_ss.pdf')
+
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="dim_ir", y="dim_ir_nc", hue=hue, palette=cmap, legend=True if j == 2 else False,
+                        ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D_{ir}(C_{nc})$")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+        if i == 1:
+            ax.set_xlabel(r"$D_{ir}(C)$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Centered vs. non-centered Impulse Response Dimensionality")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/{neuron_type}_centering_ir.pdf')
+
 plt.show()

@@ -11,11 +11,11 @@ from custom_functions import *
 ###################
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
-ei_ratio = float(sys.argv[-4])
-path = str(sys.argv[-5])
+rep = 0 #int(sys.argv[-1])
+g = 0.5 #float(sys.argv[-2])
+Delta = 0.0 #float(sys.argv[-3])
+ei_ratio = 0.5 #float(sys.argv[-4])
+path = "/home/richard-gast/Documents/data" #str(sys.argv[-5])
 
 # meta parameters
 device = "cpu"
