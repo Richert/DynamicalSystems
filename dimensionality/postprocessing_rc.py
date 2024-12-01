@@ -74,7 +74,7 @@ for file in os.listdir(path):
             K_diag = data["K_diag"]
             results["K_diag"].append(np.var(K_diag))
             K_mean, K_var = data["K_mean"], data["K_var"]
-            results["K_magnitude"].append(np.mean(K_mean/K_var))
+            results["K_magnitude"].append(np.mean(K_mean/(K_var + 1e-9)))
 
 # create dataframe
 df = DataFrame.from_dict(results)
