@@ -23,7 +23,7 @@ iv_str = "\gamma"
 iv_unit = ""
 task_condition= "rc"
 neuron_type = "eic"
-dim_type = "_reduced"
+dim_type = "_centered"
 condition = f"{task_condition}_{neuron_type}"
 path = "/home/richard-gast/Documents/data/dimensionality"
 

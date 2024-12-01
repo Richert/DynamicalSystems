@@ -26,8 +26,8 @@ epsilon = 1e-2
 alpha = 1e-4
 f1 = 9.0
 f2 = 14.0
-train_window = 60
-train_step = 20
+train_window = 45
+train_step = 15
 sigma = 5
 threshold = 0.1
 noise_lvl = 0.0 * 1e-3
@@ -47,7 +47,7 @@ dur = 20.0
 window = 1000.0
 n_patterns = 2
 p_in = n_patterns/(n_patterns+1)
-n_train = 50
+n_train = 40
 n_test = 20
 amp = 30.0*1e-3
 init_cutoff = 1000.0
@@ -405,7 +405,7 @@ pickle.dump(results, open(f"{path}/rc_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(D
 # ax.set_xlabel("steps")
 # ax.set_ylabel("neurons")
 # ax.set_title("Spiking dynamics")
-# fig.suptitle(f"D = {dim_ss}, D_r = {dim_ss_r}, D_nc = {dim_ss_nc}")
+# fig.suptitle(f"D = {dim_ss}, D_r = {dim_ss_r}, D_c = {dim_ss_c}, D_rc = {dim_ss_rc}")
 # plt.tight_layout()
 #
 # # impulse response dynamics
@@ -424,7 +424,7 @@ pickle.dump(results, open(f"{path}/rc_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(D
 # ax.set_xlabel("steps")
 # ax.set_ylabel("S")
 # ax.set_title("Input Separability")
-# fig.suptitle(f"D = {dim_sep}, D_r = {dim_sep_reduced}, D_nc = {dim_sep_nc}")
+# fig.suptitle(f"D = {dim_sep}, D_r = {dim_sep_r}, D_c = {dim_sep_c}, D_rc = {dim_sep_rc}")
 # plt.tight_layout()
 #
 # # network kernels
@@ -447,7 +447,7 @@ pickle.dump(results, open(f"{path}/rc_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(D
 # ax.set_xlabel("steps")
 # ax.set_ylabel("steps")
 # ax.set_title("Network Response Variance")
-# fig.suptitle(f"D = {dim_irs[0]}, D_r = {dim_irs[1]}, D_nc = {dim_irs[2]}")
+# fig.suptitle(f"D = {dim_irs[0]}, D_r = {dim_irs[1]}, D_c = {dim_irs[2]}, D_rc = {dim_irs[3]}")
 # plt.tight_layout()
 #
 # # predictions for pattern recognition task
