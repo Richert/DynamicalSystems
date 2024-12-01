@@ -6,7 +6,7 @@ from scipy.ndimage import gaussian_filter1d
 
 # condition
 iv = "ei_ratio"
-condition = "rc_eic"
+condition = "rc_eir"
 path = "/media/richard/results/dimensionality"
 
 # loss meta parameters
