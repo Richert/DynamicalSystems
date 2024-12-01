@@ -17,7 +17,7 @@ start = 15
 # load data
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
            "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [],
-           "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": [],
+           "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": [], "funcgen_loss": [],
            "dim_ir_reduced": [], "dim_ss_reduced": [], "dim_ir_centered": [], "dim_ss_centered": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
