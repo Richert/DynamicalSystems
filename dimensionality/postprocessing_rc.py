@@ -18,7 +18,8 @@ start = 15
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
            "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [],
            "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": [], "funcgen_loss": [],
-           "dim_ir_reduced": [], "dim_ss_reduced": [], "dim_ir_centered": [], "dim_ss_centered": []}
+           "dim_ir_reduced": [], "dim_ss_reduced": [], "dim_ir_centered": [], "dim_ss_centered": [],
+           "dim_sep": [], "dim_sep_reduced": [], "dim_sep_centered": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
 
@@ -50,6 +51,11 @@ for file in os.listdir(path):
             results["tau_ir"].append(data["params_ir"][-2])
             results["offset_ir"].append(data["params_ir"][0])
             results["amp_ir"].append(data["params_ir"][2])
+
+            # separability analysis
+            results["dim_sep"].append(data["dim_sep"])
+            results["dim_sep_centered"].append(data["dim_sep_centered"])
+            results["dim_sep_reduced"].append(data["dim_sep_reduced"])
 
             # pattern recognition task
             predictions = data["patrec_predictions"]

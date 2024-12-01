@@ -11,11 +11,11 @@ from custom_functions import *
 ###################
 
 # get sweep condition
-rep = 0 #int(sys.argv[-1])
-g = 0.5 #float(sys.argv[-2])
-Delta = 0.0 #float(sys.argv[-3])
-ei_ratio = 0.5 #float(sys.argv[-4])
-path = "/home/richard-gast/Documents/data" #str(sys.argv[-5])
+rep = int(sys.argv[-1])
+g = float(sys.argv[-2])
+Delta = float(sys.argv[-3])
+ei_ratio = float(sys.argv[-4])
+path = str(sys.argv[-5])
 
 # meta parameters
 device = "cpu"
@@ -155,11 +155,12 @@ s.iloc[:, N_e:] /= tau_s_i
 # calculate dimensionality in the steady-state period
 epsilon = 1e-2
 s_vals = s.values[:, :N_e]
-dim_ss = get_dim(s_vals, center=True) / N_e
 s_vals_tmp = s_vals[:, np.mean(s_vals, axis=0)*1e3 > epsilon]
 N_ss = s_vals_tmp.shape[1]
-dim_ss_r = get_dim(s_vals_tmp, center=True) / N_ss
-dim_ss_nc = get_dim(s_vals, center=False) / N_e
+dim_ss = get_dim(s_vals, center=False) / N_e
+dim_ss_r = get_dim(s_vals_tmp, center=False) / N_ss
+dim_ss_c = get_dim(s_vals, center=True) / N_e
+dim_ss_rc = get_dim(s_vals_tmp, center=True) / N_ss
 
 # extract spikes in network
 spike_counts = []
@@ -271,8 +272,9 @@ for r, c in zip(responses[:n_train], conditions[:n_train]):
         dim_nc = get_dim(r, center=False) / N_e
         r_tmp = r[:, np.mean(r, axis=0) > epsilon]
         N_tmp = r_tmp.shape[1]
-        dim_r = get_dim(r_tmp, center=True) / N_tmp
-        dim_ir_col.append([dim_c, dim_r, dim_nc])
+        dim_r = get_dim(r_tmp, center=False) / N_tmp
+        dim_rc = get_dim(r_tmp, center=True) / N_tmp
+        dim_ir_col.append([dim_nc, dim_r, dim_c, dim_rc])
     cs.append(get_cov(r, center=False, alpha=alpha))
 dim_irs = np.mean(np.asarray(dim_ir_col), axis=0)
 
@@ -324,20 +326,22 @@ params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bound
 
 # calculate dimensionality in the impulse response period
 ir_window = int(2*params[-2]/dts)
-dim_sep, dim_sep_reduced, dim_sep_nc, neuron_dropout = [], [], [], []
+dim_sep, dim_sep_r, dim_sep_c, dim_sep_rc, neuron_dropout = [], [], [], [], []
 for c in condition:
     if c > 0:
         ir = impulse_responses[c]["mean"][:ir_window, :]
         ir_reduced = ir[:, np.mean(ir, axis=0) > epsilon]
         n_neurons = ir_reduced.shape[1]
-        dim_sep.append(get_dim(ir, center=True) / N_e)
-        dim_sep_reduced.append(get_dim(ir_reduced, center=True) / n_neurons)
-        dim_sep_nc.append(get_dim(ir, center=False) / N_e)
+        dim_sep.append(get_dim(ir, center=False) / N_e)
+        dim_sep_r.append(get_dim(ir_reduced, center=False) / n_neurons)
+        dim_sep_c.append(get_dim(ir, center=True) / N_e)
+        dim_sep_rc.append(get_dim(ir_reduced, center=True) / n_neurons)
         neuron_dropout.append(N_e - n_neurons)
 dim_sep = np.mean(dim_sep)
-dim_sep_reduced = np.mean(dim_sep_reduced)
-dim_sep_nc = np.mean(dim_sep_nc)
-neuron_dropout = np.mean(neuron_dropout)
+dim_sep_r = np.mean(dim_sep_r)
+dim_sep_c = np.mean(dim_sep_c)
+dim_sep_rc = np.mean(dim_sep_rc)
+neuron_dropout = np.mean(neuron_dropout) / N_e
 
 # calculate the prediction performance in the function generation task
 funcgen_amp = np.zeros((targets_funcgen.shape[1],))
@@ -372,9 +376,9 @@ for i in range(int(window/(dts*train_step))+1):
 # save results
 results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
-           "dim_ss": dim_ss_nc, "dim_ss_reduced": dim_ss_r, "dim_ss_centered": dim_ss,
-           "dim_ir": dim_irs[2], "dim_ir_reduced": dim_irs[1], "dim_ir_centered": dim_irs[0],
-           "dim_sep": dim_sep_nc, "dim_sep_reduced": dim_sep_reduced, "dim_sep_centered": dim_sep,
+           "dim_ss": dim_ss, "dim_ss_r": dim_ss_r, "dim_ss_c": dim_ss_c, "dim_ss_rc": dim_ss_rc,
+           "dim_ir": dim_irs[0], "dim_ir_r": dim_irs[1], "dim_ir_c": dim_irs[2], "dim_ir_rc": dim_irs[3],
+           "dim_sep": dim_sep, "dim_sep_r": dim_sep_r, "dim_sep_c": dim_sep_c, "dim_sep_rc": dim_sep_rc,
            "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
            "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
            "funcgen_predictions": funcgen_predictions, "funcgen_targets": targets_funcgen[n_train:],
