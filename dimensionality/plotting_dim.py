@@ -18,11 +18,11 @@ markersize = 15.0
 cmap = "ch:"
 
 # condition
-iv = "Delta_i"
-iv_str = "\Delta_i"
-iv_unit = "mV"
+iv = "p"
+iv_str = "p"
+iv_unit = ""
 task_condition= "dim"
-neuron_type = "eic"
+neuron_type = "inh"
 condition = f"{task_condition}_{neuron_type}"
 path = "/home/richard-gast/Documents/data/dimensionality"
 
