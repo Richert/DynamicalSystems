@@ -16,8 +16,9 @@ start = 15
 
 # load data
 results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
-           "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [], "dim_ir_nc": [], "dim_ss_nc": [],
-           "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": []}
+           "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [],
+           "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": [],
+           "dim_ir_reduced": [], "dim_ss_reduced": [], "dim_ir_centered": [], "dim_ss_centered": []}
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
 
@@ -36,14 +37,16 @@ for file in os.listdir(path):
 
             # steady-state analysis
             results["dim_ss"].append(data["dim_ss"])
-            results["dim_ss_nc"].append(data["dim_ss_nc"])
+            results["dim_ss_centered"].append(data["dim_ss_centered"])
+            results["dim_ss_reduced"].append(data["dim_ss_reduced"])
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
 
             # impulse response analysis
             results["dim_ir"].append(data["dim_ir"])
-            results["dim_ir_nc"].append(data["dim_ir_nc"])
+            results["dim_ir_centered"].append(data["dim_ir_centered"])
+            results["dim_ir_reduced"].append(data["dim_ir_reduced"])
             results["tau_ir"].append(data["params_ir"][-2])
             results["offset_ir"].append(data["params_ir"][0])
             results["amp_ir"].append(data["params_ir"][2])
