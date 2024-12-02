@@ -15,11 +15,13 @@ threshold = 0.1
 start = 15
 
 # load data
-results = {"rep": [], "g": [], "Delta": [], iv: [], "dim_ss": [], "s_mean": [], "s_std": [], "s_norm": [],
-           "dim_ir": [], "tau_ir": [], "offset_ir": [], "amp_ir": [],
+results = {"rep": [], "g": [], "Delta": [], iv: [], "s_mean": [], "s_std": [], "s_norm": [],
+           "tau_ir": [], "offset_ir": [], "amp_ir": [],
            "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": [], "funcgen_loss": [],
-           "dim_ir_reduced": [], "dim_ss_reduced": [], "dim_ir_centered": [], "dim_ss_centered": [],
-           "dim_sep": [], "dim_sep_reduced": [], "dim_sep_centered": []}
+           "dim_ss": [], "dim_ss_r": [], "dim_ss_c": [], "dim_ss_rc": [],
+           "dim_ir": [], "dim_ir_r": [], "dim_ir_c": [], "dim_ir_rc": [],
+           "dim_sep": [], "dim_sep_r": [], "dim_sep_c": [], "dim_sep_rc": [],
+           }
 for file in os.listdir(path):
     if file[:len(condition)] == condition:
 
@@ -38,24 +40,27 @@ for file in os.listdir(path):
 
             # steady-state analysis
             results["dim_ss"].append(data["dim_ss"])
-            results["dim_ss_centered"].append(data["dim_ss_centered"])
-            results["dim_ss_reduced"].append(data["dim_ss_reduced"])
+            results["dim_ss_r"].append(data["dim_ss_r"])
+            results["dim_ss_c"].append(data["dim_ss_c"])
+            results["dim_ss_rc"].append(data["dim_ss_rc"])
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
 
             # impulse response analysis
             results["dim_ir"].append(data["dim_ir"])
-            results["dim_ir_centered"].append(data["dim_ir_centered"])
-            results["dim_ir_reduced"].append(data["dim_ir_reduced"])
+            results["dim_ir_r"].append(data["dim_ir_r"])
+            results["dim_ir_c"].append(data["dim_ir_c"])
+            results["dim_ir_rc"].append(data["dim_ir_rc"])
             results["tau_ir"].append(data["params_ir"][-2])
             results["offset_ir"].append(data["params_ir"][0])
             results["amp_ir"].append(data["params_ir"][2])
 
             # separability analysis
             results["dim_sep"].append(data["dim_sep"])
-            results["dim_sep_centered"].append(data["dim_sep_centered"])
-            results["dim_sep_reduced"].append(data["dim_sep_reduced"])
+            results["dim_sep_r"].append(data["dim_sep_r"])
+            results["dim_sep_c"].append(data["dim_sep_c"])
+            results["dim_sep_rc"].append(data["dim_sep_rc"])
 
             # pattern recognition task
             predictions = data["patrec_predictions"]
