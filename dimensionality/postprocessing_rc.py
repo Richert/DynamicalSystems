@@ -12,10 +12,11 @@ path = "/media/richard/results/dimensionality"
 # loss meta parameters
 sigma = 5
 threshold = 0.1
-start = 15
+start = 20
 
 # load data
-results = {"rep": [], "g": [], "Delta": [], iv: [], "s_mean": [], "s_std": [], "s_norm": [],
+results = {"rep": [], "g": [], "Delta": [], iv: [],
+           "s_mean": [], "s_std": [], "s_norm": [], "ff_mean": [], "ff_max": [],
            "tau_ir": [], "offset_ir": [], "amp_ir": [],
            "patrec_loss": [], "patrec_tau": [], "K_diag": [], "K_magnitude": [], "funcgen_loss": [],
            "dim_ss": [], "dim_ss_r": [], "dim_ss_c": [], "dim_ss_rc": [],
@@ -46,6 +47,8 @@ for file in os.listdir(path):
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
+            results["ff_mean"].append(np.mean(data["ff_within"][-2]))
+            results["ff_max"].append(np.max(data["ff_within"][-2]))
 
             # impulse response analysis
             results["dim_ir"].append(data["dim_ir"])

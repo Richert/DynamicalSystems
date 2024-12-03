@@ -18,11 +18,11 @@ markersize = 15.0
 cmap = "ch:"
 
 # condition
-iv = "p"
-iv_str = "p"
-iv_unit = ""
+iv = "Delta_i"
+iv_str = "\Delta_i"
+iv_unit = "(mV)"
 task_condition= "dim"
-neuron_type = "inh"
+neuron_type = "eic"
 condition = f"{task_condition}_{neuron_type}"
 path = "/home/richard-gast/Documents/data/dimensionality"
 
@@ -31,6 +31,8 @@ df = read_pickle(f"{path}/{condition}_summary.pkl")
 
 # filter out parts of the parameter regime
 df = df.loc[df["g"] > 0.0, :]
+# df.loc[:, "dim_ss"] *= 1000
+# df.loc[:, "dim_ir"] *= 1000
 
 # plot of firing rate statistics
 ivs = np.unique(df.loc[:, iv].values)
@@ -53,7 +55,7 @@ for i, (y, ylabel) in enumerate(zip(["s_mean", "s_norm"], [r"$\bar s / \tau_s$",
         if j == 2:
             leg = l.axes.get_legend()
             leg.set_title(r"$\Delta$ (mV)")
-fig.suptitle("Steady-Sate Firing Rates of Inhibitory Networks")
+fig.suptitle("Steady-Sate Firing Rates of E-I Networks")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/{neuron_type}_firing_rates.pdf')
@@ -78,7 +80,7 @@ for j, p in enumerate(ivs):
         if j == 2:
             leg = l.axes.get_legend()
             leg.set_title(r"$\Delta$ (mV)")
-fig.suptitle("Dimensionality of Steady-State vs. Impulse Response")
+fig.suptitle("Dimensionality of Steady-State and Impulse Response")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/{neuron_type}_dimensionality.pdf')

@@ -23,7 +23,7 @@ iv_str = "\gamma"
 iv_unit = ""
 task_condition= "rc"
 neuron_type = "eic"
-dim_type = "_centered"
+dim_type = "_rc"
 condition = f"{task_condition}_{neuron_type}"
 path = "/home/richard-gast/Documents/data/dimensionality"
 
@@ -257,7 +257,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ss_centered", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ss_c", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D_{ss}(C_{nc})$")
@@ -283,7 +283,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_centered", y="dim_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ir_c", y="dim_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D_{ir}(C_{nc})$")
@@ -310,7 +310,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ss_reduced", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ss_rc", y="dim_ss_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D_{ss}(C_{nc})$")
@@ -336,7 +336,7 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_reduced", y="dim_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ir_rc", y="dim_ir_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
             ax.set_ylabel(r"$D_{ir}(C_{nc})$")

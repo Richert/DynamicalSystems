@@ -22,8 +22,8 @@ v_reset = -55.0
 g_in = 10.0
 
 # get sweep condition
-g = 0.75 #float(sys.argv[-1])
-Delta = 1.0 #float(sys.argv[-2])
+g = 1.0 #float(sys.argv[-1])
+Delta = 4.0 #float(sys.argv[-2])
 
 # input parameters
 dt = 1e-2
@@ -74,7 +74,7 @@ net.add_diffeq_node("ik", f"config/ik_snn/ik", weights=W, source_var="s", target
 ############################
 
 # define input
-inp_neurons = np.random.choice(N, size=(int(N*p_in),), replace=False)
+inp_neurons = np.random.choice(N, size=(int(N*p_in),))
 inp = np.zeros((int(T/dt), N))
 inp[:, :] += poisson.rvs(mu=s_e*g_in*dt, size=(int(T/dt), N))
 inp[int(start/dt):int(start/dt)+int(dur/dt), inp_neurons] += poisson.rvs(mu=amp * g_in * dt,
@@ -88,16 +88,16 @@ s = obs.to_dataframe("out")
 s.iloc[:, :] *= 1e3/tau_s
 v = obs.to_numpy(("ik", "v"))
 
-# calculate neural correlation structure
+# calculate neural firing rate statistics
 window = 200.0
-r_ss = s.loc[start-window:start, :]
+r_ss = s.loc[:start, :]
 r_ir = s.loc[start:start+window, :]
 C_ss = get_cov(r_ss.values, center=True)
 C_ir = get_cov(r_ir.values, center=True)
-
-# calculate Kuramoto order parameter dynamics
-r = np.mean(s.values, axis=1)
-z = 1.0 - np.real(np.abs((1 - np.pi*C*r/k + 1.0j*(v-v_r))/(1 + np.pi*C*r/k - 1.0j*(v-v_r))))
+eigvals_ss = np.real(np.linalg.eigvals(C_ss))
+dim_ss = np.sum(eigvals_ss)**2/np.sum(eigvals_ss**2)
+eigvals_ir = np.real(np.linalg.eigvals(C_ir))
+dim_ir = np.sum(eigvals_ir)**2/np.sum(eigvals_ir**2)
 
 # figure settings
 print(f"Plotting backend: {plt.rcParams['backend']}")
@@ -113,59 +113,47 @@ markersize = 15.0
 cmap = "ch:"
 
 # create figure
-fig = plt.figure(figsize=(12, 5))
-grid = fig.add_gridspec(nrows=6, ncols=4)
-
-# plotting firing rate dynamics
-ax = fig.add_subplot(grid[:2, :3])
-ax.plot(np.mean(s, axis=1), label=r"$\mathrm{mean}(r)$")
-ax.plot(np.std(s, axis=1), label=r"$\mathrm{std}(r)$")
-ax.axvline(x=start, color="black", linestyle="dashed")
-ax.axvline(x=start+dur, color="black", linestyle="dashed", label="stimulus")
-ax.set_xlim([cutoff, T])
-ax.legend()
-ax.set_xlabel("time (ms)")
-ax.set_ylabel(r"$r$ (Hz)")
-ax.set_title(f"Mean-field dynamics")
-
-# plotting spikes
-ax2 = fig.add_subplot(grid[2:4, :3])
-spikes = s.values[:, inp_neurons].T
-ax2.imshow(spikes / np.max(spikes, axis=1, keepdims=True), aspect="auto", interpolation="none", cmap="Greys")
-xticks = [(tick-cutoff)*10 for tick in ax.get_xticks()]
-xlabels = [int(tick) for tick in ax.get_xticks()]
-ax2.set_xticks(xticks, labels=xlabels)
-ax2.set_xlim([0, int((T-cutoff)/dts)])
-ax2.set_xlabel("time (ms)")
-ax2.set_ylabel("neurons")
-ax2.set_title("Spiking dynamics in the network")
-
-# plotting input
-ax3 = fig.add_subplot(grid[4:, :3])
-ax3.imshow(inp[int(cutoff/dt)::int(dts/dt), inp_neurons].T, aspect="auto", interpolation="none", cmap="viridis")
-ax3.set_xticks(xticks, labels=xlabels)
-ax3.set_xlim([0, int((T-cutoff)/dts)])
-ax3.set_xlabel("time (ms)")
-ax3.set_ylabel("neurons")
-ax3.set_title("Input")
-
-# plotting connectivity
-ax4 = fig.add_subplot(grid[:3, 3])
-im = ax4.imshow(W[inp_neurons, :][:, inp_neurons], aspect="auto", interpolation="none", cmap="cividis")
-ax4.set_xlabel("neurons")
-ax4.set_ylabel("neurons")
-ax4.set_title(rf"$W$ for $p = {p}$")
+fig = plt.figure(figsize=(12, 3))
+grid = fig.add_gridspec(nrows=1, ncols=4)
 
 # plotting spike thresholds
-ax5 = fig.add_subplot(grid[3:, 3])
-ax5.hist(thetas[inp_neurons], bins=10)
-ax5.set_xlabel(r"spike threshold (mV)")
-ax5.set_ylabel(r"count")
-ax5.set_title(r"Spike threshold distribution")
+ax1 = fig.add_subplot(grid[0, 0])
+ax1.hist(thetas, bins=10)
+ax1.set_xlim([-60.0, -20.0])
+ax1.set_xlabel(r"$v_{\theta}$ (mV)")
+ax1.set_ylabel(r"count")
+ax1.set_title("spike thresholds")
+
+# plotting firing rate distributions
+ax2 = fig.add_subplot(grid[0, 1])
+_, bins, _ = ax2.hist(np.mean(r_ss.values, axis=0), bins=10, label="steady-state", alpha=0.5)
+ax2.hist(np.mean(r_ir.values, axis=0), bins=bins, label="impulse response", alpha=0.5)
+ax2.set_xlabel(r"$r$ (Hz)")
+ax2.set_ylabel(r"count")
+ax2.legend()
+ax2.set_title("firing rates")
+
+# plotting steady-state covariances
+ax3 = fig.add_subplot(grid[0, 2])
+neurons = np.random.choice(N, size=(100,))
+C_ss[np.eye(N) == 1.0] = 0.0
+ax3.imshow(C_ss[neurons, :][:, neurons], aspect="auto", cmap="viridis", interpolation="none")
+ax3.set_xlabel(r"neurons")
+ax3.set_ylabel(r"neurons")
+ax3.set_title(rf"SS: $D(C) = {np.round(dim_ss, decimals=0)}$")
+
+# plotting steady-state covariances
+ax3 = fig.add_subplot(grid[0, 3])
+C_ir[np.eye(N) == 1.0] = 0.0
+ax3.imshow(C_ir[neurons, :][:, neurons], aspect="auto", cmap="viridis", interpolation="none")
+ax3.set_xlabel(r"neurons")
+ax3.set_ylabel(r"neurons")
+ax3.set_title(rf"IR: $D(C) = {np.round(dim_ir, decimals=0)}$")
 
 # save figure
+fig.suptitle(rf"$\Delta = {np.round(Delta, decimals=1)}$ mV")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig("/home/richard-gast/Documents/data/dimensionality/figures/exc_dynamics.pdf")
+plt.savefig("/home/richard-gast/Documents/data/dimensionality/figures/exc_distr_het.pdf")
 
 plt.show()
