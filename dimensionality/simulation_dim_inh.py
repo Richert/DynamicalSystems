@@ -15,7 +15,7 @@ device = "cpu"
 theta_dist = "gaussian"
 
 # general model parameters
-N = 1000
+N = 200
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -23,11 +23,11 @@ v_reset = -90.0
 g_in = 10.0
 
 # get sweep condition
-rep = int(sys.argv[-1])
-g = float(sys.argv[-2])
-Delta = float(sys.argv[-3])
-p = float(sys.argv[-4])
-path = str(sys.argv[-5])
+rep = 0 #int(sys.argv[-1])
+g = 10.0 #float(sys.argv[-2])
+Delta = 4.0 #float(sys.argv[-3])
+p = 0.4 #float(sys.argv[-4])
+path = "" #str(sys.argv[-5])
 
 # input parameters
 dt = 1e-2
@@ -35,19 +35,19 @@ dts = 1e-1
 p_in = 0.6
 dur = 20.0
 window = 1000.0
-n_trials = 10
+n_trials = 5
 amp = 1e-2
 cutoff = 1000.0
 
 # exc parameters
-C = 100.0
-k = 0.7
-v_r = -60.0
+C = 20.0
+k = 1.0
+v_r = -65.0
 v_t = -40.0
 eta = 0.0
-a = 0.03
-b = -2.0
-d = 50.0
+a = 0.2
+b = 2.0
+d = 0.0
 s_e = 45.0*1e-3
 tau_s = 6.0
 
@@ -171,6 +171,8 @@ for trial in range(n_trials):
     ir2 = obs.to_numpy("out") * 1e3 / tau_s
     ir2s.append(ir2)
 
+    print(f"Finished {trial + 1} of {n_trials} trials.")
+
 # calculate trial-averaged network response
 ir0 = np.asarray(ir0s)
 ir1 = np.asarray(ir1s)
@@ -233,48 +235,48 @@ results = {"g": g, "Delta": Delta, "p": p,
            "mf_params_ir": params_mf, "dim_ss_reduced": dim_ss_r, "dim_ir_reduced": dim_ir_r,
            "dim_ss_nc": dim_ss_nc, "dim_ir_nc": dim_ir_nc, "N": N, "N_ss": N_ss, "N_ir1": N_ir1, "N_ir2": N_ir2
            }
-pickle.dump(results, open(f"{path}/dim2_inh_g{int(10*g)}_D{int(Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
+# pickle.dump(results, open(f"{path}/dim2_inh_g{int(10*g)}_D{int(Delta)}_p{int(10*p)}_{rep+1}.pkl", "wb"))
 
-# # plotting firing rate dynamics
-# fig, ax = plt.subplots(figsize=(12, 4))
-# ax.plot(s_mean*1e3, label="mean(r)")
-# ax.plot(s_std*1e3, label="std(r)")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r")
-# ax.set_title(f"Dim = {dim_ss}")
-# fig.suptitle("Mean-field rate dynamics")
-# plt.tight_layout()
-#
-# # plotting spikes
-# fig, ax = plt.subplots(figsize=(12, 4))
-# im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
-# plt.colorbar(im, ax=ax)
-# ax.set_xlabel("steps")
-# ax.set_ylabel("neurons")
-# fig.suptitle("Spiking dynamics")
-# plt.tight_layout()
-#
-# # plotting impulse response
-# fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
-# fig.suptitle("Impulse response")
-# ax = axes[0]
-# ax.plot(ir0, label="no input")
-# ax.plot(ir1, label="input")
-# ax.plot(diff, label="diff.")
-# ax.plot(ir_mf, label="diff. fit")
-# ax.set_xlabel("steps")
-# ax.set_ylabel("r (Hz)")
-# ax.legend()
-# ax.set_title(f"Impulse Response")
-# ax = axes[1]
-# ax.plot(sep, label="combined IR")
-# ax.plot(ir_fit, label="exp. fit")
-# ax.legend()
-# ax.set_xlabel("steps")
-# ax.set_ylabel("SR")
-# ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}, "
-#              f"tau_mf = {np.round(params_mf[-1], decimals=1)}")
-#
-# plt.tight_layout()
-# plt.show()
+# plotting firing rate dynamics
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(s_mean*1e3, label="mean(r)")
+ax.plot(s_std*1e3, label="std(r)")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("r")
+ax.set_title(f"Dim = {dim_ss}")
+fig.suptitle("Mean-field rate dynamics")
+plt.tight_layout()
+
+# plotting spikes
+fig, ax = plt.subplots(figsize=(12, 4))
+im = ax.imshow(s.T, aspect="auto", interpolation="none", cmap="Greys")
+plt.colorbar(im, ax=ax)
+ax.set_xlabel("steps")
+ax.set_ylabel("neurons")
+fig.suptitle("Spiking dynamics")
+plt.tight_layout()
+
+# plotting impulse response
+fig, axes = plt.subplots(nrows=2, figsize=(12, 4))
+fig.suptitle("Impulse response")
+ax = axes[0]
+ax.plot(ir0, label="no input")
+ax.plot(ir1, label="input")
+ax.plot(diff, label="diff.")
+ax.plot(ir_mf, label="diff. fit")
+ax.set_xlabel("steps")
+ax.set_ylabel("r (Hz)")
+ax.legend()
+ax.set_title(f"Impulse Response")
+ax = axes[1]
+ax.plot(sep, label="combined IR")
+ax.plot(ir_fit, label="exp. fit")
+ax.legend()
+ax.set_xlabel("steps")
+ax.set_ylabel("SR")
+ax.set_title(f"Dim = {np.round(results['dim_ir'], decimals=1)}, tau = {np.round(params[-1], decimals=1)}, "
+             f"tau_mf = {np.round(params_mf[-1], decimals=1)}")
+
+plt.tight_layout()
+plt.show()

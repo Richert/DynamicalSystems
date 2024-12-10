@@ -23,7 +23,7 @@ iv_str = "\gamma"
 iv_unit = ""
 task_condition= "rc"
 neuron_type = "eic"
-dim_type = "_rc"
+dim_type = "_r"
 condition = f"{task_condition}_{neuron_type}"
 path = "/home/richard-gast/Documents/data/dimensionality"
 
@@ -111,9 +111,32 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/rc_{neuron_type}_dimensionality_ss.pdf')
 
-# # filter results for scatter plots
-# min_tau = 20.0
-# df = df.loc[df["tau_ir"] >= min_tau, :]
+# scatter plots for fano factor vs dimensionality in steady state
+fig = plt.figure(figsize=(12, 6))
+grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
+for j, p in enumerate(ivs):
+    df_tmp = df.loc[df[iv] == p, :]
+    for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
+        ax = fig.add_subplot(grid[i, j])
+        s = scatterplot(df_tmp, x="ff_mean", y=f"dim_ss{dim_type}", hue=hue, palette=cmap,
+                        legend=True if j == 2 else False, ax=ax, s=markersize)
+        if j == 0:
+            ax.set_ylabel(r"$D_{ss}(C)$")
+        else:
+            ax.set_ylabel("")
+        if i == 0:
+            ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
+        if i == 1:
+            ax.set_xlabel(r"$\mathrm{ff}(s)$")
+        else:
+            ax.set_xlabel("")
+        if j == 2:
+            leg = s.axes.get_legend()
+            leg.set_title(hue_title)
+fig.suptitle("Steady-State Dimensionality")
+fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
+fig.canvas.draw()
+plt.savefig(f'{path}/figures/rc_{neuron_type}_ff_ss.pdf')
 
 # scatter plots for dimensionality in steady state vs impulse response
 fig = plt.figure(figsize=(12, 6))
@@ -196,7 +219,7 @@ fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
 plt.savefig(f'{path}/figures/rc_{neuron_type}_dimensionality_tau.pdf')
 
-# scatter plots for pattern recognition performance vs dimensionality
+# scatter plots for pattern recognition memory vs dimensionality
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
 for j, p in enumerate(ivs):
@@ -221,34 +244,34 @@ for j, p in enumerate(ivs):
 fig.suptitle("Impulse Response Dimensionality vs. Pattern Recognition Memory")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/rc_{neuron_type}_patrec_performance.pdf')
+plt.savefig(f'{path}/figures/rc_{neuron_type}_patrec_memory.pdf')
 
-# scatter plots for function generation performance vs dimensionality
+# scatter plots for pattern generation performance vs dimensionality
 fig = plt.figure(figsize=(12, 6))
 grid = fig.add_gridspec(ncols=len(ivs), nrows=2)
 for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x=f"dim_ir{dim_type}", y="funcgen_loss", hue=hue, palette=cmap,
+        s = scatterplot(df_tmp, x=f"dim_ir{dim_type}", y="patrec_loss", hue=hue, palette=cmap,
                         legend=True if j == 2 else False, ax=ax, s=markersize)
         if j == 0:
-            ax.set_ylabel(r"$\tau_{pr}$ (ms)")
+            ax.set_ylabel(r"MSE")
         else:
             ax.set_ylabel("")
         if i == 0:
             ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
         if i == 1:
-            ax.set_xlabel(r"MSE")
+            ax.set_xlabel(r"$D_{ir}(C)$")
         else:
             ax.set_xlabel("")
         if j == 2:
             leg = s.axes.get_legend()
             leg.set_title(hue_title)
-fig.suptitle("Impulse Response Dimensionality vs. Function Generation Performance")
+fig.suptitle("Impulse Response Dimensionality vs. Pattern Recognition Performance")
 fig.set_constrained_layout_pads(w_pad=0.03, h_pad=0.01, hspace=0., wspace=0.)
 fig.canvas.draw()
-plt.savefig(f'{path}/figures/rc_{neuron_type}_funcgen_performance.pdf')
+plt.savefig(f'{path}/figures/rc_{neuron_type}_patrec_performance.pdf')
 
 # scatter plots for centering effects on dimensionality
 fig = plt.figure(figsize=(12, 6))
@@ -257,16 +280,16 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ss_c", y="dim_ss", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ss_rc", y="dim_ss_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
-            ax.set_ylabel(r"$D_{ss}(C_{nc})$")
+            ax.set_ylabel(r"$D_{ss}(C_{r})$")
         else:
             ax.set_ylabel("")
         if i == 0:
             ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
         if i == 1:
-            ax.set_xlabel(r"$D_{ss}(C)$")
+            ax.set_xlabel(r"$D_{ss}(C_{rc})$")
         else:
             ax.set_xlabel("")
         if j == 2:
@@ -283,16 +306,16 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_c", y="dim_ir", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ir_rc", y="dim_ir_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
-            ax.set_ylabel(r"$D_{ir}(C_{nc})$")
+            ax.set_ylabel(r"$D_{ir}(C_{r})$")
         else:
             ax.set_ylabel("")
         if i == 0:
             ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
         if i == 1:
-            ax.set_xlabel(r"$D_{ir}(C)$")
+            ax.set_xlabel(r"$D_{ir}(C_{rc})$")
         else:
             ax.set_xlabel("")
         if j == 2:
@@ -310,16 +333,16 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ss_rc", y="dim_ss_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ss", y="dim_ss_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
-            ax.set_ylabel(r"$D_{ss}(C_{nc})$")
+            ax.set_ylabel(r"$D_{ss}(C_{r})$")
         else:
             ax.set_ylabel("")
         if i == 0:
             ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
         if i == 1:
-            ax.set_xlabel(r"$D_{ss}(C_r)$")
+            ax.set_xlabel(r"$D_{ss}(C)$")
         else:
             ax.set_xlabel("")
         if j == 2:
@@ -336,16 +359,16 @@ for j, p in enumerate(ivs):
     df_tmp = df.loc[df[iv] == p, :]
     for i, (hue, hue_title) in enumerate(zip(["Delta", "g"], [r"$\Delta$ (mV)", r"$g$ (nS)"])):
         ax = fig.add_subplot(grid[i, j])
-        s = scatterplot(df_tmp, x="dim_ir_rc", y="dim_ir_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
+        s = scatterplot(df_tmp, x="dim_ir", y="dim_ir_r", hue=hue, palette=cmap, legend=True if j == 2 else False,
                         ax=ax, s=markersize)
         if j == 0:
-            ax.set_ylabel(r"$D_{ir}(C_{nc})$")
+            ax.set_ylabel(r"$D_{ir}(C_{r})$")
         else:
             ax.set_ylabel("")
         if i == 0:
             ax.set_title(rf"${iv_str} = {np.round(p, decimals=2)}$ {iv_unit}")
         if i == 1:
-            ax.set_xlabel(r"$D_{ir}(C_r)$")
+            ax.set_xlabel(r"$D_{ir}(C)$")
         else:
             ax.set_xlabel("")
         if j == 2:

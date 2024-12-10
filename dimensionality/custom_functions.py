@@ -1,11 +1,26 @@
 import numpy as np
 from numpy.distutils.system_info import flame_info
-from scipy.stats import norm, cauchy
+from scipy.stats import norm, cauchy, rv_discrete, bernoulli
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import least_squares, curve_fit
 from scipy.signal import find_peaks
 from scipy.spatial.distance import cdist
 from typing import Union, Iterable, Callable
+
+
+def _wrap(idxs: np.ndarray, N: int) -> np.ndarray:
+    idxs[idxs < 0] = N+idxs[idxs < 0]
+    idxs[idxs >= N] = idxs[idxs >= N] - N
+    return idxs
+
+
+def dist(x: int, method: str = "inverse", zero_val: float = 1.0, sigma: float = 1.0) -> float:
+    if method == "inverse":
+        return 1 / x ** sigma if x > 0 else zero_val
+    if method == "gaussian":
+        return np.exp(-x/sigma**2) if x > 0 else zero_val
+    else:
+        raise ValueError("Invalid method.")
 
 
 def separability(x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -65,11 +80,26 @@ def fano_factor2(spikes: list, max_time: int, tau: int) -> np.ndarray:
     return np.asarray(ff)
 
 
-def convolve_exp(x: np.ndarray, tau: float, dt: float) -> np.ndarray:
+def convolve_exp(x: np.ndarray, tau: float, dt: float, d: float = 0.0) -> np.ndarray:
     y = np.zeros((x.shape[1],))
     ys = []
+    delay = int(d/dt)
     for step in range(x.shape[0]):
-        y = y + dt*(-y/tau) + x[step, :]
+        inp = x[step - delay] if step >= delay else 0.0
+        y = y + dt*(-y/tau) + inp
+        ys.append(y)
+    return np.asarray(ys)
+
+
+def convolve_alpha(x: np.ndarray, tau: float, d: float, dt: float) -> np.ndarray:
+    y = np.zeros((x.shape[1],))
+    z = np.zeros_like(y)
+    ys = []
+    delay = int(d/dt)
+    for step in range(x.shape[0]):
+        inp = x[step - delay] if step >= delay else 0.0
+        y = y + dt*z
+        z = z + dt*(inp - 2*z/tau - y/tau**2)
         ys.append(y)
     return np.asarray(ys)
 
@@ -305,3 +335,23 @@ def dualexponential(t: Union[float, np.ndarray], offset: float, delay: float, sc
     t1 = t - delay
     on = 1.0 * (t1 > 0.0)
     return offset + on * (1 - np.exp(-t1 / tau_r)) * (scale_s * np.exp(-t1 / tau_s) + scale_f * np.exp(-t1 / tau_f))
+
+
+def circular_connectivity(n1: int, n2: int, p: float, homogeneous_weights: bool = False, dist: str = "gaussian",
+                          scale: float = 1.0) -> np.ndarray:
+    p1 = np.linspace(-np.pi, np.pi, n1)
+    p2 = np.linspace(-np.pi, np.pi, n2)
+    n_conn = int(p*n2)
+    W = np.zeros((n1, n2))
+    f = gaussian if dist == "gaussian" else lorentzian
+    for i in range(n1):
+        distances = np.asarray([np.sin(0.5*(p1[i] - p2[j])) for j in range(n2)])
+        d_samples = f(n_conn, loc=0.0, scale=scale, lb=-1.0, ub=1.0)
+        indices = np.asarray([np.argmin(np.abs(distances - d)) for d in d_samples])
+        indices_unique = np.unique(indices)
+        if homogeneous_weights:
+            W[i, indices_unique] = len(indices) / len(indices_unique)
+        else:
+            for idx in indices_unique:
+                W[i, idx] = np.sum(indices == idx)
+    return W

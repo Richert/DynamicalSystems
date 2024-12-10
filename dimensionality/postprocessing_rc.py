@@ -47,8 +47,8 @@ for file in os.listdir(path):
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
-            results["ff_mean"].append(np.mean(data["ff_within"][-2]))
-            results["ff_max"].append(np.max(data["ff_within"][-2]))
+            results["ff_mean"].append(np.nanmean(data["ff_within"][-1]))
+            results["ff_max"].append(np.nanmax(data["ff_within"][-1]))
 
             # impulse response analysis
             results["dim_ir"].append(data["dim_ir"])

@@ -23,11 +23,11 @@ def lorentzian(n: int, eta: float, delta: float, lb: float, ub: float):
     return samples
 
 
-def dist(x: int, method: str = "inverse", zero_val: float = 1.0, inverse_pow: float = 1.0) -> float:
+def dist(x: int, method: str = "inverse", zero_val: float = 1.0, sigma: float = 1.0) -> float:
     if method == "inverse":
-        return 1/x**inverse_pow if x > 0 else zero_val
-    if method == "exp":
-        return np.exp(-x) if x > 0 else zero_val
+        return 1 / x ** sigma if x > 0 else zero_val
+    if method == "gaussian":
+        return np.exp(-x/sigma**2) if x > 0 else zero_val
     else:
         raise ValueError("Invalid method.")
 
@@ -132,7 +132,7 @@ conn_pow = 0.75
 gamma = 1e-4
 
 # define connectivity
-pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, inverse_pow=conn_pow) for idx in indices])
+pdfs = np.asarray([dist(idx, method="inverse", zero_val=0.0, sigma=conn_pow) for idx in indices])
 pdfs /= np.sum(pdfs)
 W = circular_connectivity(N, p, spatial_distribution=rv_discrete(values=(indices, pdfs)), homogeneous_weights=False)
 
