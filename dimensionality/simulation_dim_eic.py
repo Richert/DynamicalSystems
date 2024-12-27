@@ -160,7 +160,6 @@ s.iloc[:, :N_e] /= tau_s_e
 s.iloc[:, N_e:] /= tau_s_i
 
 # calculate dimensionality in the steady-state period
-epsilon = 1e-2
 s_vals = s.values[:, :N_e]
 s_vals_tmp = s_vals[:, np.mean(s_vals, axis=0)*1e3 > epsilon]
 N_ss = s_vals_tmp.shape[1]
