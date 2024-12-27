@@ -253,8 +253,8 @@ def dimensionality_filtered(x: np.ndarray, sigmas: list, windows: list) -> dict:
 def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, bounds: tuple, **kwargs) -> tuple:
 
     # normalize signal
-    x -= np.min(x)
-    x /= np.max(x)
+    x = x - np.min(x)
+    x = x / np.max(x)
 
     # fit
     p = curve_fit(f, time, x, bounds=bounds, **kwargs)
@@ -262,7 +262,7 @@ def impulse_response_fit(x: np.ndarray, time: np.ndarray, f: Callable, bounds: t
     # prediction
     y = f(time, *tuple(p[0]))
 
-    return p[0], y
+    return p[0], y, x
 
 
 def get_peaks(x: np.ndarray, prominence: float = 0.5, epsilon: float = 1e-3, **kwargs):
@@ -346,6 +346,26 @@ def circular_connectivity(n1: int, n2: int, p: float, homogeneous_weights: bool 
     f = gaussian if dist == "gaussian" else lorentzian
     for i in range(n1):
         distances = np.asarray([np.sin(0.5*(p1[i] - p2[j])) for j in range(n2)])
+        d_samples = f(n_conn, loc=0.0, scale=scale, lb=-1.0, ub=1.0)
+        indices = np.asarray([np.argmin(np.abs(distances - d)) for d in d_samples])
+        indices_unique = np.unique(indices)
+        if homogeneous_weights:
+            W[i, indices_unique] = len(indices) / len(indices_unique)
+        else:
+            for idx in indices_unique:
+                W[i, idx] = np.sum(indices == idx)
+    return W
+
+
+def input_connectivity(input_locations: Union[list, np.ndarray], n: int, p: float, homogeneous_weights: bool = False,
+                       dist: str = "gaussian", scale: float = 1.0) -> np.ndarray:
+    locs = np.linspace(-np.pi, np.pi, n)
+    n_conn = int(p*n)
+    W = np.zeros((len(input_locations), n))
+    f = gaussian if dist == "gaussian" else lorentzian
+    for i in range(len(input_locations)):
+        in_loc = input_locations[i]
+        distances = np.sin(0.5 * (locs - in_loc))
         d_samples = f(n_conn, loc=0.0, scale=scale, lb=-1.0, ub=1.0)
         indices = np.asarray([np.argmin(np.abs(distances - d)) for d in d_samples])
         indices_unique = np.unique(indices)

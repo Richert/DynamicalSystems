@@ -60,6 +60,45 @@ ik_op:
     I_ext: input(0.0)
 
 # operator for regular-spiking IK neurons
+stp_op:
+  base: OperatorTemplate
+  equations:
+    - "v' = (k*(v-v_r)*(v-v_theta) - u + eta + I_ext + (g_e*s_e + g_e_in)*(E_e - v) + (g_i*s_i + g_i_in)*(E_i - v)) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*spike"
+    - "d' = (1-d)/tau_d - alpha*d*f*spike"
+    - "f' = (F0-f)/tau_f + F0*(1-f)*spike"
+    - "s' = -s/tau_s + spike*d*f"
+  variables:
+    s: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    d: variable(1.0)
+    f: variable(1.0)
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_theta: -40.0
+    eta: 0.0
+    g_e: 1.0
+    E_e: 0.0
+    g_i: 1.0
+    E_i: -60.0
+    b: -2.0
+    tau_u: 33.33
+    kappa: 10.0
+    tau_d: 50.0
+    alpha: 0.05
+    tau_f: 20.0
+    F0: 0.5
+    tau_s: 6.0
+    spike: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+    g_e_in: input(0.0)
+    g_i_in: input(0.0)
+    I_ext: input(0.0)
+
+# operator for regular-spiking IK neurons
 eic_op:
   base: OperatorTemplate
   equations:

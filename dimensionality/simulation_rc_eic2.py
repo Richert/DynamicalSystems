@@ -12,7 +12,7 @@ from custom_functions import *
 
 # get sweep condition
 rep = 0 #int(sys.argv[-1])
-g = 0.5 #float(sys.argv[-2])
+g = 5.0 #float(sys.argv[-2])
 Delta = 4.0 #float(sys.argv[-3])
 ei_ratio = 1.0 #float(sys.argv[-4])
 path = "" #str(sys.argv[-5])
@@ -21,11 +21,7 @@ path = "" #str(sys.argv[-5])
 device = "cpu"
 theta_dist = "gaussian"
 epsilon = 1e-2
-
-# rc parameters
-alpha = 1e-3
-noise = 5.0 * 1e-3
-delay = 5.0
+alpha = 1e-4
 
 # general model parameters
 N = 1000
@@ -38,13 +34,12 @@ g_in = 10.0
 # input parameters
 dt = 1e-2
 dts = 1e-1
-dur = 10.0
+dur = 20.0
 window = 1000.0
 n_patterns = 1
 p_in = 0.2
-n_train = 15
-n_test = 5
-amp = 60.0 * 1e-3
+n_trials = 10
+amp = 50.0 * 1e-3
 init_cutoff = 1000.0
 inp_cutoff = 100.0
 
@@ -59,8 +54,12 @@ eta_e = 0.0
 a_e = 0.03
 b_e = -2.0
 d_e = 100.0
-s_e = 15.0*1e-3
+s_e = 20.0*1e-3
 tau_s_e = 6.0
+# tau_d_e = 100.0
+# tau_f_e = 30.0
+# alpha_e = 0.1
+# beta_e = 0.5
 
 # inh parameters
 p_i = 1-p_e
@@ -73,18 +72,22 @@ eta_i = 0.0
 a_i = 0.2
 b_i = 2.0
 d_i = 0.0
-s_i = 15.0*1e-3
+s_i = 20.0*1e-3
 tau_s_i = 10.0
+# tau_d_i = 150.0
+# tau_f_i = 60.0
+# alpha_i = 0.01
+# beta_i = 0.2
 
 # connectivity parameters
 p_ee = 0.2
 p_ii = 0.4
-p_ie = 0.3
+p_ie = 0.2
 p_ei = 0.4
-sigma_ee = 0.1
+sigma_ee = 0.2
 sigma_ii = 0.2
-sigma_ie = 0.3
-sigma_ei = 0.2
+sigma_ie = 0.4
+sigma_ei = 0.6
 g_ee = ei_ratio * g / np.sqrt(N_e * p_ee)
 g_ii = g / np.sqrt(N_i * p_ii)
 g_ei = g / np.sqrt(N_i * p_ei)
@@ -107,40 +110,45 @@ f = gaussian if theta_dist == "gaussian" else lorentzian
 thetas_e = f(N_e, loc=v_t_e, scale=Delta, lb=v_r_e, ub=2*v_t_e-v_r_e)
 thetas_i = f(N_i, loc=v_t_i, scale=Delta, lb=v_r_i, ub=2*v_t_i-v_r_i)
 
-# initialize the model
+# initialize the model10
 ######################
 
 # initialize operators
-op = OperatorTemplate.from_yaml("config/ik_snn/ik_op")
+op_key = "ik_op"
+op = OperatorTemplate.from_yaml(f"config/ik_snn/{op_key}")
 exc_vars = {"C": C_e, "k": k_e, "v_r": v_r_e, "v_theta": thetas_e, "eta": eta_e, "tau_u": 1/a_e, "b": b_e, "kappa": d_e,
-            "g_e": g_ee, "E_i": E_i, "tau_s": tau_s_e, "v": v_t_e, "g_i": g_ei, "E_e": E_e}
+            "g_e": g_ee, "E_i": E_i, "tau_s": tau_s_e, "v": v_t_e, "g_i": g_ei, "E_e": E_e,
+            # "tau_d": tau_d_e, "alpha": alpha_e, "tau_f": tau_f_e, "F0": beta_e
+            }
 inh_vars = {"C": C_i, "k": k_i, "v_r": v_r_i, "v_theta": thetas_i, "eta": eta_i, "tau_u": 1/a_i, "b": b_i, "kappa": d_i,
-            "g_e": g_ie, "E_i": E_i, "tau_s": tau_s_i, "v": v_t_i, "g_i": g_ii, "E_e": E_e}
+            "g_e": g_ie, "E_i": E_i, "tau_s": tau_s_i, "v": v_t_i, "g_i": g_ii, "E_e": E_e,
+            # "tau_d": tau_d_i, "alpha": alpha_i, "tau_f": tau_f_i, "F0": beta_i
+            }
 
 # initialize E and I network
 n = NodeTemplate(name="node", operators=[op])
 enet = CircuitTemplate(name="exc", nodes={f"exc_{i}": n for i in range(N_e)})
 inet = CircuitTemplate(name="inh", nodes={f"inh_{i}": n for i in range(N_i)})
-enet.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e",
+enet.add_edges_from_matrix(source_var=f"{op_key}/s", target_var=f"{op_key}/s_e",
                            source_nodes=[f"exc_{i}" for i in range(N_e)], weight=W_ee)
-inet.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i",
+inet.add_edges_from_matrix(source_var=f"{op_key}/s", target_var=f"{op_key}/s_i",
                            source_nodes=[f"inh_{i}" for i in range(N_i)], weight=W_ii)
-enet.update_var(node_vars={f"all/ik_op/{key}": val for key, val in exc_vars.items()})
-inet.update_var(node_vars={f"all/ik_op/{key}": val for key, val in inh_vars.items()})
+enet.update_var(node_vars={f"all/{op_key}/{key}": val for key, val in exc_vars.items()})
+inet.update_var(node_vars={f"all/{op_key}/{key}": val for key, val in inh_vars.items()})
 
 # combine E and I into single network
 eic = CircuitTemplate(name="eic", circuits={"exc": enet, "inh": inet})
-eic.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_e",
+eic.add_edges_from_matrix(source_var=f"{op_key}/s", target_var=f"{op_key}/s_e",
                           source_nodes=[f"exc/exc_{i}" for i in range(N_e)],
                           target_nodes=[f"inh/inh_{i}" for i in range(N_i)], weight=W_ie)
-eic.add_edges_from_matrix(source_var="ik_op/s", target_var="ik_op/s_i",
+eic.add_edges_from_matrix(source_var=f"{op_key}/s", target_var=f"{op_key}/s_i",
                           source_nodes=[f"inh/inh_{i}" for i in range(N_i)],
                           target_nodes=[f"exc/exc_{i}" for i in range(N_e)], weight=W_ei)
 
 # initialize model
 net = Network(dt, device=device)
 net.add_diffeq_node("eic", eic, input_var="g_e_in", output_var="s", spike_var="spike", reset_var="v",
-                    to_file=False, op="ik_op", spike_reset=v_reset, spike_threshold=v_spike, clear=True, N=N)
+                    to_file=False, op=op_key, spike_reset=v_reset, spike_threshold=v_spike, clear=True, N=N)
 
 # simulation 1: steady-state
 ############################
@@ -189,37 +197,28 @@ s_std = np.std(s_vals, axis=1)
 # simulation 2: impulse response
 ################################
 
-# definition of targets
-target_timescales = np.asarray([10.0, 20.0, 40.0, 80.0, 160.0])
-impulse = np.zeros((int(window/dts), 1))
-impulse[:int(dur/dts), 0] = 1.0
-target_signals = [convolve_exp(impulse, tau=t, d=delay, dt=dts) for t in target_timescales]
-target_signals = [t/np.max(t) for t in target_signals]
-
 # definition of inputs
 start = int(inp_cutoff/dt)
 stop = int((inp_cutoff+dur)/dt)
-W_in = circular_connectivity(1, N_e, p_in, homogeneous_weights=False, dist="gaussian", scale=0.1)
+W_in = input_connectivity(np.linspace(-np.pi, np.pi, num=n_patterns),
+                          N_e, p_in, homogeneous_weights=False, dist="gaussian", scale=0.5)
 impulse = poisson.rvs(mu=amp*g_in*dt, size=(stop-start, 1)) @ W_in
-background_e = poisson.rvs(mu=s_e * g_in * dt, size=(int((inp_cutoff + window) / dt), N_e))
-background_i = poisson.rvs(mu=s_i * g_in * dt, size=(int((inp_cutoff + window) / dt), N_i))
 
 # collect network responses to stimulation
 responses = {i: [] for i in range(n_patterns + 1)}
-targets = {i: [] for i in range(n_patterns + 1)}
 trial = 0
-while trial < (n_train + n_test):
+while trial < n_trials:
 
     # define background input
-    noise_e = poisson.rvs(mu=noise*g_in*dt, size=(int((inp_cutoff + window) / dt), N_e))
-    noise_i = poisson.rvs(mu=noise*g_in*dt, size=(int((inp_cutoff + window) / dt), N_i))
+    background_e = poisson.rvs(mu=s_e * g_in * dt, size=(int((inp_cutoff + window) / dt), N_e))
+    background_i = poisson.rvs(mu=s_i * g_in * dt, size=(int((inp_cutoff + window) / dt), N_i))
 
     for c in np.random.permutation(n_patterns+1):
 
         # generate random input for trial
         inp = np.zeros((int((inp_cutoff + window)/dt), N))
-        inp[:, :N_e] += background_e + noise_e
-        inp[:, N_e:] += background_i + noise_i
+        inp[:, :N_e] += background_e
+        inp[:, N_e:] += background_i
         if c > 0:
             inp[start:stop, :N_e] += impulse
         inp = convolve_exp(inp, tau_s_e, dt)
@@ -230,29 +229,29 @@ while trial < (n_train + n_test):
 
         # save trial results
         responses[c].append(ir)
-        target = np.zeros((ir.shape[0], len(target_timescales)))
-        if c > 0:
-            for i, t in enumerate(target_signals):
-                target[:, i] = t[:, 0]
-        targets[c].append(target)
+
+        # # test plotting
+        # fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
+        # ax = axes[0]
+        # ax.plot(np.mean(ir, axis=1))
+        # ax.set_ylabel("r")
+        # ax.set_title(f"Input condition {c}")
+        # ax = axes[1]
+        # ax.imshow(ir.T, interpolation="none", cmap="Greys", aspect="auto")
+        # ax.set_ylabel("neurons")
+        # ax.set_title("spikes")
+        # ax = axes[2]
+        # im = ax.imshow(inp.T, interpolation="none", cmap="viridis", aspect="auto")
+        # ax.set_xlabel("steps")
+        # ax.set_ylabel("neurons")
+        # ax.set_title("input")
+        # plt.colorbar(im, ax=ax, shrink=0.7)
+        # plt.tight_layout()
+        # plt.show()
 
     trial += 1
 
-    # # test plotting
-    # fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
-    # ax = axes[0]
-    # ax.plot(np.mean(ir, axis=1))
-    # ax.set_ylabel("r")
-    # ax.set_xlabel("steps")
-    # ax.set_title(f"Input condition {c}")
-    # ax = axes[1]
-    # ax.imshow(inp.T, interpolation="none", cmap="viridis", aspect="auto")
-    # ax.set_xlabel("steps")
-    # ax.set_ylabel("neurons")
-    # plt.tight_layout()
-    # plt.show()
-
-    print(f"Finished {trial} of {n_train + n_test} trials.")
+    print(f"Finished {trial} of {n_trials} trials.")
 
 # postprocessing
 ################
@@ -279,15 +278,15 @@ for r in responses[1]:
 dim_irs = np.mean(np.asarray(dim_ir_col), axis=0)
 
 # calculate the network kernel
-mean_response = np.mean(responses[1][:n_train], axis=0)
+mean_response = np.mean(responses[1], axis=0)
 C_mean = np.mean(cs, axis=0)
 C_inv = np.linalg.inv(C_mean)
 w = mean_response @ C_inv
 K = w @ mean_response.T
 G = np.zeros_like(K)
-for s_i in responses[1][:n_train]:
+for s_i in responses[1]:
     G += w @ (s_i - mean_response).T
-G /= n_train
+G /= n_trials
 
 # calculate the response variance across trials
 kernel_var = np.sum(G.flatten()**2)
@@ -302,9 +301,9 @@ K_var = np.var(K_shifted, axis=0)
 K_diag = np.diag(K)
 
 # calculate separability
-sep = separability(impulse_responses[0]["mean"], impulse_responses[1]["mean"], metric="cosine")
+sep = np.prod([separability(r0, r1, metric="cosine") for r0, r1 in zip(responses[0], responses[1])], axis=0)
 
-# fit dual-exponential to envelope of separability
+# fit dual-exponential to envelope of separability and kernel diagonal
 tau_r = 10.0
 tau_s = 50.0
 tau_f = 10.0
@@ -315,11 +314,12 @@ offset = 0.1
 p0 = [offset, delay, scale_s, scale_f, tau_r, tau_s, tau_f]
 time = s.index.values
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 1e2])
-params, ir_fit = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
+bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 5e1])
+ir_params, ir_fit, sep = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
+kernel_params, kernel_fit, K_diag = impulse_response_fit(K_diag, time, f=dualexponential, bounds=bounds, p0=p0)
 
 # calculate dimensionality in the impulse response period
-ir_window = int(2*params[-2]/dts)
+ir_window = int(2*ir_params[-2]/dts)
 ir = impulse_responses[1]["mean"][:ir_window, :]
 ir_reduced = ir[:, np.mean(ir, axis=0) > epsilon]
 n_neurons = ir_reduced.shape[1]
@@ -329,27 +329,15 @@ dim_sep_c = get_dim(ir, center=True) / N_e
 dim_sep_rc = get_dim(ir_reduced, center=True) / n_neurons
 neuron_dropout = (N_e - n_neurons) / N_e
 
-# calculate time scale generation performance
-X = np.concatenate(np.asarray([responses[0][:n_train], responses[1][:n_train]]), axis=0)
-X = np.concatenate(X, axis=0)
-y = np.concatenate(np.asarray([targets[0][:n_train], targets[1][:n_train]]), axis=0)
-y = np.concatenate(y, axis=0)
-w_readout = ridge(X.T, y.T, alpha=alpha)
-
-funcgen_fit, funcgen_predictions = [], []
-for r, t in zip(responses[1][n_train:], targets[1][n_train:]):
-    funcgen_fit.append(K @ t)
-    funcgen_predictions.append(r @ w_readout.T)
-
 # save results
 results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "s_mean": s_mean, "s_std": s_std, "ff_between": ffs, "ff_within": ffs2, "ff_windows": taus,
            "dim_ss": dim_ss, "dim_ss_r": dim_ss_r, "dim_ss_c": dim_ss_c, "dim_ss_rc": dim_ss_rc,
            "dim_ir": dim_irs[0], "dim_ir_r": dim_irs[1], "dim_ir_c": dim_irs[2], "dim_ir_rc": dim_irs[3],
            "dim_sep": dim_sep, "dim_sep_r": dim_sep_r, "dim_sep_c": dim_sep_c, "dim_sep_rc": dim_sep_rc,
-           "sep_ir": sep, "fit_ir": ir_fit, "params_ir": params,
+           "sep_ir": sep, "fit_ir": ir_fit, "params_ir": ir_params,
+           "fit_kernel": kernel_fit, "params_kernel": kernel_params,
            "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
-           "predictions": funcgen_predictions, "target_timescales": target_timescales, "targets": target_signals,
            "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
            }
 # pickle.dump(results, open(f"{path}/rc_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
@@ -379,19 +367,19 @@ plt.tight_layout()
 fig, axes = plt.subplots(nrows=2, figsize=(12, 5))
 ax = axes[0]
 for c in impulse_responses:
-    ax.plot(np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
-ax.set_xlabel("steps")
+    ax.plot(time, np.mean(impulse_responses[c]["mean"], axis=1), label=f"input {c}")
+ax.set_xlabel("time (ms)")
 ax.set_ylabel("r (Hz)")
 ax.set_title("Mean-field response")
 ax.legend()
 ax = axes[1]
-ax.plot(sep, label="target IR")
-ax.plot(ir_fit, label="fitted IR")
+ax.plot(time, sep, label="target IR")
+ax.plot(time, ir_fit, label="fitted IR")
 ax.legend()
-ax.set_xlabel("steps")
+ax.set_xlabel("time (ms)")
 ax.set_ylabel("S")
 ax.set_title("Input Separability")
-fig.suptitle(f"D = {dim_sep}, D_rc = {dim_sep_rc}, tau = {params[-2]}")
+fig.suptitle(f"D = {dim_sep}, D_rc = {dim_sep_rc}, tau_s = {ir_params[-2]}, tau_f = {ir_params[-1]}")
 plt.tight_layout()
 
 # network kernels
@@ -417,43 +405,20 @@ ax.set_title("Network Response Variance")
 fig.suptitle(f"D = {dim_irs[0]}, D_r = {dim_irs[1]}, D_c = {dim_irs[2]}, D_rc = {dim_irs[3]}")
 plt.tight_layout()
 
-# predictions for pattern recognition task
-loss = np.mean([(t-p)**2 for t, p in zip(targets[1], funcgen_predictions)], axis=0)
-# loss_smoothed = np.asarray(gaussian_filter1d(loss, sigma=sigma))
-avg_predictions = np.mean(funcgen_predictions, axis=0)
-var_predictions = np.std(funcgen_predictions, axis=0)
-fig = plt.figure(figsize=(12, len(target_timescales)*3))
-grid = fig.add_gridspec(nrows=len(target_timescales), ncols=1)
-fig.suptitle("Pattern Recognition Predictions")
-for i in range(len(target_timescales)):
-    ax = fig.add_subplot(grid[i, 0])
-    ax.plot(target_signals[i][:, 0], label="target", color="black")
-    ax.plot(avg_predictions[:, i], label="mean prediction", color="darkorange")
-    ax.fill_between(np.arange(avg_predictions.shape[0]),
-                    y1=np.maximum(avg_predictions[:, i] - var_predictions[:, i], np.zeros_like(avg_predictions[:, i])),
-                    y2=avg_predictions[:, i] + var_predictions[:, i],
-                    color="darkorange", alpha=0.5)
-    if i == len(target_timescales) - 1:
-        ax.set_xlabel("steps")
-    else:
-        ax.set_xlabel("")
-    ax.set_ylabel("readout")
-    ax.set_title(fr"$\tau = {target_timescales[i]}$ ms, $MSE = {np.round(np.mean(loss[:, i]), decimals=2)}$")
-    ax.legend()
-plt.tight_layout()
-
 # kernel statistics
 fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
 ax = axes[0]
-ax.plot(K_mean)
+ax.plot(time, K_mean)
 ax.set_ylabel("mean(K)")
 ax = axes[1]
-ax.plot(K_var)
+ax.plot(time, K_var)
 ax.set_ylabel("var(K)")
 ax = axes[2]
-ax.plot(K_diag)
-ax.set_xlabel("steps")
+ax.plot(time, K_diag, label="target")
+ax.plot(time, kernel_fit, label="fit")
+ax.set_xlabel("time (ms)")
 ax.set_ylabel("diag(K)")
+ax.set_title(f"tau_s = {kernel_params[-2]}, tau_f = {kernel_params[-1]}")
 fig.suptitle("Kernel statistics")
 plt.tight_layout()
 
