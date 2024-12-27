@@ -242,7 +242,7 @@ while trial < n_trials:
 
     trial += 1
 
-    print(f"Finished {trial} of {n_trials} trials.")
+    # print(f"Finished {trial} of {n_trials} trials.")
 
 # postprocessing
 ################
