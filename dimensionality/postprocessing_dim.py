@@ -35,7 +35,7 @@ for file in os.listdir(path):
             # steady-state analysis
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
-            results["s_norm"].append(np.mean(results["s_std"]*1e3/results["s_mean"]))
+            results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
 
             # dimensionality analysis
             for c1 in ["ss", "ir", "sep"]:
