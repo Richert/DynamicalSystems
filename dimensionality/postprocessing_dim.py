@@ -29,7 +29,7 @@ for file in os.listdir(path):
             rep = int(f[-1].split(".")[0])
             results["rep"].append(rep)
             results["g"].append(data["g"])
-            results["Delta"].append(data["Delta_e"])
+            results["Delta"].append(data["Delta"])
             results[iv].append(data[iv])
 
             # steady-state analysis
