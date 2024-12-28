@@ -36,6 +36,8 @@ for file in os.listdir(path):
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
             results["s_std"].append(np.mean(data["s_std"]))
             results["s_norm"].append(results["s_std"][-1]*1e3/results["s_mean"][-1])
+            results["ff_mean"].append(np.nanmean(data["ff_within"][-1]))
+            results["ff_max"].append(np.nanmax(data["ff_within"][-1]))
 
             # dimensionality analysis
             for c1 in ["ss", "ir", "sep"]:
@@ -49,7 +51,6 @@ for file in os.listdir(path):
 
             # kernel analysis
             results["tau_k"].append(data["params_kernel"][-2])
-            print(data["K_diag"].shape)
             results["mean_k"].append(np.mean(data["K_diag"]))
             results["std_k"].append(np.std(data["K_diag"]))
 
