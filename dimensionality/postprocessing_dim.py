@@ -49,7 +49,7 @@ for file in os.listdir(path):
 
             # kernel analysis
             results["tau_k"].append(data["params_kernel"][-2])
-            results["amp_k"].append(np.mean(data["K_diag"]))
+            results["mean_k"].append(np.mean(data["K_diag"]))
             results["std_k"].append(np.std(data["K_diag"]))
 
 # create dataframe
