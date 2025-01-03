@@ -76,20 +76,16 @@ p_ee = 0.2
 p_ii = 0.4
 p_ie = 0.2
 p_ei = 0.4
-sigma_ee = 0.2
-sigma_ii = 0.2
-sigma_ie = 0.4
-sigma_ei = 0.6
 g_ee = ei_ratio * g / np.sqrt(N_e * p_ee)
 g_ii = g / np.sqrt(N_i * p_ii)
 g_ei = g / np.sqrt(N_i * p_ei)
 g_ie = ei_ratio * g / np.sqrt(N_e * p_ie)
 
 # define connectivity
-W_ee = circular_connectivity(N_e, N_e, p_ee, homogeneous_weights=False, dist="gaussian", scale=sigma_ee)
-W_ie = circular_connectivity(N_i, N_e, p_ie, homogeneous_weights=False, dist="gaussian", scale=sigma_ie)
-W_ei = circular_connectivity(N_e, N_i, p_ei, homogeneous_weights=False, dist="gaussian", scale=sigma_ei)
-W_ii = circular_connectivity(N_i, N_i, p_ii, homogeneous_weights=False, dist="gaussian", scale=sigma_ii)
+W_ee = random_connectivity(N_e, N_e, p_ee, normalize=False)
+W_ie = random_connectivity(N_i, N_e, p_ie, normalize=False)
+W_ei = random_connectivity(N_e, N_i, p_ei, normalize=False)
+W_ii = random_connectivity(N_i, N_i, p_ii, normalize=False)
 
 # fig, ax = plt.subplots(figsize=(6, 6))
 # im = ax.imshow(W_ie, interpolation="none", cmap="cividis", aspect="auto")
@@ -331,7 +327,7 @@ results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
            "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
            }
-pickle.dump(results, open(f"{path}/dim_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/dim_0d_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # plotting
 ##########

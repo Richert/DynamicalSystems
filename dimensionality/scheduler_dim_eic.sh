@@ -28,7 +28,7 @@ for ei in "${eirs[@]}"; do
         # python calls
         (
         echo "Starting job #$(($IDX+1)) of ${n} jobs for g = ${g}, delta = ${d}, and EIR = ${ei}."
-        python simulation_dim_eic.py $save_dir $ei $d $g $IDX
+        python simulation_0d_eic.py $save_dir $ei $d $g $IDX
         sleep 1
         ) &
 
