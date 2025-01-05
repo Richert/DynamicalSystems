@@ -6,6 +6,7 @@ from scipy.optimize import least_squares, curve_fit
 from scipy.signal import find_peaks
 from scipy.spatial.distance import cdist
 from typing import Union, Iterable, Callable
+from equidistantpoints import EquidistantPoints
 
 
 def _wrap(idxs: np.ndarray, N: int) -> np.ndarray:
@@ -345,7 +346,30 @@ def circular_connectivity(n1: int, n2: int, p: float, homogeneous_weights: bool 
     W = np.zeros((n1, n2))
     f = gaussian if dist == "gaussian" else lorentzian
     for i in range(n1):
-        distances = np.asarray([np.sin(0.5*(p1[i] - p2[j])) for j in range(n2)])
+        distances = np.asarray([circular_distance(p1[i], p2[j]) for j in range(n2)])
+        d_samples = f(n_conn, loc=0.0, scale=scale, lb=-1.0, ub=1.0)
+        indices = np.asarray([np.argmin(np.abs(distances - d)) for d in d_samples])
+        indices_unique = np.unique(indices)
+        if homogeneous_weights:
+            W[i, indices_unique] = len(indices) / len(indices_unique)
+        else:
+            for idx in indices_unique:
+                W[i, idx] = np.sum(indices == idx)
+    return W
+
+
+def spherical_connectivity(n1: int, n2: int, p: float, homogeneous_weights: bool = False, dist: str = "gaussian",
+                          scale: float = 1.0) -> np.ndarray:
+
+    p1 = EquidistantPoints(n_points=n1)
+    p1 = np.asarray(p1.ecef)
+    p2 = EquidistantPoints(n_points=n2)
+    p2 = np.asarray(p2.ecef)
+    n_conn = int(p * n2)
+    W = np.zeros((n1, n2))
+    f = gaussian if dist == "gaussian" else lorentzian
+    for i in range(n1):
+        distances = np.asarray([spherical_distance(p1[i], p2[j]) for j in range(n2)])
         d_samples = f(n_conn, loc=0.0, scale=scale, lb=-1.0, ub=1.0)
         indices = np.asarray([np.argmin(np.abs(distances - d)) for d in d_samples])
         indices_unique = np.unique(indices)
@@ -375,3 +399,15 @@ def input_connectivity(input_locations: Union[list, np.ndarray], n: int, p: floa
             for idx in indices_unique:
                 W[i, idx] = np.sum(indices == idx)
     return W
+
+
+def spherical_distance(p1: np.ndarray, p2: np.ndarray, epsilon=1e-10) -> float:
+    if np.sum((p1 - p2)**2) < epsilon:
+        return np.inf
+    d = np.arccos(np.dot(p1, p2))
+    return d
+
+def circular_distance(p1: float, p2: float, epsilon=1e-10) -> float:
+    if (p1 - p2)**2 < epsilon:
+        return np.inf
+    return np.sin(0.5*(p1 - p2))

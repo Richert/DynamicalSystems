@@ -14,8 +14,7 @@ from custom_functions import *
 rep = int(sys.argv[-1])
 g = float(sys.argv[-2])
 Delta = float(sys.argv[-3])
-ei_ratio = float(sys.argv[-4])
-path = str(sys.argv[-5])
+path = str(sys.argv[-4])
 
 # meta parameters
 device = "cpu"
@@ -24,7 +23,7 @@ epsilon = 1e-2
 alpha = 1e-4
 
 # general model parameters
-N = 1000
+N = 200
 E_e = 0.0
 E_i = -65.0
 v_spike = 50.0
@@ -72,9 +71,10 @@ s_i = 20.0*1e-3
 tau_s_i = 10.0
 
 # connectivity parameters
-p_ee = 0.2
+ei_ratio = 1.0
+p_ee = 0.1
 p_ii = 0.4
-p_ie = 0.2
+p_ie = 0.1
 p_ei = 0.4
 g_ee = ei_ratio * g / np.sqrt(N_e * p_ee)
 g_ii = g / np.sqrt(N_i * p_ii)
@@ -327,7 +327,7 @@ results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
            "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
            }
-pickle.dump(results, open(f"{path}/dim_0d_eir{int(10*ei_ratio)}_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/eic_0d_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # plotting
 ##########

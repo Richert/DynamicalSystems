@@ -86,10 +86,10 @@ g_ei = g / np.sqrt(N_i * p_ei)
 g_ie = ei_ratio * g / np.sqrt(N_e * p_ie)
 
 # define connectivity
-W_ee = circular_connectivity(N_e, N_e, p_ee, homogeneous_weights=True, dist="gaussian", scale=sigma_ee)
-W_ie = circular_connectivity(N_i, N_e, p_ie, homogeneous_weights=True, dist="gaussian", scale=sigma_ie)
-W_ei = circular_connectivity(N_e, N_i, p_ei, homogeneous_weights=True, dist="gaussian", scale=sigma_ei)
-W_ii = circular_connectivity(N_i, N_i, p_ii, homogeneous_weights=True, dist="gaussian", scale=sigma_ii)
+W_ee = spherical_connectivity(N_e, N_e, p_ee, homogeneous_weights=True, dist="gaussian", scale=sigma_ee)
+W_ie = spherical_connectivity(N_i, N_e, p_ie, homogeneous_weights=True, dist="gaussian", scale=sigma_ie)
+W_ei = spherical_connectivity(N_e, N_i, p_ei, homogeneous_weights=True, dist="gaussian", scale=sigma_ei)
+W_ii = spherical_connectivity(N_i, N_i, p_ii, homogeneous_weights=True, dist="gaussian", scale=sigma_ii)
 
 # fig, ax = plt.subplots(figsize=(6, 6))
 # im = ax.imshow(W_ei, interpolation="none", cmap="cividis", aspect="auto")
@@ -305,7 +305,7 @@ offset = 0.1
 p0 = [offset, delay, scale_s, scale_f, tau_r, tau_s, tau_f]
 time = s.index.values
 time = time - np.min(time)
-bounds = ([0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 5e1])
+bounds = ([0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0], [1.0, 100.0, 1.0, 1.0, 1e2, 1e3, 5e1])
 ir_params, ir_fit, sep = impulse_response_fit(sep, time, f=dualexponential, bounds=bounds, p0=p0)
 kernel_params, kernel_fit, K_diag = impulse_response_fit(K_diag, time, f=dualexponential, bounds=bounds, p0=p0)
 
@@ -331,7 +331,7 @@ results = {"g": g, "Delta": Delta, "ei_ratio": ei_ratio,
            "neuron_dropout": neuron_dropout, "impulse_responses": impulse_responses,
            "K_mean": K_mean, "K_var": K_var, "K_diag": K_diag, "G_sum": kernel_var
            }
-pickle.dump(results, open(f"{path}/eic_1d_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
+pickle.dump(results, open(f"{path}/eic_2d_g{int(10*g)}_D{int(Delta)}_{rep+1}.pkl", "wb"))
 
 # plotting
 ##########
