@@ -4,8 +4,8 @@ import numpy as np
 from pandas import DataFrame
 
 # condition
-iv = "ei_ratio"
-condition = "dim_eir"
+iv = "spatial_dim"
+condition = "eic"
 path = "/media/richard/results/dimensionality"
 
 # load data
@@ -30,7 +30,7 @@ for file in os.listdir(path):
             results["rep"].append(rep)
             results["g"].append(data["g"])
             results["Delta"].append(data["Delta"])
-            results[iv].append(data[iv])
+            results[iv].append(int(f[1][0]))
 
             # steady-state analysis
             results["s_mean"].append(np.mean(data["s_mean"])*1e3)
