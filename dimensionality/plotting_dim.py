@@ -18,19 +18,19 @@ markersize = 15.0
 cmap = "ch:"
 
 # condition
-iv = "ei_ratio"
-iv_str = "\gamma"
-iv_unit = ""
-task_condition= "dim"
+iv = "spatial_dim"
+iv_str = "model"
+iv_unit = "D"
+task_condition= "eic"
 neuron_type = "eic"
 condition = f"{task_condition}_{neuron_type}"
 path = "/home/richard-gast/Documents/data/dimensionality"
 
 # create dataframe
-df = read_pickle(f"{path}/{condition}_summary.pkl")
+df = read_pickle(f"{path}/{task_condition}_summary.pkl")
 
 # filter out parts of the parameter regime
-df = df.loc[df["g"] > 0.0, :]
+# df = df.loc[df["g"] > 0.0, :]
 # df.loc[:, "dim_ss"] *= 1000
 # df.loc[:, "dim_ir"] *= 1000
 
