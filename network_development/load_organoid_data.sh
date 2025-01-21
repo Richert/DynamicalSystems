@@ -1,4 +1,4 @@
-file_names=("LFP_Sp_160731", "LFP_Sp_160803")
+file_names=( "LFP_Sp_160731" "LFP_Sp_160803" )
 file_ending="mat"
 url_address="https://zenodo.org/records/4751759"
 target_dir="/media/richard/data/trujilo_2019"
