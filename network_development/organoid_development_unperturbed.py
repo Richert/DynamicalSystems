@@ -2,20 +2,24 @@ import numpy as np
 from scipy.io import loadmat
 import mat73
 import os
-from numba import prange
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
 from custom_functions import *
 import matplotlib.pyplot as plt
+import seaborn as sb
+from pandas import DataFrame
 
 # data set specifics
 ####################
 
-path = "/media/richard/data/trujilo_2019"
+dataset_name = "trujilo_2019"
+path = "/home/richard-gast/Documents/data/organoid_dynamics"
 wells = 8
 well_offset = 4
 bursting_sigma = 100
-bursting_dist = 100
+bursting_width = 1000
+bursting_height = 0.03
+bursting_relheight = 0.98
 
 # data loading and processing
 #############################
@@ -62,7 +66,7 @@ for file in os.listdir(path):
         year_old, month_old, day_old = year, month, day
 
     # loop over wells/organoids
-    for well in prange(wells):
+    for well in range(wells):
 
         # save condition data
         results["organoid"].append(well)
@@ -89,18 +93,34 @@ for file in os.listdir(path):
 
         # calculate bursting frequency
         fr_smoothed = gaussian_filter1d(fr, sigma=bursting_sigma)
-        fr_peaks, peak_props = find_peaks(fr_smoothed, distance=bursting_dist)
+        fr_peaks, peak_props = find_peaks(fr_smoothed, width=bursting_width, prominence=bursting_height,
+                                          rel_height=bursting_relheight)
         ibi = np.diff(fr_peaks)
         results["ibi_mean"].append(np.mean(ibi))
         results["ibi_std"].append(np.std(ibi)/np.mean(ibi))
 
-        # plotting
+        # calculate intra-burst spiking statistics
+        intraburst_results = {"fr_mean": [], "fr_std": [], "isi_mean": [], "isi_std": [], "dim": []}
+        for left, right in zip(peak_props["left_ips"], peak_props["right_ips"]):
+            spikes_tmp = spikes[:, int(left):int(right)]
+            isi_tmp = inter_spike_intervals(spikes_tmp)
+            intraburst_results["dim"].append(get_dim(spikes_tmp, center=True))
+            intraburst_results["fr_mean"].append(np.mean(spikes_tmp))
+            intraburst_results["fr_std"].append(np.mean(np.std(spikes_tmp, axis=0)))
+            intraburst_results["isi_mean"].append(np.mean(isi_tmp))
+            intraburst_results["isi_std"].append(np.std(isi_tmp)/np.mean(isi_tmp))
+        for key, val in intraburst_results.items():
+            results[f"intraburst_{key}"].append(np.nanmean(val))
+
+        # plotting: single organoid and time point
         fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
+        fig.suptitle(f"Organoid ID: {well}, Age: {age} days")
         ax = axes[0]
         ax.plot(time_ds, fr, label="raw")
         ax.plot(time_ds, fr_smoothed, label="smoothed")
-        for peak in fr_peaks:
-            ax.axvline(x=time_ds[peak], color="black", linestyle="dashed")
+        for l, r in zip(peak_props["left_ips"], peak_props["right_ips"]):
+            ax.axvline(x=time_ds[int(l)], color="black", linestyle="dashed")
+            ax.axvline(x=time_ds[int(r)], color="red", linestyle="dashed")
         ax.set_ylabel("rate")
         ax.set_xlabel("time")
         ax.legend()
@@ -109,26 +129,28 @@ for file in os.listdir(path):
         ax.set_ylabel("neurons")
         ax.set_xlabel("steps")
         ax = axes[2]
-        ax.histogram(isi)
+        ax.hist(isi)
         ax.set_xlabel("ISI")
         ax.set_ylabel("count")
         plt.tight_layout()
         plt.show()
 
-    # plot LFPs and derived spikes from single well
-    fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
-    ax = axes[0]
-    im = ax.imshow(lfp_well, interpolation="none", cmap="cividis", aspect="auto")
-    plt.colorbar(im, ax=ax, shrink=0.7)
-    ax.set_ylabel("channel")
-    ax.set_xticks(xticks, labels=time_ds[xticks])
-    ax = axes[1]
-    im = ax.imshow(spikes_lfp, interpolation="none", cmap="Greys", aspect="auto")
-    plt.colorbar(im, ax=ax, shrink=0.7)
-    ax.set_xticks(xticks, labels=time_ds[xticks])
-    ax.set_ylabel("channel")
-    ax.set_xlabel("time")
-    fig.suptitle(f"Organoid {well + 1}")
-    plt.tight_layout()
+# save results to file
+######################
+
+df = DataFrame.from_dict(results)
+df.to_csv(f"{dataset_name}_summary.csv")
+
+# results plotting
+##################
+
+# dimensionality
+sb.lineplot(df, x="age", y="dim", errorbar="sd")
+
+# interburst interval
+sb.lineplot(df, x="age", y="ibi_mean", errorbar="sd")
+
+# interspike interval
+sb.lineplot(df, x="age", y="isi_mean", errorbar="sd")
 
 plt.show()
