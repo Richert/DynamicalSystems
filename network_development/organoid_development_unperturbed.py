@@ -6,14 +6,13 @@ from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks
 from custom_functions import *
 import matplotlib.pyplot as plt
-import seaborn as sb
 from pandas import DataFrame
 
 # data set specifics
 ####################
 
 dataset_name = "trujilo_2019"
-path = "/home/richard-gast/Documents/data/organoid_dynamics"
+path = f"/media/richard/data/{dataset_name}"
 wells = 8
 well_offset = 4
 bursting_sigma = 100
@@ -112,45 +111,31 @@ for file in os.listdir(path):
         for key, val in intraburst_results.items():
             results[f"intraburst_{key}"].append(np.nanmean(val))
 
-        # plotting: single organoid and time point
-        fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
-        fig.suptitle(f"Organoid ID: {well}, Age: {age} days")
-        ax = axes[0]
-        ax.plot(time_ds, fr, label="raw")
-        ax.plot(time_ds, fr_smoothed, label="smoothed")
-        for l, r in zip(peak_props["left_ips"], peak_props["right_ips"]):
-            ax.axvline(x=time_ds[int(l)], color="black", linestyle="dashed")
-            ax.axvline(x=time_ds[int(r)], color="red", linestyle="dashed")
-        ax.set_ylabel("rate")
-        ax.set_xlabel("time")
-        ax.legend()
-        ax = axes[1]
-        ax.imshow(spikes, aspect="auto", interpolation="none", cmap="Greys")
-        ax.set_ylabel("neurons")
-        ax.set_xlabel("steps")
-        ax = axes[2]
-        ax.hist(isi)
-        ax.set_xlabel("ISI")
-        ax.set_ylabel("count")
-        plt.tight_layout()
-        plt.show()
+        # # plotting: single organoid and time point
+        # fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
+        # fig.suptitle(f"Organoid ID: {well}, Age: {age} days")
+        # ax = axes[0]
+        # ax.plot(time_ds, fr, label="raw")
+        # ax.plot(time_ds, fr_smoothed, label="smoothed")
+        # for l, r in zip(peak_props["left_ips"], peak_props["right_ips"]):
+        #     ax.axvline(x=time_ds[int(l)], color="black", linestyle="dashed")
+        #     ax.axvline(x=time_ds[int(r)], color="red", linestyle="dashed")
+        # ax.set_ylabel("rate")
+        # ax.set_xlabel("time")
+        # ax.legend()
+        # ax = axes[1]
+        # ax.imshow(spikes, aspect="auto", interpolation="none", cmap="Greys")
+        # ax.set_ylabel("neurons")
+        # ax.set_xlabel("steps")
+        # ax = axes[2]
+        # ax.hist(isi)
+        # ax.set_xlabel("ISI")
+        # ax.set_ylabel("count")
+        # plt.tight_layout()
+        # plt.show()
 
 # save results to file
 ######################
 
 df = DataFrame.from_dict(results)
-df.to_csv(f"{dataset_name}_summary.csv")
-
-# results plotting
-##################
-
-# dimensionality
-sb.lineplot(df, x="age", y="dim", errorbar="sd")
-
-# interburst interval
-sb.lineplot(df, x="age", y="ibi_mean", errorbar="sd")
-
-# interspike interval
-sb.lineplot(df, x="age", y="isi_mean", errorbar="sd")
-
-plt.show()
+df.to_csv(f"{path}/{dataset_name}_summary.csv")
