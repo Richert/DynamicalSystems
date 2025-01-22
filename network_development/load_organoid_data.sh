@@ -9,7 +9,7 @@ file_names=( "LFP_Sp_160731" "LFP_Sp_160803" "LFP_Sp_160810" "LFP_Sp_160816" "LF
   "LFP_Sp_170217" "LFP_Sp_170224" "LFP_Sp_170303" "LFP_Sp_170310" "LFP_Sp_170316" )
 file_ending="mat"
 url_address="https://zenodo.org/records/4751759/files"
-target_dir="/media/richard/data/trujilo_2019"
+target_dir="/home/richard/data/trujilo_2019"
 
 # load data
 for f in "${file_names[@]}"; do

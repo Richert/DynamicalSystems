@@ -1,9 +1,10 @@
 from oct2py import octave as oct
 import os
 
-path = "/media/richard/data/trujilo_2019"
+path = "/home/richard/data/trujilo_2019"
 wdir = os.getcwd()
 
+# load data and convert it to a file format that can be read via scipy.io.loadmat
 oct.eval(f"cd {path}")
 for f in os.listdir(path):
     if f.split(".")[-1] == "mat":

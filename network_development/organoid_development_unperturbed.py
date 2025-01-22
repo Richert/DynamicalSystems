@@ -12,7 +12,7 @@ from pandas import DataFrame
 ####################
 
 dataset_name = "trujilo_2019"
-path = f"/media/richard/data/{dataset_name}"
+path = f"/home/richard/data/{dataset_name}"
 wells = 8
 well_offset = 4
 bursting_sigma = 100
