@@ -8,10 +8,10 @@ file_names=( "LFP_Sp_160731" "LFP_Sp_160803" "LFP_Sp_160810" "LFP_Sp_160816" "LF
   "LFP_Sp_161230" "LFP_Sp_170106" "LFP_Sp_170113" "LFP_Sp_170120" "LFP_Sp_170203" "LFP_Sp_170207" "LFP_Sp_170210" \
   "LFP_Sp_170217" "LFP_Sp_170224" "LFP_Sp_170303" "LFP_Sp_170310" "LFP_Sp_170316" )
 file_ending="mat"
-url_address="https://zenodo.org/records/4751759"
+url_address="https://zenodo.org/records/4751759/files"
 target_dir="/media/richard/data/trujilo_2019"
 
 # load data
 for f in "${file_names[@]}"; do
-  curl --output "${target_dir}/${f}.${file_ending}" "${url_address}/${f}.${file_ending}?download=1"
+  curl --output "${target_dir}/${f}.${file_ending}" "${url_address}/${f}.${file_ending}"
 done
