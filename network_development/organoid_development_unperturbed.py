@@ -40,8 +40,10 @@ for file in os.listdir(path):
     # load data from file
     try:
         data = loadmat(f"{path}/{file}", squeeze_me = False)
-    except (NotImplementedError, ValueError):
+    except NotImplementedError:
         data = mat73.loadmat(f"{path}/{file}")
+    except ValueError:
+        print(f"Loading error for file: {file}")
 
     # extract data
     lfp = data["LFP"]
