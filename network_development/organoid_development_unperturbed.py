@@ -41,6 +41,7 @@ for file in os.listdir(path):
     try:
         data = loadmat(f"{path}/{file}", squeeze_me = False)
     except NotImplementedError:
+        print(f"Scipy loading error for file: {file}")
         data = mat73.loadmat(f"{path}/{file}")
     except ValueError as e:
         print(f"Loading error for file: {file}")
