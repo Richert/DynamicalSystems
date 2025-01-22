@@ -3,9 +3,9 @@ import os
 
 path = "/home/richard/data/trujilo_2019"
 wdir = os.getcwd()
-target_format = "v6"
+target_format = "hdf5"
 
-# load data and convert it to the hdf5 format
+# load data and convert it to the target file format
 oct.eval(f"cd {path}")
 for f in os.listdir(path):
     if f.split(".")[-1] == "mat":
