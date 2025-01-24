@@ -106,8 +106,8 @@ if __name__ == '__main__':
     bursting_height = 0.5
     intraburst_height = 0.2
     bursting_relheight = 0.9
-    bursting_tau = 5000
-    intraburst_tau = 200
+    bursting_tau = 10000
+    intraburst_tau = 100
 
     # data loading and processing
     #############################
