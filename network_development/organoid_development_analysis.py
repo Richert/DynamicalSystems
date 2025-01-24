@@ -104,7 +104,7 @@ if __name__ == '__main__':
     bursting_width = 1000
     intraburst_width = 10
     bursting_height = 0.5
-    intraburst_height = 0.2
+    intraburst_height = 0.3
     bursting_relheight = 0.9
     bursting_tau = 10000
     intraburst_tau = 100
