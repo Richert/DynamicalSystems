@@ -11,7 +11,9 @@ def fano_factor(spikes: np.ndarray, tau: int) -> np.ndarray:
     while idx < spikes.shape[1]:
         spike_counts.append(np.sum(spikes[:, idx:idx+tau], axis=1))
         idx += tau
-    return np.var(spike_counts, axis=0) / np.mean(spike_counts, axis=0)
+    avg_spikes = np.mean(spike_counts, axis=0)
+    ff = [np.var(s) / s_mean if s_mean > 0 else 0.0 for s, s_mean in zip(spike_counts, avg_spikes)]
+    return np.asarray(ff)
 
 
 def get_cov(x: np.ndarray, center: bool = True, alpha: float = 0.0) -> np.ndarray:

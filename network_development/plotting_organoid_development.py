@@ -6,16 +6,17 @@ from pandas import read_csv
 # load data
 ###########
 
-path = "/home/richard-gast/Documents/data/organoid_dynamics"
-file = "organoid_dynamics_summary.csv"
+dataset = "organoid_dynamics"
+path = f"/home/richard-gast/Documents/data/{dataset}"
+file = f"{dataset}_summary.csv"
 data = read_csv(f"{path}/{file}")
 
 # plotting
 ##########
 
-dvs = ["dim", "isi_mean", "isi_std", "ibi_mean", "ibi_std", "fr_mean", "fr_std", "intraburst_dim",
-       "intraburst_isi_mean", "intraburst_isi_std", "intraburst_fr_mean", "intraburst_fr_std"]
+dvs = ["dim", "spike_reg", "ff", "burst_freq", "burst_reg", "rate_avg", "rate_het", "intraburst_dim",
+       "intraburst_ff", "intraburst_freq", "intraburst_spike_reg", "intraburst_rate_avg", "intraburst_rate_het"]
 for y in dvs:
     fig, ax= plt.subplots(figsize=(8, 4))
-    sb.lineplot(data, x="age", y=y, errorbar="sd", ax=ax)
+    sb.lineplot(data, x="age", y=y, hue="organoid", ax=ax)
 plt.show()
