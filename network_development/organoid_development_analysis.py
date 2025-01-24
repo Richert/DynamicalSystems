@@ -39,7 +39,7 @@ def organoid_processing(well: int, age: int, spikes_well: np.ndarray, time: np.n
     fr_peaks, peak_props = find_peaks(fr_smoothed, width=width, prominence=np.max(fr_smoothed)*prominence,
                                       rel_height=height)
     ibi = np.diff(fr_peaks)
-    results["burst_freq"] = np.mean(len(fr_peaks)*1e3/time_ds[-1])
+    results["burst_freq"] = np.mean(len(fr_peaks)/time_ds[-1])
     results["burst_reg"] = np.std(ibi) / np.mean(ibi) if len(fr_peaks) > 2 else 0
 
     # calculate intra-burst spiking statistics
@@ -56,7 +56,7 @@ def organoid_processing(well: int, age: int, spikes_well: np.ndarray, time: np.n
         intraburst_results["rate_het"].append(1e3*np.mean(np.std(spikes_tmp, axis=0)))
         intraburst_results["spike_reg"].append(np.mean(isi_tmp))
         intraburst_results["ff"].append(np.mean(ff_tmp))
-        intraburst_results["freq"].append(len(peaks_tmp)*1e3/(time_ds[int(right)]-time_ds[int(left)]))
+        intraburst_results["freq"].append(len(peaks_tmp)/(time_ds[int(right)]-time_ds[int(left)]))
     for key, val in intraburst_results.items():
         results[f"intraburst_{key}"] = np.nanmean(val)
 
