@@ -32,38 +32,68 @@ ik_op:
     I_ext: input(0.0)
     r_in: input(0.0)
 
-# izhikevich operator with ampa and gabaa synapses
-ik_ei_op:
+# izhikevich operator with biophysiologically relevant parameters
+ik_sfa_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2*absv(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_ampa*s_ampa - g_gabaa*s_gabaa)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) + C*pi*r*(Delta*sign(v-v_r)-pi*C*r/k) + g_ampa*s_ampa*(E_ampa-v) + g_gabaa*s_gabaa*(E_gabaa-v) + I_ext - u) / C"
-    - "u' = a*(b*(v-v_r) - u) + d*r"
-    - "s_ampa' = -s_ampa/tau_ampa + r_e"
-    - "s_gabaa' = -s_gabaa/tau_gabaa + r_i"
+    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = w/tau_u"
+    - "w' = kappa*r - 2.0*w/tau_u - u/tau_u"
+    - "s' = -s/tau_s + r_in"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    s_ampa: variable(0.0)
-    s_gabaa: variable(0.0)
+    w: variable(0.0)
+    s: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    g_ampa: 10.0
-    g_gabaa: 10.0
-    E_ampa: 0.0
-    E_gabaa: -60.0
-    b: -2.0
-    a: 0.03
-    d: 100.0
-    tau_ampa: 6.0
-    tau_gabaa: 8.0
+    g: 20.0
+    E_r: 0.0
+    kappa: 10.0
+    tau_u: 500.0
+    tau_s: 6.0
+    eta: 0.0
     I_ext: input(0.0)
-    r_e: input(0.0)
-    r_i: input(0.0)
+    r_in: input(0.0)
+
+# izhikevich operator with synaptic short-term plasticity
+ik_stp_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s_in*f*d)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s_in*f*d*(E_r-v) + eta + I_ext) / C"
+    - "w' = r - w/tau_r"
+    - "f' = (f0-f)/tau_f + f0*(1-f)*w"
+    - "d' = (1-d)/tau_d - kappa*f*d*w"
+    - "s' = w - s/tau_s"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    f: variable(0.8)
+    d: variable(1.0)
+    w: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    kappa: 8.0
+    f0: 0.8
+    tau_r: 5.0
+    tau_f: 50.0
+    tau_d: 500.0
+    tau_s: 6.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
 
 # parameters for regular-spiking neurons
 rs_op:
@@ -150,6 +180,12 @@ ik_pop:
   operators:
     - ik_op
 
+# population of Izhikevich neurons with synaptic short-term plasticity
+stp_pop:
+  base: NodeTemplate
+  operators:
+    - ik_stp_op
+
 # regular-spiking neuron population
 rs:
   base: NodeTemplate
@@ -178,7 +214,7 @@ lts:
 sfa_pop:
   base: NodeTemplate
   operators:
-    - sfa_op
+    - ik_sfa_op
 
 # circuit templates
 ###################
@@ -190,6 +226,22 @@ ik:
     p: ik_pop
   edges:
     - [p/ik_op/r, p/ik_op/r_in, null, {weight: 1.0}]
+
+# izhikevich population with short-term synaptic plasticity
+ik_stp:
+  base: CircuitTemplate
+  nodes:
+    p: stp_pop
+  edges:
+    - [p/ik_stp_op/s, p/ik_stp_op/s_in, null, {weight: 1.0}]
+
+# izhikevich population with SFA
+ik_sfa:
+  base: CircuitTemplate
+  nodes:
+    p: sfa_pop
+  edges:
+    - [p/ik_sfa_op/r, p/ik_sfa_op/r_in, null, {weight: 1.0}]
 
 # rs-fs circuit
 eic:

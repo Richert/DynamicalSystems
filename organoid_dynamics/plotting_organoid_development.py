@@ -14,9 +14,10 @@ data = read_csv(f"{path}/{file}")
 # plotting
 ##########
 
-dvs = ["dim", "spike_reg", "ff", "burst_freq", "burst_reg", "rate_avg", "rate_het", "intraburst_dim",
-       "intraburst_ff", "intraburst_freq", "intraburst_spike_reg", "intraburst_rate_avg", "intraburst_rate_het"]
+dvs = ["dim", "spike_reg", "burst_freq", "burst_reg", "rate_avg", "rate_het", "intraburst_dim",
+       "intraburst_freq", "intraburst_spike_reg", "intraburst_rate_avg", "intraburst_rate_het",
+       "lfp_dim", "lfp_var", "max_freq", "max_pow"]
 for y in dvs:
     fig, ax= plt.subplots(figsize=(8, 4))
-    sb.lineplot(data, x="age", y=y, errorbar="sd", ax=ax)
+    sb.lineplot(data, x="age", y=y, hue="organoid", ax=ax)
 plt.show()

@@ -6,6 +6,22 @@ from custom_functions import *
 import matplotlib.pyplot as plt
 from pandas import DataFrame
 
+
+def organoid_analysis(well: int, age: int, spikes_well: np.ndarray, lfps_well: np.ndarray, time: np.ndarray,
+                      time_ds: np.ndarray, sigma: float, width: float, width2: float, prominence: float,
+                      prominence2: float, height: float, tau: int, nperseg: int, fmax: float) -> dict:
+
+    results = organoid_spike_analysis(well, age, spikes_well, time, time_ds, sigma, width, width2,
+                                      prominence, prominence2, height, tau, return_spikes=False)
+    results_lfp = organoid_lfp_analysis(well, age, lfps_well, time_ds, nperseg, fmax)
+    results["lfp_dim"] = results_lfp["dim"]
+    results["lfp_var"] = results_lfp["lfp_var"]
+    results["max_freq"] = results_lfp["max_freq"]
+    results["max_pow"] = results_lfp["max_pow"]
+
+    return results
+
+
 if __name__ == '__main__':
 
     mp.set_start_method("spawn")
@@ -14,27 +30,31 @@ if __name__ == '__main__':
     ####################
 
     dataset_name = "trujilo_2019"
-    path = f"/home/richard/data/{dataset_name}"
+    path = f"/home/richard-gast/Documents/data/{dataset_name}"
     wells = 8
     well_offset = 4
-    bursting_sigma = 100
-    intraburst_sigma = 10
+    sigma = 100
     bursting_width = 1000
-    intraburst_width = 10
+    intraburst_width = 100
     bursting_height = 0.5
     intraburst_height = 0.3
     bursting_relheight = 0.9
-    bursting_tau = 10000
-    intraburst_tau = 100
+    tau = 20e-3
+    lfp_nperseg = 50000
+    lfp_fmax = 59.8
+    burst_freq_threshold = 0.005
+
+    exclude = [170224, 170210, 170207, 161216, 161209, 160824, 160803, 160731, 160810, 170303, 161206, 161118]
 
     # data loading and processing
     #############################
 
     # prepare results data structure
     results = {
-        "organoid": [], "age": [], "dim": [], "spike_reg": [], "ff": [], "burst_freq": [], "burst_reg": [],
-        "rate_avg": [], "rate_het": [], "intraburst_dim": [], "intraburst_spike_reg": [], "intraburst_ff": [],
-        "intraburst_rate_avg": [], "intraburst_rate_het": [], "intraburst_freq": []
+        "organoid": [], "age": [], "dim": [], "spike_reg": [], "burst_freq": [], "burst_reg": [],
+        "rate_avg": [], "rate_het": [], "intraburst_dim": [], "intraburst_spike_reg": [],
+        "intraburst_rate_avg": [], "intraburst_rate_het": [], "intraburst_freq": [],
+        "lfp_dim": [], "lfp_var": [], "max_freq": [], "max_pow": []
     }
 
     # prepare age calculation
@@ -44,6 +64,9 @@ if __name__ == '__main__':
 
     for file in os.listdir(path):
         if file.split(".")[-1] == "mat":
+
+            if any([str(ID) in file for ID in exclude]):
+                continue
 
             # load data from file
             data = loadmat(f"{path}/{file}", squeeze_me=False)
@@ -65,22 +88,18 @@ if __name__ == '__main__':
             with mp.Pool(processes=wells) as pool:
 
                 # loop over wells/organoids
-                res = [pool.apply_async(organoid_processing, (well, age, spike_times[well + well_offset], time, time_ds,
-                                                              bursting_sigma, intraburst_sigma, bursting_width, intraburst_width,
-                                                              bursting_height, intraburst_height, bursting_relheight, bursting_tau,
-                                                              intraburst_tau))
+                res = [pool.apply_async(organoid_analysis,
+                                        (well, age, spike_times[well + well_offset], lfp[well + well_offset], time, time_ds,
+                                         sigma, bursting_width, intraburst_width, bursting_height, intraburst_height,
+                                         bursting_relheight, tau, lfp_nperseg, lfp_fmax))
                        for well in range(wells)]
-                # res = [organoid_processing(well, age, spike_times[well + well_offset], time, time_ds,
-                #                            bursting_sigma, intraburst_sigma, bursting_width, intraburst_width,
-                #                            bursting_height, intraburst_height, bursting_relheight, bursting_tau,
-                #                            intraburst_tau)
-                #        for well in range(wells)]
 
                 # save results
                 for r in res:
                     res_tmp = r.get()
-                    for key in results.keys():
-                        results[key].append(res_tmp[key])
+                    if res_tmp["burst_freq"] > burst_freq_threshold:
+                        for key in results.keys():
+                            results[key].append(res_tmp[key])
 
             print(f"Finished processing all organoids from {date}.")
 
