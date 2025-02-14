@@ -9,23 +9,23 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # model parameters
-C = 100.0
-k = 0.7
+C = 360.0
+k = 0.2
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 0.3
 eta = 0.0
-kappa = 0.05
-f0 = 0.8
-tau_r = 5.0
-tau_f = 50.0
-tau_d = 500.0
-g = 20.0
+kappa = 0.8
+f0 = 0.7
+tau_r = 15.9
+tau_f = 200.0
+tau_d = 1160.0
+g = 29.0
 E_r = 0.0
-tau_s = 6.0
-s_ext = 60.0
-noise_lvl = 0.0
-noise_sigma = 50.0
+tau_s = 15.7
+s_ext = 62.0
+noise_lvl = 48.0
+noise_sigma = 90.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'f0': f0,

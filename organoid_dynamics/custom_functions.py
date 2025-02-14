@@ -126,15 +126,22 @@ def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burs
     # extract signal peaks
     peaks, props = find_peaks(x, width=burst_width, prominence=np.max(x) * rel_burst_height, rel_height=width_at_height)
     ibi = np.diff(peaks)
+    n_peaks = len(peaks)
 
     # extract bursting characteristics
-    results = {}
-    results["n_bursts"] = len(peaks)
-    results["ibi_mean"] = np.mean(ibi)
-    results["ibi_std"] = np.std(ibi) / np.mean(ibi)
-    results["burst_width"] = np.mean(props["widths"])
+    results = dict()
+    results["n_bursts"] = n_peaks
+    if n_peaks > 1:
+        results["ibi_mean"] = np.mean(ibi)
+        results["ibi_std"] = np.std(ibi) / np.mean(ibi)
+        results["burst_width"] = np.mean(props["widths"])
+    else:
+        results["ibi_mean"] = 0.0
+        results["ibi_std"] = 0.0
+        results["burst_width"] = 0.0
 
     return results
+
 
 def extract_spikes(time: np.ndarray, time_ds: np.ndarray, spikes: np.ndarray) -> np.ndarray:
     return np.asarray([_get_channel_spikes(time, time_ds, s) for s in spikes])

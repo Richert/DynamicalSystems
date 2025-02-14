@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 from scipy.io import loadmat
 from typing import Callable
@@ -55,7 +57,7 @@ def loss_func(x: np.ndarray, x_indices: list, y_psd: np.ndarray, y_bursts: np.nd
 
     # simulate model dynamics
     t0 = perf_counter()
-    fr = integrate(func, tuple(func_args), T*time_scale + cutoff, dt, dts*time_scale, cutoff) * 1e6/time_scale
+    fr = integrate(func, tuple(func_args), T*time_scale + cutoff, dt, dts*time_scale, cutoff) * 1e3
     t1 = perf_counter()
     # print(f"Finished ODE integration after {np.round(t1 - t0, decimals=2)} seconds.")
 
@@ -71,12 +73,14 @@ def loss_func(x: np.ndarray, x_indices: list, y_psd: np.ndarray, y_bursts: np.nd
         loss = np.inf
 
     if return_dynamics:
-        return loss, fr, freqs, fitted_psd
+        return loss, fr, freqs, fitted_psd, burst_stats
     return loss
 
 
 # data set specifics
 ####################
+
+save_dir = "/home/richard/results/trujilo_2019"
 
 # choose data set
 dataset_name = "trujilo_2019"
@@ -89,11 +93,12 @@ input_var = "I_ext"
 
 # optimization parameters
 n_cpus = 15
-maxiter = 10
+maxiter = 100
 strategy = "best1exp"
 popsize = 30
-mutation = (0.7, 1.5)
-recombination = 0.5
+mutation = (0.5, 1.5)
+recombination = 0.6
+epsilon = 1e-2
 polish = True
 
 # dataset parameters
@@ -111,7 +116,6 @@ detrend = True
 sigma = 100.0
 burst_width = 1000.0
 burst_height = 0.5
-epsilon = 1e-1
 
 # data loading and processing
 #############################
@@ -187,13 +191,13 @@ bounds = {
     "kappa": (0.01, 1.0),
     "f0": (0.2, 1.0),
     "tau_r": (1.0, 20.0),
-    "tau_f": (10.0, 200.0),
+    "tau_f": (20.0, 400.0),
     "tau_d": (200.0, 2000.0),
     "g": (4.0, 60.0),
     "tau_s": (4.0, 20.0),
     "s_ext": (20.0, 200.0),
     "noise_lvl": (10.0, 100.0),
-    "sigma": (5.0, 100.0)
+    "sigma": (5.0, 200.0)
 }
 
 # find argument positions of free parameters
@@ -219,31 +223,36 @@ for key, val in zip(bounds.keys(), results.x):
     print(f"{key} = {val}")
 
 # generate dynamics of winner
-loss, fr, freqs, psd = loss_func(results.x, *func_args, return_dynamics=True)
+loss, fr, freqs, psd, bursts = loss_func(results.x, *func_args, return_dynamics=True)
+
+# save results
+pickle.dump({"fitting_results": results, "freqs": freqs, "target_fr": target_fr, "target_psd": target_psd,
+             "target_bursts": target_bursts, "fitted_fr": fr, "fitted_psd": psd, "fitted_bursts": bursts, "loss": loss},
+            open(f"{save_dir}/{date}_fitting_results.pkl", "wb"))
 
 # plotting
 ##########
 
-fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
-fig.suptitle(f"Fitting results for organoid {date} (age = {age} days)")
-
-# time series
-ax = axes[0]
-ax.plot(time_ds, target_fr, label="target")
-ax.plot(time_ds[:len(fr)], fr, label="fit")
-ax.set_xlabel("time (s)")
-ax.set_ylabel("firing rate (Hz)")
-ax.set_title("Mean-field dynamics")
-ax.legend()
-
-# PSD
-ax = axes[1]
-ax.plot(freqs, target_psd, label="target")
-ax.plot(freqs, psd, label="fit")
-ax.set_xlabel("frequency")
-ax.set_ylabel("log(psd)")
-ax.set_title("Power spectrum")
-ax.legend()
-
-plt.tight_layout()
-plt.show()
+# fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
+# fig.suptitle(f"Fitting results for organoid {date} (age = {age} days)")
+#
+# # time series
+# ax = axes[0]
+# ax.plot(time_ds, target_fr, label="target")
+# ax.plot(time_ds[:len(fr)], fr, label="fit")
+# ax.set_xlabel("time (s)")
+# ax.set_ylabel("firing rate (Hz)")
+# ax.set_title("Mean-field dynamics")
+# ax.legend()
+#
+# # PSD
+# ax = axes[1]
+# ax.plot(freqs, target_psd, label="target")
+# ax.plot(freqs, psd, label="fit")
+# ax.set_xlabel("frequency")
+# ax.set_ylabel("log(psd)")
+# ax.set_title("Power spectrum")
+# ax.legend()
+#
+# plt.tight_layout()
+# plt.show()
