@@ -84,7 +84,7 @@ save_dir = "/home/richard/results"
 
 # choose data set
 dataset_name = "trujilo_2019"
-path = f"/home/richard-gast/Documents/data/{dataset_name}"
+path = f"/home/richard/data/{dataset_name}"
 file = "161001"
 
 # choose model
