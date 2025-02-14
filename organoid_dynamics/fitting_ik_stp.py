@@ -80,7 +80,7 @@ def loss_func(x: np.ndarray, x_indices: list, y_psd: np.ndarray, y_bursts: np.nd
 # data set specifics
 ####################
 
-save_dir = "/home/richard/results/trujilo_2019"
+save_dir = "/home/richard/results"
 
 # choose data set
 dataset_name = "trujilo_2019"
@@ -228,7 +228,7 @@ loss, fr, freqs, psd, bursts = loss_func(results.x, *func_args, return_dynamics=
 # save results
 pickle.dump({"fitting_results": results, "freqs": freqs, "target_fr": target_fr, "target_psd": target_psd,
              "target_bursts": target_bursts, "fitted_fr": fr, "fitted_psd": psd, "fitted_bursts": bursts, "loss": loss},
-            open(f"{save_dir}/{date}_fitting_results.pkl", "wb"))
+            open(f"{save_dir}/{dataset_name}/{file}_fitting_results.pkl", "wb"))
 
 # plotting
 ##########
