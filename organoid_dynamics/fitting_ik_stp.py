@@ -95,14 +95,14 @@ input_var = "I_ext"
 n_cpus = 80
 maxiter = 100
 strategy = "best1exp"
-popsize = 80
+popsize = 40
 mutation = (0.5, 1.5)
 recombination = 0.6
 epsilon = 1e-2
 polish = True
 
 # dataset parameters
-time_scale = 1000.0
+time_scale = 100.0
 well = 4
 well_offset = 4
 dt = 1e-2
