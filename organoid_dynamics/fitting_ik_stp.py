@@ -93,11 +93,11 @@ input_var = "I_ext"
 
 # optimization parameters
 n_cpus = 80
-maxiter = 100
+maxiter = 200
 strategy = "best1exp"
 popsize = 40
 mutation = (0.5, 1.5)
-recombination = 0.6
+recombination = 0.5
 epsilon = 1e-2
 polish = True
 
