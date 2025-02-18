@@ -227,7 +227,8 @@ loss, fr, freqs, psd, bursts = loss_func(results.x, *func_args, return_dynamics=
 
 # save results
 pickle.dump({"fitting_results": results, "freqs": freqs, "target_fr": target_fr, "target_psd": target_psd,
-             "target_bursts": target_bursts, "fitted_fr": fr, "fitted_psd": psd, "fitted_bursts": bursts, "loss": loss},
+             "target_bursts": target_bursts, "fitted_fr": fr, "fitted_psd": psd, "fitted_bursts": bursts, "loss": loss,
+             "time": time_ds, "age": age, "organoid": well, "param_keys": list(bounds.keys())},
             open(f"{save_dir}/{dataset_name}/{file}_fitting_results.pkl", "wb"))
 
 # plotting
