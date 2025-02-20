@@ -100,8 +100,8 @@ burst_height = 0.5
 
 # fitting parameters
 estimator = "maf"
-n_simulations = 900
-n_workers = 15
+n_simulations = 8000
+n_workers = 80
 n_post_samples = 1000
 
 # data loading and processing
@@ -164,7 +164,7 @@ bounds = {
     "k": (0.1, 2.0),
     "Delta": (0.01, 2.0),
     "kappa": (0.01, 4.0),
-    "tau_u": (100.0, 1500.0),
+    "tau_u": (100.0, 1000.0),
     "g": (4.0, 40.0),
     "tau_s": (2.0, 20.0),
     "s_ext": (20.0, 200.0),
