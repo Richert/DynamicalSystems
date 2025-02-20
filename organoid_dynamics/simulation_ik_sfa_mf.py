@@ -13,15 +13,15 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.1
+Delta = 0.2
 eta = 0.0
-kappa = 8.0
-tau_u = 500.0
-g = 20.0
+kappa = 1.0
+tau_u = 600.0
+g = 10.0
 E_r = 0.0
 tau_s = 6.0
-s_ext = 67.0
-noise_lvl = 60.0
+s_ext = 139.0
+noise_lvl = 0.0
 noise_sigma = 50.0
 
 params = {
@@ -30,7 +30,7 @@ params = {
 }
 
 # define inputs
-T = 5000.0
+T = 10000.0
 cutoff = 0.0
 dt = 1e-2
 dts = 1e-1
@@ -50,7 +50,7 @@ ik = CircuitTemplate.from_yaml("config/ik_mf/ik_sfa")
 ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # run simulation
-res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
+res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='scipy',
                 outputs={'r': f'p/{op}/r', 'u': f'p/{op}/u', 'v': f'p/{op}/v'}, inputs={f'p/{op}/I_ext': inp},
                 decorator=nb.njit)
 

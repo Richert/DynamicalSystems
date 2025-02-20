@@ -36,16 +36,14 @@ ik_op:
 ik_sfa_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = w/tau_u"
-    - "w' = kappa*r - 2.0*w/tau_u - u/tau_u"
+    - "r' = (Delta*k^2/(pi*C + kappa*pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (kappa*(eta + I_ext + g*s*(E_r-v)) - u*(1 + kappa)) / tau_u"
     - "s' = -s/tau_s + r_in"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    w: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
     C: 100.0

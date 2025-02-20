@@ -1,5 +1,4 @@
 import pickle
-
 import numpy as np
 from scipy.io import loadmat
 from typing import Callable
@@ -7,7 +6,7 @@ import os
 from custom_functions import *
 from pyrates import CircuitTemplate
 from scipy.optimize import differential_evolution
-from scipy.integrate import solve_ivp
+from scipy.ndimage import gaussian_filter1d
 from numba import njit
 import matplotlib.pyplot as plt
 from time import perf_counter
@@ -93,7 +92,7 @@ input_var = "I_ext"
 
 # optimization parameters
 n_cpus = 80
-maxiter = 200
+maxiter = 1000
 strategy = "best1exp"
 popsize = 40
 mutation = (0.5, 1.5)
