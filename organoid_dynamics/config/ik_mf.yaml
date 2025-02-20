@@ -41,10 +41,10 @@ ik_sfa_op:
     - "u' = (kappa*(eta + I_ext + g*s*(E_r-v)) - u*(1 + kappa)) / tau_u"
     - "s' = -s/tau_s + r_in"
   variables:
-    r: output(0.0)
+    r: output(0.01)
     v: variable(-60.0)
-    u: variable(0.0)
-    s: variable(0.0)
+    u: variable(50.0)
+    s: variable(0.05)
     Delta: 0.1
     C: 100.0
     k: 0.7
