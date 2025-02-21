@@ -34,12 +34,12 @@ def integrate(func, func_args, T, dt, dts, cutoff):
 
 
 def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list, inp_idx: int,
-              time_scale: float, T: float, dt: float, dts: float, cutoff: float, nperseg: int, fmax: float,
-              sigma: float, burst_width: float, burst_height: float, return_dynamics: bool = False):
+              T: float, dt: float, dts: float, cutoff: float, nperseg: int, fmax: float, sigma: float,
+              burst_width: float, burst_height: float, return_dynamics: bool = False):
 
     # define extrinsic input
     s_ext, noise_lvl, noise_sigma = x[-3:]
-    inp = np.zeros((int(np.round((T*time_scale+cutoff)/dt, decimals=0)) + 1,))
+    inp = np.zeros((int(np.round((T+cutoff)/dt, decimals=0)) + 1,))
     noise = noise_lvl * np.random.randn(inp.shape[0])
     noise = gaussian_filter1d(noise, sigma=noise_sigma)
     inp += s_ext + noise
@@ -50,11 +50,11 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
     func_args[inp_idx] = inp
 
     # simulate model dynamics
-    fr = integrate(func, tuple(func_args), T*time_scale + cutoff, dt, dts*time_scale, cutoff) * 1e3
+    fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff) * 1e3
 
     # create summary statistics
     if np.isfinite(fr[-1]):
-        freqs, fitted_psd = get_psd(fr, fs=1e3/(dts*time_scale), nperseg=nperseg, fmax=fmax, detrend=True)
+        freqs, fitted_psd = get_psd(fr, fs=1.0/dts, nperseg=nperseg, fmax=fmax, detrend=True)
         burst_stats = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
                                          width_at_height=0.9)
         bursting = np.asarray([burst_stats["ibi_mean"], burst_stats["ibi_std"]])
@@ -83,7 +83,6 @@ model = "ik_sfa"
 input_var = "I_ext"
 
 # dataset parameters
-time_scale = 100.0
 well = 4
 well_offset = 4
 dt = 1e-2
@@ -103,6 +102,7 @@ estimator = "maf"
 n_simulations = 8000
 n_workers = 80
 n_post_samples = 1000
+stop_after_epochs = 50
 
 # data loading and processing
 #############################
@@ -133,10 +133,10 @@ T = time_ds[-1]
 dts = float(time_ds[1] - time_ds[0])
 spikes = extract_spikes(time, time_ds, spike_times[well + well_offset - 1])
 spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
-target_fr = np.mean(spikes_smoothed, axis=0) / (tau * time_scale)
+target_fr = np.mean(spikes_smoothed, axis=0) / tau
 
 # calculate psd
-freqs, target_psd = get_psd(target_fr, fs=1e3/(dts*time_scale), nperseg=nperseg, fmax=fmax, detrend=detrend)
+freqs, target_psd = get_psd(target_fr, fs=1.0/dts, nperseg=nperseg, fmax=fmax, detrend=detrend)
 
 # calculate bursting stats
 target_bursts = get_bursting_stats(target_fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
@@ -154,22 +154,22 @@ model_params = {
     "v_r": -60.0,
     "v_t": -40.0,
     "eta": 0.0,
-    "E_r": 0.0,
-    "I_ext": 0.0
+    "E_e": 0.0,
+    "tau_s": 8.0,
+    "I_ext": 0.0,
 }
 
 # free parameter bounds
 bounds = {
-    "C": (20.0, 500.0),
-    "k": (0.1, 2.0),
-    "Delta": (0.01, 2.0),
-    "kappa": (0.01, 4.0),
-    "tau_u": (100.0, 1000.0),
-    "g": (4.0, 40.0),
-    "tau_s": (2.0, 20.0),
-    "s_ext": (20.0, 200.0),
-    "noise_lvl": (10.0, 100.0),
-    "sigma": (5.0, 200.0)
+    "C": (80.0, 300.0),
+    "k": (0.2, 1.5),
+    "Delta": (0.1, 2.0),
+    "kappa": (0.5, 2.0),
+    "tau_u": (400.0, 1000.0),
+    "g_e": (5.0, 30.0),
+    "s_ext": (50.0, 200.0),
+    "noise_lvl": (40.0, 80.0),
+    "sigma": (40.0, 100.0)
 }
 
 # initialize model template and set fixed parameters
@@ -177,10 +177,10 @@ template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
 template.update_var(node_vars={f"p/{model}_op/{key}": val for key, val in model_params.items()})
 
 # generate run function
-inp = np.zeros((int((T + cutoff)*time_scale/dt),))
+inp = np.zeros((int((T + cutoff)/dt),))
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt,
                                                 inputs={f'p/{model}_op/{input_var}': inp},
-                                                backend="pytorch", solver="euler")
+                                                backend="pytorch", solver="scipy")
 
 # find argument positions of free parameters
 param_indices = []
@@ -190,7 +190,7 @@ for key in list(bounds.keys())[:-3]:
 input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
 # wrap run function
-func_args = (param_indices, y_target, func, list(args), input_idx, time_scale, T, dt, dts, cutoff,
+func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff,
              nperseg, fmax, sigma, burst_width, burst_height)
 simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 
@@ -217,17 +217,19 @@ theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=
 inference = inference.append_simulations(theta, x)
 
 # train the density estimator and build the posterior
-density_estimator = inference.train()
+density_estimator = inference.train(stop_after_epochs=stop_after_epochs)
 posterior = inference.build_posterior(density_estimator)
 
-# draw samples from the posterior and run model for the average sample
-posterior_samples = posterior.sample((n_post_samples,), x=torch.as_tensor(y_target)).numpy()
-mean_sample = np.mean(posterior_samples, axis=0)
-y_fit, fr_fit = simulator(mean_sample, *func_args, return_dynamics=True)
+# draw samples from the posterior and run model for the first sample
+posterior.set_default_x(torch.as_tensor(y_target))
+posterior_samples = posterior.sample((n_post_samples,)).numpy()
+map = posterior.map()
+y_fit, fr_fit = simulator(map, *func_args, return_dynamics=True)
 
 # save results
 pickle.dump({
-    "age": age, "organoid": well, "freqs": freqs, "time": time_ds, "posterior_samples": posterior_samples,
+    "age": age, "organoid": well, "freqs": freqs, "time": time_ds,
     "target_psd": target_psd, "target_bursts": target_bursts, "target_fr": target_fr,
-    "fitted_psd": y_fit[:-3], "fitted_bursts": y_fit[-3:], "fitted_fr": fr_fit},
+    "fitted_psd": y_fit[:-3], "fitted_bursts": y_fit[-3:], "fitted_fr": fr_fit,
+    "posterior_samples": posterior_samples, "parameter_keys": list(bounds.keys()), "map_sample": map},
     open(f"{save_dir}/{dataset_name}/{file}_fitting_results.pkl", "wb"))

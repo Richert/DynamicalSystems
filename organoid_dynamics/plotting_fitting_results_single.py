@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import pickle
+import numpy as np
+from sbi import analysis as analysis
 
 # load data
 ###########
@@ -16,39 +18,52 @@ fitted_fr = data["fitted_fr"]
 target_psd = data["target_psd"]
 fitted_psd = data["fitted_psd"]
 freqs = data["freqs"]
-results = data["fitting_results"]
-loss = data["loss"]
-organoid = 1 # data["organoid"]
-keys = [] #data["param_keys"]
+time = data["time"]
+organoid = data["organoid"]
+age = data["age"]
+fitted_params = data["posterior_samples"]
+param_keys = data["param_keys"] if "param_keys" in data else \
+    ["C", "k", "Delta", "kappa", "tau_u", "g", "tau_s", "s_ext", "noise_lvl", "sigma"]
 
 # print winner summary
-print(f"Best fit for organoid {organoid} at {file} (loss = {loss})")
-for key, val in zip(keys, results.x):
+print(f"Average posterior for organoid {organoid} at {file} (age = {age})")
+for key, val in zip(param_keys, np.mean(fitted_params, axis=0)):
     print(f"{key} = {val}")
 
 # plotting
 ##########
 
+# resulting model dynamics
 fig, axes = plt.subplots(nrows=2, figsize=(12, 8))
-fig.suptitle(f"Fitting results for organoid {file}")
+fig.suptitle(f"Fitting results for organoid {file} (age = {age})")
 
-# time series
 ax = axes[0]
-ax.plot(target_fr, label="target")
-ax.plot(fitted_fr, label="fit")
+ax.plot(time, target_fr, label="target")
+ax.plot(time[:len(fitted_fr)], fitted_fr, label="fit")
 ax.set_xlabel("time (s)")
 ax.set_ylabel("firing rate (Hz)")
 ax.set_title("Mean-field dynamics")
 ax.legend()
 
-# PSD
 ax = axes[1]
 ax.plot(freqs, target_psd, label="target")
-ax.plot(freqs, fitted_psd, label="fit")
+ax.plot(freqs[:len(fitted_psd)], fitted_psd, label="fit")
 ax.set_xlabel("frequency")
 ax.set_ylabel("log(psd)")
 ax.set_title("Power spectrum")
 ax.legend()
 
 plt.tight_layout()
+
+# parameter posterior distributions
+fig, axes = analysis.pairplot(
+    fitted_params,
+    figsize=(12, 9),
+    points=np.mean(fitted_params, axis=0),
+    points_offdiag={"markersize": 6},
+    points_colors="r",
+    labels=param_keys,
+)
+plt.tight_layout()
+
 plt.show()

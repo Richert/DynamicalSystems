@@ -5,41 +5,39 @@
 ####################
 
 # izhikevich operator with biophysiologically relevant parameters
-ik_op:
+qif_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = a*(b*(v-v_r) - u) + d*r"
-    - "s' = -s/tau_s + r_in"
+    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext) / C"
+    - "s' = -s/tau_s + r"
   variables:
     r: output(0.0)
     v: variable(-60.0)
-    u: variable(0.0)
     s: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    g: 20.0
-    E_r: 0.0
-    b: -2.0
-    a: 0.03
-    d: 100.0
+    g_e: 20.0
+    g_i: 10.0
+    E_e: 0.0
+    E_i: -65.0
     tau_s: 6.0
     eta: 0.0
     I_ext: input(0.0)
-    r_in: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
 
 # izhikevich operator with biophysiologically relevant parameters
 ik_sfa_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2/(pi*C + kappa*pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g*s*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (kappa*(eta + I_ext + g*s*(E_r-v)) - u*(1 + kappa)) / tau_u"
-    - "s' = -s/tau_s + r_in"
+    - "r' = (Delta*k^2/(pi*C + kappa*pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext - u) / C"
+    - "u' = (kappa*(eta + I_ext + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v)) - u*(1 + kappa)) / tau_u"
+    - "s' = -s/tau_s + r"
   variables:
     r: output(0.01)
     v: variable(-60.0)
@@ -50,14 +48,17 @@ ik_sfa_op:
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    g: 20.0
-    E_r: 0.0
+    g_e: 20.0
+    g_i: 10.0
+    E_e: 0.0
+    E_i: -65.0
     kappa: 10.0
     tau_u: 500.0
     tau_s: 6.0
     eta: 0.0
     I_ext: input(0.0)
-    r_in: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
 
 # izhikevich operator with synaptic short-term plasticity
 ik_stp_op:
@@ -223,7 +224,7 @@ ik:
   nodes:
     p: ik_pop
   edges:
-    - [p/ik_op/r, p/ik_op/r_in, null, {weight: 1.0}]
+    - [p/ik_op/s, p/ik_op/s_e, null, {weight: 1.0}]
 
 # izhikevich population with short-term synaptic plasticity
 ik_stp:
@@ -239,33 +240,16 @@ ik_sfa:
   nodes:
     p: sfa_pop
   edges:
-    - [p/ik_sfa_op/r, p/ik_sfa_op/r_in, null, {weight: 1.0}]
+    - [p/ik_sfa_op/s, p/ik_sfa_op/s_e, null, {weight: 1.0}]
 
 # rs-fs circuit
 eic:
   base: CircuitTemplate
   nodes:
-    rs: rs
-    fs: fs
+    exc: ik_sfa
+    inh: ik
   edges:
-    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 15.0}]
-    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 8.0}]
-    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 15.0}]
-    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 8.0}]
-
-# rs-fs-lts circuit
-eiic:
-  base: CircuitTemplate
-  nodes:
-    rs: rs
-    fs: fs
-    lts: lts
-  edges:
-    - [rs/rs_op/r, rs/rs_op/r_e, null, {weight: 16.0}]
-    - [rs/rs_op/r, fs/fs_op/r_e, null, {weight: 4.0}]
-    - [rs/rs_op/r, lts/lts_op/r_e, null, {weight: 4.0}]
-    - [fs/fs_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
-    - [fs/fs_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
-    - [fs/fs_op/r, lts/lts_op/r_i, null, {weight: 4.0}]
-    - [lts/lts_op/r, rs/rs_op/r_i, null, {weight: 16.0}]
-    - [lts/lts_op/r, fs/fs_op/r_i, null, {weight: 4.0}]
+    - [exc/ik_sfa_op/s, exc/ik_sfa_op/s_e, null, {weight: 1.0}]
+    - [exc/ik_sfa_op/s, inh/ik_op/s_e, null, {weight: 1.0}]
+    - [inh/ik_op/s, exc/ik_sfa_op/s_i, null, {weight: 1.0}]
+    - [inh/ik_op/s, inh/ik_op/s_i, null, {weight: 1.0}]
