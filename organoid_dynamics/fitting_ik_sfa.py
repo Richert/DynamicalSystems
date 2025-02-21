@@ -54,7 +54,7 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 
     # create summary statistics
     if np.isfinite(fr[-1]):
-        freqs, fitted_psd = get_psd(fr, fs=1.0/dts, nperseg=nperseg, fmax=fmax, detrend=True)
+        freqs, fitted_psd = get_psd(fr, fs=1e3/dts, nperseg=nperseg, fmax=fmax, detrend=True)
         burst_stats = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
                                          width_at_height=0.9)
         bursting = np.asarray([burst_stats["ibi_mean"], burst_stats["ibi_std"]])
@@ -136,7 +136,7 @@ spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
 target_fr = np.mean(spikes_smoothed, axis=0) / tau
 
 # calculate psd
-freqs, target_psd = get_psd(target_fr, fs=1.0/dts, nperseg=nperseg, fmax=fmax, detrend=detrend)
+freqs, target_psd = get_psd(target_fr, fs=1e3/dts, nperseg=nperseg, fmax=fmax, detrend=detrend)
 
 # calculate bursting stats
 target_bursts = get_bursting_stats(target_fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
