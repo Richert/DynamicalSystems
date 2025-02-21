@@ -180,7 +180,7 @@ template.update_var(node_vars={f"p/{model}_op/{key}": val for key, val in model_
 inp = np.zeros((int((T + cutoff)/dt),))
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt,
                                                 inputs={f'p/{model}_op/{input_var}': inp},
-                                                backend="pytorch", solver="scipy")
+                                                backend="pytorch", solver="euler")
 
 # find argument positions of free parameters
 param_indices = []
