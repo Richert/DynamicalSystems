@@ -89,7 +89,7 @@ dt = 1e-2
 cutoff = 500.0
 
 # data processing parameters
-tau = 20e-3
+tau = 20.0
 nperseg = 50000
 fmax = 100.0
 detrend = True
@@ -129,8 +129,8 @@ day += int((month-month_0)*30)
 age = day - day_0
 
 # calculate firing rate
-T = time_ds[-1]
-dts = float(time_ds[1] - time_ds[0])
+T = time_ds[-1] * 1e3
+dts = float(time_ds[1] - time_ds[0]) * 1e3
 spikes = extract_spikes(time, time_ds, spike_times[well + well_offset - 1])
 spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
 target_fr = np.mean(spikes_smoothed, axis=0) / tau
