@@ -8,8 +8,8 @@ from pyrates import CircuitTemplate
 from scipy.optimize import differential_evolution
 from scipy.ndimage import gaussian_filter1d
 from numba import njit
-import matplotlib.pyplot as plt
-from time import perf_counter
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 def integrate(func, func_args, T, dt, dts, cutoff):
