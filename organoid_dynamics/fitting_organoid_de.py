@@ -37,7 +37,7 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 
     # define extrinsic input
     s_ext, noise_lvl, noise_sigma = x[-3:]
-    inp = np.zeros((int((T + cutoff)/dt),))
+    inp = np.zeros((int((T + cutoff)/dt) + 1,))
     noise = noise_lvl * np.random.randn(inp.shape[0])
     noise = gaussian_filter1d(noise, sigma=noise_sigma)
     inp += s_ext + noise
