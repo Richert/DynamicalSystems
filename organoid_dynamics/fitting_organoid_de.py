@@ -9,6 +9,7 @@ from scipy.optimize import differential_evolution
 from scipy.ndimage import gaussian_filter1d
 from numba import njit
 import warnings
+from time import perf_counter
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -190,7 +191,6 @@ func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_siz
                                                 inputs={f'p/{model}_op/{input_var}': inp},
                                                 backend="numpy", solver="heun")
 func_jit = njit(func)
-func_jit(*args)
 
 # find argument positions of free parameters
 param_indices = []
@@ -199,15 +199,23 @@ for key in list(bounds.keys())[:-3]:
     param_indices.append(idx)
 input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
+# define final arguments of loss/simulation function
+func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff, nperseg, fmax, sigma,
+             burst_width, burst_height)
+
 # fitting procedure
 ###################
 
-print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings "
-      f"(sampling step-size = {np.round(dts, decimals=2)} ms, simulation step-size = {dt} ms).")
+# test run
+print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a"
+      f"simulation step-size of {dt} ms.")
+t0 = perf_counter()
+simulator(np.asarray([0.5*(b[1] - b[0]) for b in bounds.values()]), *func_args, return_dynamics=False)
+t1 = perf_counter()
+print(f"Finished test run after {t1-t0} s.")
 
 # fitting procedure
-func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff, nperseg, fmax, sigma,
-             burst_width, burst_height)
+print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings ...")
 while True:
     results = differential_evolution(simulator, tuple(bounds.values()), args=func_args, strategy=strategy,
                                      workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
