@@ -25,7 +25,8 @@ def integrate(func, func_args, T, dt, dts, cutoff):
         step += 1
         if t >= cutoff and step % fs == 0:
             y_col.append(y[0])
-            if not np.isfinite(y[0]):
+            if not np.isfinite(y):
+                y_col[-1] = np.inf
                 break
     return np.asarray(y_col)
 
