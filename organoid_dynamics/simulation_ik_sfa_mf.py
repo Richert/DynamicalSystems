@@ -16,12 +16,12 @@ v_t = -40.0
 Delta = 0.5
 eta = 0.0
 kappa = 1.6
-tau_u = 500.0
+tau_u = 20000.0
 g = 15.0
 E_r = 0.0
 tau_s = 6.0
-s_ext = 179.0
-noise_lvl = 20.0
+s_ext = 179.5
+noise_lvl = 10.0
 noise_sigma = 80.0
 
 params = {
@@ -30,10 +30,10 @@ params = {
 }
 
 # define inputs
-T = 10000.0
+T = 250000.0
 cutoff = 0.0
 dt = 1e-1
-dts = 1e-1
+dts = 1.0
 inp = np.zeros((int(T/dt),)) + s_ext
 noise = noise_lvl*np.random.randn(inp.shape[0])
 noise = gaussian_filter1d(noise, sigma=noise_sigma)

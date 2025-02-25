@@ -20,7 +20,8 @@ def integrate(func, func_args, T, dt, dts, cutoff):
     y_col = []
     step = 0
     while t < T:
-        y += dt * func(step, y, *args)
+        y_tmp = y + dt * func(step, y, *args)
+        y += dt*0.5*(func(step, y, *args) + func(step+1, y_tmp, *args))
         t += dt
         step += 1
         if t >= cutoff and step % fs == 0:
@@ -173,7 +174,7 @@ bounds = {
     "k": (0.5, 1.5),
     "Delta": (0.1, 2.0),
     "kappa": (0.5, 2.0),
-    "tau_u": (400.0, 1000.0),
+    "tau_u": (1000.0, 20000.0),
     "g_e": (5.0, 30.0),
     "s_ext": (100.0, 300.0),
     "noise_lvl": (5.0, 80.0),
