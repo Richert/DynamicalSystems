@@ -32,7 +32,7 @@ params = {
 # define inputs
 T = 10000.0
 cutoff = 0.0
-dt = 1e-2
+dt = 1e-1
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + s_ext
 noise = noise_lvl*np.random.randn(inp.shape[0])
@@ -50,7 +50,7 @@ ik = CircuitTemplate.from_yaml("config/ik_mf/ik_sfa")
 ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # run simulation
-res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='scipy',
+res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
                 outputs={'r': f'p/{op}/r', 'u': f'p/{op}/u', 'v': f'p/{op}/v'}, inputs={f'p/{op}/I_ext': inp},
                 decorator=nb.njit)
 

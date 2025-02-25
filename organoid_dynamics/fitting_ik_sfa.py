@@ -85,7 +85,7 @@ input_var = "I_ext"
 # dataset parameters
 well = 4
 well_offset = 4
-dt = 1e-2
+dt = 1e-1
 cutoff = 500.0
 
 # data processing parameters
@@ -180,7 +180,7 @@ template.update_var(node_vars={f"p/{model}_op/{key}": val for key, val in model_
 inp = np.zeros((int((T + cutoff)/dt),))
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt,
                                                 inputs={f'p/{model}_op/{input_var}': inp},
-                                                backend="pytorch", solver="euler")
+                                                backend="pytorch", solver="heun")
 
 # find argument positions of free parameters
 param_indices = []
@@ -223,7 +223,7 @@ posterior = inference.build_posterior(density_estimator)
 # draw samples from the posterior and run model for the first sample
 posterior.set_default_x(torch.as_tensor(y_target))
 posterior_samples = posterior.sample((n_post_samples,)).numpy()
-map = posterior.map()
+map = posterior.map().cpu().numpy().squeeze()
 y_fit, fr_fit = simulator(map, *func_args, return_dynamics=True)
 
 # save results
