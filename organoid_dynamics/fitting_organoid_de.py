@@ -105,10 +105,11 @@ burst_height = 0.5
 strategy = "best1exp"
 workers = 80
 maxiter = 1000
-popsize = 80
+popsize = 50
 mutation = (0.5, 1.5)
 recombination = 0.6
 polish = True
+tolerance = 1e-3
 
 # data loading and processing
 #############################
@@ -206,7 +207,7 @@ func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, c
 while True:
     results = differential_evolution(simulator, tuple(bounds.values()), args=func_args, strategy=strategy,
                                      workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
-                                     recombination=recombination, polish=polish)
+                                     recombination=recombination, polish=polish, atol=tolerance)
     if np.isnan(results.fun):
         print("Re-initializing. Reason: loss(best candidate) = NaN.")
     else:
