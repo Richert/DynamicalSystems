@@ -162,14 +162,14 @@ model_params = {
 # free parameter bounds
 bounds = {
     "C": (80.0, 300.0),
-    "k": (0.2, 1.5),
+    "k": (0.5, 1.5),
     "Delta": (0.1, 2.0),
     "kappa": (0.5, 2.0),
     "tau_u": (400.0, 1000.0),
     "g_e": (5.0, 30.0),
-    "s_ext": (50.0, 200.0),
-    "noise_lvl": (40.0, 80.0),
-    "sigma": (40.0, 100.0)
+    "s_ext": (100.0, 300.0),
+    "noise_lvl": (5.0, 80.0),
+    "sigma": (30.0, 100.0)
 }
 
 # initialize model template and set fixed parameters
@@ -232,4 +232,4 @@ pickle.dump({
     "target_psd": target_psd, "target_bursts": target_bursts, "target_fr": target_fr,
     "fitted_psd": y_fit[:-3], "fitted_bursts": y_fit[-3:], "fitted_fr": fr_fit,
     "posterior_samples": posterior_samples, "parameter_keys": list(bounds.keys()), "map_sample": map},
-    open(f"{save_dir}/{dataset_name}/{file}_fitting_results.pkl", "wb"))
+    open(f"{save_dir}/{dataset_name}/{file}_sbi_fit.pkl", "wb"))

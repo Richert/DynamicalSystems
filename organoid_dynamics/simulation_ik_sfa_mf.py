@@ -13,16 +13,16 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 1.0
+Delta = 0.5
 eta = 0.0
-kappa = 1.0
-tau_u = 700.0
-g = 20.0
+kappa = 1.6
+tau_u = 500.0
+g = 15.0
 E_r = 0.0
-tau_s = 8.0
-s_ext = 120.0
-noise_lvl = 55.0
-noise_sigma = 40.0
+tau_s = 6.0
+s_ext = 179.0
+noise_lvl = 20.0
+noise_sigma = 80.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'tau_u': tau_u,

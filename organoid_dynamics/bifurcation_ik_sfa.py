@@ -25,7 +25,7 @@ Delta = 0.2
 eta = 0.0
 kappa = 0.0
 tau_u = 500.0
-g = 10.0
+g = 15.0
 E_r = 0.0
 tau_s = 6.0
 
@@ -56,25 +56,25 @@ t_sols, t_cont = ode.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NP
 ########################
 
 # continuation in kappa
-kappas = [0.1, 0.5, 1.0]
+kappas = [0.8, 1.2, 1.6]
 c1_sols, c1_cont = ode.run(starting_point='UZ1', c='1d', ICP=5, NPAR=n_params, NDIM=n_dim, name='kappa',
                            origin=t_cont, NMX=4000, DSMAX=0.05, UZR={5: kappas}, STOP=[],
-                           NPR=100, RL1=1.1, RL0=0.0, bidirectional=True, EPSS=1e-4)
+                           NPR=100, RL1=2.1, RL0=0.0, bidirectional=True, EPSS=1e-4)
 
 # continuations in Delta
 for i, kappa in enumerate(kappas):
 
-    c2_sols, c2_cont = ode.run(starting_point=f'UZ{i+1}', ICP=9, name=f'eta:{i+1}', DSMAX=0.05,
-                               origin=c1_cont, UZR={}, STOP=[], NPR=10, RL1=150.0, RL0=0.0, bidirectional=True)
+    c2_sols, c2_cont = ode.run(starting_point=f'UZ{i+1}', ICP=9, name=f'eta:{i+1}', DSMAX=0.1,
+                               origin=c1_cont, UZR={}, STOP=[], NPR=10, RL1=250.0, RL0=0.0, bidirectional=True)
 
     try:
         ode.run(starting_point="HB1", ICP=[9, 11], name=f"eta:{i+1}:lc:1", origin=c2_cont, ISW=-1, IPS=2, NMX=8000,
-                DSMAX=0.5, NCOL=7, NTST=400, STOP=["LP3"])
+                DSMAX=0.1, NCOL=6, NTST=200, STOP=["LP4"], EPSL=1e-8, EPSU=1e-8, EPSS=1e-5)
     except KeyError:
         pass
     try:
         ode.run(starting_point="HB2", ICP=[9, 11], name=f"eta:{i+1}:lc:2", origin=c2_cont, ISW=-1, IPS=2, NMX=8000,
-                DSMAX=0.5, NCOL=7, NTST=400, STOP=["LP3"])
+                DSMAX=0.1, NCOL=6, NTST=200, STOP=["LP4"], EPSL=1e-8, EPSU=1e-8, EPSS=1e-5)
     except KeyError:
         pass
 
@@ -94,22 +94,22 @@ for i, kappa in enumerate(kappas):
 
 # 2D continuation I
 p1 = "kappa"
-ode.run(starting_point='LP1', ICP=[5, 9], name=f'{p1}/eta:lp1', origin="eta:3", NMX=4000, DSMAX=0.2,
+ode.run(starting_point='LP1', ICP=[5, 9], name=f'{p1}/eta:lp1', origin="eta:2", NMX=4000, DSMAX=0.2,
         NPR=10, RL1=3.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
 # ode.run(starting_point='LP2', ICP=[16, 9], name=f'{p1}/eta:lp2', origin="eta:2", NMX=4000, DSMAX=0.2,
 #         NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB1', ICP=[5, 9], name=f'{p1}/eta:hb1', origin="eta:3", NMX=4000, DSMAX=0.2,
+ode.run(starting_point='HB1', ICP=[5, 9], name=f'{p1}/eta:hb1', origin="eta:2", NMX=4000, DSMAX=0.2,
         NPR=10, RL1=3.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB2', ICP=[5, 9], name=f'{p1}/eta:hb2', origin="eta:3", NMX=4000, DSMAX=0.2,
+ode.run(starting_point='HB2', ICP=[5, 9], name=f'{p1}/eta:hb2', origin="eta:2", NMX=4000, DSMAX=0.2,
         NPR=10, RL1=3.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
 
 # 2D continuation II
 p2 = "tau_u"
-ode.run(starting_point='LP1', ICP=[16, 9], name=f'{p2}/eta:lp1', origin="eta:3", NMX=4000, DSMAX=0.2,
+ode.run(starting_point='LP1', ICP=[16, 9], name=f'{p2}/eta:lp1', origin="eta:2", NMX=4000, DSMAX=0.2,
         NPR=10, RL1=1000.0, RL0=50.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB1', ICP=[16, 9], name=f'{p2}/eta:hb1', origin="eta:3", NMX=4000, DSMAX=0.2,
+ode.run(starting_point='HB1', ICP=[16, 9], name=f'{p2}/eta:hb1', origin="eta:2", NMX=4000, DSMAX=0.2,
         NPR=10, RL1=1000.0, RL0=50.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB2', ICP=[16, 9], name=f'{p2}/eta:hb2', origin="eta:3", NMX=4000, DSMAX=0.2,
+ode.run(starting_point='HB2', ICP=[16, 9], name=f'{p2}/eta:hb2', origin="eta:2", NMX=4000, DSMAX=0.2,
         NPR=10, RL1=1000.0, RL0=50.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
 
 # plot 2D bifurcation diagrams
