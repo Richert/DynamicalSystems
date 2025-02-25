@@ -9,33 +9,33 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # exc parameters
-C = 100.0
-k = 0.7
-v_r = -60.0
-v_t = -40.0
-Delta = 0.2
-eta = 0.0
-kappa = 1.0
-tau_u = 600.0
-g = 20.0
-E_r = 0.0
-tau_s = 6.0
-I_e = 139.0
+exc_params = {
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 0.5, 'eta': 0.0, 'kappa': 1.6, 'tau_u': 1000.0,
+    'g_e': 15.0, 'g_i': 10.0, 'tau_s': 8.0
+}
 
-noise_lvl = 0.0
+# inh parameters
+inh_params = {
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 40.0, 'g_e': 10.0, 'g_i': 10.0, 'tau_s': 20.0
+}
+
+# input parameters
+I_e = 200.0
+noise_lvl = 20.0
 noise_sigma = 50.0
 
-params = {
-    'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'tau_u': tau_u,
-    'g': g, 'E_r': E_r, 'tau_s': tau_s
-}
+# coupling parameters
+g_ee = 1.0
+g_ie = 1.0
+g_ei = 1.0
+g_ii = 1.0
 
 # define inputs
 T = 10000.0
 cutoff = 0.0
 dt = 1e-2
-dts = 1e-1
-inp = np.zeros((int(T/dt),)) + s_ext
+dts = 1.0
+inp = np.zeros((int(T/dt),)) + I_e
 noise = noise_lvl*np.random.randn(inp.shape[0])
 noise = gaussian_filter1d(noise, sigma=noise_sigma)
 inp += noise
@@ -44,35 +44,32 @@ inp += noise
 ##########################
 
 # initialize model
-op = "ik_sfa_op"
-ik = CircuitTemplate.from_yaml("config/ik_mf/ik_sfa")
+exc_op = "ik_sfa_op"
+inh_op = "ik_op"
+net = CircuitTemplate.from_yaml("config/ik_mf/eic")
 
 # update parameters
-ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
+net.update_var(node_vars={f"exc/{exc_op}/{var}": val for var, val in exc_params.items()})
+net.update_var(node_vars={f"inh/{inh_op}/{var}": val for var, val in inh_params.items()})
 
 # run simulation
-res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='scipy',
-                outputs={'r': f'p/{op}/r', 'u': f'p/{op}/u', 'v': f'p/{op}/v'}, inputs={f'p/{op}/I_ext': inp},
-                decorator=nb.njit)
+res_mf = net.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
+                 outputs={'r_e': f'exc/{exc_op}/r', 'r_i': f'inh/{inh_op}/r'}, inputs={f'exc/{exc_op}/I_ext': inp},
+                 decorator=nb.njit)
 
 # plot results
-fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
+fig, axes = plt.subplots(nrows=2, figsize=(12, 6))
 fig.suptitle("Mean-field dynamics")
 ax = axes[0]
-ax.plot(res_mf.index, res_mf["r"] * 1e3)
-ax.set_ylabel(r'$r(t)$ (Hz)')
+ax.plot(res_mf.index, res_mf["r_e"] * 1e3)
+ax.set_ylabel(r'$r_e(t)$ (Hz)')
 ax.set_xlabel("time (ms)")
-ax.set_title("average firing rate")
+ax.set_title("excitatory firing rate")
 ax = axes[1]
-ax.plot(res_mf.index, res_mf["u"])
-ax.set_ylabel(r'$u(t)$')
+ax.plot(res_mf.index, res_mf["r_i"] * 1e3)
+ax.set_ylabel(r'$r_i(t)$')
 ax.set_xlabel("time (ms)")
-ax.set_title("average adaptation")
-ax = axes[2]
-ax.plot(res_mf.index, res_mf["v"])
-ax.set_ylabel(r'$v(t)$ (mV)')
-ax.set_xlabel("time (ms)")
-ax.set_title("average membrane potential")
+ax.set_title("inhibitory firing rate")
 plt.tight_layout()
 plt.show()
 

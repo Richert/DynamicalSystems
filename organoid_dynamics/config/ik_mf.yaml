@@ -5,7 +5,7 @@
 ####################
 
 # izhikevich operator with biophysiologically relevant parameters
-qif_op:
+ik_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
@@ -246,8 +246,8 @@ ik_sfa:
 eic:
   base: CircuitTemplate
   nodes:
-    exc: ik_sfa
-    inh: ik
+    exc: sfa_pop
+    inh: ik_pop
   edges:
     - [exc/ik_sfa_op/s, exc/ik_sfa_op/s_e, null, {weight: 1.0}]
     - [exc/ik_sfa_op/s, inh/ik_op/s_e, null, {weight: 1.0}]
