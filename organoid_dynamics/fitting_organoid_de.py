@@ -202,6 +202,9 @@ input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_
 # fitting procedure
 ###################
 
+print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings "
+      f"(sampling step-size = {np.round(dts, decimals=2)} ms, simulation step-size = {dt} ms).")
+
 # fitting procedure
 func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff, nperseg, fmax, sigma,
              burst_width, burst_height)
@@ -213,7 +216,7 @@ while True:
         print("Re-initializing. Reason: loss(best candidate) = NaN.")
     else:
         break
-print("And the winner is ... ")
+print("Finished fitting procedure. The winner is ... ")
 fitted_parameters = {}
 for key, val in zip(bounds.keys(), results.x):
     print(f"{key} = {val}")
