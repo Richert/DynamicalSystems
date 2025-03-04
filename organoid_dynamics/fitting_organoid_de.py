@@ -15,21 +15,27 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def integrate(func, func_args, T, dt, dts, cutoff, p):
 
-    t, y = float(func_args[0]), func_args[1]
+    t0, y = int(func_args[0]), func_args[1]
     args = func_args[2:]
-    fs = int(dts/dt)
-    fr_col = []
-    step = 0
-    while t < T:
-        y_tmp = y + dt * func(step, y, *args)
-        y += dt*0.5*(func(step, y, *args) + func(step+1, y_tmp, *args))
-        t += dt
-        step += 1
-        if t >= cutoff and step % fs == 0:
-            fr_col.append(p*y[0] + (1-p)*y[6])
-            if not np.isfinite(y[0]):
-                break
-    return np.asarray(fr_col)
+    idx = 0
+    steps = int(np.round(T / dt))
+    store_steps = int(np.round(T / dts))
+    store_step = int(np.round(dts / dt))
+    state_rec = np.zeros((store_steps,), dtype=y.dtype)
+
+    # solve ivp for forward Euler method
+    for step in range(t0, steps + t0):
+        r = y[0]
+        if step % store_step == t0:
+            state_rec[idx] = r
+            idx += 1
+        if not np.isfinite(r):
+            break
+        rhs = func(step, y, *args)
+        y_0 = y + dt * rhs
+        y += (rhs + func(step, y_0, *args)) * dt/2
+
+    return state_rec
 
 
 def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list, inp_idx: int,
@@ -75,12 +81,15 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 # parameter definitions
 #######################
 
+# choose device
 device = "cpu"
-path = "/home/richard-gast/Documents/"
-save_dir = f"{path}/results"
 
 # choose data set
 dataset_name = "trujilo_2019"
+
+# define directories and file to fit
+path = "/home/richard"
+save_dir = f"{path}/results/{dataset_name}"
 load_dir = f"{path}/data/{dataset_name}"
 file = "161001"
 
@@ -108,9 +117,9 @@ n_bins = 10
 
 # fitting parameters
 strategy = "best1exp"
-workers = 10
-maxiter = 100
-popsize = 10
+workers = 80
+maxiter = 1000
+popsize = 50
 mutation = (0.5, 1.5)
 recombination = 0.6
 polish = True
@@ -182,10 +191,6 @@ func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_siz
                                                 backend="numpy", solver="heun")
 func_jit = njit(func)
 
-# input parameters
-noise_lvl = 20.0
-noise_sigma = 200.0
-
 # free parameter bounds
 exc_bounds = {
     "Delta": (0.5, 5.0),
@@ -206,7 +211,7 @@ for key in list(exc_bounds.keys())[:-2]:
 input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff, p_e, sigma, burst_width,
+func_args = (param_indices, y_target, func_jit, list(args), input_idx, T, dt, dts, cutoff, p_e, sigma, burst_width,
              burst_sep, burst_height, burst_relheight, waveform_length, n_bins)
 
 # fitting procedure
@@ -244,4 +249,4 @@ pickle.dump({
     "age": age, "organoid": well, "time": time_ds,
     "target": targets, "target_fr": target_fr,
     "fit": y_fit, "fitted_fr": fr_fit, "fitted_parameters": fitted_parameters},
-    open(f"{save_dir}/{dataset_name}/{file}_de_fit.pkl", "wb"))
+    open(f"{save_dir}/{file}_de_fit.pkl", "wb"))
