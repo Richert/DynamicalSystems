@@ -10,11 +10,13 @@ ik_op:
   equations:
     - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
     - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext) / C"
-    - "s' = -s/tau_s + r"
+    - "s' = x / tau_s"
+    - "x' = (r - 2*x - s) / tau_s"
   variables:
-    r: output(0.0)
+    r: output(0.01)
     v: variable(-60.0)
-    s: variable(0.0)
+    s: variable(0.05)
+    x: variable(0.05)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -30,19 +32,46 @@ ik_op:
     s_e: input(0.0)
     s_i: input(0.0)
 
+# qif operator
+qif_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*s_e - J_i*s_i) + eta + I_ext) / tau"
+    - "s' = r - s/tau_s"
+    - "x' = (r - 2*x - s) / tau_s"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    s: variable(0.05)
+    x: variable(0.05)
+    Delta: 0.1
+    tau: 10.0
+    J_e: 20.0
+    J_i: 10.0
+    tau_s: 6.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+
 # izhikevich operator with biophysiologically relevant parameters
 ik_sfa_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2/(pi*C + kappa*pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
+    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
     - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext - u) / C"
-    - "u' = (kappa*(eta + I_ext + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v)) - u*(1 + kappa)) / tau_u"
-    - "s' = -s/tau_s + r"
+    - "u' = w / tau_u"
+    - "w' = (kappa*r - 2*w - u) / tau_u"
+    - "s' = x / tau_s"
+    - "x' = (r - 2*x - s) / tau_s"
   variables:
     r: output(0.01)
     v: variable(-60.0)
     u: variable(50.0)
+    w: variable(50.0)
     s: variable(0.05)
+    x: variable(0.05)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -56,6 +85,33 @@ ik_sfa_op:
     tau_u: 500.0
     tau_s: 6.0
     eta: 0.0
+    I_ext: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+
+# qif operator
+qif_sfa_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta/(pi*tau + kappa*pi*tau) + 2.0*r*v) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*s_e - J_i*s_i) + eta + I_ext - u) / tau"
+    - "u' = (kappa*(tau*(J_e*s_e - J_i*s_i) + eta + I_ext) - u*(1 + kappa)) / tau_u"
+    - "s' = x/tau_s"
+    - "x' = (r - 2*x - s) / tau_s"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    u: variable(0.0)
+    s: variable(0.05)
+    x: variable(0.05)
+    Delta: 0.1
+    tau: 10.0
+    J_e: 20.0
+    J_i: 10.0
+    tau_s: 6.0
+    eta: 0.0
+    kappa: 1.0
+    tau_u: 100.0
     I_ext: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
@@ -173,6 +229,18 @@ lts_op:
 # node templates
 ################
 
+# population of qif neurons
+qif_pop:
+  base: NodeTemplate
+  operators:
+    - qif_op
+
+# population of qif neurons with SFA
+qif_sfa_pop:
+  base: NodeTemplate
+  operators:
+    - qif_sfa_op
+
 # population of biophysiologically informed izhikevich neurons
 ik_pop:
   base: NodeTemplate
@@ -243,7 +311,7 @@ ik_sfa:
     - [p/ik_sfa_op/s, p/ik_sfa_op/s_e, null, {weight: 1.0}]
 
 # rs-fs circuit
-eic:
+eic_ik:
   base: CircuitTemplate
   nodes:
     exc: sfa_pop
@@ -253,3 +321,15 @@ eic:
     - [exc/ik_sfa_op/s, inh/ik_op/s_e, null, {weight: 1.0}]
     - [inh/ik_op/s, exc/ik_sfa_op/s_i, null, {weight: 1.0}]
     - [inh/ik_op/s, inh/ik_op/s_i, null, {weight: 1.0}]
+
+# rs-fs circuit
+eic_qif:
+  base: CircuitTemplate
+  nodes:
+    exc: qif_sfa_pop
+    inh: qif_pop
+  edges:
+    - [exc/qif_sfa_op/s, exc/qif_sfa_op/s_e, null, {weight: 1.0}]
+    - [exc/qif_sfa_op/s, inh/qif_op/s_e, null, {weight: 1.0}]
+    - [inh/qif_op/s, exc/qif_sfa_op/s_i, null, {weight: 1.0}]
+    - [inh/qif_op/s, inh/qif_op/s_i, null, {weight: 1.0}]

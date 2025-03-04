@@ -13,12 +13,12 @@ from time import perf_counter
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-def integrate(func, func_args, T, dt, dts, cutoff):
+def integrate(func, func_args, T, dt, dts, cutoff, p):
 
     t, y = float(func_args[0]), func_args[1]
     args = func_args[2:]
     fs = int(dts/dt)
-    y_col = []
+    fr_col = []
     step = 0
     while t < T:
         y_tmp = y + dt * func(step, y, *args)
@@ -26,22 +26,22 @@ def integrate(func, func_args, T, dt, dts, cutoff):
         t += dt
         step += 1
         if t >= cutoff and step % fs == 0:
-            y_col.append(y[0])
+            fr_col.append(p*y[0] + (1-p)*y[6])
             if not np.isfinite(y[0]):
                 break
-    return np.asarray(y_col)
+    return np.asarray(fr_col)
 
 
 def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list, inp_idx: int,
-              T: float, dt: float, dts: float, cutoff: float, nperseg: int, fmax: float, sigma: float,
-              burst_width: float, burst_height: float, return_dynamics: bool = False):
+              T: float, dt: float, dts: float, cutoff: float, p: float, sigma: float, burst_width: float,
+              burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int, n_bins: int,
+              return_dynamics: bool = False):
 
     # define extrinsic input
-    s_ext, noise_lvl, noise_sigma = x[-3:]
+    noise_lvl, noise_sigma = x[-2:]
     inp = np.zeros((int((T + cutoff)/dt) + 1,))
     noise = noise_lvl * np.random.randn(inp.shape[0])
-    noise = gaussian_filter1d(noise, sigma=noise_sigma)
-    inp += s_ext + noise
+    inp += gaussian_filter1d(noise, sigma=noise_sigma)
 
     # update parameter vector
     for idx, val in zip(x_indices, x):
@@ -49,24 +49,23 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
     func_args[inp_idx] = inp
 
     # simulate model dynamics
-    fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff) * 1e3
+    fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff, p) * 1e3
 
-    # create summary statistics
-    if np.isfinite(fr[-1]):
-        freqs, fitted_psd = get_psd(fr, fs=1e3/dts, nperseg=nperseg, fmax=fmax, detrend=True)
-        burst_stats = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                                         width_at_height=0.9)
-        bursting = np.asarray([burst_stats["ibi_mean"], burst_stats["ibi_std"]])
-
-        sum_stats = np.concatenate([fitted_psd, bursting], axis=0)
-    else:
-        sum_stats = np.zeros_like(y) + np.inf
+    # get bursting stats
+    res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
+                             burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length,
+                             n_bins=n_bins)
 
     # calculate loss
-    loss = mse(sum_stats, y)
+    if "ibi" in res:
+        ibi_stats = np.asarray([np.mean(targets["ibi"]), np.std(targets["ibi"]), np.min(targets["ibi"]), np.max(targets["ibi"])])
+        y_fit = np.concatenate([ibi_stats, res["waveform_mean"], res["waveform_std"]], axis=0)
+    else:
+        y_fit = np.zeros_like(y)
+    loss = mse(y_fit, y)
 
     if return_dynamics:
-        return loss, sum_stats, fr
+        return loss, res, fr
     return loss
 
 
@@ -77,15 +76,18 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 #######################
 
 device = "cpu"
-save_dir = "/home/richard/results"
+path = "/home/richard-gast/Documents/"
+save_dir = f"{path}/results"
 
 # choose data set
 dataset_name = "trujilo_2019"
-path = f"/home/richard/data/{dataset_name}"
+load_dir = f"{path}/data/{dataset_name}"
 file = "161001"
 
 # choose model
-model = "ik_sfa"
+model = "eic_ik"
+exc_op = "ik_sfa_op"
+inh_op = "ik_op"
 input_var = "I_ext"
 
 # dataset parameters
@@ -96,18 +98,19 @@ cutoff = 500.0
 
 # data processing parameters
 tau = 20.0
-nperseg = 50000
-fmax = 100.0
-detrend = True
 sigma = 100.0
-burst_width = 1000.0
-burst_height = 0.5
+burst_width = 100.0
+burst_sep = 1000.0
+burst_height = 0.6
+burst_relheight = 0.9
+waveform_length = 3000
+n_bins = 10
 
 # fitting parameters
 strategy = "best1exp"
-workers = 80
-maxiter = 1000
-popsize = 50
+workers = 10
+maxiter = 100
+popsize = 10
 mutation = (0.5, 1.5)
 recombination = 0.6
 polish = True
@@ -122,7 +125,7 @@ month_0 = 7
 day_0 = 1
 
 # load data from file
-data = loadmat(f"{path}/LFP_Sp_{file}.mat", squeeze_me=False)
+data = loadmat(f"{load_dir}/LFP_Sp_{file}.mat", squeeze_me=False)
 
 # extract data
 lfp = data["LFP"]
@@ -144,80 +147,83 @@ spikes = extract_spikes(time, time_ds, spike_times[well + well_offset - 1])
 spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
 target_fr = np.mean(spikes_smoothed, axis=0) / tau
 
-# calculate psd
-freqs, target_psd = get_psd(target_fr, fs=1e3/dts, nperseg=nperseg, fmax=fmax, detrend=detrend)
-
 # calculate bursting stats
-target_bursts = get_bursting_stats(target_fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                                   width_at_height=0.9)
-target_bursts = np.asarray([target_bursts["ibi_mean"], target_bursts["ibi_std"]])
-
-# combine to target summary stats
-y_target = np.concatenate([target_psd, target_bursts], axis=0)
+targets = get_bursting_stats(target_fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
+                             width_at_height=burst_relheight, waveform_length=waveform_length, burst_sep=burst_sep,
+                             n_bins=n_bins)
+ibi_stats = np.asarray([np.mean(targets["ibi"]), np.std(targets["ibi"]), np.min(targets["ibi"]), np.max(targets["ibi"])])
+y_target = np.concatenate([ibi_stats, targets["waveform_mean"], targets["waveform_std"]], axis=0)
 
 # model initialization
 ######################
 
-# fixed model parameters
-model_params = {
-    "v_r": -60.0,
-    "v_t": -40.0,
-    "eta": 0.0,
-    "E_e": 0.0,
-    "tau_s": 8.0,
-    "I_ext": 0.0,
+p_e = 0.8 # fraction of excitatory neurons
+
+# exc parameters
+exc_params = {
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 70.0, 'kappa': 1000.0, 'tau_u': 1000.0,
+    'g_e': 60.0, 'g_i': 20.0, 'tau_s': 6.0
 }
 
-# free parameter bounds
-bounds = {
-    "C": (80.0, 300.0),
-    "k": (0.5, 1.5),
-    "Delta": (0.1, 2.0),
-    "kappa": (0.5, 2.0),
-    "tau_u": (1000.0, 20000.0),
-    "g_e": (5.0, 30.0),
-    "s_ext": (100.0, 300.0),
-    "noise_lvl": (5.0, 80.0),
-    "sigma": (30.0, 100.0)
+# inh parameters
+inh_params = {
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 0.0, 'g_e': 40.0, 'g_i': 0.0, 'tau_s': 20.0
 }
 
 # initialize model template and set fixed parameters
 template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
-template.update_var(node_vars={f"p/{model}_op/{key}": val for key, val in model_params.items()})
+template.update_var(node_vars={f"exc/{exc_op}/{key}": val for key, val in exc_params.items()})
+template.update_var(node_vars={f"inh/{inh_op}/{key}": val for key, val in inh_params.items()})
 
 # generate run function
 inp = np.zeros((int((T + cutoff)/dt),))
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt,
-                                                inputs={f'p/{model}_op/{input_var}': inp},
+                                                inputs={f'exc/{exc_op}/{input_var}': inp},
                                                 backend="numpy", solver="heun")
 func_jit = njit(func)
 
+# input parameters
+noise_lvl = 20.0
+noise_sigma = 200.0
+
+# free parameter bounds
+exc_bounds = {
+    "Delta": (0.5, 5.0),
+    "kappa": (500.0, 3000.0),
+    "tau_u": (500.0, 5000.0),
+    "g_e": (30.0, 120.0),
+    "g_i": (20.0, 100.0),
+    "eta": (40.0, 100.0),
+    "noise_lvl": (5.0, 50.0),
+    "sigma": (50.0, 400.0)
+}
+
 # find argument positions of free parameters
 param_indices = []
-for key in list(bounds.keys())[:-3]:
-    idx = arg_keys.index(f"p/{model}_op/{key}")
+for key in list(exc_bounds.keys())[:-2]:
+    idx = arg_keys.index(f"exc/{exc_op}/{key}")
     param_indices.append(idx)
 input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff, nperseg, fmax, sigma,
-             burst_width, burst_height)
+func_args = (param_indices, y_target, func, list(args), input_idx, T, dt, dts, cutoff, p_e, sigma, burst_width,
+             burst_sep, burst_height, burst_relheight, waveform_length, n_bins)
 
 # fitting procedure
 ###################
 
 # test run
-print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a"
+print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a "
       f"simulation step-size of {dt} ms.")
 t0 = perf_counter()
-simulator(np.asarray([0.5*(b[1] - b[0]) for b in bounds.values()]), *func_args, return_dynamics=False)
+simulator(np.asarray([0.5*(b[1] - b[0]) for b in exc_bounds.values()]), *func_args, return_dynamics=False)
 t1 = perf_counter()
 print(f"Finished test run after {t1-t0} s.")
 
 # fitting procedure
 print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings ...")
 while True:
-    results = differential_evolution(simulator, tuple(bounds.values()), args=func_args, strategy=strategy,
+    results = differential_evolution(simulator, tuple(exc_bounds.values()), args=func_args, strategy=strategy,
                                      workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
                                      recombination=recombination, polish=polish, atol=tolerance)
     if np.isnan(results.fun):
@@ -226,7 +232,7 @@ while True:
         break
 print("Finished fitting procedure. The winner is ... ")
 fitted_parameters = {}
-for key, val in zip(bounds.keys(), results.x):
+for key, val in zip(exc_bounds.keys(), results.x):
     print(f"{key} = {val}")
     fitted_parameters[key] = val
 
@@ -235,8 +241,7 @@ loss, y_fit, fr_fit = simulator(results.x, *func_args, return_dynamics=True)
 
 # save results
 pickle.dump({
-    "age": age, "organoid": well, "freqs": freqs, "time": time_ds,
-    "target_psd": target_psd, "target_bursts": target_bursts, "target_fr": target_fr,
-    "fitted_psd": y_fit[:-3], "fitted_bursts": y_fit[-3:], "fitted_fr": fr_fit,
-    "fitted_parameters": fitted_parameters},
+    "age": age, "organoid": well, "time": time_ds,
+    "target": targets, "target_fr": target_fr,
+    "fit": y_fit, "fitted_fr": fr_fit, "fitted_parameters": fitted_parameters},
     open(f"{save_dir}/{dataset_name}/{file}_de_fit.pkl", "wb"))

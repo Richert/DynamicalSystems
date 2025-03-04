@@ -38,7 +38,8 @@ def organoid_lfp_analysis(well: int, age: int, lfps: np.ndarray, time_ds: np.nda
 
 def organoid_spike_analysis(well: int, age: int, spikes_well: np.ndarray, time: np.ndarray, time_ds: np.ndarray,
                             sigma: float, width: float, width2: float, prominence: float, prominence2: float,
-                            height: float, tau: float, return_spikes: bool = False) -> dict:
+                            height: float, tau: float, return_spikes: bool = False, intra_burst_analysis: bool = True
+                            ) -> dict:
 
     print(f"    ... processing spikes of organoid {well}", flush=True)
     results = {"organoid": well, "age": age}
@@ -64,7 +65,7 @@ def organoid_spike_analysis(well: int, age: int, spikes_well: np.ndarray, time: 
                                       rel_height=height)
     results["burst_freq"] = len(fr_peaks) / time_ds[-1]
 
-    if len(fr_peaks) > 2:
+    if intra_burst_analysis and len(fr_peaks) > 2:
 
         ibi = np.diff(fr_peaks)
         results["burst_reg"] = np.std(ibi) / np.mean(ibi)
@@ -118,27 +119,33 @@ def organoid_spike_analysis(well: int, age: int, spikes_well: np.ndarray, time: 
     return results
 
 
-def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burst_height, width_at_height: float) -> dict:
+def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burst_height: float, burst_sep: float,
+                       width_at_height: float, waveform_length: int, n_bins: int) -> dict:
 
     # smooth signal
     x = gaussian_filter1d(x, sigma=sigma)
 
     # extract signal peaks
-    peaks, props = find_peaks(x, width=burst_width, prominence=np.max(x) * rel_burst_height, rel_height=width_at_height)
+    peaks, props = find_peaks(x, width=burst_width, distance=burst_sep, prominence=np.max(x) * rel_burst_height,
+                              rel_height=width_at_height)
     ibi = np.diff(peaks)
     n_peaks = len(peaks)
 
     # extract bursting characteristics
     results = dict()
     results["n_bursts"] = n_peaks
+    results["fr"] = x
     if n_peaks > 1:
-        results["ibi_mean"] = np.mean(ibi)
-        results["ibi_std"] = np.std(ibi) / np.mean(ibi)
+        waveforms = []
+        for i in range(len(peaks) - 1):
+            left = int(props["left_ips"][i])
+            if left + waveform_length < len(x):
+                wave = x[left:left + waveform_length]
+                waveforms.append(wave)
+        results["ibi"] = ibi
         results["burst_width"] = np.mean(props["widths"])
-    else:
-        results["ibi_mean"] = 0.0
-        results["ibi_std"] = 0.0
-        results["burst_width"] = 0.0
+        results["waveform_mean"] = np.mean(waveforms, axis=0)
+        results["waveform_std"] = np.std(waveforms, axis=0)
 
     return results
 
