@@ -2,7 +2,6 @@ import pickle
 import numpy as np
 from scipy.io import loadmat
 from typing import Callable
-import os
 from custom_functions import *
 from pyrates import CircuitTemplate
 from scipy.optimize import differential_evolution
@@ -19,17 +18,18 @@ def integrate(func, func_args, T, dt, dts, cutoff, p):
     args = func_args[2:]
     idx = 0
     steps = int(np.round(T / dt))
-    store_steps = int(np.round(T / dts))
+    cutoff_steps = int(np.round(cutoff / dt))
+    store_steps = int(np.round((T-cutoff) / dts))
     store_step = int(np.round(dts / dt))
     state_rec = np.zeros((store_steps,), dtype=y.dtype)
 
     # solve ivp for forward Euler method
     for step in range(t0, steps + t0):
-        r = y[0]
-        if step % store_step == t0:
-            state_rec[idx] = r
+        r_e, r_i = y[0], y[6]
+        if step > cutoff_steps and step % store_step == t0:
+            state_rec[idx] = p*r_e + (1-p)*r_i
             idx += 1
-        if not np.isfinite(r):
+        if not np.isfinite(r_e):
             break
         rhs = func(step, y, *args)
         y_0 = y + dt * rhs
@@ -40,7 +40,7 @@ def integrate(func, func_args, T, dt, dts, cutoff, p):
 
 def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list, inp_idx: int,
               T: float, dt: float, dts: float, cutoff: float, p: float, sigma: float, burst_width: float,
-              burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int, n_bins: int,
+              burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int,
               return_dynamics: bool = False):
 
     # define extrinsic input
@@ -59,24 +59,19 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 
     # get bursting stats
     res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                             burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length,
-                             n_bins=n_bins)
+                             burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length)
 
     # calculate loss
     if "ibi" in res:
         ibi_stats = np.asarray([np.mean(targets["ibi"]), np.std(targets["ibi"]), np.min(targets["ibi"]), np.max(targets["ibi"])])
         y_fit = np.concatenate([ibi_stats, res["waveform_mean"], res["waveform_std"]], axis=0)
     else:
-        y_fit = np.zeros_like(y)
+        y_fit = np.zeros_like(y) + 333.3
     loss = mse(y_fit, y)
 
     if return_dynamics:
         return loss, res, fr
     return loss
-
-
-# data set specifics
-####################
 
 # parameter definitions
 #######################
@@ -107,13 +102,12 @@ cutoff = 500.0
 
 # data processing parameters
 tau = 20.0
-sigma = 100.0
+sigma = 20.0
 burst_width = 100.0
 burst_sep = 1000.0
-burst_height = 0.6
+burst_height = 0.5
 burst_relheight = 0.9
 waveform_length = 3000
-n_bins = 10
 
 # fitting parameters
 strategy = "best1exp"
@@ -154,12 +148,11 @@ T = time_ds[-1] * 1e3
 dts = float(time_ds[1] - time_ds[0]) * 1e3
 spikes = extract_spikes(time, time_ds, spike_times[well + well_offset - 1])
 spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
-target_fr = np.mean(spikes_smoothed, axis=0) / tau
+target_fr = np.mean(spikes_smoothed, axis=0) * 1e3 / tau
 
 # calculate bursting stats
 targets = get_bursting_stats(target_fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                             width_at_height=burst_relheight, waveform_length=waveform_length, burst_sep=burst_sep,
-                             n_bins=n_bins)
+                             width_at_height=burst_relheight, waveform_length=waveform_length, burst_sep=burst_sep)
 ibi_stats = np.asarray([np.mean(targets["ibi"]), np.std(targets["ibi"]), np.min(targets["ibi"]), np.max(targets["ibi"])])
 y_target = np.concatenate([ibi_stats, targets["waveform_mean"], targets["waveform_std"]], axis=0)
 
@@ -194,50 +187,76 @@ func_jit = njit(func)
 # free parameter bounds
 exc_bounds = {
     "Delta": (0.5, 5.0),
+    "k": (0.5, 1.5),
     "kappa": (500.0, 3000.0),
     "tau_u": (500.0, 5000.0),
     "g_e": (30.0, 120.0),
-    "g_i": (20.0, 100.0),
+    "g_i": (20.0, 120.0),
     "eta": (40.0, 100.0),
-    "noise_lvl": (5.0, 50.0),
+    "tau_s": (5.0, 20.0),
+}
+inh_bounds = {
+    "Delta": (0.5, 5.0),
+    "k": (0.5, 1.5),
+    "g_e": (20.0, 120.0),
+    "g_i": (20.0, 120.0),
+    "eta": (0.0, 100.0),
+    "tau_s": (5.0, 50.0),
+}
+noise_bounds = {
+    "noise_lvl": (10.0, 100.0),
     "sigma": (50.0, 400.0)
 }
 
 # find argument positions of free parameters
 param_indices = []
-for key in list(exc_bounds.keys())[:-2]:
+for key in list(exc_bounds.keys()):
     idx = arg_keys.index(f"exc/{exc_op}/{key}")
+    param_indices.append(idx)
+for key in list(inh_bounds.keys()):
+    idx = arg_keys.index(f"inh/{inh_op}/{key}")
     param_indices.append(idx)
 input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
 # define final arguments of loss/simulation function
 func_args = (param_indices, y_target, func_jit, list(args), input_idx, T, dt, dts, cutoff, p_e, sigma, burst_width,
-             burst_sep, burst_height, burst_relheight, waveform_length, n_bins)
+             burst_sep, burst_height, burst_relheight, waveform_length)
 
 # fitting procedure
 ###################
+
+# combine parameter bounds
+x0 = []
+bounds = []
+param_keys = []
+for b, group in zip([exc_bounds, inh_bounds, noise_bounds], ["exc", "inh", "noise"]):
+    for key, (low, high) in b.items():
+        x0.append(0.5*(low + high))
+        bounds.append((low, high))
+        param_keys.append(f"{group}/{key}")
+x0 = np.asarray(x0)
 
 # test run
 print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a "
       f"simulation step-size of {dt} ms.")
 t0 = perf_counter()
-simulator(np.asarray([0.5*(b[1] - b[0]) for b in exc_bounds.values()]), *func_args, return_dynamics=False)
+simulator(x0, *func_args, return_dynamics=False)
 t1 = perf_counter()
 print(f"Finished test run after {t1-t0} s.")
 
 # fitting procedure
 print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings ...")
 while True:
-    results = differential_evolution(simulator, tuple(exc_bounds.values()), args=func_args, strategy=strategy,
+    results = differential_evolution(simulator, tuple(bounds), args=func_args, strategy=strategy,
                                      workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
                                      recombination=recombination, polish=polish, atol=tolerance)
     if np.isnan(results.fun):
         print("Re-initializing. Reason: loss(best candidate) = NaN.")
     else:
         break
-print("Finished fitting procedure. The winner is ... ")
+print(f"Finished fitting procedure. The winner (loss = {results.fun}) is ... ")
 fitted_parameters = {}
-for key, val in zip(exc_bounds.keys(), results.x):
+for key, val in zip(param_keys, results.x):
     print(f"{key} = {val}")
     fitted_parameters[key] = val
 

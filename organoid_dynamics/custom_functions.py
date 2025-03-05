@@ -120,7 +120,7 @@ def organoid_spike_analysis(well: int, age: int, spikes_well: np.ndarray, time: 
 
 
 def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burst_height: float, burst_sep: float,
-                       width_at_height: float, waveform_length: int, n_bins: int) -> dict:
+                       width_at_height: float, waveform_length: int) -> dict:
 
     # smooth signal
     x = gaussian_filter1d(x, sigma=sigma)
