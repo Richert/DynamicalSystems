@@ -58,9 +58,9 @@ if __name__ == '__main__':
                 # save results
                 for r in res:
                     res_tmp = r.get()
-                    for wave_id, wave in enumerate(res["waveforms"]):
-                        results["organoid"].append(res["organoid"])
-                        results["age"].append(res["age"])
+                    for wave_id, wave in enumerate(res_tmp["waveforms"]):
+                        results["organoid"].append(res_tmp["organoid"])
+                        results["age"].append(res_tmp["age"])
                         results["wave_num"].append(wave_id)
                         results["waveform"].append(wave)
 
