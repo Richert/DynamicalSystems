@@ -16,7 +16,7 @@ if __name__ == '__main__':
     path = f"/home/richard/data/{dataset_name}"
     wells = 8
     well_offset = 4
-    exclude = [170224, 170210, 170207, 161216, 161209, 160824, 160803, 160731, 160810, 170303, 161206, 161118]
+    exclude = [] #[170224, 170210, 170207, 161216, 161209, 160824, 160803, 160731, 160810, 170303, 161206, 161118]
 
     # data processing parameters
     tau = 20.0
