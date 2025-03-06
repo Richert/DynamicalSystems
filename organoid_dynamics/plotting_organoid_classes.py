@@ -7,44 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sb
 
 
-def organoid_analysis(path: str, file: str, well: int, tau: float, sigma: int, burst_width: int, burst_height: float,
-                      burst_sep: int, width_at_height: float, waveform_length: int) -> dict:
-
-    # prepare age calculation
-    year_0 = 16
-    month_0 = 7
-    day_0 = 1
-
-    # load data from file
-    data = loadmat(f"{path}/LFP_Sp_{file}.mat", squeeze_me=False)
-
-    # extract data
-    spike_times = data["spikes"]
-    time = np.squeeze(data["t_s"])
-    time_ds = np.round(np.squeeze(data["t_ds"]), decimals=4)  # type: np.ndarray
-
-    # calculate organoid age
-    date = file.split(".")[0].split("_")[-1]
-    year, month, day = int(date[:2]), int(date[2:4]), int(date[4:])
-    month += int((year - year_0) * 12)
-    day += int((month - month_0) * 30)
-    age = day - day_0
-
-    # calculate firing rate
-    dts = float(time_ds[1] - time_ds[0]) * 1e3
-    spikes = extract_spikes(time, time_ds, spike_times[well - 1])
-    spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
-    fr = np.mean(spikes_smoothed, axis=0) * 1e3 / tau
-
-    # get bursting stats
-    res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                             burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length)
-    res["age"] = age
-    res["file"] = file
-    res["organoid"] = well
-    return res
-
-
 if __name__ == '__main__':
 
     mp.set_start_method("spawn")

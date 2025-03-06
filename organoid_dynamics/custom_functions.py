@@ -3,6 +3,48 @@ from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks, welch
 from equidistantpoints import EquidistantPoints
 from scipy.stats import norm, cauchy
+from scipy.io import loadmat
+
+
+def organoid_analysis(path: str, file: str, well: int, tau: float, sigma: int, burst_width: int, burst_height: float,
+                      burst_sep: int, width_at_height: float, waveform_length: int) -> dict:
+
+    # prepare age calculation
+    year_0 = 16
+    month_0 = 7
+    day_0 = 1
+
+    # load data from file
+    data = loadmat(f"{path}/LFP_Sp_{file}.mat", squeeze_me=False)
+
+    # extract data
+    spike_times = data["spikes"]
+    time = np.squeeze(data["t_s"])
+    time_ds = np.round(np.squeeze(data["t_ds"]), decimals=4)  # type: np.ndarray
+
+    # calculate organoid age
+    date = file.split(".")[0].split("_")[-1]
+    year, month, day = int(date[:2]), int(date[2:4]), int(date[4:])
+    month += int((year - year_0) * 12)
+    day += int((month - month_0) * 30)
+    age = day - day_0
+
+    # calculate firing rate
+    dts = float(time_ds[1] - time_ds[0]) * 1e3
+    spikes = extract_spikes(time, time_ds, spike_times[well - 1])
+    spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
+    fr = np.mean(spikes_smoothed, axis=0) * 1e3 / tau
+
+    # get bursting stats
+    res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
+                             burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length,
+                             all_waveforms=True)
+
+    # finalize results
+    res["age"] = age
+    res["date"] = date
+    res["organoid"] = well
+    return res
 
 
 def organoid_lfp_analysis(well: int, age: int, lfps: np.ndarray, time_ds: np.ndarray, nperseg: int, fmax: float) -> dict:
@@ -120,7 +162,7 @@ def organoid_spike_analysis(well: int, age: int, spikes_well: np.ndarray, time: 
 
 
 def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burst_height: float, burst_sep: float,
-                       width_at_height: float, waveform_length: int) -> dict:
+                       width_at_height: float, waveform_length: int, all_waveforms: bool = False) -> dict:
 
     # smooth signal
     x = gaussian_filter1d(x, sigma=sigma)
@@ -135,18 +177,23 @@ def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burs
     results = dict()
     results["n_bursts"] = n_peaks
     results["fr"] = x
-    if n_peaks > 1:
-        waveforms = []
-        for i in range(len(peaks) - 1):
-            left = int(props["left_ips"][i])
-            if left + waveform_length < len(x):
-                wave = x[left:left + waveform_length]
-                waveforms.append(wave)
-        results["ibi"] = ibi
-        results["burst_width"] = np.mean(props["widths"])
+    results["ibi"] = ibi
+    results["burst_width"] = np.mean(props["widths"])
+
+    # get waveforms
+    waveforms = []
+    for i in range(len(peaks) - 1):
+        left = int(props["left_ips"][i])
+        if left + waveform_length < len(x):
+            wave = x[left:left + waveform_length]
+            waveforms.append(wave)
+
+    # finalize results
+    if all_waveforms:
+        results["waveforms"] = waveforms
+    else:
         results["waveform_mean"] = np.mean(waveforms, axis=0)
         results["waveform_std"] = np.std(waveforms, axis=0)
-
     return results
 
 
