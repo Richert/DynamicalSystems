@@ -58,8 +58,8 @@ if __name__ == '__main__':
 
                 # loop over wells/organoids
                 res = [pool.apply_async(organoid_analysis,
-                                        (path, file, well, tau, sigma, burst_width, burst_height, burst_sep,
-                                         burst_relheight, waveform_length))
+                                        (path, file, well + well_offset, tau, sigma, burst_width, burst_height,
+                                         burst_sep, burst_relheight, waveform_length))
                        for well in range(wells)]
 
                 # save results
@@ -68,7 +68,7 @@ if __name__ == '__main__':
                     waveforms = dict()
                     for wave_id, wave in enumerate(res_tmp["waveforms"]):
                         waveforms[wave_id] = wave
-                    results[age][res_tmp["organoid"]] = waveforms
+                    results[age][res_tmp["organoid"] - well_offset] = waveforms
 
             print(f"Finished processing all organoids from file {file}.")
 
