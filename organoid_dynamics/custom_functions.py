@@ -15,7 +15,7 @@ def organoid_analysis(path: str, file: str, well: int, tau: float, sigma: int, b
     day_0 = 1
 
     # load data from file
-    data = loadmat(f"{path}/LFP_Sp_{file}.mat", squeeze_me=False)
+    data = loadmat(f"{path}/{file}", squeeze_me=False)
 
     # extract data
     spike_times = data["spikes"]
