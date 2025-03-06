@@ -22,13 +22,6 @@ def organoid_analysis(path: str, file: str, well: int, tau: float, sigma: int, b
     time = np.squeeze(data["t_s"])
     time_ds = np.round(np.squeeze(data["t_ds"]), decimals=4)  # type: np.ndarray
 
-    # calculate organoid age
-    date = file.split(".")[0].split("_")[-1]
-    year, month, day = int(date[:2]), int(date[2:4]), int(date[4:])
-    month += int((year - year_0) * 12)
-    day += int((month - month_0) * 30)
-    age = day - day_0
-
     # calculate firing rate
     dts = float(time_ds[1] - time_ds[0]) * 1e3
     spikes = extract_spikes(time, time_ds, spike_times[well - 1])
@@ -41,8 +34,6 @@ def organoid_analysis(path: str, file: str, well: int, tau: float, sigma: int, b
                              all_waveforms=True)
 
     # finalize results
-    res["age"] = age
-    res["date"] = date
     res["organoid"] = well
     return res
 

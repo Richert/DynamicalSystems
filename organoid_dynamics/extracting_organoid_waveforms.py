@@ -31,9 +31,7 @@ if __name__ == '__main__':
     #############################
 
     # prepare results data structure
-    results = {
-        "organoid": [], "age": [], "wave_num": [], "waveform": [],
-    }
+    results = dict()
 
     # prepare age calculation
     year_0 = 16
@@ -46,7 +44,16 @@ if __name__ == '__main__':
             if any([str(ID) in file for ID in exclude]):
                 continue
 
+            # calculate organoid age
+            date = file.split(".")[0].split("_")[-1]
+            year, month, day = int(date[:2]), int(date[2:4]), int(date[4:])
+            month += int((year - year_0) * 12)
+            day += int((month - month_0) * 30)
+            age = day - day_0
+
+
             print(f"Starting to process file {file}")
+            results[age] = {well: dict() for well in range(wells)}
             with mp.Pool(processes=wells) as pool:
 
                 # loop over wells/organoids
@@ -58,11 +65,10 @@ if __name__ == '__main__':
                 # save results
                 for r in res:
                     res_tmp = r.get()
+                    waveforms = dict()
                     for wave_id, wave in enumerate(res_tmp["waveforms"]):
-                        results["organoid"].append(res_tmp["organoid"])
-                        results["age"].append(res_tmp["age"])
-                        results["wave_num"].append(wave_id)
-                        results["waveform"].append(wave)
+                        waveforms[wave_id] = wave
+                    results[age][res_tmp["organoid"]] = waveforms
 
             print(f"Finished processing all organoids from file {file}.")
 
