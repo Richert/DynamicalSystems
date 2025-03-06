@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     # data set specifics
     dataset_name = "trujilo_2019"
-    path = f"/home/richard-gast/Documents/data/{dataset_name}"
+    path = f"/home/richard/data/{dataset_name}"
     wells = 8
     well_offset = 4
     exclude = [170224, 170210, 170207, 161216, 161209, 160824, 160803, 160731, 160810, 170303, 161206, 161118]
