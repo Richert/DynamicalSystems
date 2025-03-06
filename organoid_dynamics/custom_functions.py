@@ -6,25 +6,17 @@ from scipy.stats import norm, cauchy
 from scipy.io import loadmat
 
 
-def organoid_analysis(path: str, file: str, well: int, tau: float, sigma: int, burst_width: int, burst_height: float,
+def organoid_analysis(data: dict, well: int, tau: float, sigma: int, burst_width: int, burst_height: float,
                       burst_sep: int, width_at_height: float, waveform_length: int) -> dict:
 
-    # prepare age calculation
-    year_0 = 16
-    month_0 = 7
-    day_0 = 1
-
-    # load data from file
-    data = loadmat(f"{path}/{file}", squeeze_me=False)
-
     # extract data
-    spike_times = data["spikes"]
+    spike_times = data["spikes"][well]
     time = np.squeeze(data["t_s"])
     time_ds = np.round(np.squeeze(data["t_ds"]), decimals=4)  # type: np.ndarray
 
     # calculate firing rate
     dts = float(time_ds[1] - time_ds[0]) * 1e3
-    spikes = extract_spikes(time, time_ds, spike_times[well - 1])
+    spikes = extract_spikes(time, time_ds, spike_times)
     spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
     fr = np.mean(spikes_smoothed, axis=0) * 1e3 / tau
 

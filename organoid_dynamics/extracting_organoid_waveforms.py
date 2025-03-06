@@ -51,6 +51,8 @@ if __name__ == '__main__':
             day += int((month - month_0) * 30)
             age = day - day_0
 
+            # load data from file
+            data = loadmat(f"{path}/{file}", squeeze_me=False)
 
             print(f"Starting to process file {file}")
             results[age] = {well: dict() for well in range(wells)}
@@ -58,7 +60,7 @@ if __name__ == '__main__':
 
                 # loop over wells/organoids
                 res = [pool.apply_async(organoid_analysis,
-                                        (path, file, well + well_offset, tau, sigma, burst_width, burst_height,
+                                        (data, well + well_offset, tau, sigma, burst_width, burst_height,
                                          burst_sep, burst_relheight, waveform_length))
                        for well in range(wells)]
 
