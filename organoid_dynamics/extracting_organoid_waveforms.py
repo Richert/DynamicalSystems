@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import os
 from custom_functions import *
-from pandas import DataFrame
+from pandas import DataFrame, MultiIndex, Series
 
 
 if __name__ == '__main__':
@@ -55,7 +55,6 @@ if __name__ == '__main__':
             data = loadmat(f"{path}/{file}", squeeze_me=False)
 
             print(f"Starting to process file {file}")
-            results[age] = {well: dict() for well in range(wells)}
             with mp.Pool(processes=wells) as pool:
 
                 # loop over wells/organoids
@@ -67,15 +66,15 @@ if __name__ == '__main__':
                 # save results
                 for r in res:
                     res_tmp = r.get()
-                    waveforms = dict()
                     for wave_id, wave in enumerate(res_tmp["waveforms"]):
-                        waveforms[wave_id] = wave
-                    results[age][res_tmp["organoid"] - well_offset] = waveforms
+                        results[(age, res_tmp["organoid"], wave_id)] = wave
 
             print(f"Finished processing all organoids from file {file}.")
 
     # save results to file
     ######################
 
-    df = DataFrame.from_dict(results)
+    df = DataFrame(data=np.asarray([results.values()]),
+                   columns=MultiIndex.from_tuples(results.keys()),
+                   index=np.arange(waveform_length))
     df.to_csv(f"{path}/{dataset_name}_waveforms.csv")
