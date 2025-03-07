@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # save results to file
     ######################
 
-    df = DataFrame(data=np.asarray(list(results.values())),
+    df = DataFrame(data=np.asarray(list(results.values())).T,
                    columns=MultiIndex.from_tuples(results.keys()),
                    index=np.arange(waveform_length))
     df.to_csv(f"{path}/{dataset_name}_waveforms.csv")
