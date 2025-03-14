@@ -1,9 +1,38 @@
 import numpy as np
+import pandas as pd
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import find_peaks, welch
 from equidistantpoints import EquidistantPoints
 from scipy.stats import norm, cauchy
-from scipy.io import loadmat
+from tslearn.barycenters import dtw_barycenter_averaging
+
+
+def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, method: str = "mean") -> dict:
+    cluster_ids = np.unique(clusters)
+    prototypes = {}
+    for cluster_id in cluster_ids:
+        ids = np.argwhere(clusters == cluster_id).squeeze()
+        if method == "mean":
+            prototypes[cluster_id] = waveforms.iloc[:, ids].mean(axis=1)
+        elif method == "random":
+            prototypes[cluster_id] = waveforms.iloc[:, np.random.choice(ids)]
+        elif method == "dtw_mean":
+            waves = waveforms.iloc[:, ids].values
+            wave_avg = dtw_barycenter_averaging(waves.T)
+            prototypes[cluster_id] = wave_avg
+        else:
+            raise ValueError("Invalid prototype building choice")
+
+    return prototypes
+
+
+def reduce_df(df: pd.DataFrame, age: int = None, organoid: int = None) -> pd.DataFrame:
+
+    if age is not None:
+        return df[f"{age}"]
+    if organoid is not None:
+        return df.xs(f"{organoid}", level="well", axis="columns")
+    return df
 
 
 def organoid_analysis(data: dict, well: int, tau: float, sigma: int, burst_width: int, burst_height: float,
@@ -165,7 +194,7 @@ def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burs
 
     # get waveforms
     waveforms = []
-    for i in range(len(peaks) - 1):
+    for i in range(len(peaks)):
         left = int(props["left_ips"][i])
         if left + waveform_length < len(x):
             wave = x[left:left + waveform_length]
@@ -174,9 +203,12 @@ def get_bursting_stats(x: np.ndarray, sigma: float, burst_width: float, rel_burs
     # finalize results
     if all_waveforms:
         results["waveforms"] = waveforms
-    else:
+    elif len(waveforms) > 0:
         results["waveform_mean"] = np.mean(waveforms, axis=0)
         results["waveform_std"] = np.std(waveforms, axis=0)
+    else:
+        results["waveform_mean"] = np.zeros((waveform_length,)) + 333.33
+        results["waveform_std"] = np.zeros((waveform_length,)) + 333.33
     return results
 
 

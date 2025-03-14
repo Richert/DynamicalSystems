@@ -6,29 +6,7 @@ from scipy.cluster.hierarchy import linkage, cut_tree
 from scipy.spatial.distance import squareform
 import matplotlib.pyplot as plt
 import seaborn as sb
-
-
-def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, method: str = "mean") -> dict:
-    cluster_ids = np.unique(clusters)
-    prototypes = {}
-    for cluster_id in cluster_ids:
-        ids = np.argwhere(clusters == cluster_id).squeeze()
-        if method == "mean":
-            prototypes[cluster_id] = waveforms.iloc[:, ids].mean(axis=1)
-        elif method == "random":
-            prototypes[cluster_id] = waveforms.iloc[:, np.random.choice(ids)]
-        else:
-            raise ValueError("Invalid prototype building choice")
-
-    return prototypes
-
-def reduce_df(df: pd.DataFrame, age: int = None, organoid: int = None) -> pd.DataFrame:
-
-    if age is not None:
-        return df[f"{age}"]
-    if organoid is not None:
-        return df.xs(f"{organoid}", level="well", axis="columns")
-    return df
+from custom_functions import *
 
 
 # read in data
@@ -40,19 +18,23 @@ data = pd.read_csv(f"{path}/{dataset}/{dataset}_waveforms.csv",
 # reduce data
 age = None
 organoid = None
-normalize = "False"
+normalize = "True"
 data_reduced = reduce_df(data, age=age, organoid=organoid)
-fig, ax = plt.subplots(figsize=(12, 4))
-data_reduced.plot(ax=ax)
-plt.show()
+# fig, ax = plt.subplots(figsize=(12, 4))
+# data_reduced.plot(ax=ax)
+# plt.show()
 data_norm = data_reduced.values.T
 if normalize:
     scaler = MinMaxScaler()
     data_norm = scaler.fit_transform(data_norm)
 
 # calculate distance between waves
-D = cdist_dtw(data_norm[:, :], n_jobs=15)
-np.save(f"{path}/{dataset}/waveform_distances", D)
+calc_dists = False
+if calc_dists:
+    D = cdist_dtw(data_norm[:, :], n_jobs=15)
+    np.save(f"{path}/{dataset}/{dataset}_waveform_distances_norm", D)
+else:
+    D = np.load(f"{path}/{dataset}/{dataset}_waveform_distances_norm.npy")
 
 # run hierarchical clustering on distance matrix
 D_condensed = squareform(D)
@@ -60,10 +42,10 @@ Z = linkage(D_condensed, method="ward")
 clusters = cut_tree(Z, n_clusters=6)
 
 # plot prototypical waveforms
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data_reduced, method="random")
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data_reduced, method="dtw_mean")
 fig, ax = plt.subplots(figsize=(12, 5))
 for sample, wave in proto_waves.items():
-    ax.plot(wave, label=sample)
+    ax.plot(wave / np.max(wave), label=sample)
 ax.set_ylabel("firing rate")
 ax.set_xlabel("time (ms)")
 ax.legend()
