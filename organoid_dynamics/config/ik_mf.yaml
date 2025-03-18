@@ -62,7 +62,7 @@ ik_sfa_op:
     - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
     - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext - u) / C"
     - "u' = w / tau_u"
-    - "w' = (kappa*r - 2*w - u) / tau_u"
+    - "w' = (kappa*tau_u*r - 2*w - u) / tau_u"
     - "s' = x / tau_s"
     - "x' = (r - 2*x - s) / tau_s"
   variables:
@@ -95,23 +95,54 @@ qif_sfa_op:
   equations:
     - "r' = (Delta/(pi*tau + kappa*pi*tau) + 2.0*r*v) / tau"
     - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*s_e - J_i*s_i) + eta + I_ext - u) / tau"
-    - "u' = (kappa*(tau*(J_e*s_e - J_i*s_i) + eta + I_ext) - u*(1 + kappa)) / tau_u"
-    - "s' = x/tau_s"
+    - "u' = w / tau_u"
+    - "w' = (kappa*tau_u*r - 2*w - u) / tau_u"  #(kappa*(tau*(J_e*s_e - J_i*s_i) + eta + I_ext) - w*(1 + kappa)
+    - "s' = x / tau_s"
     - "x' = (r - 2*x - s) / tau_s"
   variables:
-    r: output(0.01)
+    r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    s: variable(0.05)
-    x: variable(0.05)
+    w: variable(0.0)
+    s: variable(0.0)
+    x: variable(0.0)
     Delta: 0.1
     tau: 10.0
     J_e: 20.0
     J_i: 10.0
-    tau_s: 6.0
     eta: 0.0
     kappa: 1.0
     tau_u: 100.0
+    tau_s: 5.0
+    I_ext: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
+
+# qif operator with STP
+qif_stp_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta/(pi*tau + kappa*pi*tau) + 2.0*r*v) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + u*tau*(J_e*s_e - J_i*s_i) + eta + I_ext) / tau"
+    - "u' = (w - u) / tau_u"
+    - "w' = (1 - kappa*tau_u*r*w - w) / tau_u"
+    - "s' = x / tau_s"
+    - "x' = (r - 2*x - s) / tau_s"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(1.0)
+    w: variable(1.0)
+    s: variable(0.0)
+    x: variable(0.0)
+    Delta: 0.1
+    tau: 10.0
+    J_e: 20.0
+    J_i: 10.0
+    eta: 0.0
+    kappa: 1.0
+    tau_u: 100.0
+    tau_s: 5.0
     I_ext: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
@@ -120,19 +151,19 @@ qif_sfa_op:
 ik_stp_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - w*g_e*s_e - g_i*s_i)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + w*g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext - u) / C"
+    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - x_e*g_e*s_e - x_i*g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + x_e*g_e*s_e*(E_e-v) + x_i*g_i*s_i*(E_i-v) + eta + I_ext - u) / C"
     - "u' = kappa*r - u / tau_u"
-    - "w' = (1 - w*alpha*r - w) / tau_w"
-    - "s' = x / tau_s"
-    - "x' = (r - 2*x - s) / tau_s"
+    - "s' = (r - s) / tau_s"
+    - "x_e' = (1 - alpha*tau_d*x_e*s_e - x_e) / tau_d"
+    - "x_i' = (X0 + X0*tau_f*s_i*(1 - x_i) - x_i) / tau_f"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
-    w: variable(1.0)
     s: variable(0.0)
-    x: variable(0.0)
+    x_e: variable(1.0)
+    x_i: variable(0.2)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -144,8 +175,10 @@ ik_stp_op:
     E_i: -65.0
     kappa: 10.0
     alpha: 100.0
+    X0: 0.2
     tau_u: 300.0
-    tau_w: 800.0
+    tau_d: 800.0
+    tau_f: 100.0
     tau_s: 6.0
     eta: 0.0
     I_ext: input(0.0)
@@ -259,6 +292,12 @@ qif_sfa_pop:
   operators:
     - qif_sfa_op
 
+# population of qif neurons with STP
+qif_stp_pop:
+  base: NodeTemplate
+  operators:
+    - qif_stp_op
+
 # population of biophysiologically informed izhikevich neurons
 ik_pop:
   base: NodeTemplate
@@ -329,19 +368,19 @@ ik_sfa:
     - [p/ik_sfa_op/s, p/ik_sfa_op/s_e, null, {weight: 1.0}]
 
 # rs-fs circuit
-eic_sfa:
+ik_eic_sfa:
   base: CircuitTemplate
   nodes:
     exc: sfa_pop
-    inh: ik_pop
+    inh: sfa_pop
   edges:
     - [exc/ik_sfa_op/s, exc/ik_sfa_op/s_e, null, {weight: 1.0}]
-    - [exc/ik_sfa_op/s, inh/ik_op/s_e, null, {weight: 1.0}]
-    - [inh/ik_op/s, exc/ik_sfa_op/s_i, null, {weight: 1.0}]
-    - [inh/ik_op/s, inh/ik_op/s_i, null, {weight: 1.0}]
+    - [exc/ik_sfa_op/s, inh/ik_sfa_op/s_e, null, {weight: 1.0}]
+    - [inh/ik_sfa_op/s, exc/ik_sfa_op/s_i, null, {weight: 1.0}]
+    - [inh/ik_sfa_op/s, inh/ik_sfa_op/s_i, null, {weight: 1.0}]
 
 # rs-fs circuit
-eic_stp:
+ik_eic_stp:
   base: CircuitTemplate
   nodes:
     exc: stp_pop
@@ -351,3 +390,27 @@ eic_stp:
     - [exc/ik_stp_op/s, inh/ik_op/s_e, null, {weight: 1.0}]
     - [inh/ik_op/s, exc/ik_stp_op/s_i, null, {weight: 1.0}]
     - [inh/ik_op/s, inh/ik_op/s_i, null, {weight: 1.0}]
+
+# qif-based EI circuit with SFA
+qif_eic_sfa:
+  base: CircuitTemplate
+  nodes:
+    exc: qif_sfa_pop
+    inh: qif_sfa_pop
+  edges:
+    - [exc/qif_sfa_op/s, exc/qif_sfa_op/s_e, null, {weight: 1.0}]
+    - [exc/qif_sfa_op/s, inh/qif_sfa_op/s_e, null, {weight: 1.0}]
+    - [inh/qif_sfa_op/s, exc/qif_sfa_op/s_i, null, {weight: 1.0}]
+    - [inh/qif_sfa_op/s, inh/qif_sfa_op/s_i, null, {weight: 1.0}]
+
+# qif-based EI circuit with STP
+qif_eic_stp:
+  base: CircuitTemplate
+  nodes:
+    exc: qif_stp_pop
+    inh: qif_stp_pop
+  edges:
+    - [exc/qif_stp_op/s, exc/qif_stp_op/s_e, null, {weight: 1.0}]
+    - [exc/qif_stp_op/s, inh/qif_stp_op/s_e, null, {weight: 1.0}]
+    - [inh/qif_stp_op/s, exc/qif_stp_op/s_i, null, {weight: 1.0}]
+    - [inh/qif_stp_op/s, inh/qif_stp_op/s_i, null, {weight: 1.0}]

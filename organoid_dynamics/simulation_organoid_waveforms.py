@@ -79,13 +79,13 @@ p_e = 0.8 # fraction of excitatory neurons
 
 # exc parameters
 exc_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 67.03, 'kappa': 1.0, 'tau_u': 200.0,
-    'g_e': 60.0, 'g_i': 20.0, 'tau_s': 6.0, 'alpha': 200.0, 'tau_w': 800.0
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 4.0, 'eta': 70.0, 'kappa': 1.0, 'tau_u': 200.0,
+    'g_e': 80.0, 'g_i': 80.0, 'tau_s': 6.0, 'alpha': 0.4, 'tau_d': 800.0, 'X0': 0.3, 'tau_f': 100.0
 }
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 0.9, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 5.0, 'eta': 0.0, 'g_e': 150.0, 'g_i': 200.0, 'tau_s': 10.0
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 8.0, 'eta': 50.0, 'g_e': 80.0, 'g_i': 80.0, 'tau_s': 10.0
 }
 
 # initialize model template and set fixed parameters
@@ -98,12 +98,13 @@ template.update_var(node_vars={f"inh/{inh_op}/{key}": val for key, val in inh_pa
 
 # run simulation
 res_mf = template.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
-                      outputs={'r_e': f'exc/{exc_op}/r', 'r_i': f'inh/{inh_op}/r', 'u': f'exc/{exc_op}/u'},
+                      outputs={'r_e': f'exc/{exc_op}/r', 'r_i': f'inh/{inh_op}/r',
+                               'x_e': f'exc/{exc_op}/x_e', 'x_i': f'exc/{exc_op}/x_i'},
                       decorator=njit)
 res_mf["r_e"] *= 1e3
 res_mf["r_i"] *= 1e3
-fig, axes = plt.subplots(nrows=3, figsize=(12, 9))
-for idx, key in enumerate(["r_e", "r_i", "u"]):
+fig, axes = plt.subplots(nrows=4, figsize=(12, 8))
+for idx, key in enumerate(["r_e", "r_i", "x_e", "x_i"]):
     ax = axes[idx]
     ax.plot(res_mf[key])
     ax.set_ylabel(key)

@@ -17,7 +17,7 @@ data = pd.read_csv(f"{path}/data/{dataset}/{dataset}_waveforms.csv",
 
 # reduce data
 age = None
-organoid = None
+organoid = 5
 normalize = "True"
 data_reduced = reduce_df(data, age=age, organoid=organoid)
 # fig, ax = plt.subplots(figsize=(12, 4))

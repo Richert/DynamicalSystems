@@ -22,23 +22,24 @@ p_e = 0.8
 
 # exc parameters
 exc_params = {
-    'C': 100.0, 'k': 0.84, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 2.27, 'eta': 82.49, 'kappa': 1914.5, 'tau_u': 3023.4,
-    'g_e': 66.67, 'g_i': 63.19, 'tau_s': 11.5
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 2.0, 'eta': 70.0, 'kappa': 10.0, 'tau_u': 500.0,
+    'g_e': 150.0, 'g_i': 100.0, 'tau_s': 5.0
 }
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 1.05, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 3.35, 'eta': 74.79, 'g_e': 114.44, 'g_i': 75.12, 'tau_s': 48.55
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 4.0, 'eta': 0.0, 'kappa': 0.0, 'tau_u': 500.0,
+    'g_e': 60.0, 'g_i': 0.0, 'tau_s': 5.0
 }
 
 # input parameters
 I_e = 0.0
-noise_lvl = 96.0
-noise_sigma = 321.8
+noise_lvl = 0.0
+noise_sigma = 10.0
 
 # define inputs
 cutoff = 1000.0
-T = 250000.0 + cutoff
+T = 10000.0 + cutoff
 dt = 1e-1
 dts = 1.0
 inp = np.zeros((int(T/dt),)) + I_e
@@ -51,8 +52,8 @@ inp += noise
 
 # initialize model
 exc_op = "ik_sfa_op"
-inh_op = "ik_op"
-net = CircuitTemplate.from_yaml("config/ik_mf/eic_ik")
+inh_op = "ik_sfa_op"
+net = CircuitTemplate.from_yaml("config/ik_mf/ik_eic_sfa")
 
 # update parameters
 net.update_var(node_vars={f"exc/{exc_op}/{var}": val for var, val in exc_params.items()})
@@ -66,8 +67,6 @@ res_mf *= 1e3
 
 # get bursting stats
 fr = p_e*res_mf["r_e"].values + (1-p_e)*res_mf["r_i"].values
-plt.plot(fr)
-plt.show()
 res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
                          burst_sep=burst_sep, width_at_height=burst_relheight, waveform_length=waveform_length)
 

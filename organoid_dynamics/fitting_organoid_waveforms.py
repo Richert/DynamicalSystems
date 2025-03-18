@@ -87,9 +87,9 @@ save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
 
 # choose model
-model = "eic_ik"
+model = "ik_eic_sfa"
 exc_op = "ik_sfa_op"
-inh_op = "ik_op"
+inh_op = "ik_sfa_op"
 
 # data processing parameters
 tau = 20.0
@@ -120,7 +120,7 @@ D = np.load(f"{load_dir}/{dataset}_waveform_distances.npy")
 # run hierarchical clustering on distance matrix
 D_condensed = squareform(D)
 Z = linkage(D_condensed, method="ward")
-clusters = cut_tree(Z, n_clusters=6)
+clusters = cut_tree(Z, n_clusters=9)
 
 # extract target waveform
 prototype = 2
