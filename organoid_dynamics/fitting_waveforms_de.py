@@ -46,15 +46,11 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
               burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int,
               return_dynamics: bool = False):
 
-    # define extrinsic input
-    noise_lvl, noise_sigma = x[-2:]
-    inp = np.zeros((int((T + cutoff)/dt) + 1,))
-    noise = noise_lvl * np.random.randn(inp.shape[0])
-    inp += gaussian_filter1d(noise, sigma=noise_sigma)
-
     # update parameter vector
-    for idx, val in zip(x_indices, x):
-        func_args[idx] = val
+    idx_half = int(len(x)/2)
+    for i, j in enumerate(x_indices):
+        func_args[j][0] = x[i]
+        func_args[j][1] = x[idx_half + i]
 
     # simulate model dynamics
     fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff, p) * 1e3
@@ -66,7 +62,7 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
     # calculate loss
     y_fit = res["waveform_mean"]
     y_fit /= np.max(y_fit)
-    loss = mse(y_fit, y)
+    loss = sse(y_fit, y)
 
     if return_dynamics:
         return loss, res, y_fit
@@ -92,7 +88,6 @@ exc_op = "ik_sfa_op"
 inh_op = "ik_sfa_op"
 
 # data processing parameters
-tau = 20.0
 sigma = 20.0
 burst_width = 100.0
 burst_sep = 1000.0
@@ -103,12 +98,12 @@ waveform_length = 3000
 # fitting parameters
 strategy = "best1exp"
 workers = 15
-maxiter = 200
+maxiter = 100
 popsize = 20
-mutation = (0.5, 1.2)
+mutation = (0.1, 1.2)
 recombination = 0.7
 polish = True
-tolerance = 1e-3
+tolerance = 1e-2
 
 # data loading and processing
 #############################
@@ -137,18 +132,19 @@ plt.show()
 dts = 1.0
 dt = 1e-1
 cutoff = 1000.0
-T = 9000.0 + cutoff
+T = 12000.0 + cutoff
 p_e = 0.8 # fraction of excitatory neurons
 
 # exc parameters
 exc_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 70.0, 'kappa': 1000.0, 'tau_u': 1000.0,
-    'g_e': 60.0, 'g_i': 20.0, 'tau_s': 6.0
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 2.0, 'eta': 70.0, 'kappa': 10.0, 'tau_u': 500.0,
+    'g_e': 150.0, 'g_i': 100.0, 'tau_s': 5.0
 }
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 0.0, 'g_e': 40.0, 'g_i': 0.0, 'tau_s': 20.0
+    'C': 150.0, 'k': 0.5, 'v_r': -65.0, 'v_t': -45.0, 'Delta': 4.0, 'eta': 0.0, 'kappa': 20.0, 'tau_u': 100.0,
+    'g_e': 60.0, 'g_i': 0.0, 'tau_s': 8.0
 }
 
 # initialize model template and set fixed parameters
@@ -164,30 +160,29 @@ func_jit = njit(func)
 # free parameter bounds
 exc_bounds = {
     "Delta": (0.5, 5.0),
-    "k": (0.5, 1.5),
-    "kappa": (500.0, 3000.0),
-    "tau_u": (500.0, 5000.0),
-    "g_e": (30.0, 120.0),
-    "g_i": (20.0, 120.0),
+    "k": (0.1, 1.0),
+    "kappa": (0.0, 40.0),
+    "tau_u": (100.0, 1000.0),
+    "g_e": (50.0, 200.0),
+    "g_i": (20.0, 200.0),
     "eta": (40.0, 100.0),
-    "tau_s": (5.0, 20.0),
+    "tau_s": (1.0, 10.0),
 }
 inh_bounds = {
-    "Delta": (0.5, 5.0),
-    "k": (0.5, 1.5),
-    "g_e": (20.0, 120.0),
-    "g_i": (20.0, 120.0),
-    "eta": (0.0, 100.0),
-    "tau_s": (5.0, 50.0),
+    "Delta": (2.0, 8.0),
+    "k": (0.1, 1.0),
+    "kappa": (0.0, 40.0),
+    "tau_u": (100.0, 1000.0),
+    "g_e": (40.0, 150.0),
+    "g_i": (0.0, 100.0),
+    "eta": (-50.0, 50.0),
+    "tau_s": (5.0, 20.0),
 }
 
 # find argument positions of free parameters
 param_indices = []
 for key in list(exc_bounds.keys()):
     idx = arg_keys.index(f"exc/{exc_op}/{key}")
-    param_indices.append(idx)
-for key in list(inh_bounds.keys()):
-    idx = arg_keys.index(f"inh/{inh_op}/{key}")
     param_indices.append(idx)
 
 # define final arguments of loss/simulation function

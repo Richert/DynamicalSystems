@@ -362,8 +362,8 @@ def circular_distance(p1: float, p2: float, epsilon=1e-10) -> float:
     return np.sin(0.5*(p1 - p2))
 
 
-def mse(x: np.ndarray, y: np.ndarray) -> float:
-    return float(np.mean((x - y)**2))
+def sse(x: np.ndarray, y: np.ndarray) -> float:
+    return float(np.sum((x - y)**2))
 
 
 def get_psd(x: np.ndarray, fs: float, nperseg: int, fmax: float, detrend: bool = True, **kwargs) -> tuple:

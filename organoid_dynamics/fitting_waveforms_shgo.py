@@ -1,14 +1,17 @@
 import pickle
 import numpy as np
-from scipy.io import loadmat
 from typing import Callable
 from custom_functions import *
 from pyrates import CircuitTemplate
-from scipy.optimize import differential_evolution
+from scipy.optimize import shgo
 from scipy.ndimage import gaussian_filter1d
+from scipy.cluster.hierarchy import linkage, cut_tree
+from scipy.spatial.distance import squareform
 from numba import njit
 import warnings
 from time import perf_counter
+import pandas as pd
+import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -38,7 +41,7 @@ def integrate(func, func_args, T, dt, dts, cutoff, p):
     return state_rec
 
 
-def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list, inp_idx: int,
+def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list,
               T: float, dt: float, dts: float, cutoff: float, p: float, sigma: float, burst_width: float,
               burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int,
               return_dynamics: bool = False):
@@ -50,9 +53,10 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
     inp += gaussian_filter1d(noise, sigma=noise_sigma)
 
     # update parameter vector
-    for idx, val in zip(x_indices, x):
-        func_args[idx] = val
-    func_args[inp_idx] = inp
+    idx_half = int(len(x)/2)
+    for i, j in enumerate(x_indices):
+        func_args[j][0] = x[i]
+        func_args[j][1] = x[idx_half + i]
 
     # simulate model dynamics
     fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff, p) * 1e3
@@ -62,15 +66,12 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
                              burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length)
 
     # calculate loss
-    if "ibi" in res:
-        ibi_stats = np.asarray([np.mean(targets["ibi"]), np.std(targets["ibi"]), np.min(targets["ibi"]), np.max(targets["ibi"])])
-        y_fit = np.concatenate([ibi_stats, res["waveform_mean"], res["waveform_std"]], axis=0)
-    else:
-        y_fit = np.zeros_like(y) + 333.3
+    y_fit = res["waveform_mean"]
+    y_fit /= np.max(y_fit)
     loss = sse(y_fit, y)
 
     if return_dynamics:
-        return loss, res, fr
+        return loss, res, y_fit
     return loss
 
 # parameter definitions
@@ -80,25 +81,21 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 device = "cpu"
 
 # choose data set
-dataset_name = "trujilo_2019"
+dataset = "trujilo_2019"
 
 # define directories and file to fit
-path = "/home/richard"
-save_dir = f"{path}/results/{dataset_name}"
-load_dir = f"{path}/data/{dataset_name}"
-file = "161001"
+path = "/home/richard-gast/Documents"
+save_dir = f"{path}/results/{dataset}"
+load_dir = f"{path}/data/{dataset}"
 
 # choose model
-model = "eic_ik"
+model = "ik_eic_sfa"
 exc_op = "ik_sfa_op"
-inh_op = "ik_op"
-input_var = "I_ext"
+inh_op = "ik_sfa_op"
 
-# dataset parameters
-well = 4
-well_offset = 4
-dt = 1e-1
-cutoff = 500.0
+# choose cluster prototype to fit
+n_clusters = 9
+prototype = 3
 
 # data processing parameters
 tau = 20.0
@@ -111,65 +108,51 @@ waveform_length = 3000
 
 # fitting parameters
 strategy = "best1exp"
-workers = 80
+sc_iters = 5
+maxfev = 100000
 maxiter = 1000
-popsize = 20
-mutation = (0.5, 1.5)
-recombination = 0.6
-polish = True
-tolerance = 1e-3
+workers = 15
+tolerance = 1e-4
 
 # data loading and processing
 #############################
 
-# prepare age calculation
-year_0 = 16
-month_0 = 7
-day_0 = 1
-
 # load data from file
-data = loadmat(f"{load_dir}/LFP_Sp_{file}.mat", squeeze_me=False)
+data = pd.read_csv(f"{load_dir}/{dataset}_waveforms.csv", header=[0, 1, 2], index_col=0)
+D = np.load(f"{load_dir}/{dataset}_waveform_distances.npy")
 
-# extract data
-lfp = data["LFP"]
-spike_times = data["spikes"]
-time = np.squeeze(data["t_s"])
-time_ds = np.round(np.squeeze(data["t_ds"]), decimals=4) # type: np.ndarray
+# run hierarchical clustering on distance matrix
+D_condensed = squareform(D)
+Z = linkage(D_condensed, method="ward")
+clusters = cut_tree(Z, n_clusters=n_clusters)
 
-# calculate organoid age
-date = file.split(".")[0].split("_")[-1]
-year, month, day = int(date[:2]), int(date[2:4]), int(date[4:])
-month += int((year-year_0)*12)
-day += int((month-month_0)*30)
-age = day - day_0
+# extract target waveform
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
+y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
-# calculate firing rate
-T = time_ds[-1] * 1e3
-dts = float(time_ds[1] - time_ds[0]) * 1e3
-spikes = extract_spikes(time, time_ds, spike_times[well + well_offset - 1])
-spikes_smoothed = convolve_exp(spikes, tau=tau, dt=dts, normalize=False)
-target_fr = np.mean(spikes_smoothed, axis=0) * 1e3 / tau
-
-# calculate bursting stats
-targets = get_bursting_stats(target_fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                             width_at_height=burst_relheight, waveform_length=waveform_length, burst_sep=burst_sep)
-ibi_stats = np.asarray([np.mean(targets["ibi"]), np.std(targets["ibi"]), np.min(targets["ibi"]), np.max(targets["ibi"])])
-y_target = np.concatenate([ibi_stats, targets["waveform_mean"], targets["waveform_std"]], axis=0)
+plt.plot(y_target)
+plt.show()
 
 # model initialization
 ######################
 
+# simulation parameters
+dts = 1.0
+dt = 1e-1
+cutoff = 1000.0
+T = 12000.0 + cutoff
 p_e = 0.8 # fraction of excitatory neurons
 
 # exc parameters
 exc_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 70.0, 'kappa': 1000.0, 'tau_u': 1000.0,
-    'g_e': 60.0, 'g_i': 20.0, 'tau_s': 6.0
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 2.0, 'eta': 70.0, 'kappa': 10.0, 'tau_u': 500.0,
+    'g_e': 150.0, 'g_i': 100.0, 'tau_s': 5.0
 }
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 0.0, 'g_e': 40.0, 'g_i': 0.0, 'tau_s': 20.0
+    'C': 150.0, 'k': 0.5, 'v_r': -65.0, 'v_t': -45.0, 'Delta': 4.0, 'eta': 0.0, 'kappa': 20.0, 'tau_u': 100.0,
+    'g_e': 60.0, 'g_i': 0.0, 'tau_s': 8.0
 }
 
 # initialize model template and set fixed parameters
@@ -179,33 +162,29 @@ template.update_var(node_vars={f"inh/{inh_op}/{key}": val for key, val in inh_pa
 
 # generate run function
 inp = np.zeros((int((T + cutoff)/dt),))
-func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt,
-                                                inputs={f'exc/{exc_op}/{input_var}': inp},
-                                                backend="numpy", solver="heun")
+func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun")
 func_jit = njit(func)
 
 # free parameter bounds
 exc_bounds = {
     "Delta": (0.5, 5.0),
-    "k": (0.5, 1.5),
-    "kappa": (500.0, 3000.0),
-    "tau_u": (500.0, 5000.0),
-    "g_e": (30.0, 120.0),
-    "g_i": (20.0, 120.0),
+    "k": (0.1, 1.0),
+    "kappa": (0.0, 40.0),
+    "tau_u": (100.0, 1000.0),
+    "g_e": (50.0, 200.0),
+    "g_i": (20.0, 200.0),
     "eta": (40.0, 100.0),
-    "tau_s": (5.0, 20.0),
+    "tau_s": (1.0, 10.0),
 }
 inh_bounds = {
-    "Delta": (0.5, 5.0),
-    "k": (0.5, 1.5),
-    "g_e": (20.0, 120.0),
-    "g_i": (20.0, 120.0),
-    "eta": (0.0, 100.0),
-    "tau_s": (5.0, 50.0),
-}
-noise_bounds = {
-    "noise_lvl": (10.0, 100.0),
-    "sigma": (50.0, 400.0)
+    "Delta": (2.0, 8.0),
+    "k": (0.1, 1.0),
+    "kappa": (0.0, 40.0),
+    "tau_u": (100.0, 1000.0),
+    "g_e": (40.0, 150.0),
+    "g_i": (0.0, 100.0),
+    "eta": (-50.0, 50.0),
+    "tau_s": (5.0, 20.0),
 }
 
 # find argument positions of free parameters
@@ -213,13 +192,9 @@ param_indices = []
 for key in list(exc_bounds.keys()):
     idx = arg_keys.index(f"exc/{exc_op}/{key}")
     param_indices.append(idx)
-for key in list(inh_bounds.keys()):
-    idx = arg_keys.index(f"inh/{inh_op}/{key}")
-    param_indices.append(idx)
-input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, y_target, func_jit, list(args), input_idx, T, dt, dts, cutoff, p_e, sigma, burst_width,
+func_args = (param_indices, y_target, func_jit, list(args), T, dt, dts, cutoff, p_e, sigma, burst_width,
              burst_sep, burst_height, burst_relheight, waveform_length)
 
 # fitting procedure
@@ -229,7 +204,7 @@ func_args = (param_indices, y_target, func_jit, list(args), input_idx, T, dt, dt
 x0 = []
 bounds = []
 param_keys = []
-for b, group in zip([exc_bounds, inh_bounds, noise_bounds], ["exc", "inh", "noise"]):
+for b, group in zip([exc_bounds, inh_bounds], ["exc", "inh"]):
     for key, (low, high) in b.items():
         x0.append(0.5*(low + high))
         bounds.append((low, high))
@@ -247,9 +222,8 @@ print(f"Finished test run after {t1-t0} s.")
 # fitting procedure
 print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings ...")
 while True:
-    results = differential_evolution(simulator, tuple(bounds), args=func_args, strategy=strategy,
-                                     workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
-                                     recombination=recombination, polish=polish, atol=tolerance)
+    results = shgo(simulator, tuple(bounds), args=func_args, iters=sc_iters, workers=workers,
+                   options={"maxfev": maxfev, "fmin": 0.0, "ftol": tolerance, "maxiter": maxiter, "disp": True})
     if np.isnan(results.fun):
         print("Re-initializing. Reason: loss(best candidate) = NaN.")
     else:
@@ -261,11 +235,9 @@ for key, val in zip(param_keys, results.x):
     fitted_parameters[key] = val
 
 # generate dynamics of winner
-loss, y_fit, fr_fit = simulator(results.x, *func_args, return_dynamics=True)
+loss, _, y_fit = simulator(results.x, *func_args, return_dynamics=True)
 
 # save results
 pickle.dump({
-    "age": age, "organoid": well, "time": time_ds,
-    "target": targets, "target_fr": target_fr,
-    "fit": y_fit, "fitted_fr": fr_fit, "fitted_parameters": fitted_parameters},
-    open(f"{save_dir}/{file}_de_fit.pkl", "wb"))
+    "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters},
+    open(f"{save_dir}/{dataset}_prototype_{prototype}_fit.pkl", "wb"))

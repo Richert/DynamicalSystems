@@ -28,7 +28,7 @@ exc_params = {
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 4.0, 'eta': 0.0, 'kappa': 0.0, 'tau_u': 500.0,
+    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 4.0, 'eta': 0.0, 'kappa': 20.0, 'tau_u': 200.0,
     'g_e': 60.0, 'g_i': 0.0, 'tau_s': 5.0
 }
 
