@@ -2,6 +2,8 @@ from pycobi import ODESystem
 from pyrates import CircuitTemplate
 import sys
 import matplotlib.pyplot as plt
+from numpy.exceptions import AxisError
+import numpy as np
 
 """
 Bifurcation analysis of the Izhikevich mean-field model.
@@ -21,19 +23,17 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 0.5
+Delta = 1.0
 eta = 0.0
-u0 = 0.5
 kappa = 2.0
 tau_u = 50.0
-tau_w = 500.0
-g = 10.0
+g = 60.0
 E_r = 0.0
 tau_s = 6.0
 
 params = {
-    'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'u0': u0, 'kappa': kappa, 'tau_u': tau_u,
-    'tau_w': tau_w, 'g': g, 'E_r': E_r, 'tau_s': tau_s
+    'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'tau_u': tau_u,
+    'g_e': g, 'E_e': E_r, 'tau_s': tau_s
 }
 
 # initialize model
@@ -44,86 +44,88 @@ ik = CircuitTemplate.from_yaml("config/ik_mf/ik_stp")
 ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # config
-n_dim = 5
-n_params = 20
+n_dim = 6
+n_params = 22
 # ode = ODESystem.from_template(ik, working_dir="../organoid_dynamics/config", auto_dir=auto_dir, init_cont=False)
-ode = ODESystem(eq_file="system_equations", working_dir="../organoid_dynamics/config", auto_dir=auto_dir, init_cont=False)
+ode = ODESystem(eq_file="stp_equations", working_dir="../organoid_dynamics/config", auto_dir=auto_dir, init_cont=False)
 
 # initial continuation in time to converge to fixed point
 t_sols, t_cont = ode.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NPR=1000, NPAR=n_params, NDIM=n_dim,
-                         EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 500.0}, STOP={'UZ1'})
+                         EPSU=1e-06, EPSS=1e-05, DSMAX=0.1, NMX=50000, UZR={14: 4000.0}, STOP={'UZ1'})
 
 ########################
 # bifurcation analysis #
 ########################
 
-# continuation in kappa
-kappas = [0.05, 0.5, 2.0]
-c1_sols, c1_cont = ode.run(starting_point='UZ1', c='1d', ICP=18, NPAR=n_params, NDIM=n_dim, name='kappa',
-                           origin=t_cont, NMX=4000, DSMAX=0.05, UZR={18: kappas}, STOP=[],
-                           NPR=100, RL1=10.0, RL0=0.0, bidirectional=True)
+# parameter indices
+eta = 17
+kappa = 18
+g = 4
+alpha = 20
+
+# continuation in alpha
+alphas = [50, 100.0, 200.0]
+c1_sols, c1_cont = ode.run(starting_point='UZ1', c='1d', ICP=alpha, NPAR=n_params, NDIM=n_dim, name='kappa',
+                           origin=t_cont, NMX=4000, DSMAX=0.1, UZR={alpha: alphas}, STOP=[],
+                           NPR=100, RL1=np.max(alphas) + 10.0, RL0=0.0, bidirectional=True)
 
 # continuations in Delta
-for i, kappa in enumerate(kappas):
+for i, a in enumerate(alphas):
 
-    c2_sols, c2_cont = ode.run(starting_point=f'UZ{i+1}', ICP=9, name=f'eta:{i+1}', DSMAX=0.05,
-                               origin=c1_cont, UZR={}, STOP=[], NPR=10, RL1=150.0, RL0=0.0, bidirectional=True)
+    c2_sols, c2_cont = ode.run(starting_point=f'UZ{i+1}', ICP=eta, name=f'eta:{i+1}', DSMAX=0.1, origin=c1_cont,
+                               UZR={}, STOP=[], NPR=10, RL1=100.0, RL0=0.0, bidirectional=True)
 
-    try:
-        ode.run(starting_point="HB1", ICP=[9, 11], name=f"eta:{i+1}:lc:1", origin=c2_cont, ISW=-1, IPS=2, NMX=4000,
-                DSMAX=0.1, NCOL=7, NTST=400, STOP=["LP3"])
-    except KeyError:
-        pass
-    try:
-        ode.run(starting_point="HB2", ICP=[9, 11], name=f"eta:{i+1}:lc:2", origin=c2_cont, ISW=-1, IPS=2, NMX=4000,
-                DSMAX=0.1, NCOL=7, NTST=400, STOP=["LP3"])
-    except KeyError:
-        pass
+    for j in range(2):
+        try:
+            ode.run(starting_point=f"HB{j + 1}", ICP=[eta, 11], name=f"eta:{i+1}:lc:{j+1}", origin=c2_cont, ISW=-1,
+                    IPS=2, NMX=8000, DSMAX=0.5, NCOL=4, NTST=100, STOP=["LP4", "BP3"], EPSL=1e-6, EPSU=1e-6, EPSS=1e-4)
+        except KeyError:
+            pass
 
     # plot 1D bifurcation diagram
     fig, ax = plt.subplots(figsize=(12, 4))
-    ode.plot_continuation("PAR(9)", "U(1)", cont=f"eta:{i+1}", ax=ax, bifurcation_legend=True)
-    try:
-        ode.plot_continuation("PAR(9)", "U(1)", cont=f"eta:{i+1}:lc:1", ax=ax, bifurcation_legend=False)
-    except KeyError:
-        pass
-    try:
-        ode.plot_continuation("PAR(9)", "U(1)", cont=f"eta:{i+1}:lc:2", ax=ax, bifurcation_legend=False)
-    except KeyError:
-        pass
-    ax.set_title(f"1D bifurcation diagram for kappa = {kappa}")
+    ode.plot_continuation(f"PAR({eta})", "U(1)", cont=f"eta:{i+1}", ax=ax, bifurcation_legend=True)
+    for j in range(2):
+        try:
+            ode.plot_continuation(f"PAR({eta})", "U(1)", cont=f"eta:{i+1}:lc:{j+1}", ax=ax,
+                                  bifurcation_legend=False, ignore=["BP"])
+        except (KeyError, AxisError):
+            pass
+    ax.set_title(f"1D bifurcation diagram for alpha = {a}")
     plt.tight_layout()
 
 # 2D continuation I
-p1 = "kappa"
-ode.run(starting_point='LP1', ICP=[18, 9], name=f'{p1}/eta:lp1', origin="eta:1", NMX=4000, DSMAX=0.05,
-        NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB1', ICP=[18, 9], name=f'{p1}/eta:hb1', origin="eta:2", NMX=4000, DSMAX=0.05,
-        NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-
-# 2D continuation II
-p2 = "tau_u"
-ode.run(starting_point='LP1', ICP=[16, 9], name=f'{p2}/eta:lp1', origin="eta:3", NMX=4000, DSMAX=0.05,
-        NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB1', ICP=[16, 9], name=f'{p2}/eta:hb1', origin="eta:3", NMX=4000, DSMAX=0.05,
-        NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
-ode.run(starting_point='HB2', ICP=[16, 9], name=f'{p2}/eta:hb2', origin="eta:3", NMX=4000, DSMAX=0.05,
-        NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
+eta_cont = 3
+for p, key in zip([kappa, alpha, g], ["kappa", "alpha", "g"]):
+    for j in range(2):
+        try:
+            ode.run(starting_point=f'LP{j+1}', ICP=[p, eta], name=f'{key}/eta:lp{j+1}', origin=f"eta:{eta_cont}",
+                    NMX=4000, DSMAX=0.05, NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
+        except KeyError:
+            pass
+    for j in range(2):
+        try:
+            ode.run(starting_point=f'HB{j+1}', ICP=[p, eta], name=f'{key}/eta:hb{j+1}', origin=f"eta:{eta_cont}",
+                    NMX=4000, DSMAX=0.05, NPR=10, RL1=300.0, RL0=0.0, bidirectional=True, ILP=0, IPS=1, ISW=2, NTST=400)
+        except KeyError:
+            pass
 
 # plot 2D bifurcation diagrams
-fig, ax = plt.subplots(figsize=(12, 4))
-ode.plot_continuation("PAR(9)", "PAR(18)", cont=f"{p1}/eta:lp1", ax=ax, bifurcation_legend=True)
-ode.plot_continuation("PAR(9)", "PAR(18)", cont=f"{p1}/eta:hb1", ax=ax, bifurcation_legend=True,
-                      line_color_stable="green")
-fig.suptitle(f"2d bifurcations: {p1}/eta")
-plt.tight_layout()
-fig, ax = plt.subplots(figsize=(12, 4))
-ode.plot_continuation("PAR(9)", "PAR(16)", cont=f"{p2}/eta:lp1", ax=ax, bifurcation_legend=True)
-ode.plot_continuation("PAR(9)", "PAR(16)", cont=f"{p2}/eta:hb1", ax=ax, bifurcation_legend=True,
-                      line_color_stable="green")
-ode.plot_continuation("PAR(9)", "PAR(16)", cont=f"{p2}/eta:hb2", ax=ax, bifurcation_legend=True,
-                      line_color_stable="green")
-fig.suptitle(f"2d bifurcations: {p2}/eta")
-plt.tight_layout()
+for p, key in zip([kappa, alpha, g], ["kappa", "alpha", "g"]):
+    fig, ax = plt.subplots(figsize=(12, 4))
+    for j in range(2):
+        try:
+            ode.plot_continuation(f"PAR({eta})", f"PAR({p})", cont=f"{key}/eta:lp{j+1}", ax=ax,
+                                  bifurcation_legend=True)
+        except KeyError:
+            pass
+    for j in range(2):
+        try:
+            ode.plot_continuation(f"PAR({eta})", f"PAR({p})", cont=f"{key}/eta:hb{j+1}", ax=ax,
+                                  bifurcation_legend=True, line_color_stable="green")
+        except KeyError:
+            pass
+    fig.suptitle(f"2d bifurcations: {key}/eta")
+    plt.tight_layout()
 
 plt.show()

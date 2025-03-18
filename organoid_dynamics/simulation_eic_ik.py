@@ -22,19 +22,19 @@ p_e = 0.8
 
 # exc parameters
 exc_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 0.5, 'eta': 0.0, 'kappa': 1693.4, 'tau_u': 2553.5,
-    'g_e': 95.7, 'g_i': 85.8, 'tau_s': 6.0
+    'C': 100.0, 'k': 0.84, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 2.27, 'eta': 82.49, 'kappa': 1914.5, 'tau_u': 3023.4,
+    'g_e': 66.67, 'g_i': 63.19, 'tau_s': 11.5
 }
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.0, 'eta': 0.0, 'g_e': 40.0, 'g_i': 0.0, 'tau_s': 20.0
+    'C': 100.0, 'k': 1.05, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 3.35, 'eta': 74.79, 'g_e': 114.44, 'g_i': 75.12, 'tau_s': 48.55
 }
 
 # input parameters
-I_e = 65.9
-noise_lvl = 46.0
-noise_sigma = 228.1
+I_e = 0.0
+noise_lvl = 96.0
+noise_sigma = 321.8
 
 # define inputs
 cutoff = 1000.0

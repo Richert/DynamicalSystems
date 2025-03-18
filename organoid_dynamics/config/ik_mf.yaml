@@ -13,10 +13,10 @@ ik_op:
     - "s' = x / tau_s"
     - "x' = (r - 2*x - s) / tau_s"
   variables:
-    r: output(0.01)
+    r: output(0.0)
     v: variable(-60.0)
-    s: variable(0.05)
-    x: variable(0.05)
+    s: variable(0.0)
+    x: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -55,7 +55,7 @@ qif_op:
     s_e: input(0.0)
     s_i: input(0.0)
 
-# izhikevich operator with biophysiologically relevant parameters
+# izhikevich operator with SFA
 ik_sfa_op:
   base: OperatorTemplate
   equations:
@@ -89,7 +89,7 @@ ik_sfa_op:
     s_e: input(0.0)
     s_i: input(0.0)
 
-# qif operator
+# qif operator with SFA
 qif_sfa_op:
   base: OperatorTemplate
   equations:
@@ -116,77 +116,95 @@ qif_sfa_op:
     s_e: input(0.0)
     s_i: input(0.0)
 
-# izhikevich operator with synaptic short-term plasticity
+# izhikevich operator with synaptic short-term depression
 ik_stp_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s_in*f*d)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s_in*f*d*(E_r-v) + eta + I_ext) / C"
-    - "w' = r - w/tau_r"
-    - "f' = (f0-f)/tau_f + f0*(1-f)*w"
-    - "d' = (1-d)/tau_d - kappa*f*d*w"
-    - "s' = w - s/tau_s"
+    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - w*g_e*s_e - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + w*g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext - u) / C"
+    - "u' = kappa*r - u / tau_u"
+    - "w' = (1 - w*alpha*r - w) / tau_w"
+    - "s' = x / tau_s"
+    - "x' = (r - 2*x - s) / tau_s"
   variables:
     r: output(0.0)
     v: variable(-60.0)
-    f: variable(0.8)
-    d: variable(1.0)
-    w: variable(0.0)
+    u: variable(0.0)
+    w: variable(1.0)
     s: variable(0.0)
+    x: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    g: 20.0
-    E_r: 0.0
-    kappa: 8.0
-    f0: 0.8
-    tau_r: 5.0
-    tau_f: 50.0
-    tau_d: 500.0
+    g_e: 20.0
+    g_i: 10.0
+    E_e: 0.0
+    E_i: -65.0
+    kappa: 10.0
+    alpha: 100.0
+    tau_u: 300.0
+    tau_w: 800.0
     tau_s: 6.0
     eta: 0.0
     I_ext: input(0.0)
-    s_in: input(0.0)
+    s_e: input(0.0)
+    s_i: input(0.0)
 
-# parameters for regular-spiking neurons
-rs_op:
-  base: ik_ei_op
+# parameters for waveform prototype 0
+proto_0:
+  base: ik_stp_op
   variables:
     Delta: 1.0
     C: 100.0
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    g_ampa: 1.0
-    g_gabaa: 1.0
-    E_ampa: 0.0
-    E_gabaa: -65.0
-    b: -2.0
-    a: 0.03
-    d: 20.0
-    tau_ampa: 6.0
-    tau_gabaa: 8.0
+    g_i: 0.0
+    g_e: 60.0
+    kappa: 1.0
+    alpha: 200.0
+    tau_u: 200.0
+    tau_w: 800.0
+    tau_s: 6.0
+    eta: 67.02
 
-# parameters for intrinsically-bursting neurons
-ib_op:
-  base: ik_ei_op
+# parameters for waveform prototype 1
+proto_1:
+  base: ik_stp_op
   variables:
     Delta: 1.0
-    C: 150.0
-    k: 1.2
-    v_r: -75.0
-    v_t: -45.0
-    g_ampa: 1.5
-    g_gabaa: 0.8
-    E_ampa: 0.0
-    E_gabaa: -65.0
-    b: 5.0
-    a: 0.01
-    d: 30.0
-    tau_ampa: 6.0
-    tau_gabaa: 8.0
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g_i: 0.0
+    g_e: 60.0
+    kappa: 1.0
+    alpha: 200.0
+    tau_u: 200.0
+    tau_w: 800.0
+    tau_s: 6.0
+    eta: 67.02
+
+# parameters for waveform prototype 2
+proto_2:
+  base: ik_stp_op
+  variables:
+    Delta: 1.0
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g_i: 0.0
+    g_e: 60.0
+    kappa: 1.0
+    alpha: 200.0
+    tau_u: 200.0
+    tau_w: 800.0
+    tau_s: 6.0
+    eta: 67.02
 
 # parameters for fast-spiking neurons
 fs_op:
@@ -300,7 +318,7 @@ ik_stp:
   nodes:
     p: stp_pop
   edges:
-    - [p/ik_stp_op/s, p/ik_stp_op/s_in, null, {weight: 1.0}]
+    - [p/ik_stp_op/s, p/ik_stp_op/s_e, null, {weight: 1.0}]
 
 # izhikevich population with SFA
 ik_sfa:
@@ -311,7 +329,7 @@ ik_sfa:
     - [p/ik_sfa_op/s, p/ik_sfa_op/s_e, null, {weight: 1.0}]
 
 # rs-fs circuit
-eic_ik:
+eic_sfa:
   base: CircuitTemplate
   nodes:
     exc: sfa_pop
@@ -323,13 +341,13 @@ eic_ik:
     - [inh/ik_op/s, inh/ik_op/s_i, null, {weight: 1.0}]
 
 # rs-fs circuit
-eic_qif:
+eic_stp:
   base: CircuitTemplate
   nodes:
-    exc: qif_sfa_pop
-    inh: qif_pop
+    exc: stp_pop
+    inh: ik_pop
   edges:
-    - [exc/qif_sfa_op/s, exc/qif_sfa_op/s_e, null, {weight: 1.0}]
-    - [exc/qif_sfa_op/s, inh/qif_op/s_e, null, {weight: 1.0}]
-    - [inh/qif_op/s, exc/qif_sfa_op/s_i, null, {weight: 1.0}]
-    - [inh/qif_op/s, inh/qif_op/s_i, null, {weight: 1.0}]
+    - [exc/ik_stp_op/s, exc/ik_stp_op/s_e, null, {weight: 1.0}]
+    - [exc/ik_stp_op/s, inh/ik_op/s_e, null, {weight: 1.0}]
+    - [inh/ik_op/s, exc/ik_stp_op/s_i, null, {weight: 1.0}]
+    - [inh/ik_op/s, inh/ik_op/s_i, null, {weight: 1.0}]

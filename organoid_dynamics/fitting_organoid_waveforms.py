@@ -41,7 +41,7 @@ def integrate(func, func_args, T, dt, dts, cutoff, p):
     return state_rec
 
 
-def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list, inp_idx: int,
+def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list,
               T: float, dt: float, dts: float, cutoff: float, p: float, sigma: float, burst_width: float,
               burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int,
               return_dynamics: bool = False):
@@ -55,7 +55,6 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
     # update parameter vector
     for idx, val in zip(x_indices, x):
         func_args[idx] = val
-    func_args[inp_idx] = inp
 
     # simulate model dynamics
     fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff, p) * 1e3
@@ -66,7 +65,8 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 
     # calculate loss
     y_fit = res["waveform_mean"]
-    loss = mse(y_fit / np.max(y_fit), y / np.max(y))
+    y_fit /= np.max(y_fit)
+    loss = mse(y_fit, y)
 
     if return_dynamics:
         return loss, res, y_fit
@@ -90,7 +90,6 @@ load_dir = f"{path}/data/{dataset}"
 model = "eic_ik"
 exc_op = "ik_sfa_op"
 inh_op = "ik_op"
-input_var = "I_ext"
 
 # data processing parameters
 tau = 20.0
@@ -103,11 +102,11 @@ waveform_length = 3000
 
 # fitting parameters
 strategy = "best1exp"
-workers = 10
-maxiter = 1000
-popsize = 10
-mutation = (0.5, 1.5)
-recombination = 0.6
+workers = 15
+maxiter = 200
+popsize = 20
+mutation = (0.5, 1.2)
+recombination = 0.7
 polish = True
 tolerance = 1e-3
 
@@ -124,9 +123,9 @@ Z = linkage(D_condensed, method="ward")
 clusters = cut_tree(Z, n_clusters=6)
 
 # extract target waveform
-prototype = 0
+prototype = 2
 proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
-y_target = proto_waves[prototype]
+y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
 plt.plot(y_target)
 plt.show()
@@ -138,7 +137,7 @@ plt.show()
 dts = 1.0
 dt = 1e-1
 cutoff = 1000.0
-T = 5000.0 + cutoff
+T = 9000.0 + cutoff
 p_e = 0.8 # fraction of excitatory neurons
 
 # exc parameters
@@ -159,9 +158,7 @@ template.update_var(node_vars={f"inh/{inh_op}/{key}": val for key, val in inh_pa
 
 # generate run function
 inp = np.zeros((int((T + cutoff)/dt),))
-func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt,
-                                                inputs={f'exc/{exc_op}/{input_var}': inp},
-                                                backend="numpy", solver="heun")
+func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun")
 func_jit = njit(func)
 
 # free parameter bounds
@@ -183,10 +180,6 @@ inh_bounds = {
     "eta": (0.0, 100.0),
     "tau_s": (5.0, 50.0),
 }
-noise_bounds = {
-    "noise_lvl": (10.0, 100.0),
-    "sigma": (50.0, 400.0)
-}
 
 # find argument positions of free parameters
 param_indices = []
@@ -196,10 +189,9 @@ for key in list(exc_bounds.keys()):
 for key in list(inh_bounds.keys()):
     idx = arg_keys.index(f"inh/{inh_op}/{key}")
     param_indices.append(idx)
-input_idx = arg_keys.index(f"{input_var}_input_node/{input_var}_input_op/{input_var}_input")
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, y_target, func_jit, list(args), input_idx, T, dt, dts, cutoff, p_e, sigma, burst_width,
+func_args = (param_indices, y_target, func_jit, list(args), T, dt, dts, cutoff, p_e, sigma, burst_width,
              burst_sep, burst_height, burst_relheight, waveform_length)
 
 # fitting procedure
@@ -209,7 +201,7 @@ func_args = (param_indices, y_target, func_jit, list(args), input_idx, T, dt, dt
 x0 = []
 bounds = []
 param_keys = []
-for b, group in zip([exc_bounds, inh_bounds, noise_bounds], ["exc", "inh", "noise"]):
+for b, group in zip([exc_bounds, inh_bounds], ["exc", "inh"]):
     for key, (low, high) in b.items():
         x0.append(0.5*(low + high))
         bounds.append((low, high))
