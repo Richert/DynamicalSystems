@@ -13,51 +13,45 @@ import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-def integrate(y: torch.Tensor, func, args, T, dt, dts, cutoff, p):
+def integrate(y: torch.Tensor, func, args, T, dt, dts, cutoff):
 
     idx = 0
     steps = int(T / dt)
     cutoff_steps = int(cutoff / dt)
-    store_steps = int((T-cutoff) / dts)
     store_step = int(dts / dt)
-    state_rec = torch.zeros((store_steps,), dtype=y.dtype, device=y.device)
+    state_rec = []
 
     # solve ivp for forward Euler method
     for step in range(steps):
-        r_e, r_i = y[0], y[6]
-        if step > cutoff_steps and step % store_step == t0:
-            state_rec[idx] = p*r_e + (1-p)*r_i
+        if step > cutoff_steps and step % store_step == 0:
+            state_rec.append(y[:2])
             idx += 1
-        if not torch.isfinite(r_e):
+        if not torch.isfinite(y[0]):
             break
         rhs = func(step, y, *args)
         y_0 = y + dt * rhs
         y = y + (rhs + func(step, y_0, *args)) * dt/2
 
-    return state_rec
+    return torch.stack(state_rec, dim=0)
 
 
-def simulator(x: torch.Tensor, x_indices: list, y: torch.Tensor, func: Callable, func_args: list,
+def simulator(y_target: torch.Tensor, func: Callable, func_args: list,
               T: float, dt: float, dts: float, cutoff: float, p: float, waveform_length: int,
               return_dynamics: bool = False):
 
-    # update parameter vector
-    idx_half = int(len(x)/2)
-    for i, j in enumerate(x_indices):
-        func_args[j] = torch.tensor([x[i], x[idx_half + i]], requires_grad=True)
-
     # simulate model dynamics
-    fr = integrate(func_args[1], func, tuple(func_args[2:]), T + cutoff, dt, dts, cutoff, p) * 1e3
+    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+    fr = p*fr[:, 0] + (1-p)*fr[:, 1]
 
     # get waveform
     max_idx_model = torch.argmax(fr)
-    max_idx_target = torch.argmax(y)
+    max_idx_target = torch.argmax(y_target)
     start = max_idx_model-max_idx_target
     start = start if start >= 0 else 0
     y_fit = fr[start:start+waveform_length]
 
     # calculate loss
-    loss = torch.sum((y_target - y_fit)**2)
+    loss = torch.sum((y_target / torch.max(y_target) - y_fit / torch.max(y_fit))**2)
 
     if return_dynamics:
         return loss, y_fit
@@ -67,14 +61,14 @@ def simulator(x: torch.Tensor, x_indices: list, y: torch.Tensor, func: Callable,
 #######################
 
 # torch settings
-device = "cpu"
+device = "cuda:0"
 dtype = torch.double
 
 # choose data set
 dataset = "trujilo_2019"
 
 # define directories and file to fit
-path = "/home/richard-gast/Documents"
+path = "/home/richard"
 save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
 
@@ -93,7 +87,7 @@ burst_relheight = 0.9
 waveform_length = 3000
 
 # torch parameters
-lr = 1e-3
+lr = 5e-2
 tolerance = 1e-2
 betas = (0.9, 0.99)
 max_epochs = 200
@@ -116,7 +110,6 @@ proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 plt.plot(y_target)
 plt.show()
-y_target = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=True)
 
 # model initialization
 ######################
@@ -126,7 +119,7 @@ dts = 1.0
 dt = 1e-1
 cutoff = 1000.0
 T = 9000.0 + cutoff
-p_e = 0.8 # fraction of excitatory neurons
+p_e = 1.0 # fraction of excitatory neurons
 
 # exc parameters
 exc_params = {
@@ -148,99 +141,78 @@ template.update_var(node_vars={f"inh/{inh_op}/{key}": val for key, val in inh_pa
 # generate run function
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="torch", solver="heun",
                                                 float_precision="float64")
-grad_args = [f"exc/{exc_op}/{key}" for key in exc_params.keys()]
-for key, arg in zip(arg_keys, args):
-    if type(arg) is torch.Tensor:
-        arg.to(device)
-        arg.requires_grad = True if key in grad_args else False
-args[1].requires_grad = True
-
-# free parameter bounds
-exc_bounds = {
-    "Delta": (0.5, 5.0),
-    "k": (0.1, 1.0),
-    "kappa": (0.0, 40.0),
-    "tau_u": (100.0, 1000.0),
-    "g_e": (50.0, 200.0),
-    "g_i": (20.0, 200.0),
-    "eta": (40.0, 100.0),
-    "tau_s": (1.0, 10.0),
-}
-inh_bounds = {
-    "Delta": (2.0, 8.0),
-    "k": (0.1, 1.0),
-    "kappa": (0.0, 40.0),
-    "tau_u": (100.0, 1000.0),
-    "g_e": (40.0, 150.0),
-    "g_i": (0.0, 100.0),
-    "eta": (-50.0, 50.0),
-    "tau_s": (5.0, 20.0),
-}
-
-# find argument positions of free parameters
-param_indices = []
-for key in list(exc_bounds.keys()):
-    idx = arg_keys.index(f"exc/{exc_op}/{key}")
-    param_indices.append(idx)
-
-# define final arguments of loss/simulation function
-func_args = (param_indices, y_target, func, list(args), T, dt, dts, cutoff, p_e, waveform_length)
 
 # fitting procedure
 ###################
-
-# combine parameter bounds
-x0 = []
-bounds = []
-param_keys = []
-for b, group in zip([exc_bounds, inh_bounds], ["exc", "inh"]):
-    for key, (low, high) in b.items():
-        p = np.random.rand()
-        x0.append((p*low + (1-p)*high))
-        bounds.append((low, high))
-        param_keys.append(f"{group}/{key}")
-x = torch.tensor(x0, device=device, dtype=dtype)
 
 # test run
 print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a "
       f"simulation step-size of {dt} ms.")
 t0 = perf_counter()
 with torch.no_grad():
-    simulator(x, *func_args, return_dynamics=False)
+    target = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
+    simulator(target, func, args, T, dt, dts, cutoff, p_e, waveform_length, return_dynamics=False)
 t1 = perf_counter()
 print(f"Finished test run after {t1-t0} s.")
 
 # initialize optimizer
-optim = torch.optim.Adam([x], lr=lr, betas=betas)
+grad_args = [f"exc/{exc_op}/{key}" for key in exc_params.keys()]
+opt_args = []
+args = list(args)
+for key, arg in zip(arg_keys, args):
+    if type(arg) is torch.Tensor:
+        arg.to(device)
+        arg.requires_grad = False
+        if key in grad_args:
+            arg.requires_grad = True
+            opt_args.append(arg)
+args[1].requires_grad = True
+optim = torch.optim.Adam(opt_args, lr=lr, betas=betas)
 
 # fitting procedure
-print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings ...")
+print(f"Starting to fit the mean-field model to the waveform prototype of cluster {prototype} ...")
 sse_loss = torch.inf
 epoch = 0
 with torch.enable_grad():
 
     while sse_loss > tolerance and epoch < max_epochs:
 
-        loss = simulator(x, *func_args)
-        optim.zero_grad()
+        # calculate loss and take optimization step
+        target = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
+        loss, y_fit = simulator(target, func, args, T, dt, dts, cutoff, p_e, waveform_length, return_dynamics=True)
         loss.backward()
         optim.step()
+
+        # reset network state
+        optim.zero_grad()
+        y_tmp = args[1].detach().cpu().numpy()
+        args[1] = torch.tensor(y_tmp, device=device, dtype=dtype, requires_grad=True)
+        dy_tmp = args[2].detach().cpu().numpy()
+        args[2] = torch.tensor(dy_tmp, device=device, dtype=dtype, requires_grad=False)
+
+        # progress report
         sse_loss = loss.item()
         epoch += 1
         print(f"Optimization step {epoch}: loss = {sse_loss}")
 
 # generate dynamics of winner
-loss, y_fit = simulator(x, *func_args, return_dynamics=True)
-x = x.cpu().detach().numpy()
+with torch.no_grad():
+    y = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
+    loss, y_fit = simulator(y, func, args, T, dt, dts, cutoff, p_e, waveform_length, return_dynamics=True)
 
 # get winning parameter set
-print(f"Finished fitting procedure. The winner (loss = {loss}) is ... ")
+print(f"Finished fitting procedure. The winner (loss = {loss.item()}) is ... ")
 fitted_parameters = {}
-for key, val in zip(param_keys, x):
-    print(f"{key} = {val}")
-    fitted_parameters[key] = val
+for key, val in zip(grad_args, opt_args):
+    v_fit = val.cpu().detach().numpy()
+    exc_key = key
+    inh_key = f"inh/{inh_op}/{key.split('/')[-1]}"
+    print(f"{exc_key} = {val[0]}")
+    print(f"{inh_key} = {val[1]}")
+    fitted_parameters[exc_key] = val[0]
+    fitted_parameters[inh_key] = val[1]
 
 # save results
 pickle.dump({
-    "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters},
+    "target_waveform": y_target, "fitted_waveform": y_fit.detach().cpu().numpy(), "fitted_parameters": fitted_parameters},
     open(f"{save_dir}/{dataset}_prototype_{prototype}_fit.pkl", "wb"))

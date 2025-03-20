@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import pickle
+import torch
+import numpy as np
 
 # load data
 dataset = "trujilo_2019"
@@ -17,7 +19,7 @@ for key, val in results["fitted_parameters"].items():
 # plot fit
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(results["target_waveform"], label="target")
-ax.plot(results["fitted_waveform"], label="fit")
+ax.plot(results["fitted_waveform"] / torch.max(results["fitted_waveform"]), label="fit")
 ax.legend()
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("norm. fr")
