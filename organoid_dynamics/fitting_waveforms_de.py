@@ -15,36 +15,59 @@ import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-def integrate(func, func_args, T, dt, dts, cutoff, p):
+def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
-    t0, y = int(func_args[0]), func_args[1]
-    args = func_args[2:]
     idx = 0
-    steps = int(np.round(T / dt))
-    cutoff_steps = int(np.round(cutoff / dt))
-    store_steps = int(np.round((T-cutoff) / dts))
-    store_step = int(np.round(dts / dt))
-    state_rec = np.zeros((store_steps,), dtype=y.dtype)
+    steps = int(T / dt)
+    cutoff_steps = int(cutoff / dt)
+    store_step = int(dts / dt)
+    state_rec = []
 
     # solve ivp for forward Euler method
-    for step in range(t0, steps + t0):
-        r_e, r_i = y[0], y[6]
-        if step > cutoff_steps and step % store_step == t0:
-            state_rec[idx] = p*r_e + (1-p)*r_i
+    for step in range(steps):
+        if step > cutoff_steps and step % store_step == 0:
+            state_rec.append(y[:2])
             idx += 1
-        if not np.isfinite(r_e):
+        if not np.isfinite(y[0]):
+            state_rec = np.zeros((int((T-cutoff)/dts), y.shape[0]))
+            state_rec[int(0.5*state_rec.shape[0]), :] = 1.0
             break
         rhs = func(step, y, *args)
         y_0 = y + dt * rhs
-        y += (rhs + func(step, y_0, *args)) * dt/2
+        y = y + (rhs + func(step, y_0, *args)) * dt/2
 
-    return state_rec
+    return np.asarray(state_rec)
 
 
-def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list,
-              T: float, dt: float, dts: float, cutoff: float, p: float, sigma: float, burst_width: float,
-              burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int,
-              return_dynamics: bool = False):
+# def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, func_args: list,
+#               T: float, dt: float, dts: float, cutoff: float, p: float, sigma: float, burst_width: float,
+#               burst_sep: float, burst_height: float, width_at_height: float, waveform_length: int,
+#               return_dynamics: bool = False):
+#
+#     # update parameter vector
+#     idx_half = int(len(x)/2)
+#     for i, j in enumerate(x_indices):
+#         func_args[j][0] = x[i]
+#         func_args[j][1] = x[idx_half + i]
+#
+#     # simulate model dynamics
+#     fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff, p) * 1e3
+#
+#     # get bursting stats
+#     res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
+#                              burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length)
+#
+#     # calculate loss
+#     y_fit = res["waveform_mean"]
+#     y_fit /= np.max(y_fit)
+#     loss = sse(y_fit, y)
+#
+#     if return_dynamics:
+#         return loss, res, y_fit
+#     return loss
+
+def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callable, func_args: list,
+              T: float, dt: float, dts: float, cutoff: float, waveform_length: int, return_dynamics: bool = False):
 
     # update parameter vector
     idx_half = int(len(x)/2)
@@ -53,19 +76,25 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
         func_args[j][1] = x[idx_half + i]
 
     # simulate model dynamics
-    fr = integrate(func, tuple(func_args), T + cutoff, dt, dts, cutoff, p) * 1e3
+    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+    fr = x[-1] * fr[:, 0] + (1 - x[-1]) * fr[:, 1]
 
-    # get bursting stats
-    res = get_bursting_stats(fr, sigma=sigma, burst_width=burst_width, rel_burst_height=burst_height,
-                             burst_sep=burst_sep, width_at_height=width_at_height, waveform_length=waveform_length)
+    # get waveform
+    max_idx_model = np.argmax(fr)
+    max_idx_target = np.argmax(y_target)
+    start = max_idx_model - max_idx_target
+    if start < 0:
+        start = 0
+    if start + waveform_length > fr.shape[0]:
+        start = fr.shape[0] - waveform_length
+    y_fit = fr[start:start + waveform_length]
+    y_fit = y_fit / np.max(y_fit)
 
     # calculate loss
-    y_fit = res["waveform_mean"]
-    y_fit /= np.max(y_fit)
-    loss = sse(y_fit, y)
+    loss = float(np.mean((y_target - y_fit) ** 2))
 
     if return_dynamics:
-        return loss, res, y_fit
+        return loss, y_fit
     return loss
 
 # parameter definitions
@@ -74,8 +103,10 @@ def simulator(x: np.ndarray, x_indices: list, y: np.ndarray, func: Callable, fun
 # choose device
 device = "cpu"
 
-# choose data set
+# choose data to fit
 dataset = "trujilo_2019"
+n_clusters = 9
+prototype = 2
 
 # define directories and file to fit
 path = "/home/richard-gast/Documents"
@@ -98,12 +129,12 @@ waveform_length = 3000
 # fitting parameters
 strategy = "best1exp"
 workers = 15
-maxiter = 100
-popsize = 20
+maxiter = 200
+popsize = 30
 mutation = (0.1, 1.2)
 recombination = 0.7
-polish = True
-tolerance = 1e-2
+polish = False
+tolerance = 1e-4
 
 # data loading and processing
 #############################
@@ -115,10 +146,9 @@ D = np.load(f"{load_dir}/{dataset}_waveform_distances.npy")
 # run hierarchical clustering on distance matrix
 D_condensed = squareform(D)
 Z = linkage(D_condensed, method="ward")
-clusters = cut_tree(Z, n_clusters=9)
+clusters = cut_tree(Z, n_clusters=n_clusters)
 
 # extract target waveform
-prototype = 2
 proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
@@ -132,8 +162,7 @@ plt.show()
 dts = 1.0
 dt = 1e-1
 cutoff = 1000.0
-T = 12000.0 + cutoff
-p_e = 0.8 # fraction of excitatory neurons
+T = 10000.0 + cutoff
 
 # exc parameters
 exc_params = {
@@ -160,9 +189,9 @@ func_jit = njit(func)
 # free parameter bounds
 exc_bounds = {
     "Delta": (0.5, 5.0),
-    "k": (0.1, 1.0),
+    "k": (0.5, 1.0),
     "kappa": (0.0, 40.0),
-    "tau_u": (100.0, 1000.0),
+    "tau_u": (400.0, 1000.0),
     "g_e": (50.0, 200.0),
     "g_i": (20.0, 200.0),
     "eta": (40.0, 100.0),
@@ -170,9 +199,9 @@ exc_bounds = {
 }
 inh_bounds = {
     "Delta": (2.0, 8.0),
-    "k": (0.1, 1.0),
-    "kappa": (0.0, 40.0),
-    "tau_u": (100.0, 1000.0),
+    "k": (0.2, 1.0),
+    "kappa": (0.0, 80.0),
+    "tau_u": (100.0, 500.0),
     "g_e": (40.0, 150.0),
     "g_i": (0.0, 100.0),
     "eta": (-50.0, 50.0),
@@ -186,13 +215,13 @@ for key in list(exc_bounds.keys()):
     param_indices.append(idx)
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, y_target, func_jit, list(args), T, dt, dts, cutoff, p_e, sigma, burst_width,
-             burst_sep, burst_height, burst_relheight, waveform_length)
+func_args = (param_indices, y_target, func_jit, list(args), T, dt, dts, cutoff, waveform_length)
 
 # fitting procedure
 ###################
 
 # combine parameter bounds
+p_e = 0.9
 x0 = []
 bounds = []
 param_keys = []
@@ -201,6 +230,7 @@ for b, group in zip([exc_bounds, inh_bounds], ["exc", "inh"]):
         x0.append(0.5*(low + high))
         bounds.append((low, high))
         param_keys.append(f"{group}/{key}")
+x0.append(p_e)
 x0 = np.asarray(x0)
 
 # test run

@@ -36,7 +36,7 @@ def integrate(y: torch.Tensor, func, args, T, dt, dts, cutoff):
 
 
 def simulator(y_target: torch.Tensor, func: Callable, func_args: list,
-              T: float, dt: float, dts: float, cutoff: float, p: float, waveform_length: int,
+              T: float, dt: float, dts: float, cutoff: float, p: torch.Tensor, waveform_length: int,
               return_dynamics: bool = False):
 
     # simulate model dynamics
@@ -46,12 +46,16 @@ def simulator(y_target: torch.Tensor, func: Callable, func_args: list,
     # get waveform
     max_idx_model = torch.argmax(fr)
     max_idx_target = torch.argmax(y_target)
-    start = max_idx_model-max_idx_target
-    start = start if start >= 0 else 0
-    y_fit = fr[start:start+waveform_length]
+    start = max_idx_model - max_idx_target
+    if start < 0:
+        start = 0
+    if start + waveform_length > fr.shape[0]:
+        start = fr.shape[0] - waveform_length
+    y_fit = fr[start:start + waveform_length]
+    y_fit = y_fit / torch.max(y_fit)
 
     # calculate loss
-    loss = torch.sum((y_target / torch.max(y_target) - y_fit / torch.max(y_fit))**2)
+    loss = torch.sum((y_target - y_fit)**2)
 
     if return_dynamics:
         return loss, y_fit
@@ -90,7 +94,7 @@ waveform_length = 3000
 lr = 5e-2
 tolerance = 1e-2
 betas = (0.9, 0.99)
-max_epochs = 200
+max_epochs = 1000
 
 # data loading and processing
 #############################
@@ -108,8 +112,8 @@ clusters = cut_tree(Z, n_clusters=9)
 prototype = 2
 proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
-plt.plot(y_target)
-plt.show()
+# plt.plot(y_target)
+# plt.show()
 
 # model initialization
 ######################
@@ -167,7 +171,8 @@ for key, arg in zip(arg_keys, args):
             arg.requires_grad = True
             opt_args.append(arg)
 args[1].requires_grad = True
-optim = torch.optim.Adam(opt_args, lr=lr, betas=betas)
+p = torch.tensor(p_e, dtype=dtype, device=device, requires_grad=True)
+optim = torch.optim.Adam(opt_args + [p], lr=lr, betas=betas)
 
 # fitting procedure
 print(f"Starting to fit the mean-field model to the waveform prototype of cluster {prototype} ...")
