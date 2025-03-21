@@ -5,7 +5,7 @@ from custom_functions import *
 import pickle
 
 # read in data
-path = "/home/richard-gast/Documents"
+path = "/home/richard"
 dataset = "trujilo_2019"
 data = pd.read_csv(f"{path}/data/{dataset}/{dataset}_waveforms.csv",
                    header=[0, 1, 2], index_col=0)
