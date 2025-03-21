@@ -1,13 +1,11 @@
 import matplotlib.pyplot as plt
 import pickle
-import torch
-import numpy as np
 
 # load data
 dataset = "trujilo_2019"
 path = "/home/richard-gast/Documents"
 save_dir = f"{path}/results/{dataset}"
-results = pickle.load(open(f"{save_dir}/{dataset}_prototype_2_fit.pkl", "rb"))
+results = pickle.load(open(f"{save_dir}/{dataset}_prototype_3_fit.pkl", "rb"))
 
 # print fitted parameters
 print("Best fit:")
@@ -19,7 +17,7 @@ for key, val in results["fitted_parameters"].items():
 # plot fit
 fig, ax = plt.subplots(figsize=(10, 4))
 ax.plot(results["target_waveform"], label="target")
-ax.plot(results["fitted_waveform"] / torch.max(results["fitted_waveform"]), label="fit")
+ax.plot(results["fitted_waveform"], label="fit")
 ax.legend()
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("norm. fr")

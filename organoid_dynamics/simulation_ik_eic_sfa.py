@@ -18,18 +18,18 @@ burst_height = 0.5
 burst_relheight = 0.9
 n_bins = 10
 waveform_length = 3000
-p_e = 0.8
+p_e = 0.9
 
 # exc parameters
 exc_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 2.0, 'eta': 70.0, 'kappa': 10.0, 'tau_u': 500.0,
-    'g_e': 150.0, 'g_i': 100.0, 'tau_s': 5.0
+    'C': 100.0, 'k': 0.706, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 1.442, 'eta': 84.642, 'kappa': 34.568, 'tau_u': 685.516,
+    'g_e': 198.579, 'g_i': 72.641, 'tau_s': 1.523
 }
 
 # inh parameters
 inh_params = {
-    'C': 100.0, 'k': 0.7, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 4.0, 'eta': 0.0, 'kappa': 20.0, 'tau_u': 200.0,
-    'g_e': 60.0, 'g_i': 0.0, 'tau_s': 5.0
+    'C': 100.0, 'k': 0.537, 'v_r': -60.0, 'v_t': -40.0, 'Delta': 3.161, 'eta': -3.666, 'kappa': 51.214, 'tau_u': 470.368,
+    'g_e': 129.942, 'g_i': 8.937, 'tau_s': 12.034
 }
 
 # input parameters
@@ -40,12 +40,12 @@ noise_sigma = 10.0
 # define inputs
 cutoff = 1000.0
 T = 10000.0 + cutoff
-dt = 1e-1
+dt = 5e-2
 dts = 1.0
 inp = np.zeros((int(T/dt),)) + I_e
-noise = noise_lvl*np.random.randn(inp.shape[0])
-noise = gaussian_filter1d(noise, sigma=noise_sigma)
-inp += noise
+# noise = noise_lvl*np.random.randn(inp.shape[0])
+# noise = gaussian_filter1d(noise, sigma=noise_sigma)
+# inp += noise
 
 # run the mean-field model
 ##########################
@@ -62,7 +62,7 @@ net.update_var(node_vars={f"inh/{inh_op}/{var}": val for var, val in inh_params.
 # run simulation
 res_mf = net.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
                  outputs={'r_e': f'exc/{exc_op}/r', 'r_i': f'inh/{inh_op}/r'}, inputs={f'exc/{exc_op}/I_ext': inp},
-                 decorator=nb.njit)
+                 decorator=nb.njit, clear=False)
 res_mf *= 1e3
 
 # get bursting stats

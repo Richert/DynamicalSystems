@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-def integrate(y: torch.Tensor, func, args, T, dt, dts, cutoff):
+def integrate(y: torch.Tensor, dy: torch.Tensor, func, args, T, dt, dts, cutoff, bptt_depth):
 
     idx = 0
     steps = int(T / dt)
     cutoff_steps = int(cutoff / dt)
     store_step = int(dts / dt)
+    store_steps = int((T - cutoff) / dts)
     state_rec = []
 
     # solve ivp for forward Euler method
@@ -27,20 +28,24 @@ def integrate(y: torch.Tensor, func, args, T, dt, dts, cutoff):
             state_rec.append(y[:2])
             idx += 1
         if not torch.isfinite(y[0]):
+            n_zeros = store_steps - len(state_rec)
+            y0 = torch.zeros((2,), device=y.device, dtype=y.dtype, requires_grad=y.requires_grad)
+            state_rec.extend([y0] * n_zeros)
             break
-        rhs = func(step, y, *args)
-        y_0 = y + dt * rhs
-        y = y + (rhs + func(step, y_0, *args)) * dt/2
+        y_old = y.detach() if step % bptt_depth == 0 else y
+        rhs = func(step, y_old, dy.detach(), *args)
+        y_0 = y_old + dt * rhs
+        y = y_old + 0.5*dt * (rhs + func(step, y_0, dy.detach(), *args))
 
     return torch.stack(state_rec, dim=0)
 
 
-def simulator(y_target: torch.Tensor, func: Callable, func_args: list,
-              T: float, dt: float, dts: float, cutoff: float, p: torch.Tensor, waveform_length: int,
-              return_dynamics: bool = False):
+def simulator(y_target: torch.Tensor, func: Callable, func_args: list, T: float, dt: float, dts: float, cutoff: float,
+              p: torch.Tensor, waveform_length: int, bptt_depth: int, return_dynamics: bool = False):
 
     # simulate model dynamics
-    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+    y, dy = func_args[1].detach(), func_args[2].detach()
+    fr = integrate(y, dy, func, func_args[3:], T + cutoff, dt, dts, cutoff, bptt_depth) * 1e3
     fr = p*fr[:, 0] + (1-p)*fr[:, 1]
 
     # get waveform
@@ -65,14 +70,14 @@ def simulator(y_target: torch.Tensor, func: Callable, func_args: list,
 #######################
 
 # torch settings
-device = "cuda:0"
+device = "cpu"
 dtype = torch.double
 
 # choose data set
 dataset = "trujilo_2019"
 
 # define directories and file to fit
-path = "/home/richard"
+path = "/home/richard-gast/Documents"
 save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
 
@@ -80,6 +85,16 @@ load_dir = f"{path}/data/{dataset}"
 model = "ik_eic_sfa"
 exc_op = "ik_sfa_op"
 inh_op = "ik_sfa_op"
+
+# choose fraction of excitatory neurons
+p_e = 1.0
+p = torch.tensor(p_e, dtype=dtype, device=device, requires_grad=True)
+
+# simulation parameters
+dts = 1.0
+dt = 1e-1
+cutoff = 2000.0
+T = 6000.0 + cutoff
 
 # data processing parameters
 tau = 20.0
@@ -95,6 +110,7 @@ lr = 5e-2
 tolerance = 1e-2
 betas = (0.9, 0.99)
 max_epochs = 1000
+bptt_depth = 5000
 
 # data loading and processing
 #############################
@@ -110,20 +126,13 @@ clusters = cut_tree(Z, n_clusters=9)
 
 # extract target waveform
 prototype = 2
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 # plt.plot(y_target)
 # plt.show()
 
 # model initialization
 ######################
-
-# simulation parameters
-dts = 1.0
-dt = 1e-1
-cutoff = 1000.0
-T = 9000.0 + cutoff
-p_e = 1.0 # fraction of excitatory neurons
 
 # exc parameters
 exc_params = {
@@ -149,16 +158,6 @@ func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_siz
 # fitting procedure
 ###################
 
-# test run
-print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a "
-      f"simulation step-size of {dt} ms.")
-t0 = perf_counter()
-with torch.no_grad():
-    target = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
-    simulator(target, func, args, T, dt, dts, cutoff, p_e, waveform_length, return_dynamics=False)
-t1 = perf_counter()
-print(f"Finished test run after {t1-t0} s.")
-
 # initialize optimizer
 grad_args = [f"exc/{exc_op}/{key}" for key in exc_params.keys()]
 opt_args = []
@@ -171,8 +170,17 @@ for key, arg in zip(arg_keys, args):
             arg.requires_grad = True
             opt_args.append(arg)
 args[1].requires_grad = True
-p = torch.tensor(p_e, dtype=dtype, device=device, requires_grad=True)
 optim = torch.optim.Adam(opt_args + [p], lr=lr, betas=betas)
+
+# test run
+print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a "
+      f"simulation step-size of {dt} ms.")
+t0 = perf_counter()
+with torch.no_grad():
+    target = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
+    simulator(target, func, args, T, dt, dts, cutoff, p, waveform_length, bptt_depth, return_dynamics=False)
+t1 = perf_counter()
+print(f"Finished test run after {t1-t0} s.")
 
 # fitting procedure
 print(f"Starting to fit the mean-field model to the waveform prototype of cluster {prototype} ...")
@@ -182,18 +190,15 @@ with torch.enable_grad():
 
     while sse_loss > tolerance and epoch < max_epochs:
 
+        # reset network state
+        args[1] = args[1].detach()
+        args[2] = args[2].detach()
+
         # calculate loss and take optimization step
-        target = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
-        loss, y_fit = simulator(target, func, args, T, dt, dts, cutoff, p_e, waveform_length, return_dynamics=True)
+        optim.zero_grad()
+        loss = simulator(target.detach(), func, args, T, dt, dts, cutoff, p, waveform_length, bptt_depth)
         loss.backward()
         optim.step()
-
-        # reset network state
-        optim.zero_grad()
-        y_tmp = args[1].detach().cpu().numpy()
-        args[1] = torch.tensor(y_tmp, device=device, dtype=dtype, requires_grad=True)
-        dy_tmp = args[2].detach().cpu().numpy()
-        args[2] = torch.tensor(dy_tmp, device=device, dtype=dtype, requires_grad=False)
 
         # progress report
         sse_loss = loss.item()
@@ -202,8 +207,8 @@ with torch.enable_grad():
 
 # generate dynamics of winner
 with torch.no_grad():
-    y = torch.tensor(y_target, device=device, dtype=dtype, requires_grad=False)
-    loss, y_fit = simulator(y, func, args, T, dt, dts, cutoff, p_e, waveform_length, return_dynamics=True)
+    loss, y_fit = simulator(target, func, args, T, dt, dts, cutoff, p, waveform_length, bptt_depth,
+                            return_dynamics=True)
 
 # get winning parameter set
 print(f"Finished fitting procedure. The winner (loss = {loss.item()}) is ... ")

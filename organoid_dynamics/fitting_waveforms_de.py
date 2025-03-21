@@ -14,6 +14,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
+def callback(intermediate_result):
+    if intermediate_result.fun < tolerance:
+        return True
+    else:
+        return False
+
 
 def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
@@ -21,6 +27,7 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
     steps = int(T / dt)
     cutoff_steps = int(cutoff / dt)
     store_step = int(dts / dt)
+    store_steps = int((T - cutoff) / dts)
     state_rec = []
 
     # solve ivp for forward Euler method
@@ -29,8 +36,9 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
             state_rec.append(y[:2])
             idx += 1
         if not np.isfinite(y[0]):
-            state_rec = np.zeros((int((T-cutoff)/dts), y.shape[0]))
-            state_rec[int(0.5*state_rec.shape[0]), :] = 1.0
+            n_zeros = store_steps - len(state_rec)
+            y0 = np.zeros((2,))
+            state_rec.extend([y0] * n_zeros)
             break
         rhs = func(step, y, *args)
         y_0 = y + dt * rhs
@@ -88,10 +96,12 @@ def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callab
     if start + waveform_length > fr.shape[0]:
         start = fr.shape[0] - waveform_length
     y_fit = fr[start:start + waveform_length]
-    y_fit = y_fit / np.max(y_fit)
+    y_max = np.max(y_fit)
+    if y_max > 0:
+        y_fit = y_fit / y_max
 
     # calculate loss
-    loss = float(np.mean((y_target - y_fit) ** 2))
+    loss = float(np.sum((y_target - y_fit)**2))
 
     if return_dynamics:
         return loss, y_fit
@@ -106,7 +116,7 @@ device = "cpu"
 # choose data to fit
 dataset = "trujilo_2019"
 n_clusters = 9
-prototype = 2
+prototype = 3
 
 # define directories and file to fit
 path = "/home/richard-gast/Documents"
@@ -128,13 +138,13 @@ waveform_length = 3000
 
 # fitting parameters
 strategy = "best1exp"
-workers = 15
-maxiter = 200
+workers = 80
+maxiter = 500
 popsize = 30
 mutation = (0.1, 1.2)
 recombination = 0.7
 polish = False
-tolerance = 1e-4
+tolerance = 1e-1
 
 # data loading and processing
 #############################
@@ -149,7 +159,7 @@ Z = linkage(D_condensed, method="ward")
 clusters = cut_tree(Z, n_clusters=n_clusters)
 
 # extract target waveform
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
 plt.plot(y_target)
@@ -160,8 +170,8 @@ plt.show()
 
 # simulation parameters
 dts = 1.0
-dt = 1e-1
-cutoff = 1000.0
+dt = 5e-2
+cutoff = 2000.0
 T = 10000.0 + cutoff
 
 # exc parameters
@@ -231,6 +241,8 @@ for b, group in zip([exc_bounds, inh_bounds], ["exc", "inh"]):
         bounds.append((low, high))
         param_keys.append(f"{group}/{key}")
 x0.append(p_e)
+param_keys.append("p_e")
+bounds.append((0.5, 1.0))
 x0 = np.asarray(x0)
 
 # test run
@@ -246,7 +258,7 @@ print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of 
 while True:
     results = differential_evolution(simulator, tuple(bounds), args=func_args, strategy=strategy,
                                      workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
-                                     recombination=recombination, polish=polish, atol=tolerance)
+                                     recombination=recombination, polish=polish, callback=callback)
     if np.isnan(results.fun):
         print("Re-initializing. Reason: loss(best candidate) = NaN.")
     else:
@@ -258,7 +270,7 @@ for key, val in zip(param_keys, results.x):
     fitted_parameters[key] = val
 
 # generate dynamics of winner
-loss, _, y_fit = simulator(results.x, *func_args, return_dynamics=True)
+loss, y_fit = simulator(results.x, *func_args, return_dynamics=True)
 
 # save results
 pickle.dump({

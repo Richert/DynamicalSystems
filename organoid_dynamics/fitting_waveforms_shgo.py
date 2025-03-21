@@ -127,7 +127,7 @@ Z = linkage(D_condensed, method="ward")
 clusters = cut_tree(Z, n_clusters=n_clusters)
 
 # extract target waveform
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data, method="random")
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
 plt.plot(y_target)

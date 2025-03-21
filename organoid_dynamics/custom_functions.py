@@ -7,21 +7,21 @@ from scipy.stats import norm, cauchy
 from tslearn.barycenters import dtw_barycenter_averaging
 
 
-def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, method: str = "mean") -> dict:
+def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, reduction_method: str = None) -> dict:
     cluster_ids = np.unique(clusters)
     prototypes = {}
     for cluster_id in cluster_ids:
         ids = np.argwhere(clusters == cluster_id).squeeze()
-        if method == "mean":
+        if reduction_method == "mean":
             prototypes[cluster_id] = waveforms.iloc[:, ids].mean(axis=1)
-        elif method == "random":
+        elif reduction_method == "random":
             prototypes[cluster_id] = waveforms.iloc[:, np.random.choice(ids)]
-        elif method == "dtw_mean":
+        elif reduction_method == "dtw_mean":
             waves = waveforms.iloc[:, ids].values
             wave_avg = dtw_barycenter_averaging(waves.T)
             prototypes[cluster_id] = wave_avg
         else:
-            raise ValueError("Invalid prototype building choice")
+            prototypes[cluster_id] = waveforms.iloc[:, ids]
 
     return prototypes
 
