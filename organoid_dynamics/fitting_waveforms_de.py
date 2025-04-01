@@ -138,8 +138,8 @@ waveform_length = 3000
 
 # fitting parameters
 strategy = "best1exp"
-workers = 80
-maxiter = 500
+workers = 15
+maxiter = 300
 popsize = 30
 mutation = (0.1, 1.2)
 recombination = 0.7

@@ -12,8 +12,8 @@ data = pd.read_csv(f"{path}/data/{dataset}/{dataset}_waveforms.csv",
 
 # distances calculation settings
 n_jobs = 80
-dist_measures = {"dtw": cdist_dtw, "soft_dtw": cdist_soft_dtw, "gak": cdist_gak, "cc": cdist}
-dist_kwargs = {"dtw": {"n_jobs": n_jobs}, "soft_dtw": {}, "gak": {"n_jobs": n_jobs}, "cc": {"metric": "correlation"}}
+dist_measures = {"dtw": cdist_dtw, "soft_dtw": cdist_soft_dtw, "cc": cdist}
+dist_kwargs = {"dtw": {"n_jobs": n_jobs}, "soft_dtw": {}, "cc": {"metric": "correlation"}}
 
 # reduce data
 age = None

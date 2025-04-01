@@ -7,7 +7,7 @@ from scipy.stats import norm, cauchy
 from tslearn.barycenters import dtw_barycenter_averaging
 
 
-def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, reduction_method: str = None) -> dict:
+def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, reduction_method: str = None, **kwargs) -> dict:
     cluster_ids = np.unique(clusters)
     prototypes = {}
     for cluster_id in cluster_ids:
@@ -20,6 +20,16 @@ def get_cluster_prototypes(clusters, waveforms: pd.DataFrame, reduction_method: 
             waves = waveforms.iloc[:, ids].values
             wave_avg = dtw_barycenter_averaging(waves.T)
             prototypes[cluster_id] = wave_avg
+        elif reduction_method == "aligned_mean":
+            waves = waveforms.iloc[:, ids].values
+            wave_max = [np.argmax(waves[:, i]) for i in range(waves.shape[1])]
+            min_max, max_max = np.min(wave_max), np.max(wave_max)
+            wave_length = waves.shape[0] - (max_max - min_max)
+            waves_aligned = []
+            for i in range(waves.shape[1]):
+                start = wave_max[i] - min_max
+                waves_aligned.append(waves[start:start+wave_length, i])
+                prototypes[cluster_id] = np.mean(waves_aligned, axis=0)
         else:
             prototypes[cluster_id] = waveforms.iloc[:, ids]
 
