@@ -22,7 +22,7 @@ p_e = 0.8
 
 # exc parameters
 exc_params = {
-    'tau': 10.0, 'Delta': 1.0, 'eta': -4.0, 'kappa': 0.05, 'tau_u': 800.0, 'J_e': 10.0, 'J_i': 0.0, 'tau_s': 5.0
+    'tau': 10.0, 'Delta': 1.0, 'eta': 0.0, 'kappa': 0.05, 'tau_u': 800.0, 'J_e': 10.0, 'J_i': 0.0, 'tau_s': 5.0
 }
 
 # inh parameters

@@ -14,7 +14,7 @@ dist_data = pickle.load(open(f"{path}/{dataset}/{dataset}_waveform_distances.pkl
 wave_data = pd.read_csv(f"{path}/{dataset}/{dataset}_waveforms.csv",
                    header=[0, 1, 2], index_col=0)
 distances = ["dtw", "cc"]
-n_clusters = 8
+n_clusters = 6
 
 # loop over all distance types
 for key in distances:
