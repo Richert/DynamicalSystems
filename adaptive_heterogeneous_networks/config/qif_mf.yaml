@@ -1,34 +1,6 @@
 # operator templates
 ####################
 
-# izhikevich operator with biophysiologically relevant parameters
-ik_op:
-  base: OperatorTemplate
-  equations:
-    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)^2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + eta + I_ext) / C"
-    - "s' = x / tau_s"
-    - "x' = (r - 2*x - s) / tau_s"
-  variables:
-    r: output(0.0)
-    v: variable(-60.0)
-    s: variable(0.0)
-    x: variable(0.0)
-    Delta: 0.1
-    C: 100.0
-    k: 0.7
-    v_r: -60.0
-    v_t: -40.0
-    g_e: 20.0
-    g_i: 10.0
-    E_e: 0.0
-    E_i: -65.0
-    tau_s: 6.0
-    eta: 0.0
-    I_ext: input(0.0)
-    s_e: input(0.0)
-    s_i: input(0.0)
-
 # qif operator
 qif_op:
   base: OperatorTemplate
@@ -57,40 +29,50 @@ qif_stdp_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
-    - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*s_e - J_i*s_i) + eta + I_ext) / tau"
-    - "s' = r - s/tau_s"
-    - "x' = (r - 2*x - s) / tau_s"
+    - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*r_e - J_i*r_i) + eta + I_ext) / tau"
     - "u_ltp' = -u_ltp / tau_ltp + r"
     - "u_ltd' = -u_ltd / tau_ltd + r"
   variables:
     r: output(0.01)
     v: variable(-60.0)
-    s: variable(0.05)
-    x: variable(0.05)
     u_ltp: variable(0.0)
     u_ltd: variable(0.0)
     Delta: 0.1
     tau: 10.0
     J_e: 20.0
     J_i: 10.0
-    tau_s: 6.0
     tau_ltp: 100.0
     tau_ltd: 20.0
     eta: 0.0
     I_ext: input(0.0)
-    s_e: input(0.0)
-    s_i: input(0.0)
+    r_e: input(0.0)
+    r_i: input(0.0)
 
 # edge operator
-edge_op:
+stdp_op:
   base: OperatorTemplate
   equations:
-    "w' = a_ltp*u_ltp*r_target - a_ltd*u_ltd*r_source"
+    - "w' = a_ltp*x_ltp*r_t - a_ltd*x_ltd*r_in"
+    - "r_out = r_in*w"
   variables:
+    r_out: output(0.0)
     w: variable(1.0)
     a_ltp: 0.1
     a_ltd: 0.05
-    r_source: input(0.0)
-    r_target: input(0.0)
-    u_tlp: input(0.0)
-    u_ltd: input(0.0)
+    r_in: input(0.0)
+    r_t: input(0.0)
+    x_ltp: input(0.0)
+    x_ltd: input(0.0)
+
+# node templates
+################
+
+qif_stdp_pop:
+  base: NodeTemplate
+  operators:
+    - qif_stdp_op
+
+stdp_edge:
+  base: EdgeTemplate
+  operators:
+    - stdp_op
