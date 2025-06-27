@@ -67,22 +67,18 @@ ik_ei_op:
 
 # parameters for regular-spiking neurons
 rs_op:
-  base: ik_ei_op
+  base: ik_op
   variables:
     Delta: 1.0
     C: 100.0
     k: 0.7
     v_r: -60.0
     v_t: -40.0
-    g_ampa: 1.0
-    g_gabaa: 1.0
-    E_ampa: 0.0
-    E_gabaa: -65.0
+    E_r: 0.0
     b: -2.0
     a: 0.03
     d: 20.0
-    tau_ampa: 6.0
-    tau_gabaa: 8.0
+    tau_s: 6.0
 
 # parameters for intrinsically-bursting neurons
 ib_op:
@@ -190,6 +186,14 @@ ik:
     p: ik_pop
   edges:
     - [p/ik_op/r, p/ik_op/r_in, null, {weight: 1.0}]
+
+# RS population
+exc:
+  base: CircuitTemplate
+  nodes:
+    p: rs
+  edges:
+    - [ p/rs_op/r, p/rs_op/r_in, null, { weight: 1.0 } ]
 
 # rs-fs circuit
 eic:
