@@ -151,12 +151,13 @@ qif_stp_op:
 ik_ca_op:
   base: OperatorTemplate
   equations:
-    - "g_syn = g*(1.0 - alpha*x)*r_in"
+    - "ca = mu + (1-mu)*tanh(s*(x-theta))"
+    - "g_syn = g*(1.0 - alpha*ca)*r_in"
     - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g_syn)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g_syn*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*ca"
     - "x' = a / tau_a"
-    - "a' = 0.5 + 0.5*tanh(s*(r-theta)) - (2*a + x) / tau_a"
+    - "a' = r - (2*a + x) / tau_a"
   variables:
     r: output(0.0)
     v: variable(-60.0)
@@ -164,6 +165,7 @@ ik_ca_op:
     x: variable(0.0)
     a: variable(0.0)
     g_syn: variable(0.0)
+    ca: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -174,6 +176,7 @@ ik_ca_op:
     E_r: 0.0
     kappa: 100.0
     alpha: 100.0
+    mu: 0.5
     s: 100.0
     theta: 0.05
     tau_a: 1000.0
@@ -181,6 +184,47 @@ ik_ca_op:
     eta: 0.0
     I_ext: input(0.0)
     r_in: input(0.0)
+
+# izhikevich operator with calcium-dependent synapses
+ik_eic_op:
+  base: OperatorTemplate
+  equations:
+    - "g_syn = 1.0 - alpha*x"
+    - "r_e' = (k*Delta/(C*pi) + r_e*(k*(2.0*v_e-v_r-v_t) - g_syn*(g_e*r_e + g_i*r_i))) / C"
+    - "v_e' = (k*(v_e-v_r)*(v_e-v_t) - (C*pi*r_e)^2/k + g_syn*(g_e*r_e*(E_e-v_e) + g_i*r_i*(E_i-v_e)) + eta + I_ext - u) / C"
+    - "r_i' = (k*Delta/(C*pi) + r_i*(k*(2.0*v_i-v_r-v_t) - g_syn*(g_e*r_e + g_i*r_i))) / C"
+    - "v_i' = (k*(v_i-v_r)*(v_i-v_t) - (C*pi*r_i)^2/k + g_syn*(g_e*r_e*(E_e-v_i) + g_i*r_i*(E_i-v_i)) + eta + I_ext) / C"
+    - "u' = (b*(v_e-v_r) - u) / tau_u + kappa*x"
+    - "x' = a / tau_a"
+    - "a' = mu + (1-mu)*tanh(s*(r_e+r_i-theta)) - (2*a + x) / tau_a"
+  variables:
+    r_e: output(0.0)
+    r_i: variable(0.0)
+    v_e: variable(-60.0)
+    v_i: variable(-60.0)
+    u: variable(0.0)
+    x: variable(0.0)
+    a: variable(0.0)
+    g_syn: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    b: -2.0
+    g_e: 20.0
+    g_i: 5.0
+    E_e: 0.0
+    E_i: -65.0
+    kappa: 100.0
+    alpha: 100.0
+    mu: 0.5
+    s: 100.0
+    theta: 0.05
+    tau_a: 1000.0
+    tau_u: 50.0
+    eta: 0.0
+    I_ext: input(0.0)
 
 # parameters for waveform prototype 0
 proto_0:
@@ -365,11 +409,11 @@ ik_sfa:
     - [p/ik_sfa_op/s, p/ik_sfa_op/s_e, null, {weight: 1.0}]
 
 # rs-fs circuit
-ik_eic_sfa:
+ik_eic_ca:
   base: CircuitTemplate
   nodes:
-    exc: sfa_pop
-    inh: sfa_pop
+    exc: ik_ca_pop
+    inh: ik_pop
   edges:
     - [exc/ik_sfa_op/s, exc/ik_sfa_op/s_e, null, {weight: 1.0}]
     - [exc/ik_sfa_op/s, inh/ik_sfa_op/s_e, null, {weight: 1.0}]

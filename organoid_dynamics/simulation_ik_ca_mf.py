@@ -13,24 +13,25 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 10.0
+Delta = 2.0
 eta = 0.0
 b = -10.0
-kappa = 0.1
-alpha = 0.05
-gamma = 90.0
-theta = 0.03
+kappa = 1.0
+alpha = 0.4
+gamma = 1.0
+theta = 10.0
+mu = 0.8
 tau_a = 1000.0
-tau_u = 50.0
-g = 100.0
+tau_u = 100.0
+g = 40.0
 E_r = 0.0
-I_ext = 30.0
+I_ext = 50.0
 noise_lvl = 10.0
-noise_sigma = 80.0
+noise_sigma = 100.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 's': gamma, 'theta': theta
+    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 's': gamma, 'theta': theta, 'mu': mu
 }
 
 # define inputs
@@ -56,7 +57,7 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 # run simulation
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
                 outputs={'r': f'p/{op}/r', 'a': f'p/{op}/x', 'u': f'p/{op}/u'},
-                inputs={f'p/{op}/I_ext': inp}, clear=False)
+                inputs={f'p/{op}/I_ext': inp}, clear=True)
 
 # plot results
 fig, axes = plt.subplots(nrows=3, figsize=(12, 8), sharex=True)

@@ -97,32 +97,38 @@ stp_op:
     g_i_in: input(0.0)
     I_ext: input(0.0)
 
-ik_stp_op:
+ik_ca_op:
   base: OperatorTemplate
   equations:
-    - "v' = (k*(v-v_r)*(v-v_t) + eta + I_ext + g*u*w*s_in*(E_r - v)) / C"
-    - "u' = (u0-u)/tau_u + u0*(1-u)*spike"
-    - "w' = (1-w)/tau_w - kappa*u*w*spike"
-    - "s' = -s/tau_s + spike"
+    - "r = mean(spike)"
+    - "g_syn = g*(1.0 - alpha*x)*r"
+    - "v' = (k*(v-v_r)*(v-v_t) + eta + I_ext + g_syn*(E_r-v) - u) / C"
+    - "u' = (b*(mean(v)-v_r) - u) / tau_u + kappa*x"
+    - "x' = a / tau_a"
+    - "a' = mu + (1-mu)*tanh(s*(r-theta)) - (2*a + x) / tau_a"
   variables:
-    s: output(0.0)
-    v: variable(-60.0)
+    v: output(-60.0)
     u: variable(0.0)
-    w: variable(1.0)
+    x: variable(0.0)
+    a: variable(0.0)
+    r: variable(0.0)
+    g_syn: variable(0.0)
     C: 100.0
     k: 0.7
     v_r: -60.0
     v_t: -40.0
     eta: 0.0
+    b: -2.0
     g: 1.0
     E_r: 0.0
-    u0: 0.5
     tau_u: 33.33
-    kappa: 10.0
-    tau_w: 50.0
-    tau_s: 6.0
+    tau_a: 1000.0
+    alpha: 0.01
+    kappa: 0.01
+    mu: 0.5
+    s: 100.0
+    theta: 0.03
     spike: input(0.0)
-    s_in: input(0.0)
     I_ext: input(0.0)
 
 ik_sfa_op:
@@ -222,8 +228,8 @@ ik_sfa:
   operators:
     - ik_sfa_op
 
-# ik with stp
-ik_stp:
+# ik with calcium-dependent dynamics
+ik_ca:
   base: NodeTemplate
   operators:
-    - ik_stp_op
+    - ik_ca_op
