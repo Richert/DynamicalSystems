@@ -16,22 +16,23 @@ v_t = -40.0
 Delta = 2.0
 eta = 0.0
 b = -10.0
+d = 40.0
 kappa = 1.0
-alpha = 0.4
+alpha = 0.1
 gamma = 1.0
-theta = 10.0
-mu = 0.8
+theta = 40.0
+mu = 0.5
 tau_a = 1000.0
 tau_u = 100.0
-g = 40.0
+g = 20.0
 E_r = 0.0
 I_ext = 50.0
-noise_lvl = 10.0
+noise_lvl = 50.0
 noise_sigma = 100.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 's': gamma, 'theta': theta, 'mu': mu
+    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 's': gamma, 'theta': theta, 'mu': mu, 'd': d
 }
 
 # define inputs

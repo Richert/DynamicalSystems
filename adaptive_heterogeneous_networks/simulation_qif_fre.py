@@ -3,17 +3,17 @@ import matplotlib.pyplot as plt
 from pyrates import CircuitTemplate, NodeTemplate, EdgeTemplate, clear
 
 # parameters
-M = 100
-edge_vars = {"a_ltp": 0.1, "a_ltd": 0.1}
-Delta = 0.5
-eta = -1.5
-etas = np.random.uniform(eta-Delta/2, eta+Delta/2, size=(M,))
-node_vars = {"tau": 1.0, "J_e": 1.0 / M, "eta": etas, "tau_ltp": 10.0, "tau_ltd": 10.0, "Delta": Delta/M}
+M = 40
+edge_vars = {"a_ltp": 0.1, "a_ltd": 0.3, "w_max": 1.0}
+Delta = 2.0
+eta = -1.0
+etas = eta + Delta * np.linspace(-0.5, 0.5, num=M)
+node_vars = {"tau": 1.0, "J": 5.0 / M, "eta": etas, "tau_ltp": 12.0, "tau_ltd": 6.0, "tau_s": 0.5, "Delta": 0.005}
 T = 200.0
-dt = 1e-3
+dt = 1e-4
 I_ext = 2.0
-I_start = 25.0
-I_stop = 175.0
+I_start = 40.0
+I_stop = 160.0
 
 # node and edge template initiation
 node = NodeTemplate.from_yaml("config/qif_mf/qif_stdp_pop")
@@ -25,9 +25,9 @@ for key, val in edge_vars.items():
 edges = []
 for i in range(M):
     for j in range(M):
-        edges.append((f"p{j}/qif_stdp_op/r", f"p{i}/qif_stdp_op/r_e", edge,
-                      {"weight": 1.0, "stdp_edge/stdp_op/r_in": "source", "stdp_edge/stdp_op/r_t": f"p{i}/qif_stdp_op/r",
-                       "stdp_edge/stdp_op/x_ltp": f"p{j}/qif_stdp_op/u_ltp", "stdp_edge/stdp_op/x_ltd": f"p{i}/qif_stdp_op/u_ltp",
+        edges.append((f"p{j}/qif_stdp_op/s", f"p{i}/qif_stdp_op/s_in", edge,
+                      {"weight": 1.0, "stdp_edge/stdp_op/r_in": f"p{j}/qif_stdp_op/s", "stdp_edge/stdp_op/r_t": f"p{i}/qif_stdp_op/s",
+                       "stdp_edge/stdp_op/x_ltp": f"p{j}/qif_stdp_op/u_ltp", "stdp_edge/stdp_op/x_ltd": f"p{i}/qif_stdp_op/u_ltd",
                        }))
 net = CircuitTemplate(name="qif_stdp", nodes={f"p{i}": node for i in range(M)}, edges=edges)
 net.update_var(node_vars={f"all/qif_stdp_op/{key}": val for key, val in node_vars.items()})
@@ -37,29 +37,40 @@ inp = np.zeros((int(T/dt),))
 inp[int(I_start/dt):int(I_stop/dt)] = I_ext
 res = net.run(simulation_time=T, step_size=dt, inputs={"all/qif_stdp_op/I_ext": inp},
               outputs={"r": f"all/qif_stdp_op/r", "u_ltp": f"all/qif_stdp_op/u_ltp", "u_ltd": f"all/qif_stdp_op/u_ltd"},
-              solver="heun", clear=False
+              solver="heun", clear=False, sampling_step_size=100*dt
               )
 
 # extract synaptic weights
-mapping, weights = net._ir["weight"].value, net.state["w"]
-W = np.asarray([weights[mapping[i, :] > 0.0] for i in range(M)])
-clear(net)
+mapping, weights, etas = net._ir["weight"].value, net.state["w"], net._ir["eta"].value
+idx = np.argsort(etas)
+W = np.asarray([weights[mapping[i, :] > 0.0] for i in idx])
+W = W[:, idx]
+# clear(net)
 
 # plotting
-fig = plt.figure(figsize=(12, 6))
+fig = plt.figure(figsize=(16, 6))
 grid = fig.add_gridspec(nrows=3, ncols=3)
-ax = fig.add_subplot(grid[0, :2])
-ax.plot(res.index, res["r"])
-ax.set_ylabel("r")
+ax1 = fig.add_subplot(grid[0, :2])
+ax1.plot(res.index, res["r"])
+ax1.plot(res.index, np.mean(res["r"].values, axis=1), color="black")
+ax1.set_ylabel("r (Hz)")
 ax = fig.add_subplot(grid[1, :2])
+ax.sharex(ax1)
 ax.plot(res.index, res["u_ltp"])
 ax.set_ylabel("u_ltp")
 ax = fig.add_subplot(grid[2, :2])
+ax.sharex(ax1)
 ax.plot(res.index, res["u_ltd"])
 ax.set_ylabel("u_ltd")
 ax.set_xlabel("time")
 ax = fig.add_subplot(grid[:, 2])
 im = ax.imshow(W, aspect="auto", interpolation="none", cmap="cividis")
 plt.colorbar(im, ax=ax)
+step = 4
+labels = np.round(etas[idx][::step], decimals=2)
+ax.set_xticks(ticks=np.arange(0, M, step=step), labels=labels)
+ax.set_yticks(ticks=np.arange(0, M, step=step), labels=labels)
+ax.invert_yaxis()
+ax.invert_xaxis()
 plt.tight_layout()
 plt.show()

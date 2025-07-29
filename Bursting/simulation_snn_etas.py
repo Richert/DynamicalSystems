@@ -99,16 +99,16 @@ def get_fwhm(signal: np.ndarray, pool: Parallel, n_bins: int = 500, plot_steps: 
 ###################
 
 # define worker pool
-pool = Parallel(n_jobs=10)
+# pool = Parallel(n_jobs=10)
 
 # define conditions
 cond_map = {
-        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 30.0, "eta_init": -30.0, "b": -5.0, "delta": 5.0},
-        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 35.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": 0.0, "b": -5.0, "delta": 5.0},
-        "no_sfa_2": {"kappa": 0.0, "eta": -150.0, "eta_inc": 190.0, "eta_init": -50.0, "b": -20.0, "delta": 5.0},
-        "weak_sfa_2": {"kappa": 100.0, "eta": -20.0, "eta_inc": 70.0, "eta_init": -100.0, "b": -20.0, "delta": 5.0},
-        "strong_sfa_2": {"kappa": 300.0, "eta": 40.0, "eta_inc": 100.0, "eta_init": 0.0, "b": -20.0, "delta": 5.0},
+        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 100.0, "eta_init": 0.0, "delta": 2.0},
+        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 100.0, "eta_init": 0.0, "delta": 2.0},
+        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 100.0, "eta_init": 0.0, "delta": 2.0},
+        "no_sfa_2": {"kappa": 0.0, "eta": 0.0, "eta_inc": 200.0, "eta_init": 0.0, "delta": 5.0},
+        "weak_sfa_2": {"kappa": 100.0, "eta": 0.0, "eta_inc": 200.0, "eta_init": 0.0, "delta": 5.0},
+        "strong_sfa_2": {"kappa": 300.0, "eta": 0.0, "eta_inc": 200.0, "eta_init": 0.0, "delta": 5.0},
     }
 
 # condition
@@ -116,7 +116,7 @@ conditions = ["strong_sfa_1", "strong_sfa_2", "no_sfa_1", "no_sfa_2", "weak_sfa_
 for cond in conditions:
 
     # model parameters
-    N = 8000
+    N = 1000
     C = 100.0   # unit: pF
     k = 0.7  # unit: None
     v_r = -60.0  # unit: mV
@@ -124,10 +124,10 @@ for cond in conditions:
     eta = 0.0  # unit: pA
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
-    tau_u = 35.0
-    b = cond_map[cond]["b"]
+    tau_u = 200.0
+    b = -4.0
     tau_s = 6.0
-    tau_x = 300.0
+    tau_x = 400.0
     g = 15.0
     E_r = 0.0
 
@@ -164,12 +164,14 @@ for cond in conditions:
                         verbose=False, clear=True, N=N, float_precision="float64")
 
     # perform simulation
-    obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=True, cutoff=int(cutoff/dt),
+    obs = net.run(inputs=inp, sampling_steps=int(dts/dt), verbose=False, cutoff=int(cutoff/dt),
                   record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)], enable_grad=False)
     s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
                   obs.to_dataframe(("sfa", "x")))
     del obs
     time = s.index
+
+    print(f"finished condition {cond}")
 
     # calculate the mean-field quantities
     # spikes = np.zeros_like(v.values)
@@ -185,26 +187,26 @@ for cond in conditions:
     #     #     plt.show()
     spikes = s.values
     r = np.mean(spikes, axis=1) / tau_s
-    u_widths, u_errors = get_fwhm(u.values, pool=pool, plot_steps=100000, n_bins=500, eval_range=100.0,
-                                  tol=1e-3, options={"maxiter": 500}, min_width=1e-10, method="Nelder-Mead")
-    v_widths, v_errors = get_fwhm(v.values, pool=pool, plot_steps=100000, n_bins=500, eval_range=50.0,
-                                  tol=1e-3, options={"maxiter": 500}, min_width=1e-10, method="Nelder-Mead")
+    # u_widths, u_errors = get_fwhm(u.values, pool=pool, plot_steps=100000, n_bins=500, eval_range=100.0,
+    #                               tol=1e-3, options={"maxiter": 500}, min_width=1e-10, method="Nelder-Mead")
+    # v_widths, v_errors = get_fwhm(v.values, pool=pool, plot_steps=100000, n_bins=500, eval_range=50.0,
+    #                               tol=1e-3, options={"maxiter": 500}, min_width=1e-10, method="Nelder-Mead")
     u = np.mean(u.values, axis=1)
     v = np.mean(v.values, axis=1)
     s = np.mean(s.values, axis=1)
     x = np.mean(x.values, axis=1)
 
     # calculate the kuramoto order parameter
-    ko_y = v - v_r
-    ko_x = np.pi*C*r/k
-    z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
+    # ko_y = v - v_r
+    # ko_x = np.pi*C*r/k
+    # z = (1 - ko_x + 1.0j*ko_y)/(1 + ko_x - 1.0j*ko_y)
 
     # save results to file
-    results = {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z), "theta": np.imag(z),
-               "u_width": u_widths, "v_width": v_widths, "u_errors": u_errors, "v_errors": v_errors}
-    pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
+    # results = {"spikes": spikes, "v": v, "u": u, "x": x, "r": r, "s": s, "z": 1 - np.abs(z), "theta": np.imag(z),
+    #            "u_width": u_widths, "v_width": v_widths, "u_errors": u_errors, "v_errors": v_errors}
+    # pickle.dump({"results": results, "params": node_vars}, open(f"results/snn_etas_{cond}.pkl", "wb"))
 
-    # # plot results
+    # plot results
     # fig, ax = plt.subplots(nrows=2, figsize=(12, 6))
     # ax[0].imshow(spikes.T, interpolation="none", cmap="Greys", aspect="auto")
     # ax[0].set_ylabel(r'neuron id')
@@ -212,21 +214,17 @@ for cond in conditions:
     # ax[1].set_ylabel(r'$r(t)$')
     # ax[1].set_xlabel('time')
     # plt.tight_layout()
-    #
-    # # plot distribution dynamics
-    # fig2, ax = plt.subplots(nrows=4, figsize=(12, 7))
-    # ax[0].plot(time, v, color="royalblue")
-    # ax[0].fill_between(time, v - v_widths, v + v_widths, alpha=0.3, color="royalblue", linewidth=0.0)
-    # ax[0].set_title("v (mV)")
-    # ax[1].plot(time, u, color="darkorange")
-    # ax[1].fill_between(time, u - u_widths, u + u_widths, alpha=0.3, color="darkorange", linewidth=0.0)
-    # ax[1].set_title("u (pA)")
-    # ax[2].plot(time, v_errors, color="black")
-    # ax[2].set_title("KLD(v)")
-    # ax[2].set_xlabel("time (ms)")
-    # ax[3].plot(time, u_errors, color="red")
-    # ax[3].set_title("KLD(u)")
-    # ax[3].set_xlabel("time (ms)")
-    # fig2.suptitle("SNN")
-    # plt.tight_layout()
-    # plt.show()
+
+    # plot distribution dynamics
+    fig, ax = plt.subplots(nrows=3, figsize=(12, 6))
+    ax[0].plot(s)
+    ax[0].set_ylabel(r'$s(t)$')
+    ax[1].plot(u)
+    ax[1].set_ylabel(r'$u(t)$')
+    ax[2].plot(x)
+    ax[2].set_ylabel(r'$x(t)$')
+    ax[2].set_xlabel("time (ms)")
+    fig.suptitle(f"SNN - Condition: {cond}")
+    plt.tight_layout()
+
+plt.show()

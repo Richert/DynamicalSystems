@@ -1,62 +1,95 @@
 # operator templates
 ####################
 
-# qif operator
-qif_op:
+# snn qif operator
+qif_snn_op:
   base: OperatorTemplate
   equations:
-    - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
-    - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*s_e - J_i*s_i) + eta + I_ext) / tau"
-    - "s' = r - s/tau_s"
-    - "x' = (r - 2*x - s) / tau_s"
+    - "v' = (v^2 + tau*J*s_in + eta + I_ext) / tau"
+    - "s' = (spike-s)/tau_s"
+    - "u_ltp' = -u_ltp / tau_ltp + spike"
+    - "u_ltd' = -u_ltd / tau_ltd + spike"
   variables:
-    r: output(0.01)
+    s: output(0.0)
     v: variable(-60.0)
-    s: variable(0.05)
-    x: variable(0.05)
-    Delta: 0.1
+    u_ltp: variable(0.05)
+    u_ltd: variable(0.05)
     tau: 10.0
-    J_e: 20.0
-    J_i: 10.0
+    J: 20.0
     tau_s: 6.0
     eta: 0.0
+    tau_ltp: 200.0
+    tau_ltd: 50.0
     I_ext: input(0.0)
-    s_e: input(0.0)
-    s_i: input(0.0)
+    spike: input(0.0)
+    s_in: input(0.0)
 
 # qif operator
 qif_stdp_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
-    - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*r_e - J_i*r_i) + eta + I_ext) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + tau*J*s_in + eta + I_ext) / tau"
+    - "s' = (r-s)/tau_s"
     - "u_ltp' = -u_ltp / tau_ltp + r"
     - "u_ltd' = -u_ltd / tau_ltd + r"
   variables:
     r: output(0.01)
     v: variable(-60.0)
+    s: variable(0.0)
     u_ltp: variable(0.0)
     u_ltd: variable(0.0)
     Delta: 0.1
     tau: 10.0
-    J_e: 20.0
-    J_i: 10.0
+    J: 20.0
+    tau_ltp: 100.0
+    tau_ltd: 20.0
+    tau_s: 5.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# ik fre operator
+ik_stdp_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*r_in)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + g*r_in*(E_r-v) + eta + I_ext - a) / C"
+    - "a' = (b*(v-v_r) - a) / tau_a + kappa*r"
+    - "u_ltp' = -u_ltp / tau_ltp + r"
+    - "u_ltd' = -u_ltd / tau_ltd + r"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    a: variable(0.0)
+    u_ltp: variable(0.0)
+    u_ltd: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    g: 20.0
+    v_r: -60.0
+    v_t: -40.0
+    E_r: 0.0
     tau_ltp: 100.0
     tau_ltd: 20.0
     eta: 0.0
+    b: -2.0
+    tau_a: 100.0
+    kappa: 80.0
     I_ext: input(0.0)
-    r_e: input(0.0)
-    r_i: input(0.0)
+    r_in: input(0.0)
 
 # edge operator
 stdp_op:
   base: OperatorTemplate
   equations:
-    - "w' = a_ltp*x_ltp*r_t - a_ltd*x_ltd*r_in"
+    - "w' = (w_max-w)*a_ltp*x_ltp*r_t - w*a_ltd*x_ltd*r_in"
     - "r_out = r_in*w"
   variables:
     r_out: output(0.0)
     w: variable(1.0)
+    w_max: 1.0
     a_ltp: 0.1
     a_ltd: 0.05
     r_in: input(0.0)
@@ -67,6 +100,11 @@ stdp_op:
 # node templates
 ################
 
+qif_snn_pop:
+  base: NodeTemplate
+  operators:
+    - qif_snn_op
+
 qif_stdp_pop:
   base: NodeTemplate
   operators:
@@ -76,3 +114,8 @@ stdp_edge:
   base: EdgeTemplate
   operators:
     - stdp_op
+
+ik_stdp_pop:
+  base: NodeTemplate
+  operators:
+    - ik_stdp_op

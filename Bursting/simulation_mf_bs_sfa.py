@@ -9,18 +9,18 @@ import numba as nb
 ###################
 
 # pyrates model selection
-model = "ik_eta"
-op = "eta_op"
+model = "ik_eta_sfa"
+op = "eta_op_sfa"
 
 # define conditions
 cond_map = {
-        "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 100.0, "eta_init": 0.0, "delta": 2.0},
-        "weak_sfa_1": {"kappa": 100.0, "eta": 0.0, "eta_inc": 100.0, "eta_init": 0.0, "delta": 2.0},
-        "strong_sfa_1": {"kappa": 300.0, "eta": 0.0, "eta_inc": 100.0, "eta_init": 0.0, "delta": 2.0},
-        "no_sfa_2": {"kappa": 0.0, "eta": 0.0, "eta_inc": 200.0, "eta_init": 0.0, "delta": 5.0},
-        "weak_sfa_2": {"kappa": 100.0, "eta": 0.0, "eta_inc": 200.0, "eta_init": 0.0, "delta": 5.0},
-        "strong_sfa_2": {"kappa": 300.0, "eta": 0.0, "eta_inc": 200.0, "eta_init": 0.0, "delta": 5.0},
-    }
+    "no_sfa_1": {"kappa": 0.0, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 0.2},
+    "weak_sfa_1": {"kappa": 0.05, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 0.2},
+    "strong_sfa_1": {"kappa": 0.5, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 0.2},
+    "no_sfa_2": {"kappa": 0.0, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 2.0},
+    "weak_sfa_2": {"kappa": 0.05, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 2.0},
+    "strong_sfa_2": {"kappa": 0.5, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 2.0},
+}
 
 # conditions
 conditions = ["no_sfa_1", "no_sfa_2", "weak_sfa_1", "weak_sfa_2", "strong_sfa_1", "strong_sfa_2"]
@@ -34,21 +34,21 @@ for cond in conditions:
     eta = 0.0  # unit: pA
     Delta = cond_map[cond]["delta"]
     kappa = cond_map[cond]["kappa"]
-    tau_u = 200.0
-    b = -4.0
+    tau_u = 100.0
+    b = cond_map[cond]["b"]
     tau_s = 6.0
     tau_x = 400.0
     g = 15.0
     E_r = 0.0
 
     # define inputs
-    T = 7000.0
+    T = 5500.0
     dt = 1e-2
     dts = 2e-1
-    cutoff = 1000.0
+    cutoff = 500.0
     inp = np.zeros((int(T/dt),)) + cond_map[cond]["eta"]
     inp[:int(300.0/dt)] += cond_map[cond]["eta_init"]
-    inp[int(2000/dt):int(5000/dt),] += cond_map[cond]["eta_inc"]
+    inp[int(2000/dt):int(4000/dt),] += cond_map[cond]["eta_inc"]
 
     # run the model
     ###############
@@ -62,25 +62,24 @@ for cond in conditions:
     ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
     # run simulation
-    res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
-                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'x': f'p/{op}/x'},
+    res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
+                 outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'w': f'p/{op}/w'},
                  inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64",
                  clear=False)
 
     # save results to file
-    # pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_etas_{cond}.pkl", "wb"))
+    # pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_{cond}.pkl", "wb"))
     clear(ik)
 
     # plot results
     fig, ax = plt.subplots(nrows=3, figsize=(12, 6))
+    fig.suptitle(f"FRE condition - {cond}")
     ax[0].plot(res["s"])
     ax[0].set_ylabel(r'$s(t)$')
     ax[1].plot(res["u"])
     ax[1].set_ylabel(r'$u(t)$')
-    ax[2].plot(res["x"])
-    ax[2].set_ylabel(r'$x(t)$')
+    ax[2].plot(res["w"])
+    ax[2].set_ylabel(r'$w(t)$')
     ax[2].set_xlabel("time (ms)")
-    fig.suptitle(f"FRE - Condition: {cond}")
     plt.tight_layout()
-
-plt.show()
+    plt.show()

@@ -1,4 +1,5 @@
 from pyrates import CircuitTemplate, clear
+from rectipy import Network
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -27,6 +28,7 @@ conditions = ["no_sfa_1", "no_sfa_2", "weak_sfa_1", "weak_sfa_2", "strong_sfa_1"
 for cond in conditions:
 
     # model parameters
+    N = 1000
     C = 100.0   # unit: pF
     k = 0.7  # unit: None
     v_r = -60.0  # unit: mV
@@ -50,8 +52,15 @@ for cond in conditions:
     inp[:int(300.0/dt), 0] += cond_map[cond]["eta_init"]
     inp[int(2000/dt):int(4000/dt), 0] += cond_map[cond]["eta_inc"]
 
-    # run the model
-    ###############
+    # define lorentzian distribution of bs and vs
+    bs = b + Delta * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1))
+    s0 = 0.01
+    vs = v_r + s0 * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1))
+    v_reset = -2000.0
+    v_peak = 2000.0
+
+    # run the mean-field model
+    ##########################
 
     # initialize model
     ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
@@ -64,23 +73,52 @@ for cond in conditions:
     # run simulation
     res = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='euler',
                  outputs={'s': f'p/{op}/s', 'u': f'p/{op}/u', 'v': f'p/{op}/v', 'w': f'p/{op}/w'},
-                 inputs={f'p/{op}/I_ext': inp}, decorator=nb.njit, fastmath=True, float_precision="float64",
+                 inputs={f'p/{op}/I_ext': inp[:, 0]}, decorator=nb.njit, fastmath=True, float_precision="float64",
                  clear=False)
 
     # save results to file
     # pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_{cond}.pkl", "wb"))
     clear(ik)
 
+    # run the model
+    ###############
+
+    # initialize model
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": bs, "kappa": kappa,
+                 "g": g, "E_r": E_r, "tau_s": tau_s, "v": vs, "tau_x": tau_x, "s": s0}
+
+    # initialize model
+    net = Network(dt=dt, device="cpu")
+    net.add_diffeq_node("sfa", f"config/snn/adik",  # weights=W, source_var="s", target_var="s_in",
+                        input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
+                        node_vars=node_vars.copy(), op="adik_op", spike_reset=v_reset, spike_threshold=v_peak,
+                        verbose=False, clear=True, N=N, float_precision="float64")
+
+    # perform simulation
+    obs = net.run(inputs=inp, sampling_steps=int(dts / dt), verbose=False, cutoff=int(cutoff / dt),
+                  record_vars=[("sfa", "u", False), ("sfa", "v", False), ("sfa", "x", False)], enable_grad=False)
+    s, v, u, x = (obs.to_dataframe("out"), obs.to_dataframe(("sfa", "v")), obs.to_dataframe(("sfa", "u")),
+                  obs.to_dataframe(("sfa", "x")))
+    del obs
+    time = s.index
+    spikes = s.values
+    r = np.mean(spikes, axis=1) / tau_s
+    u = np.mean(u.values, axis=1)
+    v = np.mean(v.values, axis=1)
+    s = np.mean(s.values, axis=1)
+    x = np.mean(x.values, axis=1)
+    print(f"finished condition {cond}")
+
     # plot results
-    fig, ax = plt.subplots(nrows=3, figsize=(12, 6))
+    fig, ax = plt.subplots(nrows=3, figsize=(12, 4))
     fig.suptitle(f"FRE condition - {cond}")
-    ax[0].plot(res["s"])
+    ax[0].plot(res.index, res["s"].values, label="FRE")
+    ax[0].plot(res.index, s, label="SNN")
     ax[0].set_ylabel(r'$s(t)$')
-    ax[1].plot(res["u"])
+    ax[1].plot(res.index, res["u"].values, label="FRE")
+    ax[1].plot(res.index, u, label="SNN")
     ax[1].set_ylabel(r'$u(t)$')
-    ax[2].plot(res["w"])
-    ax[2].set_ylabel(r'$w(t)$')
-    ax[2].set_xlabel("time (ms)")
+    ax[1].set_xlabel("time (ms)")
     fig.canvas.draw()
-    plt.savefig(f"/home/richard-gast/Documents/results/bursting_snns/fre_{cond}.svg")
+    plt.savefig(f"/home/richard-gast/Documents/results/bursting_snns/simulations_{cond}.svg")
     plt.show()

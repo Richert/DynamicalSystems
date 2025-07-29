@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 # neuron parameters
 C = 100.0
 k = 0.7
-v_r = -60.0
 v_t = -40.0
-tau_u = 35.0
-bs = [-20.0, -10.0, -5.0]
-d = -400.0
+v_r = -60.0
+tau_u = 100.0
+bs = [-6.0, -3.0, 0.0]
+d = 150.0
 eta = 100.0
-tau_x = 400.0
+tau_x = 300.0
 
 # constants
 v_cutoff = 100.0
@@ -75,7 +75,7 @@ def norm(vals):
 ############
 
 # simulation parameters
-T = 2000.0
+T = 2500.0
 dt = 1e-3
 time = np.arange(int(T/dt))*dt
 margin = 20.0
@@ -83,7 +83,7 @@ cutoff = int(500.0/dt)
 
 # vectorfield grid
 vgrid = np.linspace(-70, -30, num=4)
-ugrid = np.linspace(40, 360, num=5)
+ugrid = np.linspace(20, 80, num=4)
 
 results = {"b": bs, "x": [], "v": [], "u": [], "nc": [], "vf": []}
 for b in bs:
@@ -141,12 +141,12 @@ for i, (b, v, u, x, ncs, vfs) in (
     ax.plot(time, v)
     if i == 0:
         ax.set_ylabel(r"$v$ (mv)")
-    ax.set_title(fr"({titles[i]}) $b = {b}$ nS")
+    ax.set_title(fr"({titles[i]}) $b = {b}$")
 
     # recovery variable
     ax = fig.add_subplot(grid[1, i * 2:(i + 1) * 2])
     ax.plot(time, u, color="darkorange")
-    ax.set_ylim([-400.0, 450.0])
+    ax.set_ylim([-100.0, 100.0])
     if i == 0:
         ax.set_ylabel(r"$u$ (pA)")
 
@@ -177,7 +177,7 @@ for i, (b, v, u, x, ncs, vfs) in (
                                                                              facecolor="black"))
         if i == 0 and j == 0:
             ax.set_ylabel(r"$u$ (pA)")
-        ax.set_ylim([0.0, 400.0])
+        ax.set_ylim([0.0, 100.0])
         ax.set_xlim([-75.0, -25.0])
         if j > 0:
             ax.set_yticklabels([])
