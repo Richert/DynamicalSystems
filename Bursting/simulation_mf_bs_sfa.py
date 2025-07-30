@@ -14,12 +14,12 @@ op = "eta_op_sfa"
 
 # define conditions
 cond_map = {
-    "no_sfa_1": {"kappa": 0.0, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 0.2},
-    "weak_sfa_1": {"kappa": 0.05, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 0.2},
-    "strong_sfa_1": {"kappa": 0.5, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 0.2},
-    "no_sfa_2": {"kappa": 0.0, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 2.0},
-    "weak_sfa_2": {"kappa": 0.05, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 2.0},
-    "strong_sfa_2": {"kappa": 0.5, "eta": 20.0, "eta_inc": 130.0, "eta_init": -50.0, "b": -4.0, "delta": 2.0},
+    "no_sfa_1": {"kappa": 0.0, "eta": 0.0, "eta_inc": 50.0, "eta_init": -50.0, "b": 0.0, "delta": 0.5, "title": r"$\kappa = 0.0$, $\bar b = -5.0$, $\Delta_b = 0.5$"},
+    "weak_sfa_1": {"kappa": 0.05, "eta": 36.0, "eta_inc": 50.0, "eta_init": -50.0, "b": 0.0, "delta": 0.5, "title": r"$\kappa = 0.05$, $\bar b = -5.0$, $\Delta_b = 0.5$"},
+    "strong_sfa_1": {"kappa": 0.2, "eta": 60.0, "eta_inc": 50.0, "eta_init": -50.0, "b": 0.0, "delta": 0.5, "title": r"$\kappa = 0.2$, $\bar b = -5.0$, $\Delta_b = 0.5$"},
+    "no_sfa_2": {"kappa": 0.0, "eta": 15.0, "eta_inc": 50.0, "eta_init": -50.0, "b": 0.0, "delta": 2.0, "title": r"$\kappa = 0.0$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
+    "weak_sfa_2": {"kappa": 0.05, "eta": 36.0, "eta_inc": 50.0, "eta_init": -50.0, "b": 0.0, "delta": 2.0, "title": r"$\kappa = 0.05$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
+    "strong_sfa_2": {"kappa": 0.2, "eta": 60.0, "eta_inc": 50.0, "eta_init": -50.0, "b": 0.0, "delta": 2.0, "title": r"$\kappa = 0.2$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
 }
 
 # conditions

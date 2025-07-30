@@ -109,7 +109,7 @@ eta_op_sfa:
     - "r' = (k*(w + Delta)/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in)) / C"
     - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g*s_in*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u + kappa*(g*s_in*(E_r-v) + I_ext + eta - u)) / tau_u"
-    - "w' = (-b*r -w + kappa*(Delta+g*s*r - w)) / tau_u"
+    - "w' = (Delta_b*absv(v-v_r) -w -kappa*(Delta+w)) / tau_u"
     - "x' = (r-x) / tau_x"
     - "s' = -s/tau_s + r"
   variables:
@@ -120,6 +120,7 @@ eta_op_sfa:
     x: variable(0.0)
     s: variable(0.01)
     Delta: 0.1
+    Delta_b: 0.1
     C: 100.0
     k: 0.7
     v_r: -60.0

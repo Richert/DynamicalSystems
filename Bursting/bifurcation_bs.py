@@ -12,7 +12,7 @@ path = sys.argv[-1]
 auto_dir = path if type(path) is str and ".py" not in path else "~/PycharmProjects/auto-07p"
 
 # config
-n_dim = 5
+n_dim = 6
 n_params = 20
 a = ODESystem("bs", working_dir="config", auto_dir=auto_dir, init_cont=False)
 
@@ -32,9 +32,9 @@ c1_sols, c1_cont = a.run(starting_point='UZ1', c='ss', ICP=4, name='g:1', origin
                          UZR={4: [15.0]}, STOP=[f'UZ1'], NPR=20, RL1=50.0, RL0=0.0, NPAR=n_params, NDIM=n_dim)
 
 # continuations in kappa
-vals = [0.2, 0.4]
+vals = [50.0, 100.0]
 c2_sols, c2_cont = a.run(starting_point='UZ1', ICP=16, name='kappa:1', origin=c1_cont, UZR={16: vals},
-                         STOP=[f'UZ{len(vals)}'], RL1=100.0, RL0=0.0, bidirectional=True)
+                         STOP=[f'UZ{len(vals)}'], RL1=200.0, RL0=0.0, bidirectional=True)
 
 # # continuation in Delta
 # vals1 = [3.0, 10.0]
@@ -62,33 +62,39 @@ c2_sols, c2_cont = a.run(starting_point='UZ1', ICP=16, name='kappa:1', origin=c1
 # main continuations
 ####################
 
-# continuations in I for small spike frequency adaptation
+delta_max, delta_min = 5.0, 0.0
+
+# continuations in I for no spike frequency adaptation
 r1_sols, r1_cont = a.run(starting_point='UZ1', ICP=8, name='I_ext:1', origin=c1_cont, UZR={}, STOP=[],
-                         RL1=150.0, RL0=-50.0)
-a.run(starting_point='LP1', c='2d', ICP=[5, 8], name='D/I:lp1', origin=r1_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
-a.run(starting_point='LP2', c='2d', ICP=[5, 8], name='D/I:lp2', origin=r1_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
+                         RL1=150.0, RL0=-50.0, bidirectional=True)
+a.run(starting_point='LP1', c='2d', ICP=[5, 8], name='D/I:lp1', origin=r1_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='LP2', c='2d', ICP=[5, 8], name='D/I:lp2', origin=r1_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
 
 # continuations in I for weak spike frequency adaptation
 r2_sols, r2_cont = a.run(starting_point='UZ1', ICP=8, name='I_ext:1', origin=c2_cont, UZR={}, STOP=[],
-                         RL1=150.0, RL0=-50.0)
-a.run(starting_point='LP1', c='2d', ICP=[5, 8], name='D/I:lp3', origin=r2_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
-a.run(starting_point='LP2', c='2d', ICP=[5, 8], name='D/I:lp4', origin=r2_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
-a.run(starting_point='HB1', c='2d', ICP=[5, 8], name='D/I:hb1', origin=r2_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
-a.run(starting_point='HB2', c='2d', ICP=[5, 8], name='D/I:hb2', origin=r2_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
+                         RL1=150.0, RL0=-50.0, bidirectional=True)
+a.run(starting_point='LP1', c='2d', ICP=[5, 8], name='D/I:lp3', origin=r2_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='LP2', c='2d', ICP=[5, 8], name='D/I:lp4', origin=r2_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='HB1', c='2d', ICP=[5, 8], name='D/I:hb1', origin=r2_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='HB2', c='2d', ICP=[5, 8], name='D/I:hb2', origin=r2_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
 
 # continuations in I for strong spike frequency adaptation
 r3_sols, r3_cont = a.run(starting_point='UZ2', ICP=8, NPAR=n_params, NDIM=n_dim, name='I_ext:3',
-                         origin=c2_cont, UZR={}, STOP=[], RL1=150.0, RL0=-50.0)
-a.run(starting_point='HB1', c='2d', ICP=[5, 8], name='D/I:hb3', origin=r3_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
-a.run(starting_point='HB2', c='2d', ICP=[5, 8], name='D/I:hb4', origin=r3_cont, RL1=10.0, RL0=1e-4, bidirectional=True,
-      NPAR=n_params, NDIM=n_dim)
+                         origin=c2_cont, UZR={}, STOP=[], RL1=150.0, RL0=-50.0, bidirectional=True)
+# a.run(starting_point='LP1', c='2d', ICP=[5, 8], name='D/I:lp5', origin=r3_cont, RL1=delta_max, RL0=delta_min,
+#       bidirectional=True, NPAR=n_params, NDIM=n_dim)
+# a.run(starting_point='LP2', c='2d', ICP=[5, 8], name='D/I:lp6', origin=r3_cont, RL1=delta_max, RL0=delta_min,
+#       bidirectional=True, NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='HB1', c='2d', ICP=[5, 8], name='D/I:hb3', origin=r3_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
+a.run(starting_point='HB2', c='2d', ICP=[5, 8], name='D/I:hb4', origin=r3_cont, RL1=delta_max, RL0=delta_min,
+      bidirectional=True, NPAR=n_params, NDIM=n_dim)
 
 # save results
 fname = '../results/bs.pkl'

@@ -20,17 +20,17 @@ plt.rcParams['lines.linewidth'] = 1.0
 ###################
 
 # pyrates model selection
-model = "ik_b"
-op = "b_op"
+model = "ik_eta_sfa"
+op = "eta_op_sfa"
 
 # define conditions
 cond_map = {
-    "no_sfa_1": {"kappa": 0.0, "eta": 15.0, "eta_inc": 25.0, "eta_init": -50.0, "b": -3.0, "delta": 0.5, "title": r"$\kappa = 0.0$, $\bar b = -5.0$, $\Delta_b = 0.2$"},
-    "weak_sfa_1": {"kappa": 50.0, "eta": 36.0, "eta_inc": 6.0, "eta_init": -50.0, "b": -3.0, "delta": 0.5, "title": r"$\kappa = 80.0$, $\bar b = -5.0$, $\Delta_b = 0.2$"},
-    "strong_sfa_1": {"kappa": 100.0, "eta": 60.0, "eta_inc": 40.0, "eta_init": -50.0, "b": -3.0, "delta": 0.5, "title": r"$\kappa = 160.0$, $\bar b = -5.0$, $\Delta_b = 0.2$"},
-    "no_sfa_2": {"kappa": 0.0, "eta": 15.0, "eta_inc": 15.0, "eta_init": -50.0, "b": -3.0, "delta": 2.0, "title": r"$\kappa = 0.0$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
-    "weak_sfa_2": {"kappa": 50.0, "eta": 36.0, "eta_inc": -10.0, "eta_init": -50.0, "b": -3.0, "delta": 2.0, "title": r"$\kappa = 80.0$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
-    "strong_sfa_2": {"kappa": 100.0, "eta": 60.0, "eta_inc": -30.0, "eta_init": -50.0, "b": -3.0, "delta": 2.0, "title": r"$\kappa = 160.0$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
+    "no_sfa_1": {"kappa": 0.0, "eta": 10.0, "eta_inc": 50.0, "eta_init": -50.0, "b": -8.0, "delta": 0.5, "title": r"$\kappa = 0.0$, $\bar b = -5.0$, $\Delta_b = 0.5$"},
+    "weak_sfa_1": {"kappa": 0.05, "eta": 30.0, "eta_inc": 50.0, "eta_init": -50.0, "b": -8.0, "delta": 0.5, "title": r"$\kappa = 0.05$, $\bar b = -5.0$, $\Delta_b = 0.5$"},
+    "strong_sfa_1": {"kappa": 0.2, "eta": 60.0, "eta_inc": 50.0, "eta_init": -50.0, "b": -8.0, "delta": 0.5, "title": r"$\kappa = 0.2$, $\bar b = -5.0$, $\Delta_b = 0.5$"},
+    "no_sfa_2": {"kappa": 0.0, "eta": 10.0, "eta_inc": 50.0, "eta_init": -50.0, "b": -8.0, "delta": 2.0, "title": r"$\kappa = 0.0$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
+    "weak_sfa_2": {"kappa": 0.05, "eta": 30.0, "eta_inc": 50.0, "eta_init": -50.0, "b": -8.0, "delta": 2.0, "title": r"$\kappa = 0.05$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
+    "strong_sfa_2": {"kappa": 0.2, "eta": 60.0, "eta_inc": 50.0, "eta_init": -50.0, "b": -8.0, "delta": 2.0, "title": r"$\kappa = 0.2$, $\bar b = -5.0$, $\Delta_b = 2.0$"},
 }
 
 # conditions
@@ -63,9 +63,10 @@ for cond in conditions:
     inp[int(2000/dt):int(4000/dt), 0] += cond_map[cond]["eta_inc"]
 
     # define lorentzian distribution of bs and vs
-    bs = b + Delta * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1))
+    etas = np.random.permutation(eta + Delta * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1)))
+    bs = np.random.permutation(b + Delta * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1)))
     s0 = 0.01
-    vs = v_r + s0 * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1))
+    vs = np.random.permutation(v_r + s0 * np.tan(0.5 * np.pi * (2 * np.arange(1, N + 1) - N - 1) / (N + 1)))
     v_reset = -2000.0
     v_peak = 2000.0
 
@@ -76,8 +77,8 @@ for cond in conditions:
     ik = CircuitTemplate.from_yaml(f"config/mf/{model}")
 
     # update parameters
-    node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'kappa': kappa, 'tau_u': tau_u, 'b': b,
-                 'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
+    node_vars = {'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'Delta_b': Delta, 'kappa': kappa,
+                 'tau_u': tau_u, 'b': b, 'tau_s': tau_s, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'eta': eta}
     ik.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
     # run simulation
@@ -90,18 +91,18 @@ for cond in conditions:
     # pickle.dump({"results": res, "params": node_vars}, open(f"results/mf_bs_{cond}.pkl", "wb"))
     clear(ik)
 
-    # run the model
-    ###############
+    # run the SNN model
+    ###################
 
     # initialize model
-    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": eta, "tau_u": tau_u, "b": bs, "kappa": kappa,
+    node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": v_t, "eta": etas, "tau_u": tau_u, "b": bs, "kappa": kappa,
                  "g": g, "E_r": E_r, "tau_s": tau_s, "v": vs, "tau_x": tau_x, "s": s0}
 
     # initialize model
     net = Network(dt=dt, device="cpu")
-    net.add_diffeq_node("sfa", f"config/snn/adik",  # weights=W, source_var="s", target_var="s_in",
+    net.add_diffeq_node("sfa", f"config/snn/adik2",  # weights=W, source_var="s", target_var="s_in",
                         input_var="I_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
-                        node_vars=node_vars.copy(), op="adik_op", spike_reset=v_reset, spike_threshold=v_peak,
+                        node_vars=node_vars.copy(), op="adik_op2", spike_reset=v_reset, spike_threshold=v_peak,
                         verbose=False, clear=True, N=N, float_precision="float64")
 
     # perform simulation
@@ -129,5 +130,5 @@ for cond in conditions:
     ax.legend()
     plt.tight_layout()
     fig.canvas.draw()
-    plt.savefig(f"/home/richard-gast/Documents/results/bursting_snns/simulations_{cond}.svg")
+    # plt.savefig(f"/home/richard-gast/Documents/results/bursting_snns/simulations_{cond}.svg")
     plt.show()
