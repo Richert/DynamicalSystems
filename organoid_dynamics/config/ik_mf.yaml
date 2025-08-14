@@ -96,7 +96,7 @@ qif_sfa_op:
     - "r' = (Delta/(pi*tau + kappa*pi*tau) + 2.0*r*v) / tau"
     - "v' = (v^2 - (pi*tau*r)^2 + tau*(J_e*s_e - J_i*s_i) + eta + I_ext - u) / tau"
     - "u' = w / tau_u"
-    - "w' = (kappa*tau_u*r - 2*w - u) / tau_u"  #(kappa*(tau*(J_e*s_e - J_i*s_i) + eta + I_ext) - w*(1 + kappa)
+    - "w' = (kappa*tau_u*r - 2*w - u) / tau_u"
     - "s' = x / tau_s"
     - "x' = (r - 2*x - s) / tau_s"
   variables:
@@ -117,6 +117,34 @@ qif_sfa_op:
     I_ext: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
+
+# qif operator with calcium-dependent synapses and excitability
+qif_ca_op:
+  base: OperatorTemplate
+  equations:
+    - "ca = 1/(1 + exp(s*(x-theta)))"
+    - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + ca*tau*(J_e*r_e - J_i*r_i) + eta + I_ext - kappa*ca) / tau"
+    - "x' = a / tau_a"
+    - "a' = r - (2*a + x) / tau_a"
+  variables:
+    r: output(0.0)
+    v: variable(0.0)
+    x: variable(0.0)
+    a: variable(0.0)
+    ca: variable(0.0)
+    Delta: 0.1
+    tau: 10.0
+    J_e: 20.0
+    J_i: 10.0
+    eta: 0.0
+    tau_a: 500.0
+    kappa: 1.0
+    s: 0.5
+    theta: 30.0
+    I_ext: input(0.0)
+    r_e: input(0.0)
+    r_i: input(0.0)
 
 # qif operator with STP
 qif_stp_op:
@@ -340,6 +368,12 @@ qif_stp_pop:
   operators:
     - qif_stp_op
 
+# population of qif neurons with calcium dependence
+qif_ca_pop:
+  base: NodeTemplate
+  operators:
+    - qif_ca_op
+
 # population of biophysiologically informed izhikevich neurons
 ik_pop:
   base: NodeTemplate
@@ -400,6 +434,14 @@ ik_ca:
     p: ik_ca_pop
   edges:
     - [p/ik_ca_op/r, p/ik_ca_op/r_in, null, {weight: 1.0}]
+
+# izhikevich population with calcium-dependent synapses
+qif_ca:
+  base: CircuitTemplate
+  nodes:
+    p: qif_ca_pop
+  edges:
+    - [p/qif_ca_op/r, p/qif_ca_op/r_e, null, {weight: 1.0}]
 
 # izhikevich population with SFA
 ik_sfa:

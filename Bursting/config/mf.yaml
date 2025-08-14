@@ -2,6 +2,33 @@
 ####################
 
 # adIK neurons with distributed eta
+ik_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = absv(Delta + w)/pi + r*(2*v-alpha)"
+    - "v' = v*(v-alpha) - (pi*r)^2 + J*s_in + eta + I_ext - u"
+    - "u' = (b*v - u) / tau_u + kappa*(J*s_in + eta + I_ext - u)"
+    - "w' = -kappa*(Delta+w) + (Delta_b*v*sign(v) - w)/tau_u"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(0.0)
+    u: variable(0.0)
+    w: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    Delta_b: 0.1
+    alpha: 0.6
+    J: 20.0
+    b: -2.0
+    tau_u: 50.0
+    tau_s: 6.0
+    kappa: 10.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# adIK neurons with distributed eta
 eta_op:
   base: OperatorTemplate
   equations:
@@ -239,6 +266,12 @@ b_op_corrected:
 # node templates
 ################
 
+# IK neuron population with distributed etas
+ik_pop:
+  base: NodeTemplate
+  operators:
+    - ik_op
+
 # adIK neuron population with distributed etas
 eta_pop:
   base: NodeTemplate
@@ -283,6 +316,14 @@ b_pop_corrected:
 
 # circuit templates
 ###################
+
+# adIK neuron population with distributed etas
+ik0:
+  base: CircuitTemplate
+  nodes:
+    p: ik_pop
+  edges:
+    - [p/ik_op/s, p/ik_op/s_in, null, {weight: 1.0}]
 
 # adIK neuron population with distributed etas
 ik_eta:

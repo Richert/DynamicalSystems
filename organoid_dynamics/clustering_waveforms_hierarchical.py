@@ -14,7 +14,13 @@ dist_data = pickle.load(open(f"{path}/{dataset}/{dataset}_waveform_distances.pkl
 wave_data = pd.read_csv(f"{path}/{dataset}/{dataset}_waveforms.csv",
                    header=[0, 1, 2], index_col=0)
 distances = ["dtw", "cc"]
-n_clusters = 6
+n_clusters = 3
+
+# reduce data
+age = 82
+organoid = None
+normalize = True
+dist_data = reduce_df(dist_data, age=age, organoid=organoid)
 
 # loop over all distance types
 for key in distances:

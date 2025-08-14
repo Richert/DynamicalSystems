@@ -2,6 +2,30 @@
 ---
 
 # adIK neurons with neuron-specific recovery variable
+ik_op:
+  base: OperatorTemplate
+  equations:
+    - "inp = -u + eta + I_ext + J*mean(s)"
+    - "v' = (v*(v-alpha) + inp)"
+    - "u' = (b*v - u + kappa*tau_u*inp) / tau_u"
+    - "s' = -s/tau_s + spike"
+  variables:
+    s: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    inp: variable(0.0)
+    alpha: 0.6
+    eta: 0.0
+    J: 15.0
+    b: -2.0
+    tau_u: 50.0
+    kappa: 10.0
+    tau_s: 6.0
+    spike: input(0.0)
+    s_in: input(0.0)
+    I_ext: input(0.0)
+
+# adIK neurons with neuron-specific recovery variable
 adik_op2:
   base: OperatorTemplate
   equations:
@@ -119,6 +143,12 @@ adik_op:
     spike: input(0.0)
     s_in: input(0.0)
     I_ext: input(0.0)
+
+# population of IK neurons
+ik:
+  base: NodeTemplate
+  operators:
+    - ik_op
 
 # population of adIK neurons with global recovery variable
 adik_global:
