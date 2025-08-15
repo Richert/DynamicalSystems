@@ -176,16 +176,16 @@ y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 ######################
 
 # simulation parameters
-dts = 1.0
-dt = 5e-2
+dts = 1e-1
+dt = 1e-2
 cutoff = 2000.0
 T = 10000.0 + cutoff
 
 # fitting parameters
 estimator = "maf"
-n_simulations = 10000
+n_simulations = 100000
 n_workers = 80
-n_post_samples = 1000
+n_post_samples = 10000
 stop_after_epochs = 100
 
 # exc parameters
@@ -205,8 +205,8 @@ func_jit = njit(func)
 
 # free parameter bounds
 param_bounds = {
-    "tau": (1.0, 30.0),
-    "Delta": (0.1, 20.0),
+    "tau": (10.0, 50.0),
+    "Delta": (0.5, 10.0),
     "eta": (-10.0, 10.0),
     "kappa": (0.0, 1.0),
     "tau_a": (100.0, 1000.0),

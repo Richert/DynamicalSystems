@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 from pyrates import CircuitTemplate
 
 # parameters
-node_vars = {"tau": 1.0, "J": 20.0, "eta": -3.0, "tau_s": 0.5, "Delta": 1.0, "tau_a": 50.0, "kappa": 0.04}
-T = 400.0
+node_vars = {"tau": 24.6, "J": 78.8, "eta": 1.8, "Delta": 1.0, "tau_a": 238.0, "kappa": 0.6}
+T = 4000.0
 dt = 1e-3
 I_ext = 0.0
 I_start = 40.0
