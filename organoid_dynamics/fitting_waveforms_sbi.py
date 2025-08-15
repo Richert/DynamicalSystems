@@ -120,7 +120,7 @@ n_clusters = 2
 prototype = 1
 
 # define directories and file to fit
-path = "/home/richard-gast/Documents"
+path = "/home/richard/Documents"
 save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
 
