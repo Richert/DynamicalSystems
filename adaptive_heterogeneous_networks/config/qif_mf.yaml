@@ -80,16 +80,68 @@ ik_stdp_op:
     I_ext: input(0.0)
     r_in: input(0.0)
 
+# qif operator
+qif_stp_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + a*tau*J*s_in + eta + I_ext) / tau"
+    - "s' = (r-s)/tau_s"
+    - "a' = (1-a)/tau_a - a*kappa*r"
+    - "u_ltp' = -u_ltp / tau_ltp + r"
+    - "u_ltd' = -u_ltd / tau_ltd + r"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    s: variable(0.0)
+    a: variable(1.0)
+    u_ltp: variable(0.0)
+    u_ltd: variable(0.0)
+    Delta: 0.1
+    kappa: 0.0
+    tau_a: 50.0
+    tau: 10.0
+    J: 20.0
+    tau_ltp: 100.0
+    tau_ltd: 20.0
+    tau_s: 5.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
+# qif operator
+qif_ca_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
+    - "v' = (v^2 - (pi*tau*r)^2 + a*tau*J*s + eta + I_ext) / tau"
+    - "s' = (r-s)/tau_s"
+    - "a' = (1-a)/tau_a - a*kappa*r"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    s: variable(0.0)
+    a: variable(1.0)
+    Delta: 0.1
+    theta: 0.5
+    kappa: 0.0
+    tau_a: 50.0
+    tau: 10.0
+    J: 20.0
+    tau_s: 5.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
+
 # edge operator
 stdp_op:
   base: OperatorTemplate
   equations:
-    - "w' = (w_max-w)*a_ltp*x_ltp*r_t - w*a_ltd*x_ltd*r_in"
+    - "w' = a_ltp*x_ltp*r_t - sqrt(w)*a_ltd*x_ltd*r_in"
     - "r_out = r_in*w"
   variables:
     r_out: output(0.0)
     w: variable(1.0)
-    w_max: 1.0
     a_ltp: 0.1
     a_ltd: 0.05
     r_in: input(0.0)
@@ -110,6 +162,16 @@ qif_stdp_pop:
   operators:
     - qif_stdp_op
 
+qif_stp_pop:
+  base: NodeTemplate
+  operators:
+    - qif_stp_op
+
+qif_ca_pop:
+  base: NodeTemplate
+  operators:
+    - qif_ca_op
+
 stdp_edge:
   base: EdgeTemplate
   operators:
@@ -119,3 +181,11 @@ ik_stdp_pop:
   base: NodeTemplate
   operators:
     - ik_stdp_op
+
+# circuit templates
+###################
+
+qif_ca:
+  base: CircuitTemplate
+  nodes:
+    p: qif_ca_pop

@@ -9,16 +9,16 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # model parameters
-tau = 10.0
-Delta = 5.0
-eta = -2.0
+tau = 1.0
+Delta = 2.0
+eta = -0.5
 kappa = 0.0
-s = 0.8
-theta = 30.0
-tau_a = 200.0
-J_e = 30.0
-I_ext = 2.0
-noise_lvl = 50.0
+s = 0.5
+theta = 40.0
+tau_a = 30.0
+J_e = 15.0
+I_ext = 1.0
+noise_lvl = 30.0
 noise_sigma = 100.0
 
 params = {
@@ -26,10 +26,10 @@ params = {
 }
 
 # define inputs
-T = 10000.0
+T = 1000.0
 cutoff = 0.0
-dt = 1e-2
-dts = 1.0
+dt = 1e-3
+dts = 1e-1
 inp = np.zeros((int(T/dt),)) + I_ext
 # noise = noise_lvl*np.random.randn(inp.shape[0])
 # noise = gaussian_filter1d(noise, sigma=noise_sigma)
@@ -54,7 +54,7 @@ res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=
 fig, axes = plt.subplots(nrows=3, figsize=(12, 8), sharex=True)
 fig.suptitle("Mean-field dynamics")
 ax = axes[0]
-ax.plot(res_mf.index, res_mf["r"]*1e3)
+ax.plot(res_mf.index, res_mf["r"]*1e2)
 ax.set_ylabel(r'$r(t)$ (Hz)')
 ax.set_xlabel("time (ms)")
 ax.set_title("average firing rate")

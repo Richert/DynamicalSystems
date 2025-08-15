@@ -1,19 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pyrates import CircuitTemplate, NodeTemplate, EdgeTemplate, clear
+from copy import deepcopy
+import pickle
 
 # parameters
 M = 40
-edge_vars = {"a_ltp": 0.1, "a_ltd": 0.3, "w_max": 1.0}
-Delta = 2.0
-eta = -1.0
+edge_vars = {"a_ltp": 0.25, "a_ltd": 0.35, "w": 0.0}
+Delta = 0.4
+eta = -1.5
 etas = eta + Delta * np.linspace(-0.5, 0.5, num=M)
-node_vars = {"tau": 1.0, "J": 5.0 / M, "eta": etas, "tau_ltp": 12.0, "tau_ltd": 6.0, "tau_s": 0.5, "Delta": 0.005}
+node_vars = {"tau": 1.0, "J": 5.0 / M, "eta": etas, "tau_ltp": 1.5, "tau_ltd": 1.0, "tau_s": 0.5, "Delta": 0.005}
 T = 200.0
-dt = 1e-4
-I_ext = 2.0
-I_start = 40.0
-I_stop = 160.0
+dt = 1e-3
+dts = 1e-1
+I_ext = 3.0
+I_start = [50.0, 100.0, 150.0]
+I_dur = 10.0
 
 # node and edge template initiation
 node = NodeTemplate.from_yaml("config/qif_mf/qif_stdp_pop")
@@ -34,10 +37,11 @@ net.update_var(node_vars={f"all/qif_stdp_op/{key}": val for key, val in node_var
 
 # run simulation
 inp = np.zeros((int(T/dt),))
-inp[int(I_start/dt):int(I_stop/dt)] = I_ext
+for start in I_start:
+    inp[int(start/dt):int((start+I_dur)/dt)] = I_ext
 res = net.run(simulation_time=T, step_size=dt, inputs={"all/qif_stdp_op/I_ext": inp},
-              outputs={"r": f"all/qif_stdp_op/r", "u_ltp": f"all/qif_stdp_op/u_ltp", "u_ltd": f"all/qif_stdp_op/u_ltd"},
-              solver="heun", clear=False, sampling_step_size=100*dt
+              outputs={"s": f"all/qif_stdp_op/s"},
+              solver="heun", clear=False, sampling_step_size=dts
               )
 
 # extract synaptic weights
@@ -45,32 +49,41 @@ mapping, weights, etas = net._ir["weight"].value, net.state["w"], net._ir["eta"]
 idx = np.argsort(etas)
 W = np.asarray([weights[mapping[i, :] > 0.0] for i in idx])
 W = W[:, idx]
-# clear(net)
+clear(net)
+
+# save results
+##############
+
+results = {"W": W, "res": res, "Delta": Delta}
+pickle.dump(results, open(f"/home/richard-gast/Documents/results/qif_fre_Delta_{int(Delta*10.0)}.pkl", "wb"))
 
 # plotting
-fig = plt.figure(figsize=(16, 6))
-grid = fig.add_gridspec(nrows=3, ncols=3)
-ax1 = fig.add_subplot(grid[0, :2])
-ax1.plot(res.index, res["r"])
-ax1.plot(res.index, np.mean(res["r"].values, axis=1), color="black")
-ax1.set_ylabel("r (Hz)")
-ax = fig.add_subplot(grid[1, :2])
-ax.sharex(ax1)
-ax.plot(res.index, res["u_ltp"])
-ax.set_ylabel("u_ltp")
-ax = fig.add_subplot(grid[2, :2])
-ax.sharex(ax1)
-ax.plot(res.index, res["u_ltd"])
-ax.set_ylabel("u_ltd")
-ax.set_xlabel("time")
-ax = fig.add_subplot(grid[:, 2])
-im = ax.imshow(W, aspect="auto", interpolation="none", cmap="cividis")
+##########
+
+fig = plt.figure(figsize=(12, 4))
+grid = fig.add_gridspec(nrows=1, ncols=3)
+
+# plotting snn connectivity
+ax = fig.add_subplot(grid[0, 0])
+step = 8
+im = ax.imshow(W, aspect="auto", interpolation="none", cmap="viridis")
 plt.colorbar(im, ax=ax)
-step = 4
-labels = np.round(etas[idx][::step], decimals=2)
-ax.set_xticks(ticks=np.arange(0, M, step=step), labels=labels)
-ax.set_yticks(ticks=np.arange(0, M, step=step), labels=labels)
+ax.set_xlabel("neuron")
+ax.set_ylabel("neuron")
+ax.set_xticks(ticks=np.arange(0, M, step=step))
+ax.set_yticks(ticks=np.arange(0, M, step=step))
 ax.invert_yaxis()
 ax.invert_xaxis()
+ax.set_title("Connectivity")
+
+# plotting average firing rate dynamics
+ax = fig.add_subplot(grid[0, 1:])
+s_mean = np.mean(res["s"].values, axis=1)
+ax.plot(res.index, s_mean, label="FRE")
+ax.set_xlabel("steps")
+ax.set_ylabel("s")
+ax.set_title("Network dynamics")
+
+fig.suptitle("FRE")
 plt.tight_layout()
 plt.show()

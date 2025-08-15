@@ -138,7 +138,7 @@ waveform_length = 3000
 
 # fitting parameters
 strategy = "best1exp"
-workers = 15
+workers = 80
 maxiter = 300
 popsize = 30
 mutation = (0.1, 1.2)
@@ -275,4 +275,4 @@ loss, y_fit = simulator(results.x, *func_args, return_dynamics=True)
 # save results
 pickle.dump({
     "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters},
-    open(f"{save_dir}/{dataset}_prototype_{prototype}_fit.pkl", "wb"))
+    open(f"{save_dir}/{dataset}_prototype_{prototype}_age_{age}_fit.pkl", "wb"))
