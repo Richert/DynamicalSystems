@@ -122,26 +122,22 @@ qif_sfa_op:
 qif_ca_op:
   base: OperatorTemplate
   equations:
-    - "ca = 1/(1 + exp(s*(x-theta)))"
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
-    - "v' = (v^2 - (pi*tau*r)^2 + ca*tau*(J_e*r_e - J_i*r_i) + eta + I_ext - kappa*ca) / tau"
-    - "x' = a / tau_a"
-    - "a' = r - (2*a + x) / tau_a"
+    - "v' = (v^2 - (pi*tau*r)^2 + a*tau*(J_e*r_e - J_i*r_i) + eta + I_ext) / tau"
+    - "a' = (1-a)/tau_a - a*kappa*r"
   variables:
     r: output(0.0)
     v: variable(0.0)
     x: variable(0.0)
     a: variable(0.0)
-    ca: variable(0.0)
     Delta: 0.1
     tau: 10.0
     J_e: 20.0
     J_i: 10.0
     eta: 0.0
     tau_a: 500.0
+    tau_s: 0.5
     kappa: 1.0
-    s: 0.5
-    theta: 30.0
     I_ext: input(0.0)
     r_e: input(0.0)
     r_i: input(0.0)

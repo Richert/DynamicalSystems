@@ -3,7 +3,6 @@ import numpy as np
 from typing import Callable
 from custom_functions import *
 from pyrates import CircuitTemplate
-from scipy.optimize import differential_evolution
 from scipy.ndimage import gaussian_filter1d
 from scipy.cluster.hierarchy import linkage, cut_tree
 from scipy.spatial.distance import squareform
@@ -11,11 +10,18 @@ from sklearn.preprocessing import MinMaxScaler
 from tslearn.metrics import cdist_dtw
 from numba import njit
 import warnings
-from time import perf_counter
+import torch
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sb
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+from sbi import utils as utils
+from sbi.inference import NPE, simulate_for_sbi
+from sbi.utils.user_input_checks import (
+    check_sbi_inputs,
+    process_prior,
+    process_simulator,
+)
 
 def callback(intermediate_result):
     if intermediate_result.fun < tolerance:
@@ -78,7 +84,7 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 #     return loss
 
 def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callable, func_args: list,
-              T: float, dt: float, dts: float, cutoff: float, waveform_length: int, return_dynamics: bool = False):
+              T: float, dt: float, dts: float, cutoff: float, waveform_length: int):
 
     # update parameter vector
     for i, j in enumerate(x_indices):
@@ -99,13 +105,7 @@ def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callab
     y_max = np.max(y_fit)
     if y_max > 0:
         y_fit = y_fit / y_max
-
-    # calculate loss
-    loss = float(np.sum((y_target - y_fit)**2))
-
-    if return_dynamics:
-        return loss, y_fit
-    return loss
+    return y_fit
 
 # parameter definitions
 #######################
@@ -197,6 +197,13 @@ dt = 5e-2
 cutoff = 2000.0
 T = 10000.0 + cutoff
 
+# fitting parameters
+estimator = "maf"
+n_simulations = 100000
+n_workers = 80
+n_post_samples = 10000
+stop_after_epochs = 100
+
 # exc parameters
 params = {
     'tau': 10.0, 'Delta': 2.0, 'eta': -0.5, 'kappa': 0.01, 's': 1.0, 'theta': 20.0, 'tau_a': 500.0, 'J_e': 30.0
@@ -231,46 +238,46 @@ for key in list(param_bounds.keys()):
 
 # define final arguments of loss/simulation function
 func_args = (param_indices, y_target, func_jit, list(args), T, dt, dts, cutoff, waveform_length)
+simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 
 # fitting procedure
 ###################
 
-# combine parameter bounds
-x0 = []
-bounds = []
-param_keys = []
-for key, (low, high) in param_bounds.items():
-    x0.append(0.5*(low + high))
-    bounds.append((low, high))
-    param_keys.append(f"{key}")
-x0 = np.asarray(x0)
+# create priors
+prior_min = [v[0] for v in param_bounds.values()]
+prior_max = [v[1] for v in param_bounds.values()]
+prior = utils.torchutils.BoxUniform(
+    low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max)
+)
 
-# test run
-print(f"Starting a test run of the mean-field model for {np.round(T, decimals=0)} ms simulation time, using a "
-      f"simulation step-size of {dt} ms.")
-t0 = perf_counter()
-simulator(x0, *func_args, return_dynamics=False)
-t1 = perf_counter()
-print(f"Finished test run after {t1-t0} s.")
+# Check prior, simulator, consistency
+prior, num_parameters, prior_returns_numpy = process_prior(prior)
+simulation_wrapper = process_simulator(simulation_wrapper, prior, prior_returns_numpy)
+check_sbi_inputs(simulation_wrapper, prior)
 
-# fitting procedure
-print(f"Starting to fit the mean-field model to {np.round(T, decimals=0)} ms of spike recordings ...")
-while True:
-    results = differential_evolution(simulator, tuple(bounds), args=func_args, strategy=strategy,
-                                     workers=workers, disp=True, maxiter=maxiter, popsize=popsize, mutation=mutation,
-                                     recombination=recombination, polish=polish, callback=callback)
-    if np.isnan(results.fun):
-        print("Re-initializing. Reason: loss(best candidate) = NaN.")
-    else:
-        break
-print(f"Finished fitting procedure. The winner (loss = {results.fun}) is ... ")
+# create inference object
+inference = NPE(prior=prior, density_estimator=estimator, device=device)
+
+# generate simulations and pass to the inference object
+theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations, num_workers=n_workers)
+inference = inference.append_simulations(theta, x)
+
+# train the density estimator and build the posterior
+density_estimator = inference.train(stop_after_epochs=stop_after_epochs)
+posterior = inference.build_posterior(density_estimator)
+
+# draw samples from the posterior and run model for the first sample
+posterior.set_default_x(torch.as_tensor(y_target))
+posterior_samples = posterior.sample((n_post_samples,)).numpy()
+map = posterior.map().cpu().numpy().squeeze()
+y_fit = simulator(map, *func_args)
+
+loss = float(np.sum((y_target - y_fit)**2))
+print(f"Finished fitting procedure. The winner (loss = {loss}) is ... ")
 fitted_parameters = {}
-for key, val in zip(param_keys, results.x):
+for key, val in zip(param_bounds, map):
     print(f"{key} = {val}")
     fitted_parameters[key] = val
-
-# generate dynamics of winner
-loss, y_fit = simulator(results.x, *func_args, return_dynamics=True)
 
 # save results
 pickle.dump({
