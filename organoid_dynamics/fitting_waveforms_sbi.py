@@ -23,12 +23,6 @@ from sbi.utils.user_input_checks import (
     process_simulator,
 )
 
-def callback(intermediate_result):
-    if intermediate_result.fun < tolerance:
-        return True
-    else:
-        return False
-
 
 def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
@@ -136,16 +130,6 @@ burst_height = 0.5
 burst_relheight = 0.9
 waveform_length = 3000
 
-# fitting parameters
-strategy = "best1exp"
-workers = 80
-maxiter = 300
-popsize = 30
-mutation = (0.1, 1.2)
-recombination = 0.7
-polish = False
-tolerance = 1e-1
-
 # data loading and processing
 #############################
 
@@ -199,9 +183,9 @@ T = 10000.0 + cutoff
 
 # fitting parameters
 estimator = "maf"
-n_simulations = 100000
+n_simulations = 10000
 n_workers = 80
-n_post_samples = 10000
+n_post_samples = 1000
 stop_after_epochs = 100
 
 # exc parameters
