@@ -179,7 +179,7 @@ y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 dts = 1e-1
 dt = 1e-2
 cutoff = 2000.0
-T = 10000.0 + cutoff
+T = 6000.0 + cutoff
 
 # fitting parameters
 estimator = "maf"
