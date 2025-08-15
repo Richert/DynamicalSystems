@@ -12,8 +12,8 @@ from numba import njit
 import warnings
 import torch
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sb
+# import matplotlib.pyplot as plt
+# import seaborn as sb
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 from sbi import utils as utils
 from sbi.inference import NPE, simulate_for_sbi
@@ -172,21 +172,21 @@ clusters = cut_tree(Z, n_clusters=n_clusters)
 proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="random")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
-# plot prototypical waveforms
-fig, ax = plt.subplots(figsize=(12, 5))
-for sample, wave in proto_waves.items():
-    ax.plot(wave / np.max(wave), label=sample)
-ax.set_ylabel("firing rate")
-ax.set_xlabel("time (ms)")
-ax.legend()
-ax.set_title(f"Normalized cluster waveforms")
-plt.tight_layout()
-
-# plot clustering results
-ax = sb.clustermap(D, row_linkage=Z, figsize=(12, 9))
-plt.title(f"Distance matrix and dendrogram")
-plt.tight_layout()
-plt.show()
+# # plot prototypical waveforms
+# fig, ax = plt.subplots(figsize=(12, 5))
+# for sample, wave in proto_waves.items():
+#     ax.plot(wave / np.max(wave), label=sample)
+# ax.set_ylabel("firing rate")
+# ax.set_xlabel("time (ms)")
+# ax.legend()
+# ax.set_title(f"Normalized cluster waveforms")
+# plt.tight_layout()
+#
+# # plot clustering results
+# ax = sb.clustermap(D, row_linkage=Z, figsize=(12, 9))
+# plt.title(f"Distance matrix and dendrogram")
+# plt.tight_layout()
+# plt.show()
 
 # model initialization
 ######################
