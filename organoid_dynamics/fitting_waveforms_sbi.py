@@ -112,7 +112,7 @@ def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callab
 
 # choose device
 device = "cpu"
-n_jobs = 15
+n_jobs = 40
 
 # choose data to fit
 dataset = "trujilo_2019"
@@ -206,7 +206,7 @@ stop_after_epochs = 100
 
 # exc parameters
 params = {
-    'tau': 10.0, 'Delta': 2.0, 'eta': -0.5, 'kappa': 0.01, 's': 1.0, 'theta': 20.0, 'tau_a': 500.0, 'J_e': 30.0
+    'tau': 10.0, 'Delta': 2.0, 'eta': -0.5, 'kappa': 0.01, 'tau_a': 500.0, 'J_e': 30.0
 }
 
 # initialize model template and set fixed parameters
