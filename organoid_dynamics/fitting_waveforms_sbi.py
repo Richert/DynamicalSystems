@@ -225,11 +225,10 @@ param_bounds = {
     "Delta": (0.1, 20.0),
     "eta": (-10.0, 10.0),
     "kappa": (0.0, 1.0),
-    "s": (0.1, 10.0),
-    "theta": (0.0, 100.0),
     "tau_a": (100.0, 1000.0),
     "J_e": (1.0, 100.0),
 }
+
 # find argument positions of free parameters
 param_indices = []
 for key in list(param_bounds.keys()):
