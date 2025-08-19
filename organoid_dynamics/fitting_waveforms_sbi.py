@@ -106,11 +106,11 @@ def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callab
 
 # choose device
 device = "cpu"
-n_jobs = 40
+n_jobs = 15
 
 # choose data to fit
 dataset = "trujilo_2019"
-n_clusters = 2
+n_clusters = 4
 prototype = 1
 
 # define directories and file to fit
@@ -153,7 +153,7 @@ Z = linkage(D_condensed, method="ward")
 clusters = cut_tree(Z, n_clusters=n_clusters)
 
 # extract target waveform
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="random")
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="mean")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
 # # plot prototypical waveforms
@@ -264,5 +264,5 @@ for key, val in zip(param_bounds, map):
 
 # save results
 pickle.dump({
-    "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters},
+    "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters, "theta": theta, "x": x},
     open(f"{save_dir}/{dataset}_prototype_{prototype}_age_{age}_fit.pkl", "wb"))

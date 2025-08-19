@@ -10,25 +10,27 @@ plt.rcParams['backend'] = 'TkAgg'
 
 # model parameters
 tau = 1.0
-Delta = 2.0
-eta = -0.5
-kappa = 0.0
-s = 0.5
-theta = 40.0
-tau_a = 30.0
-J_e = 15.0
-I_ext = 1.0
+Delta = 0.5
+eta = -1.7
+alpha = 0.01
+tau_a = 400.0
+J = 20.0
+k = 1.0
+tau_ampa = 0.2
+tau_nmda = 50.0
+I_ext = 0.0
 noise_lvl = 30.0
 noise_sigma = 100.0
 
 params = {
-    'tau': tau, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 's': s, 'theta': theta, 'tau_a': tau_a, 'J_e': J_e
+    'tau': tau, 'Delta': Delta, 'eta': eta, 'alpha': alpha, 'tau_a': tau_a, 'J': J,
+    'tau_ampa': tau_ampa, 'tau_nmda': tau_nmda, 'k': k
 }
 
 # define inputs
 T = 1000.0
-cutoff = 0.0
-dt = 1e-3
+cutoff = 100.0
+dt = 5e-3
 dts = 1e-1
 inp = np.zeros((int(T/dt),)) + I_ext
 # noise = noise_lvl*np.random.randn(inp.shape[0])
@@ -47,27 +49,27 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # run simulation
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
-                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/x', 'v': f'p/{op}/v'},
+                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 's_nmda': f'p/{op}/s_nmda'},
                 inputs={f'p/{op}/I_ext': inp}, clear=True)
 
 # plot results
 fig, axes = plt.subplots(nrows=3, figsize=(12, 8), sharex=True)
 fig.suptitle("Mean-field dynamics")
 ax = axes[0]
-ax.plot(res_mf.index, res_mf["r"]*1e2)
+ax.plot(res_mf.index * 10.0, res_mf["r"]*1e2)
 ax.set_ylabel(r'$r(t)$ (Hz)')
 ax.set_xlabel("time (ms)")
 ax.set_title("average firing rate")
 ax = axes[1]
-ax.plot(res_mf.index, res_mf["v"])
-ax.set_ylabel(r'$v(t)$ (mV)')
+ax.plot(res_mf.index * 10.0, res_mf["a"])
+ax.set_ylabel(r'$a(t)$')
 ax.set_xlabel("time (ms)")
-ax.set_title("Membrane potential")
+ax.set_title("Synaptic efficacy")
 ax = axes[2]
-ax.plot(res_mf.index, res_mf["a"])
-ax.set_ylabel(r'$A(t)$')
+ax.plot(res_mf.index * 10.0, res_mf["s_nmda"])
+ax.set_ylabel(r'$s_{nmda}(t)$')
 ax.set_xlabel("time (ms)")
-ax.set_title("Calcium concentration")
+ax.set_title("NMDA dynamics")
 plt.tight_layout()
 plt.show()
 

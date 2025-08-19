@@ -6,15 +6,15 @@ import pickle
 
 # parameters
 M = 40
-edge_vars = {"a_ltp": 0.25, "a_ltd": 0.35, "w": 0.0}
-Delta = 0.4
-eta = -1.5
+edge_vars = {"a_ltp": 0.25, "a_ltd": 0.38, "w": 0.0}
+Delta = 0.1
+eta = 0.0
 etas = eta + Delta * np.linspace(-0.5, 0.5, num=M)
 node_vars = {"tau": 1.0, "J": 5.0 / M, "eta": etas, "tau_ltp": 1.5, "tau_ltd": 1.0, "tau_s": 0.5, "Delta": 0.005}
 T = 200.0
 dt = 1e-3
 dts = 1e-1
-I_ext = 3.0
+I_ext = 0.0
 I_start = [50.0, 100.0, 150.0]
 I_dur = 10.0
 
@@ -28,6 +28,8 @@ for key, val in edge_vars.items():
 edges = []
 for i in range(M):
     for j in range(M):
+        edge_tmp = deepcopy(edge)
+        edge.update_var("stdp_op", "w", np.random.uniform(0.1, 1.9))
         edges.append((f"p{j}/qif_stdp_op/s", f"p{i}/qif_stdp_op/s_in", edge,
                       {"weight": 1.0, "stdp_edge/stdp_op/r_in": f"p{j}/qif_stdp_op/s", "stdp_edge/stdp_op/r_t": f"p{i}/qif_stdp_op/s",
                        "stdp_edge/stdp_op/x_ltp": f"p{j}/qif_stdp_op/u_ltp", "stdp_edge/stdp_op/x_ltd": f"p{i}/qif_stdp_op/u_ltd",

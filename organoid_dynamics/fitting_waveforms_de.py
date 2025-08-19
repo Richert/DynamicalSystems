@@ -58,23 +58,20 @@ def simulator(x: np.ndarray, x_indices: list, y_target: np.ndarray, func: Callab
         func_args[j] = x[i]
 
     # simulate model dynamics
-    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff)
+    fr_max = np.max(fr)
+    if fr_max > 0:
+        fr = fr / fr_max
 
     # get waveform
-    max_idx_model = np.argmax(fr)
-    max_idx_target = np.argmax(y_target)
-    start = max_idx_model - max_idx_target
-    if start < 0:
-        start = 0
-    if start + waveform_length > fr.shape[0]:
-        start = fr.shape[0] - waveform_length
-    y_fit = fr[start:start + waveform_length]
-    y_max = np.max(y_fit)
-    if y_max > 0:
-        y_fit = y_fit / y_max
-
-    # calculate loss
-    loss = float(np.sum((y_target - y_fit)**2))
+    idx = 0
+    correlations = []
+    while idx + waveform_length < len(fr):
+        correlations.append(np.dot(y_target, fr[idx:idx+waveform_length]))
+        idx += 1
+    max_idx, max_corr = np.argmax(correlations), np.max(correlations)
+    y_fit = fr[max_idx:max_idx + waveform_length]
+    loss = 1 - max_corr / np.dot(y_target, y_target)
 
     if return_dynamics:
         return loss, y_fit
@@ -89,7 +86,7 @@ n_jobs = 15
 
 # choose data to fit
 dataset = "trujilo_2019"
-n_clusters = 2
+n_clusters = 4
 prototype = 1
 
 # define directories and file to fit
@@ -111,7 +108,7 @@ waveform_length = 3000
 
 # fitting parameters
 strategy = "best1exp"
-workers = 80
+workers = 15
 maxiter = 300
 popsize = 30
 mutation = (0.1, 1.2)
@@ -142,7 +139,7 @@ Z = linkage(D_condensed, method="ward")
 clusters = cut_tree(Z, n_clusters=n_clusters)
 
 # extract target waveform
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="random")
+proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="mean")
 y_target = proto_waves[prototype] / np.max(proto_waves[prototype])
 
 # plot prototypical waveforms
@@ -165,10 +162,10 @@ plt.show()
 ######################
 
 # simulation parameters
-dts = 1.0
-dt = 5e-2
-cutoff = 2000.0
-T = 6000.0 + cutoff
+dts = 1e-1
+dt = 1e-3
+cutoff = 200.0
+T = 800.0 + cutoff
 
 # exc parameters
 params = {
@@ -187,13 +184,14 @@ func_jit = njit(func)
 
 # free parameter bounds
 param_bounds = {
-    "tau": (1.0, 30.0),
-    "Delta": (0.1, 20.0),
+    "tau": (1.0, 5.0),
+    "Delta": (0.1, 5.0),
     "eta": (-10.0, 10.0),
     "kappa": (0.0, 1.0),
-    "tau_a": (100.0, 1000.0),
+    "tau_a": (10.0, 100.0),
     "J_e": (1.0, 100.0),
 }
+
 # find argument positions of free parameters
 param_indices = []
 for key in list(param_bounds.keys()):

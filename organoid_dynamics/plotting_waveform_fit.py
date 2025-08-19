@@ -5,7 +5,7 @@ import pickle
 dataset = "trujilo_2019"
 path = "/home/richard-gast/Documents"
 save_dir = f"{path}/results/{dataset}"
-results = pickle.load(open(f"{save_dir}/{dataset}_prototype_3_fit.pkl", "rb"))
+results = pickle.load(open(f"{save_dir}/{dataset}_prototype_1_age_82_fit.pkl", "rb"))
 
 # print fitted parameters
 print("Best fit:")

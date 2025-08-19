@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 from pyrates import CircuitTemplate
 
 # parameters
-node_vars = {"tau": 24.6, "J": 78.8, "eta": 1.8, "Delta": 1.0, "tau_a": 238.0, "kappa": 0.6}
+node_vars = {"tau": 6.7, "J": 59.0, "eta": -6.3, "Delta": 0.9, "tau_a": 999.0, "kappa": 0.023}
 T = 4000.0
-dt = 1e-3
+dt = 1e-2
 I_ext = 0.0
 I_start = 40.0
 I_stop = 160.0
