@@ -11,24 +11,26 @@ plt.rcParams['backend'] = 'TkAgg'
 # model parameters
 tau = 1.0
 Delta = 0.5
-eta = -1.7
-alpha = 0.01
-tau_a = 400.0
-J = 20.0
-k = 1.0
-tau_ampa = 0.2
-tau_nmda = 50.0
+eta = 0.2
+alpha = 0.4
+tau_a = 10.0
+a_max = 1.0
+a_min = 0.0
+J = 40.0
+kappa = 0.05
+tau_s = 2.0
+tau_u = 500.0
 I_ext = 0.0
 noise_lvl = 30.0
 noise_sigma = 100.0
 
 params = {
-    'tau': tau, 'Delta': Delta, 'eta': eta, 'alpha': alpha, 'tau_a': tau_a, 'J': J,
-    'tau_ampa': tau_ampa, 'tau_nmda': tau_nmda, 'k': k
+    'tau': tau, 'Delta': Delta, 'eta': eta, 'alpha': alpha, 'tau_a': tau_a, 'J': J, 'tau_s': tau_s,
+    'tau_u': tau_u, 'kappa': kappa, 'a_max': a_max, 'a_min': a_min
 }
 
 # define inputs
-T = 1000.0
+T = 2000.0
 cutoff = 100.0
 dt = 5e-3
 dts = 1e-1
@@ -49,7 +51,7 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # run simulation
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
-                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 's_nmda': f'p/{op}/s_nmda'},
+                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 'u': f'p/{op}/u'},
                 inputs={f'p/{op}/I_ext': inp}, clear=True)
 
 # plot results
@@ -66,10 +68,10 @@ ax.set_ylabel(r'$a(t)$')
 ax.set_xlabel("time (ms)")
 ax.set_title("Synaptic efficacy")
 ax = axes[2]
-ax.plot(res_mf.index * 10.0, res_mf["s_nmda"])
-ax.set_ylabel(r'$s_{nmda}(t)$')
+ax.plot(res_mf.index * 10.0, res_mf["u"])
+ax.set_ylabel(r'$u(t)$')
 ax.set_xlabel("time (ms)")
-ax.set_title("NMDA dynamics")
+ax.set_title("SFA")
 plt.tight_layout()
 plt.show()
 

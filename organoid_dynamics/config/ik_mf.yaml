@@ -123,12 +123,14 @@ qif_ca_op:
   base: OperatorTemplate
   equations:
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
-    - "v' = (v^2 - (pi*tau*r)^2 + a*tau*J*r_in + eta + I_ext - u) / tau"
-    - "a' = (1-a)/tau_a - a*alpha*r"
-    - "u' = "
+    - "v' = (v^2 - (pi*tau*r)^2 + a*tau*J*s_in + eta + I_ext - u) / tau"
+    - "a' = (a_max-a)/tau_a + (a_min-a)*alpha*s"
+    - "u' = kappa*r - u/tau_u"
+    - "s' = (r-s)/tau_s"
   variables:
     r: output(0.0)
     v: variable(0.0)
+    s: variable(0.0)
     a: variable(1.0)
     u: variable(0.0)
     Delta: 0.1
@@ -137,9 +139,13 @@ qif_ca_op:
     eta: 0.0
     tau_a: 500.0
     alpha: 0.1
-
+    a_max: 1.0
+    a_min: 0.0
+    tau_u: 50.0
+    kappa: 10.0
+    tau_s: 5.0
     I_ext: input(0.0)
-    r_in: input(0.0)
+    s_in: input(0.0)
 
 # qif operator with STP
 qif_stp_op:
@@ -428,7 +434,7 @@ ik_ca:
   nodes:
     p: ik_ca_pop
   edges:
-    - [p/ik_ca_op/r, p/ik_ca_op/r_in, null, {weight: 1.0}]
+    - [p/ik_ca_op/s, p/ik_ca_op/s_in, null, {weight: 1.0}]
 
 # izhikevich population with calcium-dependent synapses
 qif_ca:
@@ -436,7 +442,7 @@ qif_ca:
   nodes:
     p: qif_ca_pop
   edges:
-    - [p/qif_ca_op/r, p/qif_ca_op/r_e, null, {weight: 1.0}]
+    - [p/qif_ca_op/s, p/qif_ca_op/s_in, null, {weight: 1.0}]
 
 # izhikevich population with SFA
 ik_sfa:
