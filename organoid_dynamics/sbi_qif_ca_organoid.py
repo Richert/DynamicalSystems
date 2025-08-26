@@ -118,13 +118,13 @@ dts = 1e-1
 
 # fitting parameters
 estimator = "mdn"
-n_simulations = int(sys.argv[-1])
+n_simulations = int(sys.argv[-2])
 n_workers = 80
 n_post_samples = 100000
-n_rounds = 10
+n_rounds = int(sys.argv[-1])
 stop_after_epochs = 30
-clip_max_norm = 5.0
-lr = 5e-5
+clip_max_norm = 10.0
+lr = 1e-4
 n_map_iter = 100000
 
 # data processing parameters
@@ -251,12 +251,15 @@ if run_simulations:
 
         # simulate data
         theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations,
-                                    num_workers=n_workers)
+                                    num_workers=n_workers, show_progress_bar=False)
 
         # train the posterior model
-        density_estimator = inference.append_simulations(
-            theta, x, proposal=proposal
-        ).train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm, learning_rate=lr)
+        inference.append_simulations(theta, x, proposal=proposal)
+        try:
+            density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
+                                                learning_rate=lr)
+        except AssertionError:
+            continue
         posterior = inference.build_posterior(density_estimator)
         proposal = posterior.set_default_x(torch.as_tensor(target_psd))
 
