@@ -65,7 +65,18 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
 # parameter definitions
 #######################
 
+# plotting
 plotting = True
+save_fig = True
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.dpi'] = 100
+plt.rcParams['font.size'] = 16.0
+plt.rcParams['axes.titlesize'] = 16
+plt.rcParams['axes.labelsize'] = 16
+plt.rcParams['lines.linewidth'] = 1.0
+markersize = 40
 
 # choose device
 device = "cpu"
@@ -92,10 +103,11 @@ n_post_samples = 10000
 stop_after_epochs = 30
 clip_max_norm = 10.0
 lr = 5e-5
+n_map_iter = 10000
 
 # choose which SBI steps to run or to load from file
-run_simulations = True
-fit_posterior_model = True
+run_simulations = False
+fit_posterior_model = False
 
 # model parameters
 tau = 1.0
@@ -132,7 +144,7 @@ func_jit(*args)
 param_bounds = {
     "tau": (0.5, 5.0),
     "Delta": (0.1, 10.0),
-    "eta": (-10.0, 10.0),
+    "eta": (-2.0, 2.0),
     # "alpha": (0.0, 1.0),
     # "tau_a": (5.0, 50.0),
     # "kappa": (0.0, 1.0),
@@ -211,10 +223,8 @@ posterior_grid, x_edges, y_edges = np.histogram2d(x=posterior_samples[:, 0], y=p
 posterior_grid /= n_post_samples
 
 # get MAP
-MAP = np.unravel_index(np.argmax(posterior_grid), posterior_grid.shape)
-x_map = (x_edges[MAP[0]] + x_edges[MAP[0]+1])/2
-y_map = (y_edges[MAP[1]] + y_edges[MAP[1]+1])/2
-MAP = np.asarray([x_map, y_map])
+MAP = posterior.map(num_iter=n_map_iter, num_init_samples=n_post_samples, learning_rate=lr*100, show_progress_bars=True
+                    ).numpy().squeeze()
 
 # run the model for the MAP
 y_fit, fitted_psd = simulator(MAP, *func_args, return_dynamics=True)
@@ -262,6 +272,8 @@ if plotting:
     ax.set_yticks(ticks, labels=np.round(y_edges[ticks], decimals=1))
     ax.set_title("Posterior Model")
     plt.tight_layout()
+    if save_fig:
+        plt.savefig(f"{path}/qif_ca_fit_n{n_simulations}_p{n_params}.pdf")
     plt.show()
 
 # # save results

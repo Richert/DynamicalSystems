@@ -47,8 +47,8 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
     return np.asarray(state_rec)
 
 
-def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
-              T: float, dt: float, dts: float, cutoff: float, return_dynamics: bool = False):
+def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list, y_target: np.ndarray,
+              T: float, dt: float, dts: float, cutoff: float, waveform_length: int, return_dynamics: bool = False):
 
     # update parameter vector
     for i, j in enumerate(x_indices):
@@ -56,6 +56,16 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
 
     # simulate model dynamics
     fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+
+    # get waveform
+    max_idx_model = np.argmax(fr)
+    max_idx_target = np.argmax(y_target)
+    start = max_idx_model - max_idx_target
+    if start < 0:
+        start = 0
+    if start + waveform_length > fr.shape[0]:
+        start = fr.shape[0] - waveform_length
+    fr = fr[start:start + waveform_length]
 
     # fourier transform
     fr_fft = np.fft.rfft(fr)
@@ -69,10 +79,21 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
 # parameter definitions
 #######################
 
-plotting = True
+# plotting
+plotting = False
+save_fig = False
+print(f"Plotting backend: {plt.rcParams['backend']}")
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rc('text', usetex=True)
+plt.rcParams['figure.dpi'] = 100
+plt.rcParams['font.size'] = 16.0
+plt.rcParams['axes.titlesize'] = 16
+plt.rcParams['axes.labelsize'] = 16
+plt.rcParams['lines.linewidth'] = 1.0
+markersize = 40
 
 # choose device
-device = "cuda:0"
+device = "cpu"
 n_jobs = 80
 
 # choose data to fit
@@ -99,17 +120,14 @@ dts = 1e-1
 estimator = "mdn"
 n_simulations = int(sys.argv[-1])
 n_workers = 80
-n_post_samples = 1000000
+n_post_samples = 100000
+n_rounds = 10
 stop_after_epochs = 30
-clip_max_norm = 10.0
+clip_max_norm = 5.0
 lr = 5e-5
+n_map_iter = 100000
 
 # data processing parameters
-sigma = 20.0
-burst_width = 100.0
-burst_sep = 1000.0
-burst_height = 0.5
-burst_relheight = 0.9
 waveform_length = 3000
 
 # choose which SBI steps to run or to load from file
@@ -148,70 +166,10 @@ param_bounds = {
     "J": (1.0, 100.0),
     "tau_s": (0.1, 5.0),
     # "a_max": (0.5, 1.0),
-    "a_min": (0.0, 0.8)
+    # "a_min": (0.0, 0.8)
 }
 param_keys = list(param_bounds.keys())
 n_params = len(param_keys)
-
-# model initialization
-######################
-
-# initialize model template and set fixed parameters
-template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
-template.update_var(node_vars={f"p/{op}/{key}": val for key, val in params.items()})
-
-# generate run function
-inp = np.zeros((int((T + cutoff)/dt),))
-func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
-                                                float_precision="float64", vectorize=False)
-func_jit = njit(func)
-func_jit(*args)
-
-# find argument positions of free parameters
-param_indices = []
-for key in param_keys:
-    idx = arg_keys.index(f"p/{op}/{key}")
-    param_indices.append(idx)
-
-# define final arguments of loss/simulation function
-func_args = (param_indices, func_jit, list(args), T, dt, dts, cutoff)
-simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
-
-# data-free fitting procedure (SBI)
-###################################
-
-# create priors
-prior_min = [param_bounds[key][0] for key in param_keys]
-prior_max = [param_bounds[key][1] for key in param_keys]
-prior = utils.torchutils.BoxUniform(
-    low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max)
-)
-
-# Check prior, simulator, consistency
-prior, num_parameters, prior_returns_numpy = process_prior(prior)
-simulation_wrapper = process_simulator(simulation_wrapper, prior, prior_returns_numpy)
-check_sbi_inputs(simulation_wrapper, prior)
-
-# create inference object
-inference = NPE(prior=prior, density_estimator=estimator, device=device)
-
-# generate simulations and pass to the inference object
-if run_simulations:
-    theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations, num_workers=n_workers)
-    pickle.dump({"theta": theta, "x": x}, open(f"{path}/qif_ca_simulations_n{n_simulations}_p{n_params}.pkl", "wb"))
-else:
-    simulated_data = pickle.load(open(f"{path}/qif_ca_simulations_n{n_simulations}_p{n_params}.pkl", "rb"))
-    theta, x = simulated_data["theta"], simulated_data["x"]
-inference = inference.append_simulations(theta, x)
-
-# train the density estimator and build the posterior
-if fit_posterior_model:
-    density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
-                                        learning_rate=lr)
-    posterior = inference.build_posterior(density_estimator)
-    pickle.dump(posterior, open(f"{path}/qif_ca_posterior_n{n_simulations}_p{n_params}.pkl", "wb"))
-else:
-    posterior = pickle.load(open(f"{path}/qif_ca_posterior_n{n_simulations}_p{n_params}.pkl", "rb"))
 
 # data loading and processing
 #############################
@@ -243,6 +201,92 @@ y_target = proto_waves[prototype]
 target_fft = np.fft.rfft(y_target)
 target_psd = np.real(np.abs(target_fft))
 
+# model initialization
+######################
+
+# initialize model template and set fixed parameters
+template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
+template.update_var(node_vars={f"p/{op}/{key}": val for key, val in params.items()})
+
+# generate run function
+inp = np.zeros((int((T + cutoff)/dt),))
+func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
+                                                float_precision="float64", vectorize=False)
+func_jit = njit(func)
+func_jit(*args)
+
+# find argument positions of free parameters
+param_indices = []
+for key in param_keys:
+    idx = arg_keys.index(f"p/{op}/{key}")
+    param_indices.append(idx)
+
+# define final arguments of loss/simulation function
+func_args = (param_indices, func_jit, list(args), y_target, T, dt, dts, cutoff, waveform_length)
+simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
+
+# data-free fitting procedure (SBI)
+###################################
+
+# create priors
+prior_min = [param_bounds[key][0] for key in param_keys]
+prior_max = [param_bounds[key][1] for key in param_keys]
+prior = utils.torchutils.BoxUniform(
+    low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max)
+)
+
+# Check prior, simulator, consistency
+prior, num_parameters, prior_returns_numpy = process_prior(prior)
+simulation_wrapper = process_simulator(simulation_wrapper, prior, prior_returns_numpy)
+check_sbi_inputs(simulation_wrapper, prior)
+
+# create inference object
+inference = NPE(prior=prior, density_estimator=estimator, device=device)
+
+# generate simulations and train the inference object with simulated data
+if run_simulations:
+
+    proposal = prior
+    for r in range(n_rounds):
+
+        # simulate data
+        theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations,
+                                    num_workers=n_workers)
+
+        # train the posterior model
+        density_estimator = inference.append_simulations(
+            theta, x, proposal=proposal
+        ).train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm, learning_rate=lr)
+        posterior = inference.build_posterior(density_estimator)
+        proposal = posterior.set_default_x(torch.as_tensor(target_psd))
+
+        print(f"Finished round {r+1} / {n_rounds}")
+
+    # save data
+    theta, x, _ = inference.get_simulations()
+    pickle.dump({"theta": theta, "x": x}, open(f"{path}/organoid_simulations_n{n_simulations}_p{n_params}.pkl", "wb"))
+    pickle.dump(posterior, open(f"{path}/organoid_posterior_n{n_simulations}_p{n_params}.pkl", "wb"))
+
+else:
+
+    # load previously simulated data and append to inference object
+    simulated_data = pickle.load(open(f"{path}/organoid_simulations_n{n_simulations}_p{n_params}.pkl", "rb"))
+    theta, x = simulated_data["theta"], simulated_data["x"]
+    inference = inference.append_simulations(theta, x)
+
+    if fit_posterior_model:
+
+        # fit posterior model
+        density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
+                                            learning_rate=lr)
+        posterior = inference.build_posterior(density_estimator)
+        pickle.dump(posterior, open(f"{path}/organoid_posterior_n{n_simulations}_p{n_params}.pkl", "wb"))
+
+    else:
+
+        # load previous model fit
+        posterior = pickle.load(open(f"{path}/organoid_posterior_n{n_simulations}_p{n_params}.pkl", "rb"))
+
 # evaluate posterior on target data
 ###################################
 
@@ -257,15 +301,13 @@ posterior_grid, x_edges, y_edges = np.histogram2d(x=posterior_samples[:, 0], y=p
 posterior_grid /= n_post_samples
 
 # get MAP
-MAP = np.unravel_index(np.argmax(posterior_grid), posterior_grid.shape)
-x_map = (x_edges[MAP[0]] + x_edges[MAP[0]+1])/2
-y_map = (y_edges[MAP[1]] + y_edges[MAP[1]+1])/2
-MAP = np.asarray([x_map, y_map])
+MAP = posterior.map(num_iter=n_map_iter, num_init_samples=n_post_samples, learning_rate=lr*100, show_progress_bars=True
+                    ).numpy().squeeze()
 
 # run the model for the MAP
 y_fit, fitted_psd = simulator(MAP, *func_args, return_dynamics=True)
 
-loss = float(np.sum((y_target - y_fit)**2))
+loss = float(np.sum((target_psd - fitted_psd)**2))
 print(f"Finished fitting procedure. The MAP parameter set (loss = {loss}) is ... ")
 fitted_parameters = {}
 for key, val in zip(param_keys, MAP):
@@ -302,6 +344,8 @@ if plotting:
     ax.set_yticks(ticks, labels=np.round(y_edges[ticks], decimals=1))
     ax.set_title("Posterior Model")
     plt.tight_layout()
+    if save_fig:
+        plt.savefig(f"{path}/organoid_fit_n{n_simulations}_p{n_params}.pdf")
     plt.show()
 
 # save results
