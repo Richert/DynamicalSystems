@@ -16,14 +16,10 @@ from sbi.utils.user_input_checks import (
     process_simulator,
 )
 import sys
-from scipy.cluster.hierarchy import linkage, cut_tree
-from scipy.spatial.distance import squareform
-from sklearn.preprocessing import MinMaxScaler
-from tslearn.metrics import cdist_dtw
 
-def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
-    idx = 0
+def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
+
     steps = int(T / dt)
     cutoff_steps = int(cutoff / dt)
     store_step = int(dts / dt)
@@ -32,9 +28,9 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
     # solve ivp for forward Euler method
     for step in range(steps):
+        args[inp_idx] = inp[step]
         if step > cutoff_steps and step % store_step == 0:
             state_rec.append(y[0])
-            idx += 1
         if not np.isfinite(y[0]):
             n_zeros = store_steps - len(state_rec)
             y0 = 0.0
@@ -47,25 +43,21 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
     return np.asarray(state_rec)
 
 
-def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list, y_target: np.ndarray,
-              T: float, dt: float, dts: float, cutoff: float, waveform_length: int, return_dynamics: bool = False):
+def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
+              T: float, dt: float, dts: float, cutoff: float, return_dynamics: bool = False):
 
     # update parameter vector
     for i, j in enumerate(x_indices):
         func_args[j] = x[i]
 
-    # simulate model dynamics
-    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+    # random input
+    inp = np.zeros((int((T + cutoff) / dt),))
+    noise = noise_lvl * np.random.randn(inp.shape[0])
+    noise = gaussian_filter1d(noise, sigma=noise_sigma)
+    inp += noise
 
-    # get waveform
-    max_idx_model = np.argmax(fr)
-    max_idx_target = np.argmax(y_target)
-    start = max_idx_model - max_idx_target
-    if start < 0:
-        start = 0
-    if start + waveform_length > fr.shape[0]:
-        start = fr.shape[0] - waveform_length
-    fr = fr[start:start + waveform_length]
+    # simulate model dynamics
+    fr = integrate(inp, func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff)
 
     # fourier transform
     fr_fft = np.fft.rfft(fr)
@@ -80,8 +72,8 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list, y
 #######################
 
 # plotting
-plotting = False
-save_fig = False
+plotting = True
+save_fig = True
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
@@ -94,17 +86,10 @@ markersize = 40
 
 # choose device
 device = "cpu"
-n_jobs = 80
+n_jobs = 15
 
-# choose data to fit
-dataset = "trujilo_2019"
-n_clusters = 4
-prototype = 2
-
-# define directories and file to fit
-path = "/home/richard"
-save_dir = f"{path}/results/{dataset}"
-load_dir = f"{path}/data/{dataset}"
+# define directories
+path = "/home/richard-gast/Documents/data/sbi_test"
 
 # choose model
 model = "qif_ca"
@@ -112,23 +97,20 @@ op = "qif_ca_op"
 
 # simulation parameters
 cutoff = 400.0
-T = 1000.0 + cutoff
+T = 2000.0
 dt = 5e-3
 dts = 1e-1
 
 # fitting parameters
 estimator = "mdn"
 n_simulations = int(sys.argv[-2])
-n_workers = 80
-n_post_samples = 100000
 n_rounds = int(sys.argv[-1])
+n_workers = 15
+n_post_samples = 10000
 stop_after_epochs = 30
 clip_max_norm = 10.0
-lr = 1e-4
-n_map_iter = 100000
-
-# data processing parameters
-waveform_length = 3000
+lr = 5e-5
+n_map_iter = 1000
 
 # choose which SBI steps to run or to load from file
 run_simulations = True
@@ -136,96 +118,71 @@ fit_posterior_model = True
 
 # model parameters
 tau = 1.0
-Delta = 0.5
-eta = 0.2
-alpha = 0.4
+Delta = 1.0
+eta = -3.0
+alpha = 0.0265
 tau_a = 10.0
 A0 = 0.5
-J = 40.0
-kappa = 0.05
-tau_s = 2.0
-tau_u = 500.0
-I_ext = 0.0
-noise_lvl = 30.0
-noise_sigma = 100.0
+J = 20.0
+kappa = 0.06
+tau_s = 0.2
+tau_u = 100.0
+noise_lvl = 1.0
+noise_sigma = 1000.0
 params = {
     'tau': tau, 'Delta': Delta, 'eta': eta, 'alpha': alpha, 'tau_a': tau_a, 'J': J, 'tau_s': tau_s,
     'tau_u': tau_u, 'kappa': kappa, 'A0': A0
 }
-
-# free parameter bounds
-param_bounds = {
-    "tau": (0.5, 5.0),
-    "Delta": (0.1, 10.0),
-    "eta": (-10.0, 10.0),
-    "alpha": (0.0, 1.0),
-    "tau_a": (5.0, 50.0),
-    "kappa": (0.0, 1.0),
-    "tau_u": (50.0, 500.0),
-    "J": (1.0, 100.0),
-    "tau_s": (0.1, 5.0),
-    # "a_max": (0.5, 1.0),
-    # "a_min": (0.0, 0.8)
-}
-param_keys = list(param_bounds.keys())
-n_params = len(param_keys)
-
-# data loading and processing
-#############################
-
-# load data from file
-data = pd.read_csv(f"{load_dir}/{dataset}_waveforms.csv", header=[0, 1, 2], index_col=0)
-
-# reduce data
-age = 82
-organoid = None
-normalize = True
-data = reduce_df(data, age=age, organoid=organoid)
-data_norm = data.values.T
-if normalize:
-    scaler = MinMaxScaler()
-    data_norm = scaler.fit_transform(data_norm)
-D = cdist_dtw(data_norm[:, :], n_jobs=n_jobs)
-
-# run hierarchical clustering on distance matrix
-D_condensed = squareform(D)
-Z = linkage(D_condensed, method="ward")
-clusters = cut_tree(Z, n_clusters=n_clusters)
-
-# extract target waveform
-proto_waves = get_cluster_prototypes(clusters.squeeze(), data, reduction_method="mean")
-y_target = proto_waves[prototype]
-
-# fourier transform
-target_fft = np.fft.rfft(y_target)
-target_psd = np.real(np.abs(target_fft))
-
-# model initialization
-######################
 
 # initialize model template and set fixed parameters
 template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
 template.update_var(node_vars={f"p/{op}/{key}": val for key, val in params.items()})
 
 # generate run function
-inp = np.zeros((int((T + cutoff)/dt),))
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
                                                 float_precision="float64", vectorize=False)
 func_jit = njit(func)
 func_jit(*args)
+
+# free parameter bounds
+param_bounds = {
+    # "tau": (0.5, 5.0),
+    # "Delta": (0.1, 10.0),
+    "eta": (-5.0, 0.0),
+    "alpha": (0.0, 1.0),
+    # "tau_a": (5.0, 50.0),
+    # "kappa": (0.0, 1.0),
+    # "tau_u": (50.0, 500.0),
+    # "J": (1.0, 100.0),
+    # "tau_s": (0.1, 5.0),
+    # "a_max": (0.5, 1.0),
+    # "a_min": (0.0, 0.5)
+}
+param_keys = list(param_bounds.keys())
+n_params = len(param_keys)
 
 # find argument positions of free parameters
 param_indices = []
 for key in param_keys:
     idx = arg_keys.index(f"p/{op}/{key}")
     param_indices.append(idx)
+inp_idx = arg_keys.index(f"p/{op}/I_ext") - 2
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, func_jit, list(args), y_target, T, dt, dts, cutoff, waveform_length)
+func_args = (param_indices, func_jit, list(args), T, dt, dts, cutoff)
 simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 
-# data-free fitting procedure (SBI)
-###################################
+# generate target data
+######################
+
+# define target parameters
+theta_target = np.asarray([params[key] for key in param_keys])
+
+# get target data
+y_target, target_psd = simulator(theta_target, *func_args, return_dynamics=True)
+
+# fitting procedure
+###################
 
 # create priors
 prior_min = [param_bounds[key][0] for key in param_keys]
@@ -266,13 +223,13 @@ if run_simulations:
 
     # save data
     theta, x, _ = inference.get_simulations()
-    pickle.dump({"theta": theta, "x": x}, open(f"{path}/organoid_simulations_n{n_simulations}_p{n_params}.pkl", "wb"))
-    pickle.dump(posterior, open(f"{path}/organoid_posterior_n{n_simulations}_p{n_params}.pkl", "wb"))
+    pickle.dump({"theta": theta, "x": x}, open(f"{path}/qif_ca_simulations_n{n_simulations}_r{n_rounds}_p{n_params}.pkl", "wb"))
+    pickle.dump(posterior, open(f"{path}/qif_ca_posterior_n{n_simulations}_r{n_rounds}_p{n_params}.pkl", "wb"))
 
 else:
 
     # load previously simulated data and append to inference object
-    simulated_data = pickle.load(open(f"{path}/organoid_simulations_n{n_simulations}_p{n_params}.pkl", "rb"))
+    simulated_data = pickle.load(open(f"{path}/qif_ca_simulations_n{n_simulations}_r{n_rounds}_p{n_params}.pkl", "rb"))
     theta, x = simulated_data["theta"], simulated_data["x"]
     inference = inference.append_simulations(theta, x)
 
@@ -282,12 +239,12 @@ else:
         density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
                                             learning_rate=lr)
         posterior = inference.build_posterior(density_estimator)
-        pickle.dump(posterior, open(f"{path}/organoid_posterior_n{n_simulations}_p{n_params}.pkl", "wb"))
+        pickle.dump(posterior, open(f"{path}/qif_ca_posterior_n{n_simulations}_r{n_rounds}_p{n_params}.pkl", "wb"))
 
     else:
 
         # load previous model fit
-        posterior = pickle.load(open(f"{path}/organoid_posterior_n{n_simulations}_p{n_params}.pkl", "rb"))
+        posterior = pickle.load(open(f"{path}/qif_ca_posterior_n{n_simulations}_r{n_rounds}_p{n_params}.pkl", "rb"))
 
 # evaluate posterior on target data
 ###################################
@@ -309,7 +266,7 @@ MAP = posterior.map(num_iter=n_map_iter, num_init_samples=n_post_samples, learni
 # run the model for the MAP
 y_fit, fitted_psd = simulator(MAP, *func_args, return_dynamics=True)
 
-loss = float(np.sum((target_psd - fitted_psd)**2))
+loss = float(np.sum((y_target - y_fit)**2))
 print(f"Finished fitting procedure. The MAP parameter set (loss = {loss}) is ... ")
 fitted_parameters = {}
 for key, val in zip(param_keys, MAP):
@@ -338,6 +295,12 @@ if plotting:
     ax.legend()
     ax = fig.add_subplot(grid[:, 0])
     im = ax.imshow(posterior_grid.T, aspect="auto")
+    ax.scatter(x=np.argmin((x_edges[:-1] - theta_target[0])**2).squeeze(),
+               y=np.argmin((y_edges[:-1] - theta_target[1])**2).squeeze(),
+               marker="x", s=40, color="red", label="data")
+    ax.scatter(x=np.argmin((x_edges[:-1] - MAP[0]) ** 2).squeeze(),
+               y=np.argmin((y_edges[:-1] - MAP[1]) ** 2).squeeze(),
+               marker="x", s=40, color="black", label="MAP")
     ax.legend()
     ax.set_xlabel(param_keys[0])
     ax.set_ylabel(param_keys[1])
@@ -347,11 +310,10 @@ if plotting:
     ax.set_title("Posterior Model")
     plt.tight_layout()
     if save_fig:
-        plt.savefig(f"{path}/organoid_fit_n{n_simulations}_p{n_params}.pdf")
+        plt.savefig(f"{path}/qif_ca_fit_n{n_simulations}_p{n_params}.png")
     plt.show()
 
-# save results
-pickle.dump({
-    "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters,
-    "theta": theta, "x": x},
-    open(f"{path}/organoid_fit_n{n_simulations}_p{n_params}.pkl", "wb"))
+# # save results
+# pickle.dump({
+#     "target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters, "theta": theta, "x": x},
+#     open(f"{path}/qif_ca_fit_n{n_simulations}_p{n_params}.pkl", "wb"))

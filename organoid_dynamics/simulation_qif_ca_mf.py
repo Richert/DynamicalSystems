@@ -9,35 +9,37 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # model parameters
-tau = 1.0
-Delta = 0.5
-eta = 0.2
-alpha = 0.4
-tau_a = 10.0
-a_max = 1.0
-a_min = 0.0
-J = 40.0
-kappa = 0.05
-tau_s = 2.0
-tau_u = 500.0
+tau = 4.059
+Delta = 5.143
+eta = 1.528
+alpha = 0.511
+tau_a = 28.263
+A0 = 0.0
+J = 45.03
+kappa = 0.469
+tau_s = 3.095
+tau_u = 417.346
 I_ext = 0.0
-noise_lvl = 30.0
-noise_sigma = 100.0
+noise_lvl = 10.0
+noise_sigma = 1000.0
 
 params = {
     'tau': tau, 'Delta': Delta, 'eta': eta, 'alpha': alpha, 'tau_a': tau_a, 'J': J, 'tau_s': tau_s,
-    'tau_u': tau_u, 'kappa': kappa, 'a_max': a_max, 'a_min': a_min
+    'tau_u': tau_u, 'kappa': kappa, 'A0': A0
 }
 
 # define inputs
-T = 2000.0
-cutoff = 100.0
+cutoff = 0.0
+T = 5000.0 + cutoff
 dt = 5e-3
 dts = 1e-1
-inp = np.zeros((int(T/dt),)) + I_ext
-# noise = noise_lvl*np.random.randn(inp.shape[0])
-# noise = gaussian_filter1d(noise, sigma=noise_sigma)
-# inp += noise
+start = 500.0 + cutoff
+stop = 1500.0 + cutoff
+inp = np.zeros((int(T/dt),))
+noise = noise_lvl*np.random.randn(inp.shape[0])
+noise = gaussian_filter1d(noise, sigma=noise_sigma)
+inp += noise
+inp[int(start/dt):int(stop/dt)] += I_ext
 
 # run the mean-field model
 ##########################
@@ -52,23 +54,23 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 # run simulation
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
                 outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 'u': f'p/{op}/u'},
-                inputs={f'p/{op}/I_ext': inp}, clear=True)
+                inputs={f'p/{op}/I_ext': inp}, clear=False)
 
 # plot results
-fig, axes = plt.subplots(nrows=3, figsize=(12, 8), sharex=True)
+fig, axes = plt.subplots(nrows=3, figsize=(12, 6), sharex=True)
 fig.suptitle("Mean-field dynamics")
 ax = axes[0]
-ax.plot(res_mf.index * 10.0, res_mf["r"]*1e2)
-ax.set_ylabel(r'$r(t)$ (Hz)')
+ax.plot(res_mf.index, res_mf["r"])
+ax.set_ylabel(r'$r(t)$')
 ax.set_xlabel("time (ms)")
 ax.set_title("average firing rate")
 ax = axes[1]
-ax.plot(res_mf.index * 10.0, res_mf["a"])
+ax.plot(res_mf.index, res_mf["a"])
 ax.set_ylabel(r'$a(t)$')
 ax.set_xlabel("time (ms)")
 ax.set_title("Synaptic efficacy")
 ax = axes[2]
-ax.plot(res_mf.index * 10.0, res_mf["u"])
+ax.plot(res_mf.index, res_mf["u"])
 ax.set_ylabel(r'$u(t)$')
 ax.set_xlabel("time (ms)")
 ax.set_title("SFA")

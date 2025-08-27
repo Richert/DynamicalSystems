@@ -124,7 +124,7 @@ qif_ca_op:
   equations:
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
     - "v' = (v^2 - (pi*tau*r)^2 + a*tau*J*s_in + eta + I_ext - u) / tau"
-    - "a' = (a_max-a)/tau_a + (a_min-a)*alpha*s"
+    - "a' = (1-a)/tau_a + (A0-a)*alpha*r"
     - "u' = kappa*r - u/tau_u"
     - "s' = (r-s)/tau_s"
   variables:
@@ -139,8 +139,7 @@ qif_ca_op:
     eta: 0.0
     tau_a: 500.0
     alpha: 0.1
-    a_max: 1.0
-    a_min: 0.0
+    A0: 0.0
     tau_u: 50.0
     kappa: 10.0
     tau_s: 5.0
@@ -180,21 +179,17 @@ qif_stp_op:
 ik_ca_op:
   base: OperatorTemplate
   equations:
-    - "ca = mu + (1-mu)*tanh(s*(theta-x))"
-    - "g_syn = alpha*ca*g*r_in"
-    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g_syn)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + g_syn*(E_r-v) + eta + I_ext - u) / C"
-    - "u' = (b*(v-v_r) - u) / tau_u + d*r - kappa*ca"
-    - "x' = a / tau_a"
-    - "a' = r - (2*a + x) / tau_a"
+    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*r_in*a)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + r_in*a*g*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
+    - "a' = (1-a)/tau_a + (A0-a)*alpha*r"
+    - "x' = (r-x)/tau_x"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
+    a: variable(1.0)
     x: variable(0.0)
-    a: variable(0.0)
-    g_syn: variable(0.0)
-    ca: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -203,14 +198,12 @@ ik_ca_op:
     b: -2.0
     g: 20.0
     E_r: 0.0
-    d: 1.0
-    kappa: 100.0
-    alpha: 100.0
-    mu: 0.5
-    s: 100.0
-    theta: 0.05
-    tau_a: 1000.0
+    kappa: 1.0
+    alpha: 1.0
+    A0: 0.5
+    tau_a: 100.0
     tau_u: 50.0
+    tau_x: 500.0
     eta: 0.0
     I_ext: input(0.0)
     r_in: input(0.0)
@@ -434,7 +427,7 @@ ik_ca:
   nodes:
     p: ik_ca_pop
   edges:
-    - [p/ik_ca_op/s, p/ik_ca_op/s_in, null, {weight: 1.0}]
+    - [p/ik_ca_op/r, p/ik_ca_op/r_in, null, {weight: 1.0}]
 
 # izhikevich population with calcium-dependent synapses
 qif_ca:

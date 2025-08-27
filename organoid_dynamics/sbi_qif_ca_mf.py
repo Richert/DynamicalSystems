@@ -17,9 +17,9 @@ from sbi.utils.user_input_checks import (
 )
 import sys
 
-def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
-    idx = 0
+def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
+
     steps = int(T / dt)
     cutoff_steps = int(cutoff / dt)
     store_step = int(dts / dt)
@@ -28,9 +28,9 @@ def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
     # solve ivp for forward Euler method
     for step in range(steps):
+        args[inp_idx] = inp[step]
         if step > cutoff_steps and step % store_step == 0:
             state_rec.append(y[0])
-            idx += 1
         if not np.isfinite(y[0]):
             n_zeros = store_steps - len(state_rec)
             y0 = 0.0
@@ -50,8 +50,14 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     for i, j in enumerate(x_indices):
         func_args[j] = x[i]
 
+    # random input
+    inp = np.zeros((int((T + cutoff) / dt),))
+    noise = noise_lvl * np.random.randn(inp.shape[0])
+    noise = gaussian_filter1d(noise, sigma=noise_sigma)
+    inp += noise
+
     # simulate model dynamics
-    fr = integrate(func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff) * 1e3
+    fr = integrate(inp, func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff)
 
     # fourier transform
     fr_fft = np.fft.rfft(fr)
@@ -91,7 +97,7 @@ op = "qif_ca_op"
 
 # simulation parameters
 cutoff = 400.0
-T = 2000.0 + cutoff
+T = 2000.0
 dt = 5e-3
 dts = 1e-1
 
@@ -103,30 +109,28 @@ n_post_samples = 10000
 stop_after_epochs = 30
 clip_max_norm = 10.0
 lr = 5e-5
-n_map_iter = 10000
+n_map_iter = 1000
 
 # choose which SBI steps to run or to load from file
 run_simulations = False
-fit_posterior_model = False
+fit_posterior_model = True
 
 # model parameters
 tau = 1.0
-Delta = 0.5
-eta = 0.2
-alpha = 0.4
+Delta = 1.0
+eta = -3.0
+alpha = 0.0265
 tau_a = 10.0
-a_max = 1.0
-a_min = 0.0
-J = 40.0
-kappa = 0.05
-tau_s = 2.0
-tau_u = 500.0
-I_ext = 0.0
-noise_lvl = 30.0
-noise_sigma = 100.0
+A0 = 0.5
+J = 20.0
+kappa = 0.06
+tau_s = 0.2
+tau_u = 100.0
+noise_lvl = 1.0
+noise_sigma = 1000.0
 params = {
     'tau': tau, 'Delta': Delta, 'eta': eta, 'alpha': alpha, 'tau_a': tau_a, 'J': J, 'tau_s': tau_s,
-    'tau_u': tau_u, 'kappa': kappa, 'a_max': a_max, 'a_min': a_min
+    'tau_u': tau_u, 'kappa': kappa, 'A0': A0
 }
 
 # initialize model template and set fixed parameters
@@ -134,7 +138,6 @@ template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
 template.update_var(node_vars={f"p/{op}/{key}": val for key, val in params.items()})
 
 # generate run function
-inp = np.zeros((int((T + cutoff)/dt),))
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
                                                 float_precision="float64", vectorize=False)
 func_jit = njit(func)
@@ -142,10 +145,10 @@ func_jit(*args)
 
 # free parameter bounds
 param_bounds = {
-    "tau": (0.5, 5.0),
-    "Delta": (0.1, 10.0),
-    "eta": (-2.0, 2.0),
-    # "alpha": (0.0, 1.0),
+    # "tau": (0.5, 5.0),
+    # "Delta": (0.1, 10.0),
+    "eta": (-5.0, 0.0),
+    "alpha": (0.0, 1.0),
     # "tau_a": (5.0, 50.0),
     # "kappa": (0.0, 1.0),
     # "tau_u": (50.0, 500.0),
@@ -162,6 +165,7 @@ param_indices = []
 for key in param_keys:
     idx = arg_keys.index(f"p/{op}/{key}")
     param_indices.append(idx)
+inp_idx = arg_keys.index(f"p/{op}/I_ext") - 2
 
 # define final arguments of loss/simulation function
 func_args = (param_indices, func_jit, list(args), T, dt, dts, cutoff)
@@ -273,7 +277,7 @@ if plotting:
     ax.set_title("Posterior Model")
     plt.tight_layout()
     if save_fig:
-        plt.savefig(f"{path}/qif_ca_fit_n{n_simulations}_p{n_params}.pdf")
+        plt.savefig(f"{path}/qif_ca_fit_n{n_simulations}_p{n_params}.png")
     plt.show()
 
 # # save results
