@@ -131,7 +131,7 @@ waveform_length = int(4000.0/dts)
 
 # fitting parameters
 estimator = "mdn"
-n_simulations = int(sys.argv[-1])
+n_simulations = int(sys.argv[-2])
 n_workers = 80
 n_post_samples = 10000
 stop_after_epochs = 30
@@ -140,7 +140,7 @@ lr = 5e-5
 n_map_iter = 1000
 
 # choose which SBI steps to run or to load from file
-round = 0
+round = int(sys.argv[-1])
 run_simulations = True
 fit_posterior_model = True
 
