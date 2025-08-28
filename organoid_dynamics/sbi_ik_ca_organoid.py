@@ -242,7 +242,7 @@ target_psd = np.real(np.abs(target_fft))
 if round > 0:
 
     # load previous model fit
-    prior = pickle.load(open(f"{path}/ik_organoid_posterior_n{n_simulations}_p{n_params}_r{round-1}.pkl", "rb"))
+    prior = pickle.load(open(f"{save_dir}/ik_organoid_posterior_n{n_simulations}_p{n_params}_r{round-1}.pkl", "rb"))
 
 else:
 
@@ -264,7 +264,7 @@ inference = NPE(prior=prior, density_estimator=estimator, device=device)
 # load previously simulated data and append to inference object
 if round > 0:
     for r in range(round):
-        simulated_data = pickle.load(open(f"{path}/qif_ca_simulations_n{n_simulations}_p{n_params}_r{r}.pkl", "rb"))
+        simulated_data = pickle.load(open(f"{save_dir}/qif_ca_simulations_n{n_simulations}_p{n_params}_r{r}.pkl", "rb"))
         theta, x = simulated_data["theta"], simulated_data["x"]
         inference = inference.append_simulations(theta, x)
 
@@ -276,12 +276,14 @@ if run_simulations:
                                 num_workers=n_workers, show_progress_bar=True)
 
     # save data
-    pickle.dump({"theta": theta, "x": x}, open(f"{path}/ik_organoid_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
+    pickle.dump({"theta": theta, "x": x},
+                open(f"{save_dir}/ik_organoid_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
 else:
 
     # load previously simulated data and append to inference object
-    simulated_data = pickle.load(open(f"{path}/ik_organoid_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
+    simulated_data = pickle.load(
+        open(f"{save_dir}/ik_organoid_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
     theta, x = simulated_data["theta"], simulated_data["x"]
 
 # add simulations to inference object
@@ -294,12 +296,12 @@ if fit_posterior_model:
     density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
                                         learning_rate=lr)
     posterior = inference.build_posterior(density_estimator)
-    pickle.dump(posterior, open(f"{path}/ik_organoid_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
+    pickle.dump(posterior, open(f"{save_dir}/ik_organoid_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
 else:
 
     # load previous model fit
-    posterior = pickle.load(open(f"{path}/ik_organoid_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
+    posterior = pickle.load(open(f"{save_dir}/ik_organoid_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
 
 # evaluate posterior on target data
 ###################################
@@ -331,7 +333,7 @@ for key, val in zip(param_keys, MAP):
 # save results
 results = {"target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters,
            "theta": theta, "x": x}
-pickle.dump(results, open(f"{path}/ik_organoid_fit_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
+pickle.dump(results, open(f"{save_dir}/ik_organoid_fit_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
 # plotting results
 if plotting:
@@ -367,6 +369,6 @@ if plotting:
     ax.set_title("Posterior Model")
     plt.tight_layout()
     if save_fig:
-        plt.savefig(f"{path}/ik_organoid_fit_n{n_simulations}_p{n_params}_r{round}.png")
+        plt.savefig(f"{save_dir}/ik_organoid_fit_n{n_simulations}_p{n_params}_r{round}.png")
     if show_fig:
         plt.show()
