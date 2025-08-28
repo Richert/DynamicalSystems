@@ -63,7 +63,7 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     # simulate model dynamics
     fr = integrate(inp, func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff)
     if normalize:
-        fr = scaler.transform(fr)
+        fr = scaler.transform(fr.reshape(-1, 1))[:, 0]
 
     # get waveform
     max_idx_model = np.argmax(fr)
