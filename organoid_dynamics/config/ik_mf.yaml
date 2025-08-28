@@ -179,17 +179,19 @@ qif_stp_op:
 ik_ca_op:
   base: OperatorTemplate
   equations:
-    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*r_in*a)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + r_in*a*g*(E_r-v) + eta + I_ext - u) / C"
+    - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in*a)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + s_in*a*g*(E_r-v) + eta + I_ext - u) / C"
     - "u' = (b*(v-v_r) - u) / tau_u + kappa*x"
     - "a' = (1-a)/tau_a + (A0-a)*alpha*r"
     - "x' = (r-x)/tau_x"
+    - "s' = (r-s)/tau_s"
   variables:
     r: output(0.0)
     v: variable(-60.0)
     u: variable(0.0)
     a: variable(1.0)
     x: variable(0.0)
+    s: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -204,9 +206,10 @@ ik_ca_op:
     tau_a: 100.0
     tau_u: 50.0
     tau_x: 500.0
+    tau_s: 5.0
     eta: 0.0
     I_ext: input(0.0)
-    r_in: input(0.0)
+    s_in: input(0.0)
 
 # izhikevich operator with calcium-dependent synapses
 ik_eic_op:
@@ -427,7 +430,7 @@ ik_ca:
   nodes:
     p: ik_ca_pop
   edges:
-    - [p/ik_ca_op/r, p/ik_ca_op/r_in, null, {weight: 1.0}]
+    - [p/ik_ca_op/s, p/ik_ca_op/s_in, null, {weight: 1.0}]
 
 # izhikevich population with calcium-dependent synapses
 qif_ca:

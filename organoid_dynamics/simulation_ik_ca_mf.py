@@ -13,31 +13,30 @@ C = 100.0
 k = 0.7
 v_r = -60.0
 v_t = -40.0
-Delta = 2.0
+Delta = 5.0
 eta = 0.0
-b = -10.0
-d = 40.0
-kappa = 1.0
+b = -2.0
+kappa = 20.0
 alpha = 0.1
-gamma = 1.0
-theta = 40.0
-mu = 0.5
-tau_a = 1000.0
-tau_u = 100.0
-g = 20.0
+tau_a = 100.0
+tau_u = 50.0
+tau_x = 500.0
+tau_s = 2.0
+A0 = 0.5
+g = 40.0
 E_r = 0.0
-I_ext = 50.0
-noise_lvl = 50.0
+I_ext = 51.0
+noise_lvl = 10.0
 noise_sigma = 100.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 's': gamma, 'theta': theta, 'mu': mu, 'd': d
+    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 'tau_x': tau_x, 'A0': A0, 'tau_s': tau_s
 }
 
 # define inputs
-T = 25000.0
-cutoff = 0.0
+T = 10000.0
+cutoff = 1000.0
 dt = 1e-1
 dts = 1.0
 inp = np.zeros((int(T/dt),)) + I_ext
@@ -57,7 +56,7 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # run simulation
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
-                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/x', 'u': f'p/{op}/u'},
+                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 'u': f'p/{op}/u'},
                 inputs={f'p/{op}/I_ext': inp}, clear=True)
 
 # plot results
