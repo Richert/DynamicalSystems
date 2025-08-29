@@ -7,7 +7,7 @@ import pickle
 import matplotlib.pyplot as plt
 
 # read in data
-path = "/home/richard-gast/Documents"
+path = "/home/richard"
 dataset = "trujilo_2019"
 data = pd.read_csv(f"{path}/data/{dataset}/{dataset}_waveforms.csv",
                    header=[0, 1, 2], index_col=0)
@@ -20,6 +20,7 @@ n_init = 3
 metric = "euclidean"
 max_iter_barycenter = 100
 n_jobs = 15
+plotting = False
 
 # reduce data
 age = 75
@@ -58,28 +59,30 @@ waveforms = get_cluster_prototypes(cluster_labels, data_reduced, reduction_metho
 results = {"D": D, "labels": cluster_labels, "cluster_centroids": proto_waves, "waveforms": waveforms}
 pickle.dump(results, open(f"{path}/results/{dataset}/{n_clusters}cluster_kmeans_results.pkl", "wb"))
 
-# plot prototypical waveforms
-fig, ax = plt.subplots(figsize=(12, 5))
-for sample, wave in enumerate(proto_waves):
-    ax.plot(wave, label=sample)
-ax.set_ylabel("firing rate")
-ax.set_xlabel("time (ms)")
-ax.legend()
-ax.set_title(f"Normalized cluster waveforms")
-plt.tight_layout()
+if plotting:
 
-# plot clustering results
-step = 15
-idx = np.argsort(cluster_labels)
-D = D[idx, :]
-D = D[:, idx]
-fig, ax = plt.subplots(figsize=(8, 6))
-im = ax.imshow(D, aspect="auto", interpolation="none", cmap="cividis")
-plt.colorbar(im, ax=ax)
-ax.set_xticks(np.arange(0, len(cluster_labels), step), labels=idx[::step])
-ax.set_yticks(np.arange(0, len(cluster_labels), step), labels=idx[::step])
-ax.set_ylabel("waveforms")
-ax.set_xlabel("waveforms")
-plt.title(f"Distance matrix")
-plt.tight_layout()
-plt.show()
+    # plot prototypical waveforms
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for sample, wave in enumerate(proto_waves):
+        ax.plot(wave, label=sample)
+    ax.set_ylabel("firing rate")
+    ax.set_xlabel("time (ms)")
+    ax.legend()
+    ax.set_title(f"Normalized cluster waveforms")
+    plt.tight_layout()
+
+    # plot clustering results
+    step = 15
+    idx = np.argsort(cluster_labels)
+    D = D[idx, :]
+    D = D[:, idx]
+    fig, ax = plt.subplots(figsize=(8, 6))
+    im = ax.imshow(D, aspect="auto", interpolation="none", cmap="cividis")
+    plt.colorbar(im, ax=ax)
+    ax.set_xticks(np.arange(0, len(cluster_labels), step), labels=idx[::step])
+    ax.set_yticks(np.arange(0, len(cluster_labels), step), labels=idx[::step])
+    ax.set_ylabel("waveforms")
+    ax.set_xlabel("waveforms")
+    plt.title(f"Distance matrix")
+    plt.tight_layout()
+    plt.show()
