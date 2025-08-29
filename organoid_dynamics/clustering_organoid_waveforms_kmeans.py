@@ -12,6 +12,13 @@ dataset = "trujilo_2019"
 data = pd.read_csv(f"{path}/data/{dataset}/{dataset}_waveforms.csv",
                    header=[0, 1, 2], index_col=0)
 
+# meta parameters
+calc_dists = True
+plotting = False
+age = 82
+organoid = None
+normalize = False
+
 # clustering parameters
 n_clusters = 5
 max_iter = 100
@@ -20,12 +27,8 @@ n_init = 3
 metric = "euclidean"
 max_iter_barycenter = 100
 n_jobs = 15
-plotting = False
 
 # reduce data
-age = 82
-organoid = None
-normalize = False
 data_reduced = reduce_df(data, age=age, organoid=organoid)
 # fig, ax = plt.subplots(figsize=(12, 4))
 # data_reduced.plot(ax=ax)
@@ -45,7 +48,6 @@ cluster_labels = km.labels_
 proto_waves = np.asarray(km.cluster_centers_).squeeze()
 
 # calculate distance between waves
-calc_dists = False
 if calc_dists:
     D = cdist_dtw(data_norm[:, :], n_jobs=n_jobs)
     np.save(f"{path}/results/{dataset}/{n_clusters}cluster_waveform_distances.npy", D)
