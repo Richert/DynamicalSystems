@@ -97,7 +97,7 @@ markersize = 40
 
 # choose device
 device = "cpu"
-n_jobs = 15
+n_jobs = 80
 
 # define directories and file to fit
 path = "/home/richard"
