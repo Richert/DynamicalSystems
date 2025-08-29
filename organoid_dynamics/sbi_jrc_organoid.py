@@ -111,7 +111,7 @@ op = "jrc_op"
 
 # choose data set
 n_clusters = 5
-target_cluster = 0
+target_cluster = 1
 age = 82
 organoid = None
 

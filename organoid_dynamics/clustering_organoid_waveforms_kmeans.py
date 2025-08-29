@@ -23,7 +23,7 @@ n_jobs = 15
 plotting = False
 
 # reduce data
-age = 75
+age = 82
 organoid = None
 normalize = False
 data_reduced = reduce_df(data, age=age, organoid=organoid)
