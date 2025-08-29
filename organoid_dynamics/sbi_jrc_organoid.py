@@ -192,7 +192,7 @@ simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 ####################################
 
 # load data from file
-data = pickle.load(open(f"{load_dir}/{n_clusters}cluster_kmeans_results.pkl", "rb"))
+data = pickle.load(open(f"{save_dir}/{n_clusters}cluster_kmeans_results.pkl", "rb"))
 waveforms = data["cluster_centroids"]
 y_target = waveforms[target_cluster] / 1e3
 waveform_length = len(y_target)
