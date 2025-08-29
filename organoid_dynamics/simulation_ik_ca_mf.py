@@ -15,17 +15,17 @@ v_r = -60.0
 v_t = -40.0
 Delta = 5.0
 eta = 0.0
-b = -2.0
-kappa = 20.0
-alpha = 0.1
+b = 0.0
+kappa = 40**2
+alpha = 2.0
 tau_a = 100.0
-tau_u = 50.0
+tau_u = 30.0
 tau_x = 500.0
-tau_s = 2.0
-A0 = 0.5
-g = 40.0
+tau_s = 8.0
+A0 = 0.3
+g = 80.0
 E_r = 0.0
-I_ext = 51.0
+I_ext = 60.0
 noise_lvl = 10.0
 noise_sigma = 100.0
 
@@ -35,8 +35,8 @@ params = {
 }
 
 # define inputs
-T = 10000.0
-cutoff = 1000.0
+T = 3000.0
+cutoff = 0.0
 dt = 1e-1
 dts = 1.0
 inp = np.zeros((int(T/dt),)) + I_ext
@@ -56,7 +56,7 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 
 # run simulation
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
-                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 'u': f'p/{op}/u'},
+                outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 'u': f'p/{op}/x'},
                 inputs={f'p/{op}/I_ext': inp}, clear=True)
 
 # plot results

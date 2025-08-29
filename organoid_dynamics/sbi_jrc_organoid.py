@@ -3,7 +3,6 @@ import numpy as np
 from typing import Callable
 from custom_functions import *
 from pyrates import CircuitTemplate
-from numba import njit
 import warnings
 import torch
 import matplotlib.pyplot as plt
@@ -25,10 +24,11 @@ def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
     store_step = int(dts / dt)
     store_steps = int((T - cutoff) / dts)
     state_rec = []
+    u = float(args[inp_idx])
 
     # solve ivp for forward Euler method
     for step in range(steps):
-        args[inp_idx] = inp[step]
+        args[inp_idx] = u + inp[step]
         if step > cutoff_steps and step % store_step == 0:
             state_rec.append(y[0])
         if not np.isfinite(y[0]):
@@ -100,14 +100,14 @@ device = "cpu"
 n_jobs = 15
 
 # define directories and file to fit
-path = "/home/richard-gast/Documents"
+path = "/home/richard"
 dataset = "trujilo_2019"
 save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
 
 # choose model
-model = "ik_ca"
-op = "ik_ca_op"
+model = "JRC2"
+op = "jrc_op"
 
 # choose data set
 n_clusters = 5
@@ -133,58 +133,46 @@ n_map_iter = 1000
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-1])
 uniform_prior = True
-run_simulations = False
-fit_posterior_model = False
+run_simulations = True
+fit_posterior_model = True
 
 # model parameters
-C = 100.0
-k = 0.7
-v_r = -60.0
-v_t = -40.0
-Delta = 5.0
-eta = 51.0
-b = -2.0
-kappa = 20.0
-alpha = 0.1
-tau_a = 100.0
-tau_u = 50.0
-tau_x = 500.0
-tau_s = 2.0
-A0 = 0.5
-g = 40.0
-E_r = 0.0
-noise_lvl = 10.0
+c = 0.1
+H_e = 3.25
+H_i = 22.0
+tau_e = 10.0
+tau_i = 20.0
+m_max = 1.0
+r = 560.0
+v_thr = 6.0
+ei_ratio = 4.0
+noise_lvl = 0.1
 noise_sigma = 100.0
+u = 0.22
 params = {
-    'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 'tau_x': tau_x, 'A0': A0, 'tau_s': tau_s
+    'c': c, 'h_e': H_e, 'h_i': H_i, 'tau_e': tau_e, 'tau_i': tau_i, 'm_max': m_max, 'r': r, 'V_thr': v_thr,
+    'ei_ratio': ei_ratio, 'u': u,
 }
 
 # initialize model template and set fixed parameters
-template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
-template.update_var(node_vars={f"p/{op}/{key}": val for key, val in params.items()})
+template = CircuitTemplate.from_yaml(f"model_templates.neural_mass_models.jansenrit.{model}")
+template.update_var(node_vars={f"jrc/{op}/{key}": val for key, val in params.items()})
 
 # generate run function
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
                                                 float_precision="float64", vectorize=False)
-func_jit = njit(func)
-func_jit(*args)
 
 # free parameter bounds
 param_bounds = {
-    "C": (20.0, 200.0),
-    "k": (0.1, 1.5),
-    "Delta": (0.2, 20.0),
-    "eta": (-10.0, 100.0),
-    "b": (-10.0, 5.0),
-    "alpha": (0.0, 10.0),
-    "tau_a": (2.0, 20.0),
-    "kappa": (0.0, 100.0),
-    "tau_u": (10.0, 200.0),
-    "g": (1.0, 100.0),
-    "tau_s": (1.0, 10.0),
-    "tau_x": (100.0, 1000.0),
-    "A0": (0.0, 0.5)
+    "c": (0.0, 1.0),
+    "h_e": (0.1, 20.0),
+    "h_i": (0.1, 50.0),
+    "tau_e": (1.0, 100.0),
+    "tau_i": (5.0, 500.0),
+    "r": (50.0, 1000.0),
+    "V_thr": (0.0, 20.0),
+    "ei_ratio": (0.5, 10.0),
+    "u": (0.0, 1.0)
 }
 param_keys = list(param_bounds.keys())
 n_params = len(param_keys)
@@ -192,12 +180,12 @@ n_params = len(param_keys)
 # find argument positions of free parameters
 param_indices = []
 for key in param_keys:
-    idx = arg_keys.index(f"p/{op}/{key}")
+    idx = arg_keys.index(f"jrc/{op}/{key}")
     param_indices.append(idx)
-inp_idx = arg_keys.index(f"p/{op}/I_ext") - 2
+inp_idx = arg_keys.index(f"jrc/{op}/u") - 2
 
 # define final arguments of loss/simulation function
-func_args = (param_indices, func_jit, list(args), T, dt, dts, cutoff)
+func_args = (param_indices, func, list(args), T, dt, dts, cutoff)
 simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 
 # target data loading and processing
@@ -206,7 +194,7 @@ simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 # load data from file
 data = pickle.load(open(f"{load_dir}/{n_clusters}cluster_kmeans_results.pkl", "rb"))
 waveforms = data["cluster_centroids"]
-y_target = waveforms[target_cluster] / 1e4
+y_target = waveforms[target_cluster] / 1e3
 waveform_length = len(y_target)
 
 # fourier transform
@@ -220,7 +208,7 @@ target_psd = np.real(np.abs(target_fft))
 if round > 0 and not uniform_prior:
 
     # load previous model fit
-    prior = pickle.load(open(f"{save_dir}/ik_ca_posterior_n{n_simulations}_p{n_params}_r{round-1}.pkl", "rb"))
+    prior = pickle.load(open(f"{save_dir}/jrc_posterior_n{n_simulations}_p{n_params}_r{round-1}.pkl", "rb"))
     prior.set_default_x(torch.as_tensor(target_psd))
 
 else:
@@ -243,7 +231,7 @@ inference = NPE(prior=prior, density_estimator=estimator, device=device)
 # load previously simulated data and append to inference object
 if round > 0:
     for r in range(round):
-        simulated_data = pickle.load(open(f"{save_dir}/ik_ca_simulations_n{n_simulations}_p{n_params}_r{r}.pkl", "rb"))
+        simulated_data = pickle.load(open(f"{save_dir}/jrc_simulations_n{n_simulations}_p{n_params}_r{r}.pkl", "rb"))
         theta, x = simulated_data["theta"], simulated_data["x"]
         inference = inference.append_simulations(theta, x)
 
@@ -256,13 +244,13 @@ if run_simulations:
 
     # save data
     pickle.dump({"theta": theta, "x": x},
-                open(f"{save_dir}/ik_ca_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
+                open(f"{save_dir}/jrc_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
 else:
 
     # load previously simulated data and append to inference object
     simulated_data = pickle.load(
-        open(f"{save_dir}/ik_ca_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
+        open(f"{save_dir}/jrc_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
     theta, x = simulated_data["theta"], simulated_data["x"]
 
 # add simulations to inference object
@@ -275,12 +263,12 @@ if fit_posterior_model:
     density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
                                         learning_rate=lr)
     posterior = inference.build_posterior(density_estimator)
-    pickle.dump(posterior, open(f"{save_dir}/ik_ca_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
+    pickle.dump(posterior, open(f"{save_dir}/jrc_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
 else:
 
     # load previous model fit
-    posterior = pickle.load(open(f"{save_dir}/ik_ca_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
+    posterior = pickle.load(open(f"{save_dir}/jrc_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "rb"))
 
 # evaluate posterior on target data
 ###################################
@@ -350,6 +338,6 @@ if plotting:
     ax.set_title("Posterior Model")
     plt.tight_layout()
     if save_fig:
-        plt.savefig(f"{save_dir}/ik_organoid_cluster{target_cluster}_fit_n{n_simulations}_p{n_params}_r{round}.png")
+        plt.savefig(f"{save_dir}/jrc_organoid_cluster{target_cluster}_fit_n{n_simulations}_p{n_params}_r{round}.png")
     if show_fig:
         plt.show()

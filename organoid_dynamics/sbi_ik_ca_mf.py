@@ -59,6 +59,12 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     # simulate model dynamics
     fr = integrate(inp, func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff)
 
+    # get waveform
+    start = 0
+    if start + waveform_length > fr.shape[0]:
+        start = fr.shape[0] - waveform_length
+    fr = fr[start:start + waveform_length]
+
     # fourier transform
     fr_fft = np.fft.rfft(fr)
     fr_psd = np.real(np.abs(fr_fft))
@@ -96,14 +102,15 @@ model = "ik_ca"
 op = "ik_ca_op"
 
 # simulation parameters
-cutoff = 500.0
-T = 5000.0
+cutoff = 1000.0
+T = 9000.0
 dt = 1e-1
 dts = 1.0
+waveform_length = 3000
 
 # fitting parameters
 estimator = "mdn"
-n_simulations = 50000# int(sys.argv[-1])
+n_simulations = int(sys.argv[-2])
 n_workers = 15
 n_post_samples = 10000
 stop_after_epochs = 30
@@ -112,7 +119,7 @@ lr = 5e-5
 n_map_iter = 1000
 
 # choose which SBI steps to run or to load from file
-round = 0
+round = int(sys.argv[-1])
 run_simulations = False
 fit_posterior_model = False
 
@@ -152,19 +159,19 @@ func_jit(*args)
 
 # free parameter bounds
 param_bounds = {
-    # "C": (50.0, 200.0),
-    # "k": (0.5, 1.5),
-    # "Delta": (0.2, 20.0),
+    "C": (50.0, 200.0),
+    "k": (0.5, 1.5),
+    "Delta": (0.2, 20.0),
     "eta": (-5.0, 100.0),
-    # "b": (-10.0, 5.0),
-    # "alpha": (0.0, 1.0),
-    # "tau_a": (2.0, 20.0),
+    "b": (-10.0, 5.0),
+    "alpha": (0.0, 1.0),
+    "tau_a": (2.0, 20.0),
     "kappa": (0.0, 100.0),
-    # "tau_u": (10.0, 200.0),
-    # "g": (1.0, 100.0),
-    # "tau_s": (1.0, 10.0),
-    # "tau_x": (100.0, 1000.0),
-    # "A0": (0.0, 0.5)
+    "tau_u": (10.0, 200.0),
+    "g": (1.0, 100.0),
+    "tau_s": (1.0, 10.0),
+    "tau_x": (100.0, 1000.0),
+    "A0": (0.0, 0.5)
 }
 param_keys = list(param_bounds.keys())
 n_params = len(param_keys)
@@ -319,7 +326,7 @@ if plotting:
     ax.set_xlabel(param_keys[0])
     ax.set_ylabel(param_keys[1])
     ticks = np.arange(0, bins, step=10, dtype=np.int32)
-    ax.set_xticks(ticks, labels=np.round(x_edges[ticks], decimals=2))
+    ax.set_xticks(ticks, labels=np.round(x_edges[ticks], decimals=0))
     ax.set_yticks(ticks, labels=np.round(y_edges[ticks], decimals=1))
     ax.set_title("Posterior Model")
     plt.tight_layout()
