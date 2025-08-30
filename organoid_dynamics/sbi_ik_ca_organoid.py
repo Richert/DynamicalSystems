@@ -109,7 +109,7 @@ op = "ik_ca_op"
 
 # choose target data
 n_clusters = 5
-target_cluster = 3
+target_cluster = 0
 age = 82
 organoid = None
 normalize = True
@@ -132,8 +132,8 @@ n_map_iter = 1000
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-1])
 uniform_prior = True
-run_simulations = True
-fit_posterior_model = True
+run_simulations = False
+fit_posterior_model = False
 
 # model parameters
 C = 50.0
@@ -340,8 +340,8 @@ if plotting:
         ax.legend()
         ax.set_xlabel(x)
         ax.set_ylabel(y)
-        ticks = np.arange(0, bins, step=10, dtype=np.int32)
-        ax.set_xticks(ticks, labels=np.round(x_edges[ticks], decimals=2))
+        ticks = np.arange(0, bins, step=12, dtype=np.int32)
+        ax.set_xticks(ticks, labels=np.round(x_edges[ticks], decimals=1))
         ax.set_yticks(ticks, labels=np.round(y_edges[ticks], decimals=1))
         idx += 1
     plt.tight_layout()
