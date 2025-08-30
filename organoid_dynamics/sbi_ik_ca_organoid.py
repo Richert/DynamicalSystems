@@ -131,9 +131,9 @@ n_map_iter = 1000
 
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-1])
-uniform_prior = True
-run_simulations = False
-fit_posterior_model = False
+uniform_prior = False
+run_simulations = True
+fit_posterior_model = True
 
 # model parameters
 C = 50.0
