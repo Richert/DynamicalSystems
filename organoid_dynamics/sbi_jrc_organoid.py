@@ -100,7 +100,7 @@ device = "cpu"
 n_jobs = 80
 
 # define directories and file to fit
-path = "/home/richard"
+path = "/home/richard-gast/Documents"
 dataset = "trujilo_2019"
 save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
@@ -133,8 +133,8 @@ n_map_iter = 1000
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-1])
 uniform_prior = True
-run_simulations = True
-fit_posterior_model = True
+run_simulations = False
+fit_posterior_model = False
 
 # model parameters
 c = 0.1
@@ -278,8 +278,7 @@ posterior.set_default_x(torch.as_tensor(target_psd))
 
 # generate samples from posterior and create heat map
 bins = 50
-sampling_obj = density_estimator if fit_posterior_model else posterior
-posterior_samples = sampling_obj.sample((n_post_samples,)).numpy()
+posterior_samples = posterior.sample((n_post_samples,)).numpy()
 posterior_grid, x_edges, y_edges = np.histogram2d(x=posterior_samples[:, 0], y=posterior_samples[:, 1],
                                                   bins=bins, density=False)
 posterior_grid /= n_post_samples

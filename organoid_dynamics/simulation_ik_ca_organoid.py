@@ -10,33 +10,31 @@ plt.rcParams['backend'] = 'TkAgg'
 ###################
 
 # model parameters
-C = 100.0
-k = 0.7
+C = 50.0
+k = 0.8
 v_r = -60.0
 v_t = -40.0
-Delta = 8.0
+Delta = 2.0
 eta = 0.0
-b = 1.0
-kappa = 50**2
-alpha = 2.0
-tau_a = 100.0
-tau_u = 30.0
-tau_x = 500.0
-tau_s = 8.0
-A0 = 0.3
-g = 200.0
+kappa = 25.0
+alpha = 0.9
+tau_a = 130.0
+tau_x = 1500.0
+tau_s = 70.0
+A0 = 0.0
+g = 220.0
 E_r = 0.0
-I_ext = 60.0
-noise_lvl = 0.0
+I_ext = 56.0
+noise_lvl = 1.0
 noise_sigma = 100.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 'tau_x': tau_x, 'A0': A0, 'tau_s': tau_s
+    'tau_a': tau_a, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'A0': A0, 'tau_s': tau_s
 }
 
 # define inputs
-T = 3000.0
+T = 5000.0
 cutoff = 0.0
 dt = 1e-1
 dts = 1.0
@@ -50,7 +48,7 @@ path = "/home/richard-gast/Documents"
 dataset = "trujilo_2019"
 load_dir = f"{path}/data/{dataset}"
 n_clusters = 5
-target_cluster = 0
+target_cluster = 3
 
 # target data loading and processing
 ####################################
@@ -60,6 +58,7 @@ data = pickle.load(open(f"{load_dir}/{n_clusters}cluster_kmeans_results.pkl", "r
 waveforms = data["cluster_centroids"]
 fr_target = waveforms[target_cluster]
 waveform_length = len(fr_target)
+fr_target /= np.max(fr_target)
 
 # fourier transform
 target_fft = np.fft.rfft(fr_target)
@@ -79,17 +78,18 @@ ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in params.items()})
 res_mf = ik.run(simulation_time=T, step_size=dt, sampling_step_size=dts, cutoff=cutoff, solver='heun',
                 outputs={'r': f'p/{op}/r', 'a': f'p/{op}/a', 'u': f'p/{op}/u'},
                 inputs={f'p/{op}/I_ext': inp}, clear=True)
-fr = res_mf.loc[:, "r"].values * 1e4
+fr = res_mf.loc[:, "r"].values
+fr /= np.max(fr)
 
-# # get waveform
-# max_idx_model = np.argmax(fr)
-# max_idx_target = np.argmax(fr_target)
-# start = max_idx_model - max_idx_target
-# if start < 0:
-#     start = 0
-# if start + waveform_length > fr.shape[0]:
-#     start = fr.shape[0] - waveform_length
-# fr = fr[start:start + waveform_length]
+# get waveform
+max_idx_model = np.argmax(fr)
+max_idx_target = np.argmax(fr_target)
+start = max_idx_model - max_idx_target
+if start < 0:
+    start = 0
+if start + waveform_length > fr.shape[0]:
+    start = fr.shape[0] - waveform_length
+fr = fr[start:start + waveform_length]
 
 # fourier transform
 fr_fft = np.fft.rfft(fr)

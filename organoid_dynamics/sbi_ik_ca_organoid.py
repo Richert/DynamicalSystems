@@ -44,7 +44,7 @@ def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
 
 
 def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
-              T: float, dt: float, dts: float, cutoff: float, return_dynamics: bool = False):
+              T: float, dt: float, dts: float, cutoff: float):
 
     # update parameter vector
     for i, j in enumerate(x_indices):
@@ -58,6 +58,10 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
 
     # simulate model dynamics
     fr = integrate(inp, func_args[1], func, func_args[2:], T + cutoff, dt, dts, cutoff)
+    if normalize:
+        fr /= np.max(fr)
+    else:
+        fr *= 1e3
 
     # get waveform
     max_idx_model = np.argmax(fr)
@@ -69,14 +73,7 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
         start = fr.shape[0] - waveform_length
     fr = fr[start:start + waveform_length]
 
-    # fourier transform
-    fr_fft = np.fft.rfft(fr)
-    fr_psd = np.real(np.abs(fr_fft))
-
-    # return fourier-transformed signal
-    if return_dynamics:
-        return fr, fr_psd
-    return fr_psd
+    return fr
 
 # parameter definitions
 #######################
@@ -84,7 +81,8 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
 # plotting
 plotting = True
 save_fig = True
-show_fig = True
+show_fig = False
+plot_params = [("g", "alpha"), ("g", "kappa"), ("alpha", "kappa")]
 print(f"Plotting backend: {plt.rcParams['backend']}")
 plt.rcParams["font.family"] = "Times New Roman"
 plt.rc('text', usetex=True)
@@ -97,10 +95,10 @@ markersize = 40
 
 # choose device
 device = "cpu"
-n_jobs = 15
+n_jobs = 80
 
 # define directories and file to fit
-path = "/home/richard-gast/Documents"
+path = "/home/richard"
 dataset = "trujilo_2019"
 save_dir = f"{path}/results/{dataset}"
 load_dir = f"{path}/data/{dataset}"
@@ -109,23 +107,24 @@ load_dir = f"{path}/data/{dataset}"
 model = "ik_ca"
 op = "ik_ca_op"
 
-# choose data set
+# choose target data
 n_clusters = 5
-target_cluster = 0
+target_cluster = 3
 age = 82
 organoid = None
+normalize = True
 
 # simulation parameters
-cutoff = 1000.0
-T = 9000.0
+cutoff = 0.0
+T = 6000.0
 dt = 1e-1
 dts = 1.0
 
 # fitting parameters
-estimator = "mdn"
+estimator = "maf"
 n_simulations = int(sys.argv[-2])
 n_post_samples = 10000
-stop_after_epochs = 30
+stop_after_epochs = 100
 clip_max_norm = 10.0
 lr = 5e-5
 n_map_iter = 1000
@@ -137,27 +136,28 @@ run_simulations = False
 fit_posterior_model = False
 
 # model parameters
-C = 100.0
-k = 0.7
+C = 50.0
+k = 0.8
 v_r = -60.0
 v_t = -40.0
-Delta = 5.0
-eta = 51.0
-b = -2.0
-kappa = 20.0
-alpha = 0.1
-tau_a = 100.0
-tau_u = 50.0
-tau_x = 500.0
-tau_s = 2.0
-A0 = 0.5
-g = 40.0
+Delta = 2.0
+eta = 0.0
+kappa = 25.0
+theta = 0.2
+psi = 20.0
+alpha = 0.9
+tau_a = 130.0
+tau_x = 1500.0
+tau_s = 70.0
+A0 = 0.0
+g = 220.0
 E_r = 0.0
-noise_lvl = 10.0
+I_ext = 56.0
+noise_lvl = 1.0
 noise_sigma = 100.0
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'tau_a': tau_a, 'tau_u': tau_u, 'g': g, 'E_r': E_r, 'b': b, 'tau_x': tau_x, 'A0': A0, 'tau_s': tau_s
+    'tau_a': tau_a, 'g': g, 'E_r': E_r, 'tau_x': tau_x, 'A0': A0, 'tau_s': tau_s, 'theta': theta, 'psi': psi
 }
 
 # initialize model template and set fixed parameters
@@ -166,25 +166,24 @@ template.update_var(node_vars={f"p/{op}/{key}": val for key, val in params.items
 
 # generate run function
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
-                                                float_precision="float64", vectorize=False)
+                                                float_precision="float64", vectorize=False, clear=False)
 func_jit = njit(func)
 func_jit(*args)
 
 # free parameter bounds
 param_bounds = {
     "C": (20.0, 200.0),
-    "k": (0.1, 1.5),
+    "k": (0.1, 1.0),
     "Delta": (0.2, 20.0),
-    "eta": (-10.0, 100.0),
-    "b": (-10.0, 5.0),
-    "alpha": (0.0, 10.0),
-    "tau_a": (2.0, 20.0),
-    "kappa": (0.0, 100.0),
-    "tau_u": (10.0, 200.0),
-    "g": (1.0, 100.0),
-    "tau_s": (1.0, 10.0),
-    "tau_x": (100.0, 1000.0),
-    "A0": (0.0, 0.5)
+    "eta": (0.0, 100.0),
+    "alpha": (0.0, 2.0),
+    "tau_a": (10.0, 200.0),
+    "kappa": (0.0, 50.0),
+    "g": (10.0, 500.0),
+    "tau_s": (5.0, 50.0),
+    "tau_x": (200.0, 2000.0),
+    "theta": (0.0, 0.5),
+    "psi": (10.0, 100.0)
 }
 param_keys = list(param_bounds.keys())
 n_params = len(param_keys)
@@ -206,12 +205,10 @@ simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 # load data from file
 data = pickle.load(open(f"{save_dir}/{n_clusters}cluster_kmeans_results.pkl", "rb"))
 waveforms = data["cluster_centroids"]
-y_target = waveforms[target_cluster] / 1e4
+y_target = waveforms[target_cluster]
 waveform_length = len(y_target)
-
-# fourier transform
-target_fft = np.fft.rfft(y_target)
-target_psd = np.real(np.abs(target_fft))
+if normalize:
+     y_target /= np.max(y_target)
 
 # fitting procedure
 ###################
@@ -221,7 +218,7 @@ if round > 0 and not uniform_prior:
 
     # load previous model fit
     prior = pickle.load(open(f"{save_dir}/ik_ca_posterior_n{n_simulations}_p{n_params}_r{round-1}.pkl", "rb"))
-    prior.set_default_x(torch.as_tensor(target_psd))
+    prior.set_default_x(torch.as_tensor(y_target))
 
 else:
 
@@ -286,22 +283,28 @@ else:
 ###################################
 
 # evaluate posterior
-posterior.set_default_x(torch.as_tensor(target_psd))
+posterior.set_default_x(torch.as_tensor(y_target))
 
 # generate samples from posterior and create heat map
 bins = 50
-sampling_obj = density_estimator if fit_posterior_model else posterior
-posterior_samples = sampling_obj.sample((n_post_samples,)).numpy()
-posterior_grid, x_edges, y_edges = np.histogram2d(x=posterior_samples[:, 0], y=posterior_samples[:, 1],
-                                                  bins=bins, density=False)
-posterior_grid /= n_post_samples
+posterior_samples = posterior.sample((n_post_samples,)).numpy()
+
+# calculate grids for parameter combinations
+plot_grids = {}
+for x, y in plot_params:
+    x_idx = param_keys.index(x)
+    y_idx = param_keys.index(y)
+    posterior_grid, x_edges, y_edges = np.histogram2d(x=posterior_samples[:, x_idx], y=posterior_samples[:, y_idx],
+                                                      bins=bins, density=False)
+    posterior_grid /= n_post_samples
+    plot_grids[(x, y)] = (posterior_grid, x_edges, y_edges)
 
 # get MAP
 MAP = posterior.map(num_iter=n_map_iter, num_init_samples=n_post_samples, learning_rate=lr*100, show_progress_bars=True
                     ).numpy().squeeze()
 
 # run the model for the MAP
-y_fit, fitted_psd = simulator(MAP, *func_args, return_dynamics=True)
+y_fit = simulator(MAP, *func_args)
 
 loss = float(np.sum((y_target - y_fit)**2))
 print(f"Finished fitting procedure. The MAP parameter set (loss = {loss}) is ... ")
@@ -312,7 +315,7 @@ for key, val in zip(param_keys, MAP):
 
 # save results
 results = {"target_waveform": y_target, "fitted_waveform": y_fit, "fitted_parameters": fitted_parameters,
-           "theta": theta, "x": x}
+           "theta": theta, "x": x, "loss": loss}
 pickle.dump(results,
             open(f"{save_dir}/ik_organoid_cluster{target_cluster}_fit_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
@@ -320,34 +323,27 @@ pickle.dump(results,
 if plotting:
     fig = plt.figure(figsize=(12, 6))
     grid = fig.add_gridspec(ncols=3, nrows=2)
-    ax = fig.add_subplot(grid[0, 1:])
+    ax = fig.add_subplot(grid[0, :])
     ax.plot(y_target, label="target")
     ax.plot(y_fit, label="fit")
     ax.set_title("Model Dynamics")
     ax.set_xlabel("time")
     ax.set_ylabel("firing rate")
     ax.legend()
-    ax = fig.add_subplot(grid[1, 1:])
-    freqs = np.fft.rfftfreq(len(y_fit), d=dts*1e-2)
-    idx = (freqs > 0.05) * (freqs <= 10.0)
-    ax.plot(freqs[idx], target_psd[idx], label="target")
-    ax.plot(freqs[idx], fitted_psd[idx], label="fit")
-    ax.set_xlabel("frequency")
-    ax.set_ylabel("power")
-    ax.set_title("Fourier Transform")
-    ax.legend()
-    ax = fig.add_subplot(grid[:, 0])
-    im = ax.imshow(posterior_grid.T, aspect="auto")
-    ax.scatter(x=np.argmin((x_edges[:-1] - MAP[0]) ** 2).squeeze(),
-               y=np.argmin((y_edges[:-1] - MAP[1]) ** 2).squeeze(),
-               marker="x", s=40, color="black", label="MAP")
-    ax.legend()
-    ax.set_xlabel(param_keys[0])
-    ax.set_ylabel(param_keys[1])
-    ticks = np.arange(0, bins, step=10, dtype=np.int32)
-    ax.set_xticks(ticks, labels=np.round(x_edges[ticks], decimals=2))
-    ax.set_yticks(ticks, labels=np.round(y_edges[ticks], decimals=1))
-    ax.set_title("Posterior Model")
+    idx = 0
+    for (x, y), (post_grid, x_edges, y_edges) in plot_grids.items():
+        ax = fig.add_subplot(grid[1, idx])
+        im = ax.imshow(post_grid.T, aspect="auto")
+        ax.scatter(x=np.argmin((x_edges[:-1] - MAP[param_keys.index(x)]) ** 2).squeeze(),
+                   y=np.argmin((y_edges[:-1] - MAP[param_keys.index(y)]) ** 2).squeeze(),
+                   marker="x", s=40, color="black", label="MAP")
+        ax.legend()
+        ax.set_xlabel(x)
+        ax.set_ylabel(y)
+        ticks = np.arange(0, bins, step=10, dtype=np.int32)
+        ax.set_xticks(ticks, labels=np.round(x_edges[ticks], decimals=2))
+        ax.set_yticks(ticks, labels=np.round(y_edges[ticks], decimals=1))
+        idx += 1
     plt.tight_layout()
     if save_fig:
         plt.savefig(f"{save_dir}/ik_organoid_cluster{target_cluster}_fit_n{n_simulations}_p{n_params}_r{round}.png")

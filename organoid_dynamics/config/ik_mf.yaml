@@ -179,10 +179,12 @@ qif_stp_op:
 ik_ca_op:
   base: OperatorTemplate
   equations:
+    - "sfa = kappa/(1+exp(psi*(theta-x)))"
     - "r' = (k*Delta/(C*pi) + r*(k*(2.0*v-v_r-v_t) - g*s_in*a)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + s_in*a*g*(E_r-v) + eta + I_ext - kappa*x) / C"
-    - "a' = (1-a)/tau_a + (A0-a)*alpha*r"
-    - "x' = (r-x)/tau_x"
+    - "v' = (k*(v-v_r)*(v-v_t) - (C*pi*r)^2/k + s_in*a*g*(E_r-v) + eta + I_ext - sfa) / C"
+    - "a' = (1-a)/tau_a + (A0-sqrt(a))*alpha*s"
+    - "x' = x0/tau_x"
+    - "x0' = r**2 - (2*x0 + x)/tau_x"
     - "s' = s0/tau_s"
     - "s0' = (r - 2*s0 - s) / tau_s"
   variables:
@@ -193,6 +195,7 @@ ik_ca_op:
     x0: variable(0.0)
     s: variable(0.0)
     s0: variable(0.0)
+    sfa: variable(0.0)
     Delta: 0.1
     C: 100.0
     k: 0.7
@@ -201,6 +204,8 @@ ik_ca_op:
     g: 20.0
     E_r: 0.0
     kappa: 1.0
+    psi: 20.0
+    theta: 0.2
     alpha: 1.0
     A0: 0.5
     tau_a: 100.0
