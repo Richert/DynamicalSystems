@@ -109,7 +109,7 @@ op = "ik_ca_op"
 
 # choose target data
 n_clusters = 5
-target_cluster = 0
+target_cluster = int(sys.argv[-1])
 age = 82
 organoid = None
 normalize = True
@@ -122,7 +122,7 @@ dts = 1.0
 
 # fitting parameters
 estimator = "maf"
-n_simulations = int(sys.argv[-2])
+n_simulations = int(sys.argv[-3])
 n_post_samples = 10000
 stop_after_epochs = 100
 clip_max_norm = 10.0
@@ -130,8 +130,8 @@ lr = 5e-5
 n_map_iter = 1000
 
 # choose which SBI steps to run or to load from file
-round = int(sys.argv[-1])
-uniform_prior = False
+round = int(sys.argv[-2])
+uniform_prior = True
 run_simulations = True
 fit_posterior_model = True
 
@@ -178,7 +178,7 @@ param_bounds = {
     "eta": (0.0, 100.0),
     "alpha": (0.0, 2.0),
     "tau_a": (10.0, 200.0),
-    "kappa": (0.0, 50.0),
+    "kappa": (0.0, 100.0),
     "g": (10.0, 500.0),
     "tau_s": (5.0, 50.0),
     "tau_x": (200.0, 2000.0),

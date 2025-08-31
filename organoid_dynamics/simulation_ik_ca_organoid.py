@@ -48,7 +48,7 @@ path = "/home/richard-gast/Documents"
 dataset = "trujilo_2019"
 load_dir = f"{path}/data/{dataset}"
 n_clusters = 5
-target_cluster = 3
+target_cluster = 4
 
 # target data loading and processing
 ####################################
