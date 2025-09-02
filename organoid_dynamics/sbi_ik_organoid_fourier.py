@@ -238,7 +238,7 @@ for r in range(round + 1):
     theta, x = simulated_data["theta"], simulated_data["x"]
     for idx in range(x.shape[0]):
         fft = np.fft.rfft(x[idx])
-        x[idx] = np.real(np.abs(fft))
+        x[idx] = torch.as_tensor(np.real(np.abs(fft)), dtype=x.dtype, device=x.device)
     inference = inference.append_simulations(theta, x)
 
 # add simulations to inference object
