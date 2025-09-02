@@ -236,7 +236,7 @@ inference = NPE(prior=prior, density_estimator=estimator, device=device)
 for r in range(round + 1):
     simulated_data = pickle.load(open(f"{save_dir}/ik_ca_simulations_n{n_simulations}_p{n_params}_r{r}.pkl", "rb"))
     theta, x = simulated_data["theta"], simulated_data["x"]
-    for idx in x.shape[0]:
+    for idx in range(x.shape[0]):
         fft = np.fft.rfft(x[idx])
         x[idx] = np.real(np.abs(fft))
     inference = inference.append_simulations(theta, x)
