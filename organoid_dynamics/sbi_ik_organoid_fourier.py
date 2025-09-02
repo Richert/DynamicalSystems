@@ -240,7 +240,8 @@ for r in range(round + 1):
     for idx in range(x.shape[0]):
         fft = np.fft.rfft(x[idx, :])
         x_fourier.append(np.real(np.abs(fft)))
-    inference = inference.append_simulations(theta, torch.as_tensor(x_fourier, dtype=x.dtype, device=x.device))
+    inference = inference.append_simulations(theta, torch.as_tensor(x_fourier, dtype=x.dtype, device=x.device),
+                                             z_score_x=False)
 
 # train the inference object with simulated data
 if fit_posterior_model:
