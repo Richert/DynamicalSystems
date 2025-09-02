@@ -236,10 +236,11 @@ inference = NPE(prior=prior, density_estimator=estimator, device=device)
 for r in range(round + 1):
     simulated_data = pickle.load(open(f"{save_dir}/ik_ca_simulations_n{n_simulations}_p{n_params}_r{r}.pkl", "rb"))
     theta, x = simulated_data["theta"], simulated_data["x"]
+    x_fourier = []
     for idx in range(x.shape[0]):
         fft = np.fft.rfft(x[idx])
-        x[idx] = torch.as_tensor(np.real(np.abs(fft)), dtype=x.dtype, device=x.device)
-    inference = inference.append_simulations(theta, x)
+        x_fourier.append(np.real(np.abs(fft)))
+    inference = inference.append_simulations(theta, torch.as_tensor(x_fourier, dtype=x.dtype, device=x.device))
 
 # add simulations to inference object
 inference = inference.append_simulations(theta, x)
