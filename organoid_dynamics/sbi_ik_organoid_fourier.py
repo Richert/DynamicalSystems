@@ -242,9 +242,6 @@ for r in range(round + 1):
         x_fourier.append(np.real(np.abs(fft)))
     inference = inference.append_simulations(theta, torch.as_tensor(x_fourier, dtype=x.dtype, device=x.device))
 
-# add simulations to inference object
-inference = inference.append_simulations(theta, x)
-
 # train the inference object with simulated data
 if fit_posterior_model:
 
