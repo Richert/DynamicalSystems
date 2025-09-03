@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 from sbi import utils as utils
 from sbi.inference import NPE
+from sbi.neural_nets import posterior_nn
 from sbi.utils.user_input_checks import process_prior
 import sys
 
@@ -124,6 +125,8 @@ stop_after_epochs = 100
 clip_max_norm = 10.0
 lr = 5e-5
 n_map_iter = 1000
+z_score_x = "none"
+n_hidden_features = 100
 
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-2])
@@ -230,6 +233,7 @@ else:
 
 # create inference object
 prior, num_parameters, prior_returns_numpy = process_prior(prior)
+estimator = posterior_nn(model=estimator, z_score_x=z_score_x, hidden_features=n_hidden_features)
 inference = NPE(prior=prior, density_estimator=estimator, device=device)
 
 # load previously simulated data and append to inference object
@@ -240,8 +244,7 @@ for r in range(round + 1):
     for idx in range(x.shape[0]):
         fft = np.fft.rfft(x[idx, :])
         x_fourier.append(np.real(np.abs(fft)))
-    inference = inference.append_simulations(theta, torch.as_tensor(x_fourier, dtype=x.dtype, device=x.device),
-                                             z_score_x=False)
+    inference = inference.append_simulations(theta, torch.as_tensor(x_fourier, dtype=x.dtype, device=x.device))
 
 # train the inference object with simulated data
 if fit_posterior_model:
