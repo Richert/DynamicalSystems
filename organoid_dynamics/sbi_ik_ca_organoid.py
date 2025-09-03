@@ -267,7 +267,7 @@ else:
     theta, x = simulated_data["theta"], simulated_data["x"]
 
 # add simulations to inference object
-inference = inference.append_simulations(theta, x)
+inference = inference.append_simulations(theta, x, data_device="cpu")
 
 # train the inference object with simulated data
 if fit_posterior_model:
