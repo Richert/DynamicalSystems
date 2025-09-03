@@ -229,7 +229,7 @@ else:
     prior_min = [param_bounds[key][0] for key in param_keys]
     prior_max = [param_bounds[key][1] for key in param_keys]
     prior = utils.torchutils.BoxUniform(
-        low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max)
+        low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max), device=device
     )
 
 # Check prior, simulator, consistency
