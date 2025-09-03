@@ -125,7 +125,7 @@ stop_after_epochs = 100
 clip_max_norm = 10.0
 lr = 5e-5
 n_map_iter = 1000
-z_score_x = "none"
+z_score_x = "structured"
 n_hidden_features = 100
 
 # choose which SBI steps to run or to load from file
