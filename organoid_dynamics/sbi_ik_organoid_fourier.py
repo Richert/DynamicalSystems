@@ -126,7 +126,7 @@ clip_max_norm = 10.0
 lr = 5e-5
 n_map_iter = 1000
 z_score_x = "structured"
-n_hidden_features = 100
+n_hidden_features = 50
 
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-2])

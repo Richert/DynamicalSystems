@@ -9,6 +9,7 @@ import torch
 import matplotlib.pyplot as plt
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 from sbi import utils as utils
+from sbi.neural_nets import posterior_nn
 from sbi.inference import NPE, simulate_for_sbi
 from sbi.utils.user_input_checks import (
     check_sbi_inputs,
@@ -94,7 +95,7 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 40
 
 # choose device
-device = "cpu"
+device = "cuda:0"
 n_jobs = 80
 
 # define directories and file to fit
@@ -128,6 +129,8 @@ stop_after_epochs = 100
 clip_max_norm = 10.0
 lr = 5e-5
 n_map_iter = 1000
+z_score_x = "structured"
+n_hidden_features = 50
 
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-2])
@@ -235,6 +238,7 @@ simulation_wrapper = process_simulator(simulation_wrapper, prior, prior_returns_
 check_sbi_inputs(simulation_wrapper, prior)
 
 # create inference object
+estimator = posterior_nn(model=estimator, z_score_x=z_score_x, hidden_features=n_hidden_features)
 inference = NPE(prior=prior, density_estimator=estimator, device=device)
 
 # load previously simulated data and append to inference object
