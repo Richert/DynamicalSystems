@@ -136,7 +136,7 @@ n_hidden_features = 50
 round = int(sys.argv[-2])
 uniform_prior = True
 run_simulations = False
-fit_posterior_model = False
+fit_posterior_model = True
 
 # model parameters
 C = 50.0
