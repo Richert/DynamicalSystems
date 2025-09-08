@@ -95,7 +95,7 @@ plt.rcParams['lines.linewidth'] = 1.0
 markersize = 40
 
 # choose device
-device = "cuda:0"
+device = "cpu"
 n_jobs = 80
 
 # define directories and file to fit
@@ -136,7 +136,7 @@ n_hidden_features = 50
 round = int(sys.argv[-2])
 uniform_prior = True
 run_simulations = False
-fit_posterior_model = True
+fit_posterior_model = False
 
 # model parameters
 C = 50.0
@@ -291,7 +291,7 @@ posterior.set_default_x(torch.as_tensor(y_target))
 
 # generate samples from posterior and create heat map
 bins = 50
-posterior_samples = posterior.sample((n_post_samples,)).numpy()
+posterior_samples = posterior.sample((n_post_samples,)).cpu().numpy()
 
 # calculate grids for parameter combinations
 plot_grids = {}

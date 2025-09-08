@@ -87,7 +87,7 @@ qif_stp_op:
     - "r' = (Delta/(pi*tau) + 2.0*r*v) / tau"
     - "v' = (v^2 - (pi*tau*r)^2 + a*tau*J*s_in + eta + I_ext) / tau"
     - "s' = (r-s)/tau_s"
-    - "a' = (1-a)/tau_a - a*kappa*r"
+    - "a' = (1-a)/tau_a - A0*a*kappa*r"
     - "u_ltp' = -u_ltp / tau_ltp + r"
     - "u_ltd' = -u_ltd / tau_ltd + r"
   variables:
@@ -99,6 +99,7 @@ qif_stp_op:
     u_ltd: variable(0.0)
     Delta: 0.1
     kappa: 0.0
+    A0: 0.0
     tau_a: 50.0
     tau: 10.0
     J: 20.0
