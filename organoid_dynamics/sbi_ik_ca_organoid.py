@@ -305,7 +305,7 @@ for x, y in plot_params:
 
 # get MAP
 MAP = posterior.map(num_iter=n_map_iter, num_init_samples=n_post_samples, learning_rate=lr*100, show_progress_bars=True
-                    ).numpy().squeeze()
+                    ).cpu().numpy().squeeze()
 
 # run the model for the MAP
 y_fit = simulator(MAP, *func_args)
