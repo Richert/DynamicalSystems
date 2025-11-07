@@ -122,7 +122,7 @@ dt = 1e-1
 dts = 1.0
 
 # fitting parameters
-estimator = "maf"
+estimator = "mdn"
 n_simulations = int(sys.argv[-3])
 n_post_samples = 10000
 stop_after_epochs = 100
@@ -130,13 +130,13 @@ clip_max_norm = 10.0
 lr = 5e-5
 n_map_iter = 1000
 z_score_x = "structured"
-n_hidden_features = 50
+n_hidden_features = 100
 
 # choose which SBI steps to run or to load from file
 round = int(sys.argv[-2])
 uniform_prior = True
 run_simulations = False
-fit_posterior_model = False
+fit_posterior_model = True
 
 # model parameters
 C = 50.0
