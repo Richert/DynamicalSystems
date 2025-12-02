@@ -168,7 +168,7 @@ ik_full_op:
     tau_n: 150.0
     tau_s: 2.0
     mg_scale: 0.08
-    sigma: 0.15
+    sigma: 1.0
     a2: 0.0013
     b2: -0.0146
     v0: -30.0

@@ -13,15 +13,15 @@ C = 100.0
 k = 0.7
 v_r = -70.0
 v_t = -45.0
-Delta = 0.5
+Delta = 2.0
 eta = 0.0
-kappa = 50.0
+kappa = 200.0
 alpha = 0.5
-g_a = 20.0
-g_n = 0.5
+g_a = 10.0
+g_n = 5.0
 s_ext = 100.0
-noise_lvl = 0.0
-noise_sigma = 80.0
+noise_lvl = 50.0
+noise_sigma = 100.0
 
 params = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
@@ -66,10 +66,10 @@ ax.plot(res_mf.index, res_mf["w"])
 ax.set_ylabel(r'$w(t)$')
 ax = axes[2]
 ax.plot(res_mf.index, res_mf["u"])
-ax.set_ylabel(r'$u(t)$ (mV)')
+ax.set_ylabel(r'$u(t)$')
 ax = axes[3]
 ax.plot(res_mf.index, res_mf["x"])
-ax.set_ylabel(r'$x(t)$ (mV)')
+ax.set_ylabel(r'$x(t)$')
 ax.set_xlabel("time (ms)")
 plt.tight_layout()
 plt.show()
