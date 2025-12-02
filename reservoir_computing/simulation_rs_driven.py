@@ -58,15 +58,17 @@ node_vars = {"C": C, "k": k, "v_r": v_r, "v_theta": thetas, "eta": eta, "tau_u":
              "g": g, "E_r": E_r, "tau_s": tau_s, "v": v_t}
 
 # initialize model
-net = Network.from_yaml(f"config/ik/rs", weights=W, source_var="s", target_var="s_in",
-                        input_var="s_ext", output_var="s", spike_var="spike", spike_def="v", to_file=False,
+net = Network(dt=dt, device="cpu")
+net.add_diffeq_node("rs", f"config/ik/rs", weights=W, source_var="s", target_var="s_in",
+                        input_var="s_ext", output_var="s", spike_var="spike", reset_var="v", to_file=False,
                         node_vars=node_vars.copy(), op="rs_op", spike_reset=v_reset, spike_threshold=v_spike,
-                        dt=dt, verbose=False, clear=True, device="cuda:0")
-net.add_input_layer(1, weights=W_in)
+                        dt=dt, clear=True)
+net.add_func_node("inp", 1, activation_function="identity")
+net.add_edge("inp", "rs", weights=W_in, train=None)
 
 # simulation
-obs = net.run(inputs=I_ext, sampling_steps=sr, record_output=True, verbose=False)
-res = obs["out"]
+obs = net.run(inputs=I_ext, sampling_steps=sr, enable_grad=False, verbose=True)
+res = obs.to_dataframe("out")
 time = np.linspace(0, T, num=res.shape[0])
 ik_inp = np.mean(res.loc[:, W_in[:, 0] > 0].values, axis=-1)
 ik_noinp = np.mean(res.loc[:, W_in[:, 0] < alpha].values, axis=-1)
@@ -74,18 +76,23 @@ ik_noinp = np.mean(res.loc[:, W_in[:, 0] < alpha].values, axis=-1)
 # plot results
 start = 5000
 stop = 10000
-fig, axes = plt.subplots(nrows=3, figsize=(12, 8))
+fig, axes = plt.subplots(nrows=4, figsize=(12, 8))
 ax = axes[0]
+ax.imshow(res.values.T ,aspect="auto", interpolation="none", cmap="Greys")
+ax.set_xlabel("time (steps)")
+ax.set_ylabel("neurons")
+ax.set_title("SNN dynamics")
+ax = axes[1]
 ax.plot(time[start:stop], ik_inp[start:stop])
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("$s$")
 ax.set_title("Mean-field of driven cells")
-ax = axes[1]
+ax = axes[2]
 ax.plot(time[start:stop], ik_noinp[start:stop])
 ax.set_xlabel("time (ms)")
 ax.set_ylabel("$s$")
 ax.set_title("Mean-field of non-driven cells")
-ax = axes[2]
+ax = axes[3]
 ax.plot(time[start:stop], ko[start:stop])
 ax.set_xlabel("time (ms)")
 ax.set_ylabel(r"$I_{ext}$")
@@ -93,6 +100,5 @@ ax.set_title("Driver")
 plt.suptitle(fr"$\omega = {omega}$, $\alpha = {alpha}$, $p_i = {p_in}$")
 
 plt.tight_layout()
-plt.savefig(f'results/snn_entrainment_9.pdf')
+# plt.savefig(f'results/snn_entrainment_9.pdf')
 plt.show()
-

@@ -5,7 +5,7 @@
 ####################
 
 # izhikevich operator with biophysiologically relevant parameters
-ik_op:
+ik_op2:
   base: OperatorTemplate
   equations:
     - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
@@ -31,6 +31,33 @@ ik_op:
     I_ext: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
+
+ik_op:
+  base: OperatorTemplate
+  equations:
+    - "r' = (Delta*absv(v-v_r)*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g*s_e)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta*sign(v-v_r)+pi*C*r/k) + k*v_r*v_t + g*s_e*(E_r-v) + eta + I_ext - u) / C"
+    - "u' = a*(b*(v-v_r) - u) + d*r"
+    - "s' = -s/tau_s + r"
+  variables:
+    r: output(0.0)
+    v: variable(-60.0)
+    u: variable(0.0)
+    s: variable(0.0)
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -60.0
+    v_t: -40.0
+    g: 20.0
+    E_r: 0.0
+    b: -2.0
+    a: 0.03
+    d: 10.0
+    tau_s: 6.0
+    eta: 0.0
+    I_ext: input(0.0)
+    s_e: input(0.0)
 
 # qif operator
 qif_op:
@@ -88,6 +115,67 @@ ik_sfa_op:
     I_ext: input(0.0)
     s_e: input(0.0)
     s_i: input(0.0)
+
+# izhikevich operator with SFA
+ik_full_op:
+  base: OperatorTemplate
+  equations:
+    - "v_scale = mg_scale*v"
+    - "v_exp = exp(v_scale)"
+    - "f_n = 1 / (1+v_exp)"
+    - "dfdv = (v_exp*(v_scale - E_n*mg_scale - 1) - 1) * f_n^2"
+    - "p2 = (a2*(1 + tanh((v-v_c)/sigma)) + (b2-a2)*(1 + tanh((v-v0)/sigma)) - b2*(1 + tanh((v-v1)/sigma)))/2"
+    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_a*s_a + g_n*s_n*dfdv)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (1+g_n*p2)*(pi*C*r)^2/k + g_a*s_a*(E_a-v) + g_n*s_n*(E_n-v)*f_n + eta + I_ext - w) / C"
+    - "w' = (b*(v-v_r) - w) / tau_w + kappa*s"
+    - "u' = (U0 - u)/tau_u + U0*(1-u)*s"
+    - "x' = (1-x)/tau_x - alpha*u*x*s"
+    - "s_a' = s_in - s_a / tau_a"
+    - "s_n' = s_in - s_n / tau_n"
+    - "s' = r*x*u - s / tau_s"
+  variables:
+    r: output(0.01)
+    v: variable(-60.0)
+    w: variable(0.0)
+    u: variable(0.6)
+    x: variable(1.0)
+    s: variable(0.05)
+    s_a: variable(0.05)
+    s_n: variable(0.05)
+    v_scale: variable
+    v_exp: variable
+    f_n: variable
+    dfdv: variable
+    p2: variable
+    Delta: 0.1
+    C: 100.0
+    k: 0.7
+    v_r: -70.0
+    v_t: -45.0
+    g_a: 20.0
+    g_n: 10.0
+    E_a: 0.0
+    E_n: 0.0
+    eta: 0.0
+    b: -2.0
+    kappa: 10.0
+    U0: 0.8
+    alpha: 0.1
+    tau_w: 100.0
+    tau_u: 50.0
+    tau_x: 1000.0
+    tau_a: 5.0
+    tau_n: 150.0
+    tau_s: 2.0
+    mg_scale: 0.08
+    sigma: 0.15
+    a2: 0.0013
+    b2: -0.0146
+    v0: -30.0
+    v1: 7.0
+    v_c: -150.0
+    I_ext: input(0.0)
+    s_in: input(0.0)
 
 # qif operator with SFA
 qif_sfa_op:
@@ -381,6 +469,12 @@ ik_pop:
   operators:
     - ik_op
 
+# population of biophysiologically informed izhikevich neurons
+ik_full_pop:
+  base: NodeTemplate
+  operators:
+    - ik_full_op
+
 # population of Izhikevich neurons with calcium-dependent synapses
 ik_ca_pop:
   base: NodeTemplate
@@ -427,6 +521,14 @@ ik:
     p: ik_pop
   edges:
     - [p/ik_op/s, p/ik_op/s_e, null, {weight: 1.0}]
+
+# biophysiologically informed izhikevich population
+ik_full:
+  base: CircuitTemplate
+  nodes:
+    p: ik_full_pop
+  edges:
+    - [p/ik_full_op/s, p/ik_full_op/s_in, null, {weight: 1.0}]
 
 # izhikevich population with calcium-dependent synapses
 ik_ca:
