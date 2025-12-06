@@ -6,9 +6,9 @@ def sigmoid(x, mu):
 
 
 mu = 1.0
-theta = 0.3
-s = 10.0
-x = np.linspace(0.0, 1.0, num=1000)
+theta = 0.025
+s = 500.0
+x = np.linspace(0.0, 0.05, num=1000)
 y = sigmoid(s*(x-theta), mu)
 plt.plot(x, y)
 plt.title("custom sigmoidal function")

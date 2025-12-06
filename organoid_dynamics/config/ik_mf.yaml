@@ -125,48 +125,52 @@ ik_full_op:
     - "f_n = 1 / (1+v_exp)"
     - "dfdv = (v_exp*(v_scale - E_n*mg_scale - 1) - 1) * f_n^2"
     - "p2 = (a2*(1 + tanh((v-v_c)/sigma)) + (b2-a2)*(1 + tanh((v-v0)/sigma)) - b2*(1 + tanh((v-v1)/sigma)))/2"
-    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_a*s_a + g_n*s_n*dfdv)) / C"
-    - "v' = (k*(v-v_r)*(v-v_t) - (1+g_n*p2)*(pi*C*r)^2/k + g_a*s_a*(E_a-v) + g_n*s_n*(E_n-v)*f_n + eta + I_ext - w) / C"
-    - "w' = (b*(v-v_r) - w) / tau_w + kappa*s"
-    - "u' = (U0 - u)/tau_u + U0*(1-u)*s"
-    - "x' = (1-x)/tau_x - alpha*u*x*s"
-    - "s_a' = s_in - s_a / tau_a"
-    - "s_n' = s_in - s_n / tau_n"
-    - "s' = r*x*u - s / tau_s"
+    - "ca = alpha/(1+exp(psi*(theta-r)))"
+    - "r' = (Delta*k^2/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_a*s_a + g_n*s_n*dfdv - g_g*s_g)) / C"
+    - "v' = (k*(v-v_r)*(v-v_t) - (1+g_n*p2)*(pi*C*r)^2/k + g_a*s_a*(E_a-v) + g_n*s_n*(E_n-v)*f_n + g_g*s_g*(E_g-v) + eta + I_ext - u) / C"
+    - "u' = (b*(v-v_r) - u) / tau_u + kappa*w"
+    - "w' = (r-w) / tau_w"
+    - "x' = (1-x)/tau_x + (X0-x)*ca"
+    - "s_a' = x*r_e - s_a / tau_a"
+    - "s_n' = x*r_e - s_n / tau_n"
+    - "s_g' = x*r_i - s_g / tau_g"
   variables:
     r: output(0.01)
     v: variable(-60.0)
+    u: variable(0.0)
     w: variable(0.0)
-    u: variable(0.6)
     x: variable(1.0)
-    s: variable(0.05)
     s_a: variable(0.05)
     s_n: variable(0.05)
+    s_g: variable(0.05)
     v_scale: variable
     v_exp: variable
     f_n: variable
     dfdv: variable
     p2: variable
+    ca: variable
     Delta: 0.1
     C: 100.0
     k: 0.7
     v_r: -70.0
     v_t: -45.0
-    g_a: 20.0
-    g_n: 10.0
+    g_a: 2.0
+    g_n: 1.0
+    g_g: 3.0
     E_a: 0.0
     E_n: 0.0
+    E_g: -65.0
     eta: 0.0
     b: -2.0
     kappa: 10.0
-    U0: 0.8
+    X0: 0.2
     alpha: 0.1
-    tau_w: 100.0
     tau_u: 50.0
+    tau_w: 200.0
     tau_x: 1000.0
     tau_a: 5.0
     tau_n: 150.0
-    tau_s: 2.0
+    tau_g: 10.0
     mg_scale: 0.08
     sigma: 1.0
     a2: 0.0013
@@ -174,8 +178,11 @@ ik_full_op:
     v0: -30.0
     v1: 7.0
     v_c: -150.0
+    psi: 20.0
+    theta: 0.1
     I_ext: input(0.0)
-    s_in: input(0.0)
+    r_e: input(0.0)
+    r_i: input(0.0)
 
 # qif operator with SFA
 qif_sfa_op:
@@ -523,12 +530,32 @@ ik:
     - [p/ik_op/s, p/ik_op/s_e, null, {weight: 1.0}]
 
 # biophysiologically informed izhikevich population
-ik_full:
+pc:
   base: CircuitTemplate
   nodes:
     p: ik_full_pop
   edges:
-    - [p/ik_full_op/s, p/ik_full_op/s_in, null, {weight: 1.0}]
+    - [p/ik_full_op/r, p/ik_full_op/r_e, null, {weight: 1.0}]
+
+# biophysiologically informed izhikevich population
+pv:
+  base: CircuitTemplate
+  nodes:
+    p: ik_full_pop
+  edges:
+    - [p/ik_full_op/r, p/ik_full_op/r_i, null, {weight: 1.0}]
+
+# biophysiologically informed izhikevich population
+eic:
+  base: CircuitTemplate
+  nodes:
+    pc: ik_full_pop
+    pv: ik_full_pop
+  edges:
+    - [pc/ik_full_op/r, pc/ik_full_op/r_e, null, {weight: 1.0}]
+    - [pc/ik_full_op/r, pv/ik_full_op/r_e, null, {weight: 1.0}]
+    - [pv/ik_full_op/r, pc/ik_full_op/r_i, null, {weight: 1.0}]
+    - [pv/ik_full_op/r, pv/ik_full_op/r_i, null, {weight: 1.0}]
 
 # izhikevich population with calcium-dependent synapses
 ik_ca:
