@@ -1,8 +1,5 @@
 import pickle
 from typing import Callable
-
-import numpy as np
-
 from custom_functions import *
 from pyrates import CircuitTemplate
 from numba import njit
@@ -19,7 +16,6 @@ from sbi.utils.user_input_checks import (
 import sys
 from scipy.ndimage import gaussian_filter
 from scipy.integrate import solve_ivp
-import matplotlib.pyplot as plt
 
 def generate_colored_noise(num_samples, tau, scale=1.0):
     """
@@ -65,8 +61,6 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
         y = r_norm[d:]
         DE = np.histogram2d(x, y, bins=nbins)[0] + 0.1
         DE = gaussian_filter(np.log(DE), sigma=sigma)
-        plt.imshow(DE)
-        plt.show()
         DEs.append(DE)
 
     # # get first-level IMFs from firing rates
@@ -102,19 +96,17 @@ device = "cpu"
 n_jobs = 15
 
 # define directories
-path = "/home/richard-gast/Documents/data/sbi_test"
+path = "/home/richard/data/sbi_organoids"
 
 # choose model
 model = "pc"
 op = "ik_full_op"
 
 # simulation parameters
-T = 10000.0
+T = 60000.0
 cutoff = 0.0
 dt = 1e-3
 dts = 1.0
-noise_lvl = 0.5
-noise_tau = 50.0/dt
 solver_kwargs = {}
 
 # sbi parameters
@@ -180,7 +172,7 @@ template.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.it
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="scipy",
                                                 float_precision="float32", vectorize=False,
                                                 inputs={f"p/{op}/I_ext": np.zeros(int(T/dt),)})
-func_jit = func #njit(func)
+func_jit = njit(func)
 func_jit(*args)
 
 # free parameter bounds
@@ -221,15 +213,6 @@ inp_idx = arg_keys.index(f"I_ext_input_node/I_ext_input_op/I_ext_input")
 func_args = (param_indices, func_jit, list(args), T, dt, dts, cutoff)
 simulation_wrapper = lambda theta: simulator(theta.cpu().numpy(), *func_args)
 
-# generate target data
-######################
-
-# define target parameters
-theta_target = np.asarray([node_vars[key] for key in param_keys[:-2]] + [noise_tau, noise_lvl])
-
-# get target data
-y_target, target_psd = simulator(theta_target, *func_args, return_dynamics=True)
-
 # fitting procedure
 ###################
 
@@ -264,8 +247,8 @@ if round > 0:
         inference = inference.append_simulations(theta, x)
 
 # simulate data
-theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations,
-                            num_workers=n_workers, show_progress_bar=True)
+theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations, num_workers=n_workers,
+                            show_progress_bar=True)
 
 # fit posterior model
 inference = inference.append_simulations(theta, x)
