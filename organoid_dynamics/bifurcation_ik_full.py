@@ -37,23 +37,25 @@ Delta = 1.0
 eta = 50.0
 b = -2.0
 kappa = 0.0
-X0 = 0.0
+U0 = 0.6
 alpha = 0.0
-psi = 500.0
+psi = 300.0
 theta = 0.02
-g_a = 3.0
-g_n = 0.3
-g_g = 3.0
-tau_u = 60.0
-tau_w = 200.0
+g_a = 30.0
+g_n = 0.1
+g_g = 15.0
+tau_w = 50.0
+tau_ca = 250.0
+tau_u = 100.0
 tau_x = 700.0
 tau_a = 5.0
 tau_n = 150.0
 tau_g = 10.0
+tau_s = 1.0
 node_vars = {
     'C': C, 'k': k, 'v_r': v_r, 'v_t': v_t, 'Delta': Delta, 'eta': eta, 'kappa': kappa, 'alpha': alpha,
-    'g_a': g_a, 'g_n': g_n, 'g_g': g_g, 'b': b, 'X0': X0, 'tau_u': tau_u, 'tau_w': tau_w, 'tau_x': tau_x,
-    'tau_a': tau_a, 'tau_n': tau_n, 'tau_g': tau_g, 'psi': psi, 'theta': theta
+    'g_a': g_a, 'g_n': g_n, 'g_g': g_g, 'b': b, 'U0': U0, 'tau_ca': tau_ca, 'tau_w': tau_w, 'tau_u': tau_u,
+    'tau_x': tau_x, 'tau_a': tau_a, 'tau_n': tau_n, 'tau_g': tau_g, 'tau_s': tau_s, 'psi': psi, 'theta': theta
 }
 
 # initialize model
@@ -64,8 +66,8 @@ ik = CircuitTemplate.from_yaml("config/ik_mf/pc")
 ik.update_var(node_vars={f"p/{op}/{var}": val for var, val in node_vars.items()})
 
 # config
-n_dim = 8
-n_params = 38
+n_dim = 10
+n_params = 40
 ode = ODESystem.from_template(ik, working_dir="config", auto_dir=auto_dir, init_cont=False)
 # ode = ODESystem(eq_file="ik_ca_equations", working_dir="../organoid_dynamics/config", auto_dir=auto_dir, init_cont=False)
 
@@ -80,7 +82,7 @@ t_sols, t_cont = ode.run(c='ivp', name='t', DS=1e-4, DSMIN=1e-10, EPSL=1e-06, NP
 # continuation in independent parameter
 p1 = "kappa"
 p1_idx = 21
-p1_vals = [20.0, 40.0, 60.0]
+p1_vals = [1.0, 5.0, 25.0]
 p1_min, p1_max = 0.0, 100.0
 c1_sols, c1_cont = ode.run(starting_point='UZ1', c='1d', ICP=p1_idx, NPAR=n_params, NDIM=n_dim, name=f'{p1}:0',
                            origin="t", NMX=8000, DSMAX=0.1, UZR={p1_idx: p1_vals}, STOP=[],
@@ -126,7 +128,7 @@ for i, p1_val in enumerate(p1_vals):
     plt.tight_layout()
 
 # 2D continuation I
-p1_val_idx = 2
+p1_val_idx = 1
 p1_max_step = 0.1
 NMX = 2000
 fold_bifurcations = True
@@ -170,7 +172,7 @@ except KeyError:
 
 # 2D continuation II
 p2 = "alpha"
-p2_idx = 38
+p2_idx = 23
 p2_max_step = 0.02
 p2_min, p2_max = 0.0, 1.0
 if fold_bifurcations:
