@@ -93,7 +93,7 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
 
 # choose device
 device = "cpu"
-n_jobs = 15
+n_workers = 50
 
 # define directories
 path = "/home/richard/data/sbi_organoids"
@@ -103,7 +103,7 @@ model = "pc"
 op = "ik_full_op"
 
 # simulation parameters
-T = 60000.0
+T = 50000.0
 cutoff = 0.0
 dt = 1e-3
 dts = 1.0
@@ -113,26 +113,23 @@ solver_kwargs = {}
 estimator = "mdn"
 round = int(sys.argv[-1])
 n_simulations = int(sys.argv[-2])
-n_workers = 15
-n_post_samples = 10000
 stop_after_epochs = 30
 clip_max_norm = 10.0
 lr = 5e-5
-n_map_iter = 1000
 
 # delay-embedding parameters
 nbins = 50
 sigma = 1
-delays = [5, 10, 20, 40, 80]
+delays = [2, 4, 8, 16, 32, 64]
 
 # EMD parameters
-max_imfs_lvl1 = 7
-max_imfs_lvl2 = 5
-imf_thresh = 0.05
-mask_freq = 24.0
-n_masks = 8
-carrier_hist = (1, 20, 128, 'log')
-am_hist = (1e-3, 10, 64, 'log')
+# max_imfs_lvl1 = 7
+# max_imfs_lvl2 = 4
+# imf_thresh = 0.05
+# mask_freq = 24.0
+# n_masks = 8
+# carrier_hist = (1, 20, 128, 'log')
+# am_hist = (1e-3, 10, 64, 'log')
 
 # model parameters
 C = 100.0
