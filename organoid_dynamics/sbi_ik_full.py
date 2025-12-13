@@ -103,7 +103,7 @@ model = "pc"
 op = "ik_full_op"
 
 # simulation parameters
-T = 60000.0
+T = 10000.0
 cutoff = 0.0
 dt = 1e-3
 dts = 1.0
