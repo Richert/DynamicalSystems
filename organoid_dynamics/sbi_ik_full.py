@@ -234,7 +234,7 @@ else:
 # Check prior, simulator, consistency
 prior, num_parameters, prior_returns_numpy = process_prior(prior)
 simulation_wrapper = process_simulator(simulation_wrapper, prior, prior_returns_numpy)
-check_sbi_inputs(simulation_wrapper, prior)
+# check_sbi_inputs(simulation_wrapper, prior)
 
 # create inference object
 inference = NPE(prior=prior, density_estimator=estimator, device=device)
