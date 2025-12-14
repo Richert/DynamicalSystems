@@ -20,7 +20,6 @@ op = "ik_full_op"
 
 # simulation parameters
 T = 60000.0
-cutoff = 0.0
 dt = 1e-3
 
 # model parameters
@@ -68,4 +67,6 @@ func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_siz
 # func_jit(*args)
 
 # save model
-pickle.dump({"func": func, "args": args, "arg_keys": arg_keys}, open(f"{path}/ik_full_model.pkl", "wb"))
+pickle.dump({"func": func, "args": args, "arg_keys": arg_keys, "T": T, "dt": dt},
+            open(f"{path}/ik_full_model.pkl", "wb"))
+
