@@ -2,7 +2,7 @@
 
 # set condition
 n=1000000
-batch_size=50
+batch_size=40
 range_end=$((n-1))
 
 # limit amount of threads that each Python process can work with
