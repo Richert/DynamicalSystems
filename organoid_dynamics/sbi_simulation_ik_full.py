@@ -70,9 +70,7 @@ device = "cpu"
 path = "/home/richard/data/sbi_organoids"
 
 # simulation parameters
-T = 60000.0
 cutoff = 0.0
-dt = 1e-3
 dts = 1.0
 solver_kwargs = {}
 
@@ -98,6 +96,8 @@ model = pickle.load(open(f"{path}/ik_full_model.pkl", "rb"))
 func = model["func"]
 args = model["args"]
 arg_keys = model["arg_keys"]
+T = model["T"]
+dt = model["dt"]
 
 # find argument positions of free parameters
 param_indices = []
