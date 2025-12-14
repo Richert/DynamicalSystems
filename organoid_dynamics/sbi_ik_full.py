@@ -246,14 +246,12 @@ if round > 0:
 # simulate data
 theta, x = simulate_for_sbi(simulation_wrapper, proposal=prior, num_simulations=n_simulations, num_workers=n_workers,
                             show_progress_bar=True)
+pickle.dump({"theta": theta, "x": x},
+            open(f"{path}/ik_full_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 
 # fit posterior model
 inference = inference.append_simulations(theta, x)
 density_estimator = inference.train(stop_after_epochs=stop_after_epochs, clip_max_norm=clip_max_norm,
                                     learning_rate=lr)
 posterior = inference.build_posterior(density_estimator)
-
-# save data
-pickle.dump({"theta": theta, "x": x},
-            open(f"{path}/ik_full_simulations_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
 pickle.dump(posterior, open(f"{path}/ik_ca_posterior_n{n_simulations}_p{n_params}_r{round}.pkl", "wb"))
