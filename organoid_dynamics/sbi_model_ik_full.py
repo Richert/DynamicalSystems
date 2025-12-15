@@ -66,12 +66,14 @@ func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_siz
                                                 inputs={f"p/{op}/I_ext": np.zeros(int(T/dt),)})
 func_njit = njit(func)
 func_njit(*args)
+func_njit_fm = njit(func, fastmath=True)
+func_njit_fm(*args)
 
 # time functions
 n_calls = 1000
-funcs = [func, func_njit]
+funcs = [func, func_njit, func_njit_fm]
 performances = []
-for f, key in zip([func, func_njit], ["raw", "njit"]):
+for f, key in zip([func, func_njit], ["raw", "njit", "fastmath"]):
     t0 = perf_counter()
     for _ in range(n_calls):
         f(*args)
