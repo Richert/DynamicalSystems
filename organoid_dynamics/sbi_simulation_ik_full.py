@@ -26,7 +26,7 @@ def generate_colored_noise(num_samples, tau, scale=1.0):
     return colored_noise
 
 
-def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
+def integrate(y: np.ndarray, func, args, T, dt, dts, cutoff):
 
     steps = int(T / dt)
     cutoff_steps = int(cutoff / dt)
@@ -36,7 +36,6 @@ def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
 
     # solve ivp for forward Euler method
     for step in range(steps):
-        args[inp_idx] = inp[step]
         if step > cutoff_steps and step % store_step == 0:
             state_rec.append(y[0])
         if not np.isfinite(y[0]):
@@ -63,7 +62,7 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     func_args[inp_idx] = np.asarray(inp, dtype=np.float32)
 
     # simulate model dynamics
-    fr = integrate(inp, y=func_args[1], func=func, args=func_args[2:], T=T, dt=dt, dts=dts, cutoff=cutoff) * 1e3
+    fr = integrate(y=func_args[1], func=func, args=func_args[2:], T=T, dt=dt, dts=dts, cutoff=cutoff) * 1e3
 
     # calculate delay-embedding of signal
     r_norm = fr / np.max(fr)
@@ -92,7 +91,7 @@ device = "cpu"
 path = "/home/richard/data/sbi_organoids"
 
 # simulation parameters
-cutoff = 0.0
+cutoff = 1000.0
 dts = 1.0
 solver_kwargs = {"atol": 1e-5}
 

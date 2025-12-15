@@ -20,8 +20,8 @@ model = "pc"
 op = "ik_full_op"
 
 # simulation parameters
-T = 30000.0
-dt = 1e-2
+T = 31000.0
+dt = 2e-3
 
 # model parameters
 C = 100.0
