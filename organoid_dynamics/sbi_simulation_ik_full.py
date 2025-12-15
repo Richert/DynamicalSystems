@@ -27,6 +27,31 @@ def generate_colored_noise(num_samples, tau, scale=1.0):
     return colored_noise
 
 
+def integrate(inp: np.ndarray, y: np.ndarray, func, args, T, dt, dts, cutoff):
+
+    steps = int(T / dt)
+    cutoff_steps = int(cutoff / dt)
+    store_step = int(dts / dt)
+    store_steps = int((T - cutoff) / dts)
+    state_rec = []
+
+    # solve ivp for forward Euler method
+    for step in range(steps):
+        args[inp_idx] = inp[step]
+        if step > cutoff_steps and step % store_step == 0:
+            state_rec.append(y[0])
+        if not np.isfinite(y[0]):
+            n_zeros = store_steps - len(state_rec)
+            y0 = 0.0
+            state_rec.extend([y0] * n_zeros)
+            break
+        rhs = func(step, y, *args)
+        y_0 = y + dt * rhs
+        y = y + (rhs + func(step, y_0, *args)) * dt/2
+
+    return np.asarray(state_rec)
+
+
 def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
               T: float, dt: float, dts: float, cutoff: float, return_dynamics: bool = False):
 
@@ -38,16 +63,8 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     inp = generate_colored_noise(int(T / dt), tau=x[-2], scale=x[-1]*np.sqrt(dt))
     func_args[inp_idx] = np.asarray(inp, dtype=np.float32)
 
-    # wrap provided rhs function
-    time = np.linspace(0.0, T, int(T / dt))
-    def f(t, y, *args):
-        step = len(time[time <= t]) - 1
-        return func(step, y, *args)
-
     # simulate model dynamics
-    res = solve_ivp(fun=f, t_span=(0.0, T), y0=func_args[1], first_step=dt, args=tuple(func_args[2:]),
-                    t_eval=np.arange(cutoff, T, dts), **solver_kwargs)
-    fr = res.y[0, :] * 1e3
+    fr = integrate(inp, y=func_args[1], func=func, args=func_args[2:], T=T, dt=dt, dts=dts, cutoff=cutoff) * 1e3
 
     # calculate delay-embedding of signal
     r_norm = fr / np.max(fr)
