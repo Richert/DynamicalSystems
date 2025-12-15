@@ -41,7 +41,7 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     # wrap provided rhs function
     time = np.linspace(0.0, T, int(T / dt))
     def f(t, y, *args):
-        step = len(time[time <= t])
+        step = len(time[time <= t]) - 1
         return func(step, y, *args)
 
     # simulate model dynamics
