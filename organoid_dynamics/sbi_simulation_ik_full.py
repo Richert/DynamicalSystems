@@ -4,7 +4,6 @@ from custom_functions import *
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 from scipy.ndimage import gaussian_filter
-from scipy.integrate import solve_ivp
 import sys
 
 def generate_colored_noise(num_samples, tau, scale=1.0):
