@@ -20,8 +20,8 @@ model = "pc"
 op = "ik_full_op"
 
 # simulation parameters
-T = 20000.0
-dt = 1e-3
+T = 30000.0
+dt = 1e-2
 
 # model parameters
 C = 100.0
@@ -61,7 +61,7 @@ template = CircuitTemplate.from_yaml(f"config/ik_mf/{model}")
 template.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.items()})
 
 # generate run function
-func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="scipy",
+func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="heun",
                                                 float_precision="float32", vectorize=False,
                                                 inputs={f"p/{op}/I_ext": np.zeros(int(T/dt),)})
 func_njit = njit(func)

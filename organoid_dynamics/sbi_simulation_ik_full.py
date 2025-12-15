@@ -38,8 +38,14 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     inp = generate_colored_noise(int(T / dt), tau=x[-2], scale=x[-1]*np.sqrt(dt))
     func_args[inp_idx] = np.asarray(inp, dtype=np.float32)
 
+    # wrap provided rhs function
+    time = np.linspace(0.0, T, int(T / dt))
+    def f(t, y, *args):
+        t1 = time[time <= t][-1]
+        return func(t1, y, *args)
+
     # simulate model dynamics
-    res = solve_ivp(fun=func, t_span=(0.0, T), y0=func_args[1], first_step=dt, args=tuple(func_args[2:]),
+    res = solve_ivp(fun=f, t_span=(0.0, T), y0=func_args[1], first_step=dt, args=tuple(func_args[2:]),
                     t_eval=np.arange(cutoff, T, dts), **solver_kwargs)
     fr = res.y[0, :] * 1e3
 
@@ -72,7 +78,7 @@ path = "/home/richard/data/sbi_organoids"
 # simulation parameters
 cutoff = 0.0
 dts = 1.0
-solver_kwargs = {}
+solver_kwargs = {"atol": 1e-5}
 
 # delay-embedding parameters
 nbins = 50
