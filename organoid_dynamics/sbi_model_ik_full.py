@@ -21,7 +21,7 @@ op = "ik_full_op"
 
 # simulation parameters
 T = 31000.0
-dt = 2e-3
+dt = 1e-2
 
 # model parameters
 C = 100.0

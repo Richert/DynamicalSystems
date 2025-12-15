@@ -5,6 +5,11 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 from scipy.ndimage import gaussian_filter
 import sys
+from numba import njit
+
+@njit
+def integrate_noise(x, inp, scale, tau):
+    return x + scale * inp - x / tau
 
 def generate_colored_noise(num_samples, tau, scale=1.0):
     """
@@ -20,8 +25,8 @@ def generate_colored_noise(num_samples, tau, scale=1.0):
     white_noise = np.random.randn(num_samples)
     x = 0.0
     colored_noise = np.zeros_like(white_noise)
-    for sample in range(num_samples):# Generate white noise (Gaussian)
-        x += scale*white_noise[sample] - x / tau
+    for sample in range(num_samples):
+        x = integrate_noise(x, white_noise[sample], scale, tau)
         colored_noise[sample] = x
     return colored_noise
 
