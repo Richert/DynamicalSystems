@@ -4,6 +4,7 @@ from pyrates import CircuitTemplate
 from numba import njit
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
+from time import perf_counter
 
 # parameter definitions
 #######################
@@ -19,7 +20,7 @@ model = "pc"
 op = "ik_full_op"
 
 # simulation parameters
-T = 60000.0
+T = 20000.0
 dt = 1e-3
 
 # model parameters
@@ -63,10 +64,24 @@ template.update_var(node_vars={f"p/{op}/{key}": val for key, val in node_vars.it
 func, args, arg_keys, _ = template.get_run_func(f"{model}_vectorfield", step_size=dt, backend="numpy", solver="scipy",
                                                 float_precision="float32", vectorize=False,
                                                 inputs={f"p/{op}/I_ext": np.zeros(int(T/dt),)})
-# func_jit = njit(func)
-# func_jit(*args)
+func_njit = njit(func)
+func_njit(*args)
+
+# time functions
+n_calls = 1000
+funcs = [func, func_njit]
+performances = []
+for f, key in zip([func, func_njit], ["raw", "njit"]):
+    t0 = perf_counter()
+    for _ in range(n_calls):
+        f(*args)
+    t1 = perf_counter()
+    performances.append(t1-t0)
+    print(f"Run-time for {n_calls} calls of {key} function: {t1 - t0}")
+idx = np.argmin(performances)
+f = funcs[idx]
 
 # save model
-pickle.dump({"func": func, "args": args, "arg_keys": arg_keys, "T": T, "dt": dt},
+pickle.dump({"func": f, "args": args, "arg_keys": arg_keys, "T": T, "dt": dt},
             open(f"{path}/ik_full_model.pkl", "wb"))
 
