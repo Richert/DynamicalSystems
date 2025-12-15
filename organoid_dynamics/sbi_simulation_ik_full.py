@@ -41,8 +41,8 @@ def simulator(x: np.ndarray, x_indices: list, func: Callable, func_args: list,
     # wrap provided rhs function
     time = np.linspace(0.0, T, int(T / dt))
     def f(t, y, *args):
-        t1 = time[time <= t][-1]
-        return func(t1, y, *args)
+        step = len(time[time <= t])
+        return func(step, y, *args)
 
     # simulate model dynamics
     res = solve_ivp(fun=f, t_span=(0.0, T), y0=func_args[1], first_step=dt, args=tuple(func_args[2:]),
