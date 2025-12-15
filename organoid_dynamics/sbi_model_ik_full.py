@@ -73,7 +73,7 @@ func_njit_fm(*args)
 n_calls = 1000
 funcs = [func, func_njit, func_njit_fm]
 performances = []
-for f, key in zip([func, func_njit], ["raw", "njit", "fastmath"]):
+for f, key in zip(funcs, ["raw", "njit", "fastmath"]):
     t0 = perf_counter()
     for _ in range(n_calls):
         f(*args)
@@ -86,4 +86,3 @@ f = funcs[idx]
 # save model
 pickle.dump({"func": f, "args": args, "arg_keys": arg_keys, "T": T, "dt": dt},
             open(f"{path}/ik_full_model.pkl", "wb"))
-
