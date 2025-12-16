@@ -143,7 +143,7 @@ DEs, fr = simulator(theta.cpu().numpy(), param_indices, func, list(args), T, dt,
 
 # evaluate posterior at simulated parameter set
 x = np.asarray(DEs).flatten()
-proposal = posterior.set_default_x(torch.as_tensor(x, device=device), dtype=torch.float32)
+proposal = posterior.set_default_x(torch.as_tensor(x, device=device, dtype=torch.float32))
 
 # plot results
 ##############
