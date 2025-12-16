@@ -36,8 +36,8 @@ inference = NPE(prior=prior, density_estimator=estimator, device=device)
 for file in os.listdir(f"{path}"):
     if file.endswith(".pkl") and f"{model}_results" in file:
         data = pickle.load(open(f"{path}/{file}", "rb"))
-        theta = torch.tensor([data["theta"]], device=device)
-        x = torch.tensor([data["x"]], device=device)
+        theta = torch.tensor([data["theta"]], device=device, dtype=torch.float32)
+        x = torch.tensor([data["x"]], device=device, dtype=torch.float32)
         inference = inference.append_simulations(theta, x)
 
 # fitting procedure
