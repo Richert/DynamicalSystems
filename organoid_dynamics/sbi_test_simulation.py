@@ -7,6 +7,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 from scipy.ndimage import gaussian_filter
 from numba import njit
 import torch
+from sbi import utils as utils
 
 @njit
 def integrate_noise(x, inp, scale, tau):
@@ -110,7 +111,6 @@ delays = [2, 4, 8, 16, 32, 64]
 
 # load posterior
 posterior = pickle.load(open(f"{path}/{model}_posterior.pkl", "rb"))
-theta = posterior.sample((1,))[0]
 
 # load model
 model = pickle.load(open(f"{path}/{model}_model.pkl", "rb"))
@@ -122,7 +122,13 @@ dt = model["dt"]
 
 # find argument positions of free parameters
 params = pickle.load(open(f"{path}/{model}_parameters.pkl", "rb"))
+param_bounds = params["bounds"]
 param_keys = params["parameters"]
+prior_min = [param_bounds[key][0] for key in param_keys]
+prior_max = [param_bounds[key][1] for key in param_keys]
+prior = utils.torchutils.BoxUniform(low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max), device=device)
+theta = prior.sample((1,))[0]
+
 param_indices = []
 for key in param_keys[:-2]:
     idx = arg_keys.index(f"p/{model}_op/{key}")
@@ -133,7 +139,7 @@ inp_idx = arg_keys.index(f"I_ext_input_node/I_ext_input_op/I_ext_input")
 #######################################
 
 # run simulation
-DEs, fr = simulator(theta, param_indices, func, list(args), T, dt, dts, cutoff, return_dynamics=True)
+DEs, fr = simulator(theta.cpu().numpy(), param_indices, func, list(args), T, dt, dts, cutoff, return_dynamics=True)
 
 # evaluate posterior at simulated parameter set
 x = np.asarray(DEs).flatten()
