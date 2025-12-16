@@ -144,6 +144,11 @@ DEs, fr = simulator(theta.cpu().numpy(), param_indices, func, list(args), T, dt,
 # evaluate posterior at simulated parameter set
 x = np.asarray(DEs).flatten()
 proposal = posterior.set_default_x(torch.as_tensor(x, device=device, dtype=torch.float32))
+theta_fit = proposal.map(num_to_optimize=200)
+
+# print results
+for key, t0, t1 in zip(param_keys, theta, theta_fit):
+    print(f"{key}: target = {t0:.2f}, fit = {t1:.2f}")
 
 # plot results
 ##############
@@ -165,5 +170,6 @@ for i, DE in enumerate(DEs):
     ax.set_yticks([])
 
 # save figure
+plt.tight_layout()
 fig.canvas.draw()
 plt.savefig(f"{path}/{model}_fit_synthetic.pdf")
