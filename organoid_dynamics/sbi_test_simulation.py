@@ -144,8 +144,7 @@ DEs, fr = simulator(theta.cpu().numpy(), param_indices, func, list(args), T, dt,
 # evaluate posterior at simulated parameter set
 x = np.asarray(DEs).flatten()
 proposal = posterior.set_default_x(torch.as_tensor(x, device=device, dtype=torch.float32))
-theta_fit = proposal.map(num_to_optimize=100, num_iter=2000)
-print(theta_fit.shape)
+theta_fit = proposal.map(num_to_optimize=100, num_iter=2000)[0]
 
 # print results
 for i, key in enumerate(param_keys):
