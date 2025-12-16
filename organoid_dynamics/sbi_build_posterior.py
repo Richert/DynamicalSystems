@@ -12,7 +12,7 @@ path = "/home/richard/data/sbi_organoids"
 model = "ik_full"
 
 # sbi parameters
-device = "cpu"
+device = "cuda:0"
 estimator = "mdn"
 stop_after_epochs = 30
 clip_max_norm = 10.0
@@ -34,7 +34,7 @@ inference = NPE(prior=prior, density_estimator=estimator, device=device)
 
 # add simulations
 for file in os.listdir(f"{path}"):
-    if file.endswith(".pkl") and model in file:
+    if file.endswith(".pkl") and f"{model}_results" in file:
         data = pickle.load(open(f"{path}/{file}", "rb"))
         theta = torch.tensor(data["theta"], device=device)
         x = torch.tensor(data["x"], device=device)
