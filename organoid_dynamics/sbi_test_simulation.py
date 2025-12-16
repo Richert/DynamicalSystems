@@ -147,7 +147,9 @@ proposal = posterior.set_default_x(torch.as_tensor(x, device=device, dtype=torch
 theta_fit = proposal.map(num_to_optimize=100, num_iter=2000)
 
 # print results
-for key, t0, t1 in zip(param_keys, theta, theta_fit):
+for i, key in enumerate(param_keys):
+    t0 = float(theta[i].cpu().numpy())
+    t1 = float(theta_fit[i].cpu().numpy())
     print(f"{key}: target = {t0:.2f}, fit = {t1:.2f}")
 
 # plot results
