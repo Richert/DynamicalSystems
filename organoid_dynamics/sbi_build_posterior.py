@@ -27,7 +27,7 @@ param_bounds = params["bounds"]
 param_keys = params["parameters"]
 prior_min = [param_bounds[key][0] for key in param_keys]
 prior_max = [param_bounds[key][1] for key in param_keys]
-prior = utils.torchutils.BoxUniform(low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max))
+prior = utils.torchutils.BoxUniform(low=torch.as_tensor(prior_min), high=torch.as_tensor(prior_max), device=device)
 
 # create inference object
 inference = NPE(prior=prior, density_estimator=estimator, device=device)
