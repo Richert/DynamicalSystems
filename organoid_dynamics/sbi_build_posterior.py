@@ -1,4 +1,6 @@
 import pickle
+
+import numpy as np
 import torch
 from sbi import utils as utils
 from sbi.inference import NPE
@@ -33,12 +35,16 @@ prior = utils.torchutils.BoxUniform(low=torch.as_tensor(prior_min), high=torch.a
 inference = NPE(prior=prior, density_estimator=estimator, device=device)
 
 # add simulations
+results = {"x": [], "theta": []}
 for file in os.listdir(f"{path}"):
     if file.endswith(".pkl") and f"{model}_results" in file:
         data = pickle.load(open(f"{path}/{file}", "rb"))
-        theta = torch.tensor([data["theta"]], device=device, dtype=torch.float32)
-        x = torch.tensor([data["x"]], device=device, dtype=torch.float32)
-        inference = inference.append_simulations(theta, x)
+        results["theta"].append(data["theta"])
+        results["x"].append(data["x"])
+inference = inference.append_simulations(
+    torch.tensor(np.asarray(results["theta"]), device=device, dtype=torch.float32),
+    torch.tensor(np.asarray(results["x"]), device=device, dtype=torch.float32)
+)
 
 # fitting procedure
 ###################
