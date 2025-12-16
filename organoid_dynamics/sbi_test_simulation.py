@@ -113,12 +113,12 @@ delays = [2, 4, 8, 16, 32, 64]
 posterior = pickle.load(open(f"{path}/{model}_posterior.pkl", "rb"))
 
 # load model
-model = pickle.load(open(f"{path}/{model}_model.pkl", "rb"))
-func = model["func"]
-args = model["args"]
-arg_keys = model["arg_keys"]
-T = model["T"]
-dt = model["dt"]
+model_info = pickle.load(open(f"{path}/{model}_model.pkl", "rb"))
+func = model_info["func"]
+args = model_info["args"]
+arg_keys = model_info["arg_keys"]
+T = model_info["T"]
+dt = model_info["dt"]
 
 # find argument positions of free parameters
 params = pickle.load(open(f"{path}/{model}_parameters.pkl", "rb"))
