@@ -14,7 +14,7 @@ path = "/home/richard/data/sbi_organoids"
 model = "ik_full"
 
 # sbi parameters
-device = "cuda:0"
+device = "cpu"
 estimator = "mdn"
 stop_after_epochs = 30
 clip_max_norm = 10.0
