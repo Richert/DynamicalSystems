@@ -42,7 +42,7 @@ for file in os.listdir(f"{path}"):
             data = pickle.load(open(f"{path}/{file}", "rb"))
             results["theta"].append(data["theta"])
             results["x"].append(data["x"])
-        except EOFError:
+        except (EOFError, pickle.UnpicklingError):
             pass
 inference = inference.append_simulations(
     torch.tensor(np.asarray(results["theta"]), device=device, dtype=torch.float32),
