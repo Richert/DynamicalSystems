@@ -20,7 +20,7 @@ sigma_rate = 20
 ##########
 
 data = {"condition": [], "mouse": [], "rate": [], "speed": []}
-path = "/run/user/1000/gvfs/smb-share:server=fsmresfiles.fsm.northwestern.edu,share=fsmresfiles/Basic_Sciences/Phys/Kennedylab/Parkerlab/Calcium_v2"
+path = "/mnt/kennedy_lab_data/Parkerlab/Calcium_v2"
 for file in os.listdir(f"{path}/{drug}/{dose}"):
 
     # load data

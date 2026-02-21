@@ -92,6 +92,7 @@ E_r = 0.0
 tau_s = 6.0
 v_spike = 1000.0
 v_reset = -1000.0
+max_phase = 2.0
 
 # device for computations
 device = "cuda:0"
@@ -99,19 +100,21 @@ device = "cuda:0"
 # sweep condition
 p1 = "Delta"
 p2 = "trial"
+p3 = "max_phase"
 
 # parameter sweep definition
 with open(f"{wdir}/entrainment_sweep.pkl", "rb") as f:
     sweep = pickle.load(f)
     v1s = sweep[p1]
     v2s = sweep[p2]
+    v3s = sweep[p3]
     f.close()
-vals = [(v1, v2) for v1 in v1s for v2 in v2s]
-v1, v2 = vals[int(cond)]
-print(f"Condition: {p1} = {v1},  {p2} = {v2}")
+vals = [(v1, v2, v3) for v1 in v1s for v2 in v2s for v3 in v3s]
+v1, v2, v3 = vals[int(cond)]
+print(f"Condition: {p1} = {v1}, {p2} = {v2}, {p3} = {v3}")
 
 # adjust parameters according to sweep condition
-for param, v in zip([p1, p2], [v1, v2]):
+for param, v in zip([p1, p2, p3], [v1, v2, v3]):
     exec(f"{param} = {v}")
 
 # define lorentzian of etas
@@ -146,7 +149,7 @@ freq = 4.0
 T = 1e3/freq
 cycle_steps = int(T/dt)
 stim_onsets = np.linspace(0, T, num=n_stims+1)[:-1]
-stim_phases = 2.0*np.pi*stim_onsets/T
+stim_phases = max_phase*np.pi*stim_onsets/T
 stim_onsets = [int(onset/dt) for onset in stim_onsets]
 stim_width = int(20.0/dt)
 n_inputs = int(p_in*N)
