@@ -1,12 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use("TkAgg")
-matplotlib.rcParams["font.size"] = 14
-matplotlib.rcParams["axes.labelsize"] = 14
-matplotlib.rcParams["lines.markersize"] = 12.0
-matplotlib.rcParams["lines.linewidth"] = 2.0
-import seaborn as sb
 from scipy.io import loadmat
 import os
 from scipy.ndimage import gaussian_filter1d
@@ -14,8 +6,10 @@ from pandas import DataFrame, read_csv
 import pickle
 
 # load processed data or re-process data
-path = f"/mnt/kennedy_lab_data/Parkerlab/neural_data"
+path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
+save_dir = "/home/richard/data/parker_data"
 process_data = True
+plot_results = False
 
 # choose condition
 drugs = ["clozapine", "olanzapine", "xanomeline", "MP10", "haloperidol", "M4PAM",
@@ -179,37 +173,48 @@ if process_data:
 
     # save data
     df = DataFrame.from_dict(results["results"])
-    df.to_csv(f"/home/rgast/data/parker_data/spn_dimensionality_data.csv")
-    pickle.dump(results["data"], open("/home/rgast/data/parker_data/spn_dimensionality_data.pkl", "wb"))
+    df.to_csv(f"{save_dir}/spn_dimensionality_data.csv")
+    pickle.dump(results["data"], open(f"{save_dir}/spn_dimensionality_data.pkl", "wb"))
 
 else:
 
     df = read_csv(f"/home/rgast/data/parker_data/spn_dimensionality_data.csv")
 
 # plotting
-sb.set_palette("colorblind")
-df.sort_values(["condition", "dose"], inplace=True)
-for key in ["dimensionality"]:
-    for drug in drugs:
-        if d12_combined:
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sb.lineplot(df.loc[df.loc[:, "drug"] == drug, :],
-                        x="v", y=key, hue="dose", style="condition", ax=ax,
-                        markers=True, dashes=True, err_style='bars', errorbar="se")
-            ax.set_title(drug)
-            plt.tight_layout()
-            fig.canvas.draw()
-            fig.savefig(f"/home/rgast/data/parker_data/{drug}_{key}_d1_d2_combined.svg")
-        else:
-            fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
-            fig.suptitle(drug)
-            for i, d in enumerate(["D1", "D2"]):
-                ax = axes[i]
-                sb.lineplot(df.loc[(df.loc[:, "drug"] == drug) & (df.loc[:, "neuron_type"] == d), :],
+if plot_results:
+
+    import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.use("TkAgg")
+    matplotlib.rcParams["font.size"] = 14
+    matplotlib.rcParams["axes.labelsize"] = 14
+    matplotlib.rcParams["lines.markersize"] = 12.0
+    matplotlib.rcParams["lines.linewidth"] = 2.0
+    import seaborn as sb
+
+    sb.set_palette("colorblind")
+    df.sort_values(["condition", "dose"], inplace=True)
+    for key in ["dimensionality"]:
+        for drug in drugs:
+            if d12_combined:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sb.lineplot(df.loc[df.loc[:, "drug"] == drug, :],
                             x="v", y=key, hue="dose", style="condition", ax=ax,
                             markers=True, dashes=True, err_style='bars', errorbar="se")
-                ax.set_title(f"{d}")
-            plt.tight_layout()
-            fig.canvas.draw()
-            fig.savefig(f"/home/rgast/data/parker_data/figures/{drug}_{key}_d1_d2_split.svg")
-plt.show()
+                ax.set_title(drug)
+                plt.tight_layout()
+                fig.canvas.draw()
+                fig.savefig(f"/home/rgast/data/parker_data/{drug}_{key}_d1_d2_combined.svg")
+            else:
+                fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
+                fig.suptitle(drug)
+                for i, d in enumerate(["D1", "D2"]):
+                    ax = axes[i]
+                    sb.lineplot(df.loc[(df.loc[:, "drug"] == drug) & (df.loc[:, "neuron_type"] == d), :],
+                                x="v", y=key, hue="dose", style="condition", ax=ax,
+                                markers=True, dashes=True, err_style='bars', errorbar="se")
+                    ax.set_title(f"{d}")
+                plt.tight_layout()
+                fig.canvas.draw()
+                fig.savefig(f"/home/rgast/data/parker_data/figures/{drug}_{key}_d1_d2_split.svg")
+    plt.show()
