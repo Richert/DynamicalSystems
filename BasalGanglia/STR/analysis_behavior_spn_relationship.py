@@ -7,9 +7,9 @@ import pickle
 
 # load processed data or re-process data
 path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
-save_dir = "/home/richard/data/parker_data"
-process_data = True
-plot_results = False
+save_dir = "/home/rgast/data/parker_data"
+process_data = False
+plot_results = True
 
 # choose condition
 drugs = ["clozapine", "olanzapine", "xanomeline", "MP10", "haloperidol", "M4PAM",
@@ -28,8 +28,10 @@ epsilon = 1e-12
 gap_window = 5
 
 # mouse identity
-mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795"],
-        "D2": ["m971", "m972", "m106", "m120", "m377", "m380", "f414", "f480", "m483", "m485"]}
+mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
+              "m974", "m659", "m975", "f976", "f977", "f979"],
+        "D2": ["m971", "m972", "m106", "m120", "m377", "m380", "f414", "f480", "m483", "m485", "m241", "m242",
+               "m523", "f605", "f808", "f811", "f840"]}
 
 # analysis
 ##########
