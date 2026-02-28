@@ -2,12 +2,9 @@ import numpy as np
 from scipy.io import loadmat
 import os
 from scipy.ndimage import gaussian_filter1d
-from scipy.linalg import svd
-from pandas import DataFrame, read_csv
-import pickle
 
 # load processed data or re-process data
-path = "/mnt/kennedy_lab_data/Parkerlab/neural_data"
+path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
 save_dir = "/home/rgast/data/parker_data"
 spike_field = "dff_traces_5hz"
 speed_field = "speed_traces_5hz"
@@ -17,12 +14,12 @@ speed_field = "speed_traces_5hz"
 #          "SCH23390", "SCH39166", "SEP363856", "SKF38393"]
 drug = "haloperidol"
 dose = "Vehicle"
-mouse = "m404"
+mouse = "f859"
 
 # meta parameters
-max_neurons = 100
-sigma_speed = 1
-sigma_rate = 1
+max_neurons = 200
+sigma_speed = 2
+sigma_rate = 2
 v_bins = 5
 v_max = 10.0
 bins = np.round(np.linspace(0.0, 1.0, num=v_bins+1)*v_max, decimals=1)

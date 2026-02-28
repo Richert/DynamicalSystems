@@ -2,30 +2,50 @@ import numpy as np
 from scipy.io import loadmat
 import os
 from scipy.ndimage import gaussian_filter1d
-from pandas import DataFrame, read_csv
-import pickle
+from pandas import DataFrame
+
+def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
+
+    # calculate covariance matrix
+    x_centered = np.zeros_like(x)
+    for n in range(x.shape[0]):
+        x_centered[n, :] = x[n, :] - np.mean(x[n, :])
+        if normalize_variance:
+            x_centered[n, :] /= (np.std(x_centered[n, :]) + epsilon)
+    C = np.cov(x_centered, ddof=0)
+
+    # get eigenvalues and eigenvectors of C
+    eigvals, eigvecs = np.linalg.eigh(C)
+    eig_idx = np.argsort(eigvals)[::-1]
+    eigvals, eigvecs = eigvals[eig_idx], eigvecs[:, eig_idx]
+    pr = np.sum(eigvals) ** 2 / (np.sum(eigvals ** 2) * len(eigvals))
+
+    return pr, eigvals, eigvecs, C, x_centered
 
 # load processed data or re-process data
 path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
-save_dir = "/home/rgast/data/parker_data"
-process_data = False
-plot_results = True
+save_dir = "/home/richard/data/parker_data"
+
+# plotting parameters
+plot_results = False
+d12_combined = False
 
 # choose condition
-drugs = ["clozapine", "olanzapine", "xanomeline", "MP10", "haloperidol", "M4PAM",
-         "SCH23390", "SCH39166", "SEP363856", "SKF38393"]
+drugs = ["clozapine",
+         "olanzapine", "xanomeline", "MP10", "haloperidol", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
+         ]
 spike_field = "dff_traces_5hz"
 speed_field = "speed_traces_5hz"
-d12_combined = True
 
 # meta parameters
-sigma_speed = 5
-sigma_rate = 5
-bv_bins = 5
-max_speed = 10.0
-bins = np.round(np.linspace(0.0, 1.0, num=bv_bins+1)*max_speed, decimals=1)
-epsilon = 1e-12
+max_neurons = 100
+sigma = 1
+v_bins = 5
+v_max = 10.0
+bins = np.round(np.linspace(0.0, 1.0, num=v_bins+1)*v_max, decimals=1)
+epsilon = 1e-15
 gap_window = 5
+norm_var = False
 
 # mouse identity
 mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
@@ -36,151 +56,117 @@ mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m
 # analysis
 ##########
 
-if process_data:
-    res = {"drug": [], "dose": [], "condition": [], "mouse": [], "neuron_type": [],
-            "mean(r|t)": [], "std(r|t)": [], "std(r|i)": [],"dimensionality": [],
-            "v": [], "p(v)": [], "corr(v,pc1)": [], "corr(v,pc2)": []}
-    signals = {"drug": [], "dose": [], "condition": [], "mouse": [], "neuron_type": [], "v": [],
-               "C": [], "pc1": [], "pc2": [], "v(t)": []}
-    results = {"results": res.copy(), "data": signals} #"speed_d1": data.copy(), "speed_d2": data
-    for drug in drugs:
+res = {"drug": [], "dose": [], "condition": [], "mouse": [], "neuron_type": [],
+        "mean(r)": [], "D(r)": [], "D(C)": [],"D_b(C)": [], "std(pc1)": [], "std(pc2)": [],
+        "v": [], "p(v)": [], "corr(v,pc1)": [], "corr(v,pc2)": []}
+for drug in drugs:
 
-        print(f"Starting to process data for drug = {drug}.")
+    print(f"Starting to process data for drug = {drug}.")
 
-        for dose in ["Vehicle", "LowDose", "HighDose"]:
-            for file in os.listdir(f"{path}/{drug}/{dose}"):
+    for dose in ["Vehicle", "LowDose", "HighDose"]:
+        for file in os.listdir(f"{path}/{drug}/{dose}"):
 
-                # load data
+            # load data
+            try:
+                _, mouse_id, *cond = file.split("_")
+                condition = "amph" if "amph" in cond else "veh"
+                data_tmp = loadmat(f"{path}/{drug}/{dose}/{file}/{condition}_drug.mat", simplify_cells=True)
+            except NotADirectoryError:
+                continue
+            spikes = data_tmp[f"{condition}_drug"][spike_field]
+            speed = data_tmp[f"{condition}_drug"][speed_field]
+
+            # calculate smooth variables
+            neurons = np.minimum(max_neurons, spikes.shape[0])
+            smoothed_spikes = np.asarray([gaussian_filter1d(spikes[i, :len(speed)], sigma=sigma) for i in range(neurons)])
+            smoothed_speed = gaussian_filter1d(speed, sigma=sigma)
+
+            # get speed histogram
+            speed_hist = np.histogram(smoothed_speed, bins=bins)[0]
+            speed_hist = speed_hist / np.sum(speed_hist)
+
+            # calculate result variables and save data
+            bin_data = {"v": [], "r": [], "C": [], "PC1": [], "v(t)": [], "d": [], "r_dist": []}
+            for bin in range(v_bins):
+
+                # bin-based analyses
                 try:
-                    _, mouse_id, *cond = file.split("_")
-                    condition = "amph" if "amph" in cond else "veh"
-                    data_tmp = loadmat(f"{path}/{drug}/{dose}/{file}/{condition}_drug.mat", simplify_cells=True)
-                except NotADirectoryError:
+
+                    # find time windows where mouse runs at particular velocity
+                    idx = (bins[bin] <= smoothed_speed) & (smoothed_speed < bins[bin + 1])
+                    v_indices = np.argwhere(idx == True).squeeze()
+                    idx_diff = np.diff(v_indices)
+
+                    # get eigenvalues and eigenvectors of C
+                    pr, eigvals, eigvecs, C, rates_c = get_eigs(smoothed_spikes[:, idx], normalize_variance=norm_var)
+
+                    # go over different time bins
+                    PR, CC1, CC2, PC1, PC2, PC_n, Rn = [], [], [], [], [], [], []
+                    i = 0
+                    for gap_idx in np.argwhere(idx_diff > gap_window).squeeze():
+
+                        # find time window of consistent velocity
+                        idx2 = v_indices[i:gap_idx+1]
+                        if len(idx2) < gap_window:
+                            continue
+
+                        # get covariance statistics
+                        pr_b, eigvals_b, eigvecs_b, _, rates_b = get_eigs(smoothed_spikes[:, idx2], normalize_variance=norm_var)
+                        PR.append(pr_b)
+
+                        # get correlation between PCs and velocity
+                        pcs = eigvecs_b.T @ smoothed_spikes[:, idx2]
+                        CC1.append(np.corrcoef(smoothed_speed[idx2], pcs[0, :])[0, 1])
+                        CC2.append(np.corrcoef(smoothed_speed[idx2], pcs[1, :])[0, 1])
+                        for n in range(pcs.shape[1]):
+                            if len(PC1) < n+1:
+                                PC1.append(pcs[0, n])
+                                PC2.append(pcs[1, n])
+                                PC_n.append(1)
+                            else:
+                                PC1[n] += pcs[0, n]
+                                PC2[n] += pcs[1, n]
+                                PC_n[n] += 1
+                        i = gap_idx + 1
+
+                        # calculate population statistics
+                        Rn.append(np.mean(smoothed_spikes[:, idx2], axis=1))
+
+                    # calculate averages over time windows
+                    pr_b = np.mean(PR, axis=0)
+                    cc1 = np.mean(CC1, axis=0)
+                    cc2 = np.mean(CC2, axis=0)
+                    pcn = np.asarray(PC_n)
+                    pc1, pc2 = np.asarray(PC1) / pcn, np.asarray(PC2) / pcn
+                    rn = np.mean(Rn, axis=0)
+
+                except (TypeError, ValueError):
                     continue
-                spikes = data_tmp[f"{condition}_drug"][spike_field]
-                speed = data_tmp[f"{condition}_drug"][speed_field]
 
-                # calculate smooth variables
-                smoothed_spikes = np.asarray([gaussian_filter1d(spikes[i, :], sigma=sigma_rate) for i in range(spikes.shape[0])])
-                smoothed_speed = gaussian_filter1d(speed, sigma=sigma_speed)
-
-                # get speed histogram
-                speed_hist = np.histogram(smoothed_speed, bins=bins)[0]
-                speed_hist = speed_hist / np.sum(speed_hist)
-
-                # calculate result variables and save data
-                bv = smoothed_speed
-                for bin in range(bv_bins):
-
-                    # bin-based analyses
-                    try:
-
-                        # find time windows where mouse runs at particular velocity
-                        idx = (bins[bin] <= bv) & (bv < bins[bin + 1])
-                        v_indices = np.argwhere(idx == True).squeeze()
-                        idx_diff = np.diff(v_indices)
-                        rates = smoothed_spikes[:, :len(bv)]
-
-                        # go over different time bins
-                        PR, CC1, CC2, PC1, PC2, PC_n, V, Cs, Rt, Rn = [], [], [], [], [], [], [], [], [], []
-                        i = 0
-                        for gap_idx in np.argwhere(idx_diff > gap_window).squeeze():
-
-                            # find time window of consistent velocity
-                            idx2 = v_indices[i:gap_idx+1]
-                            if len(idx2) < gap_window:
-                                continue
-
-                            # center firing rates
-                            rates = smoothed_spikes[:, :len(bv)]
-                            rate_chunk = rates[:, idx2]
-                            rates_c = np.zeros_like(rate_chunk)
-                            for j in range(rate_chunk.shape[0]):
-                                rates_c[j, :] = rate_chunk[j, :] - np.mean(rate_chunk[j, :])
-                                rates_c[j, :] /= (np.std(rate_chunk[j, :]) + epsilon)
-
-                            # get covariance matrix and calculate dimensionality
-                            C = np.cov(rates_c)
-                            eigvals, eigvecs = np.linalg.eigh(C)
-                            eig_idx = np.argsort(eigvals)[::-1]
-                            pr2 = np.sum(eigvals) ** 2 / (np.sum(eigvals ** 2) * (gap_idx + 1 - i))
-                            if not np.isfinite(pr2):
-                                continue
-                            Cs.append(C)
-                            PR.append(pr2)
-
-                            # get correlation between PCs and velocity
-                            pcs = eigvecs[:, eig_idx].T @ rates_c
-                            CC1.append(np.corrcoef(smoothed_speed[idx2], pcs[0, :])[0, 1])
-                            CC2.append(np.corrcoef(smoothed_speed[idx2], pcs[1, :])[0, 1])
-                            for n in range(pcs.shape[1]):
-                                if len(PC1) < n+1:
-                                    PC1.append(pcs[0, n])
-                                    PC2.append(pcs[1, n])
-                                    V.append(smoothed_speed[idx2[n]])
-                                    Rt.append(np.mean(rate_chunk[:, n]))
-                                    PC_n.append(1)
-                                else:
-                                    PC1[n] += pcs[0, n]
-                                    PC2[n] += pcs[1, n]
-                                    V[n] += smoothed_speed[idx2[n]]
-                                    Rt[n] += np.mean(rate_chunk[:, n])
-                                    PC_n[n] += 1
-                            i = gap_idx + 1
-
-                            # calculate population statistics
-                            Rn.append(np.mean(rate_chunk, axis=1))
-
-                        # calculate averages over time windows
-                        pr = np.mean(PR, axis=0)
-                        cc1 = np.mean(CC1, axis=0)
-                        cc2 = np.mean(CC2, axis=0)
-                        pcn = np.asarray(PC_n)
-                        pc1, pc2 = np.asarray(PC1) / pcn, np.asarray(PC2) / pcn
-                        v = np.asarray(V) / pcn
-                        C = np.mean(Cs, axis=0)
-                        rn = np.mean(Rn, axis=0)
-                        rt = np.asarray(Rt) / pcn
-
-                    except (TypeError, ValueError):
-                        continue
-
-                    # store results
-                    res, signals = results["results"], results["data"]
+                # store results
+                if np.isfinite(pr_b):
                     res["drug"].append(drug)
                     res["dose"].append(dose)
                     res["condition"].append(condition)
                     res["mouse"].append(mouse_id)
                     res["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
-                    res["mean(r|t)"].append(np.mean(rt))
-                    res["std(r|t)"].append(np.std(rt))
-                    res["std(r|i)"].append(np.std(rn))
-                    res["dimensionality"].append(pr)
+                    res["mean(r)"].append(np.mean(rn))
+                    res["D(r)"].append(np.sum(rn)**2/(np.sum(rn**2)*len(rn)))
+                    res["D(C)"].append(pr)
+                    res["D_b(C)"].append(pr_b)
                     res["v"].append(np.round((bins[bin] + bins[bin + 1]) / 2, decimals=1))
                     res["p(v)"].append(speed_hist[bin])
                     res["corr(v,pc1)"].append(cc1)
                     res["corr(v,pc2)"].append(cc2)
-                    signals["drug"].append(drug)
-                    signals["dose"].append(dose)
-                    signals["condition"].append(condition)
-                    signals["mouse"].append(mouse_id)
-                    signals["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
-                    signals["C"].append(C)
-                    signals["v"].append(np.round((bins[bin] + bins[bin + 1]) / 2, decimals=1))
-                    signals["v(t)"].append(v)
-                    signals["pc1"].append(pc1)
-                    signals["pc2"].append(pc2)
+                    res["std(pc1)"].append(np.std(pc1))
+                    res["std(pc2)"].append(np.std(pc2))
 
-        print(f"Finished processing data for drug = {drug}.")
+    print(f"Finished processing data for drug = {drug}.")
 
-    # save data
-    df = DataFrame.from_dict(results["results"])
-    df.to_csv(f"{save_dir}/spn_dimensionality_data.csv")
-    pickle.dump(results["data"], open(f"{save_dir}/spn_dimensionality_data.pkl", "wb"))
-
-else:
-
-    df = read_csv(f"/home/rgast/data/parker_data/spn_dimensionality_data.csv")
+# save data
+df = DataFrame.from_dict(res)
+cond_str = f"sigma_{int(sigma)}_{'std_norm' if norm_var else ''}"
+df.to_csv(f"{save_dir}/spn_dimensionality_{cond_str}.csv")
 
 # plotting
 if plot_results:
@@ -196,7 +182,7 @@ if plot_results:
 
     sb.set_palette("colorblind")
     df.sort_values(["condition", "dose"], inplace=True)
-    for key in ["dimensionality"]:
+    for key in ["D(C)", "D_b(C)", "D(r)"]:
         for drug in drugs:
             if d12_combined:
                 fig, ax = plt.subplots(figsize=(10, 6))
@@ -206,7 +192,6 @@ if plot_results:
                 ax.set_title(drug)
                 plt.tight_layout()
                 fig.canvas.draw()
-                fig.savefig(f"/home/rgast/data/parker_data/{drug}_{key}_d1_d2_combined.svg")
             else:
                 fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
                 fig.suptitle(drug)
@@ -218,5 +203,4 @@ if plot_results:
                     ax.set_title(f"{d}")
                 plt.tight_layout()
                 fig.canvas.draw()
-                fig.savefig(f"/home/rgast/data/parker_data/figures/{drug}_{key}_d1_d2_split.svg")
     plt.show()
