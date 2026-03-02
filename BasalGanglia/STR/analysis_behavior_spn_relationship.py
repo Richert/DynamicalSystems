@@ -39,13 +39,13 @@ speed_field = "speed_traces_5hz"
 
 # meta parameters
 max_neurons = 100
-sigma = 1
+sigma = 5
 v_bins = 5
 v_max = 10.0
 bins = np.round(np.linspace(0.0, 1.0, num=v_bins+1)*v_max, decimals=1)
 epsilon = 1e-15
 gap_window = 5
-norm_var = True
+norm_var = False
 
 # mouse identity
 mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
@@ -165,7 +165,7 @@ for drug in drugs:
 
 # save data
 df = DataFrame.from_dict(res)
-cond_str = f"sigma_{int(sigma)}_{'std_norm' if norm_var else ''}"
+cond_str = f"sigma_{int(sigma)}{'_std_norm' if norm_var else ''}"
 df.to_csv(f"{save_dir}/spn_dimensionality_{cond_str}.csv")
 
 # plotting

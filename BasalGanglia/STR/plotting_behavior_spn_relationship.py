@@ -25,26 +25,25 @@ d12_combined = False
 
 # plotting
 sb.set_palette("colorblind")
-for drug in drugs:
-    for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)", "p(v)", "std(pc1)", "std(pc2)"]:
-        for drug in drugs:
-            if d12_combined:
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sb.lineplot(results.loc[results.loc[:, "drug"] == drug, :],
+for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)", "p(v)", "std(pc1)", "std(pc2)"]:
+    for drug in drugs:
+        if d12_combined:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sb.lineplot(results.loc[results.loc[:, "drug"] == drug, :],
+                        x="v", y=key, hue="dose", style="condition", ax=ax,
+                        markers=True, dashes=True, err_style='bars', errorbar="se")
+            ax.set_title(drug)
+            plt.tight_layout()
+            fig.canvas.draw()
+        else:
+            fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
+            fig.suptitle(drug)
+            for i, d in enumerate(["D1", "D2"]):
+                ax = axes[i]
+                sb.lineplot(results.loc[(results.loc[:, "drug"] == drug) & (results.loc[:, "neuron_type"] == d), :],
                             x="v", y=key, hue="dose", style="condition", ax=ax,
                             markers=True, dashes=True, err_style='bars', errorbar="se")
-                ax.set_title(drug)
-                plt.tight_layout()
-                fig.canvas.draw()
-            else:
-                fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
-                fig.suptitle(drug)
-                for i, d in enumerate(["D1", "D2"]):
-                    ax = axes[i]
-                    sb.lineplot(results.loc[(results.loc[:, "drug"] == drug) & (results.loc[:, "neuron_type"] == d), :],
-                                x="v", y=key, hue="dose", style="condition", ax=ax,
-                                markers=True, dashes=True, err_style='bars', errorbar="se")
-                    ax.set_title(f"{d}")
-                plt.tight_layout()
-                fig.canvas.draw()
-    plt.show()
+                ax.set_title(f"{d}")
+            plt.tight_layout()
+            fig.canvas.draw()
+plt.show()
