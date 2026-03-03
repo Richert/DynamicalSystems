@@ -12,20 +12,19 @@ import pickle
 
 # load data
 path = f"/home/rgast/data/parker_data"
-results = read_csv(f"{path}/spn_dimensionality_sigma_1_.csv")
+results = read_csv(f"{path}/spn_dimensionality_sigma_5.csv")
 results.sort_values(["condition", "dose"], inplace=True)
 
 # choose plotting conditions
 drugs = [
-    "olanzapine", "xanomeline",
+    "MP10", "haloperidol", "olanzapine", "xanomeline",
     # "MP10", "haloperidol", "clozapine", "olanzapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
 ]
-variables = ["p(v)", "mean rate", "rate fluctuation", "dimensionality"]
 d12_combined = False
 
 # plotting
 sb.set_palette("colorblind")
-for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)", "p(v)", "std(pc1)", "std(pc2)"]:
+for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)", "p(v)"]:
     for drug in drugs:
         if d12_combined:
             fig, ax = plt.subplots(figsize=(10, 6))
