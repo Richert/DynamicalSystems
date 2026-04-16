@@ -14,12 +14,14 @@ speed_field = "speed_traces_5hz"
 #          "SCH23390", "SCH39166", "SEP363856", "SKF38393"]
 drug = "haloperidol"
 dose = "Vehicle"
-mouse = "f859"
+mouse = "m040"
+conditions = {"rest": (0.0, 1.0, -0.1, 0.1), "start": (1.0, 5.0, 0.5, 5.0), "move": (1.0, 20.0, -0.5, 0.5),
+              "stop": (1.0, 20.0, -10.0, -0.5)}
 
 # meta parameters
-max_neurons = 200
-sigma_speed = 2
-sigma_rate = 2
+max_neurons = 20
+sigma_speed = 1
+sigma_rate = 1
 v_bins = 5
 v_max = 10.0
 bins = np.round(np.linspace(0.0, 1.0, num=v_bins+1)*v_max, decimals=1)
@@ -59,12 +61,22 @@ for condition in ["veh", "amph"]:
     # get condition data
     data_tmp = data[condition]
     s, v = data_tmp["s_raw"], data_tmp["v_raw"]
-    s = s[:max_neurons, :len(v)]
+    s = s[:max_neurons, :len(v) - 1]
+    data_tmp["a_raw"] = np.diff(v)
+    data_tmp["s_raw"] = s
+    data_tmp["v_raw"] = v[:-1]
 
     # calculate smooth variables
-    data_tmp["s_smooth"] = np.asarray([gaussian_filter1d(s[i, :], sigma=sigma_rate) for i in range(s.shape[0])])
-    data_tmp["v_smooth"] = gaussian_filter1d(v, sigma=sigma_speed)
-    s2, v2 = data_tmp["s_smooth"], data_tmp["v_smooth"]
+    s2 = np.asarray([gaussian_filter1d(s[i, :], sigma=sigma_rate) for i in range(s.shape[0])])
+    v2 = gaussian_filter1d(v, sigma=sigma_speed)
+    a2 = np.diff(v2)
+    v2 = v2[:-1]
+    data_tmp["s_smooth"], data_tmp["v_smooth"], data_tmp["a_smooth"] = s2, v2, a2
+
+    # find discrete behaviors
+    for b, thresholds in conditions.items():
+        idx = (v2 >= thresholds[0]) & (v2 < thresholds[1]) & (a2 >= thresholds[2]) & (a2 < thresholds[3])
+        data_tmp[b] = idx
 
     # calculate neural covariance matrix
     s_centered = np.zeros_like(s2)
@@ -194,30 +206,34 @@ for condition in ["veh", "amph"]:
     fig.suptitle(f"Trial-based results, condition: {condition} (drug: {drug}, dose: {dose}, mouse: {mouse})")
 
     # velocity dynamics
-    ax = fig.add_subplot(grid[:2, :3])
-    ax.plot(data_tmp["v_raw"], label="raw")
-    ax.plot(data_tmp["v_smooth"], label="filtered")
+    ax0 = fig.add_subplot(grid[:2, :3])
+    ax0.plot(data_tmp["v_raw"], label="raw")
+    ax0.plot(data_tmp["v_smooth"], label="filtered")
+    ax0.legend()
+    ax0.set_ylabel("v (cm/s)")
+    ax0.set_title("mouse velocity")
+
+    # acceleration dynamics
+    ax = fig.add_subplot(grid[2:4, :3])
+    ax.plot(data_tmp["a_raw"], label="raw")
+    ax.plot(data_tmp["a_smooth"], label="filtered")
     ax.legend()
-    ax.set_ylabel("v (cm/s)")
-    ax.set_title("mouse velocity")
+    ax.set_ylabel("a (cm/s2)")
+    ax.set_title("mouse acceleration")
+    ax.sharex(ax0)
 
     # SPN dynamics
-    ax = fig.add_subplot(grid[2:4, :3])
+    ax = fig.add_subplot(grid[4:, :3])
     ax.plot(np.mean(data_tmp["s_raw"], axis=0), label="raw")
     ax.plot(np.mean(data_tmp["s_smooth"], axis=0), label="filtered")
+    n = len(data_tmp["v_smooth"])
+    x = np.arange(n)
+    for b in conditions.keys():
+        ax.fill_between(x=x, y1=0.0, y2=np.max(data_tmp["s_raw"]), where=data_tmp[b], label=b, alpha=0.3)
     ax.legend()
     ax.set_ylabel("r (Hz)")
     ax.set_title(f"{spn_type}-SPN dynamics")
-
-    # PC dynamics
-    ax = fig.add_subplot(grid[4:, :3])
-    ax.plot(data_tmp["PC1"], label="PC1")
-    ax.plot(data_tmp["PC2"], label="PC2")
-    ax.plot(data_tmp["PC3"], label="PC3")
-    ax.legend()
-    ax.set_xlabel("time")
-    ax.set_ylabel("r (Hz)")
-    ax.set_title(f"principal component dynamics")
+    ax.sharex(ax0)
 
     # covariance matrix
     ax = fig.add_subplot(grid[:4, 3])

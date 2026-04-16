@@ -12,24 +12,24 @@ import pickle
 
 # load data
 path = f"/home/rgast/data/parker_data"
-results = read_csv(f"{path}/spn_dimensionality_behavior.csv")
+results = read_csv(f"{path}/spn_dimensionality_sigma_2.csv")
 results.sort_values(["condition", "dose"], inplace=True)
 
 # choose plotting conditions
 drugs = [
-    "MP10", "haloperidol"
-    # "olanzapine", "clozapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
+    "olanzapine", "xanomeline", "haloperidol"
+    # "MP10", "clozapine", "olanzapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
 ]
 d12_combined = False
 
 # plotting
 sb.set_palette("colorblind")
-for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)"]:
+for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)", "p(v)"]:
     for drug in drugs:
         if d12_combined:
             fig, ax = plt.subplots(figsize=(10, 6))
             sb.lineplot(results.loc[results.loc[:, "drug"] == drug, :],
-                        x="behavior", y=key, hue="dose", style="condition", ax=ax,
+                        x="v", y=key, hue="dose", style="condition", ax=ax,
                         markers=True, dashes=True, err_style='bars', errorbar="se")
             ax.set_title(drug)
             plt.tight_layout()
@@ -40,7 +40,7 @@ for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)"]:
             for i, d in enumerate(["D1", "D2"]):
                 ax = axes[i]
                 sb.lineplot(results.loc[(results.loc[:, "drug"] == drug) & (results.loc[:, "neuron_type"] == d), :],
-                            x="behavior", y=key, hue="dose", style="condition", ax=ax,
+                            x="v", y=key, hue="dose", style="condition", ax=ax,
                             markers=True, dashes=True, err_style='bars', errorbar="se")
                 ax.set_title(f"{d}")
             plt.tight_layout()
