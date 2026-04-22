@@ -52,7 +52,7 @@ epsilon = 1e-15
 std_norm = False
 window_based = True
 gap_window = 5
-spn_window = 3
+spn_window = 5
 
 # mouse identity
 mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
@@ -113,8 +113,6 @@ for drug in drugs:
                     for l, r in zip(props["left_ips"], props["right_ips"]):
                         idx[int(np.round(l, decimals=0)):int(np.round(r, decimals=0))] = True
                 idx[0] = False
-                if np.sum(idx) < spn_window:
-                    continue
 
                 if window_based:
 
@@ -158,6 +156,9 @@ for drug in drugs:
                         pass
 
                 else:
+
+                    if np.sum(idx) < spn_window:
+                        continue
 
                     # get covariance matrix and calculate dimensionality
                     s2_idx = s2[:, idx]

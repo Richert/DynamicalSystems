@@ -12,12 +12,13 @@ import pickle
 
 # load data
 path = f"/home/rgast/data/parker_data"
-df = read_csv(f"{path}/spn_behavior_v_multi_window.csv")
+df = read_csv(f"{path}/spn_behavior_v_single_window.csv")
 df.sort_values(["condition", "neuron_type"], inplace=True)
 
 # choose plotting conditions
 drugs = [
-    "MP10", "haloperidol"
+    #"MP10",
+    "haloperidol",
     # "olanzapine", "clozapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
 ]
 behaviors = np.unique(df.loc[:, "behavior"])
