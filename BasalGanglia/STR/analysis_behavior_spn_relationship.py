@@ -50,7 +50,7 @@ sigma_speed = 1
 sigma_rate = 1
 epsilon = 1e-15
 std_norm = False
-window_based = False
+window_based = True
 gap_window = 5
 spn_window = 3
 
