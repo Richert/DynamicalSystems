@@ -38,10 +38,10 @@ speed_field = "speed_traces_5hz"
 
 # define behaviors of interest
 behaviors = {
-    "v0": (0.0, 1.0, -0.5, 0.5), "v1": (1.0, 3.0, -0.5, 0.5),
-    "v2": (3.0, 6.0, -0.5, 0.5), "v3": (6.0, np.inf, -0.5, 0.5),
-    # "p0": (1.0, 3.0, 1, 50), "p1": (3.0, 6.0, 1, 50),
-    # "p2": (6.0, 10.0, 1, 50), "p3": (10.0, np.inf, 1, 50)
+    # "v0": (0.0, 1.0, -0.5, 0.5), "v1": (1.0, 3.0, -0.5, 0.5),
+    # "v2": (3.0, 6.0, -0.5, 0.5), "v3": (6.0, np.inf, -0.5, 0.5),
+    "p0": (1.0, 3.0, 1, 50), "p1": (3.0, 6.0, 1, 50),
+    "p2": (6.0, 10.0, 1, 50), "p3": (10.0, np.inf, 1, 50)
 }
 
 # meta parameters
@@ -50,7 +50,7 @@ sigma_speed = 1
 sigma_rate = 1
 epsilon = 1e-15
 std_norm = False
-window_based = True
+window_based = False
 gap_window = 5
 spn_window = 3
 
@@ -183,7 +183,7 @@ for drug in drugs:
 
 # save data
 df = DataFrame.from_dict(res)
-df.to_csv(f"{save_dir}/spn_behavior_v{'_normalized' if std_norm else ''}{'_multi_window' if window_based else '_single_window'}.csv")
+df.to_csv(f"{save_dir}/spn_behavior_p{'_normalized' if std_norm else ''}{'_multi_window' if window_based else '_single_window'}.csv")
 
 # plotting
 if plot_results:
