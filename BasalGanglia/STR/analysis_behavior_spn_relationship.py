@@ -113,6 +113,8 @@ for drug in drugs:
                     for l, r in zip(props["left_ips"], props["right_ips"]):
                         idx[int(np.round(l, decimals=0)):int(np.round(r, decimals=0))] = True
                 idx[0] = False
+                if np.sum(idx) < spn_window:
+                    continue
 
                 if window_based:
 
