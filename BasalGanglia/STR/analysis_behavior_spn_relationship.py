@@ -143,14 +143,13 @@ for drug in drugs:
 
                         # store results
                         pr = np.mean(behavior_data["D(C)"])
-                        r = np.mean(behavior_data["r_dist"], axis=0)
                         if np.isfinite(pr):
                             res["drug"].append(drug)
                             res["condition"].append(c)
                             res["mouse"].append(mouse_id)
                             res["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
                             res["mean(r)"].append(np.mean(behavior_data["r"]))
-                            res["D(r)"].append(np.sum(r)**2/(np.sum(r**2)*len(r)))
+                            res["D(r)"].append(np.mean(behavior_data["D(r)"]))
                             res["D(C)"].append(pr)
                             res["behavior"].append(b)
                             res["p(behavior)"].append(np.mean(idx))
@@ -168,14 +167,14 @@ for drug in drugs:
                         continue
 
                     # store results
-                    r = np.mean(s2_idx, axis=0)
+                    r = np.mean(s2_idx, axis=1)
                     if np.isfinite(pr2):
                         res["drug"].append(drug)
                         res["condition"].append(c)
                         res["mouse"].append(mouse_id)
                         res["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
                         res["mean(r)"].append(np.mean(r))
-                        res["D(r)"].append(np.sum(r) ** 2 / (np.sum(r ** 2) * len(r)))
+                        res["D(r)"].append(np.sum(r)**2 / (np.sum(r**2) * len(r)))
                         res["D(C)"].append(pr2)
                         res["behavior"].append(b)
                         res["p(behavior)"].append(np.mean(idx))

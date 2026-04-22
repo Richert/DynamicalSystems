@@ -12,7 +12,7 @@ import pickle
 
 # load data
 path = f"/home/rgast/data/parker_data"
-df = read_csv(f"{path}/spn_behavior_p_multi_window.csv")
+df = read_csv(f"{path}/spn_behavior_p_single_window.csv")
 df.sort_values(["condition", "neuron_type"], inplace=True)
 
 # choose plotting conditions
@@ -32,7 +32,7 @@ for key in ["D(C)", "D(r)", "mean(r)", "p(behavior)"]:
             sb.lineplot(df.loc[(df.loc[:, "drug"] == drug) & (df.loc[:, "neuron_type"] == n), :],
                         x="behavior", y=key, hue="condition", ax=ax,
                         markers=True, dashes=True, err_style='bars', errorbar="se")
-        ax.set_title(f"Drug = {drug}")
+        fig.suptitle(f"Drug = {drug}")
         plt.tight_layout()
         fig.canvas.draw()
 plt.show()
