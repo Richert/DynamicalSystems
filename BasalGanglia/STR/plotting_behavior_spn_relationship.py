@@ -12,7 +12,7 @@ import pickle
 
 # load data
 path = f"/home/rgast/data/parker_data"
-df = read_csv(f"{path}/spn_behavior_p_single_window.csv")
+df = read_csv(f"{path}/spn_behavior_p_multi_window.csv")
 df.sort_values(["condition", "neuron_type"], inplace=True)
 
 # choose plotting conditions
