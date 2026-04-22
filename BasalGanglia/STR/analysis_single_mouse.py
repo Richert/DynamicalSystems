@@ -2,6 +2,25 @@ import numpy as np
 from scipy.io import loadmat
 import os
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks, correlate
+
+def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
+
+    # calculate covariance matrix
+    x_centered = np.zeros_like(x)
+    for n in range(x.shape[0]):
+        x_centered[n, :] = x[n, :] - np.mean(x[n, :])
+        if normalize_variance:
+            x_centered[n, :] /= (np.std(x_centered[n, :]) + epsilon)
+    C = np.cov(x_centered, ddof=0)
+
+    # get eigenvalues and eigenvectors of C
+    eigvals, eigvecs = np.linalg.eigh(C)
+    eig_idx = np.argsort(eigvals)[::-1]
+    eigvals, eigvecs = eigvals[eig_idx], eigvecs[:, eig_idx]
+    pr = np.sum(eigvals) ** 2 / (np.sum(eigvals ** 2) * len(eigvals))
+
+    return pr, eigvals, eigvecs, C, x_centered
 
 # load processed data or re-process data
 path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
@@ -14,20 +33,24 @@ speed_field = "speed_traces_5hz"
 #          "SCH23390", "SCH39166", "SEP363856", "SKF38393"]
 drug = "haloperidol"
 dose = "Vehicle"
-mouse = "m040"
-conditions = {"rest": (0.0, 1.0, -0.1, 0.1), "start": (1.0, 5.0, 0.5, 5.0), "move": (1.0, 20.0, -0.5, 0.5),
-              "stop": (1.0, 20.0, -10.0, -0.5)}
+mouse = "m972"
+behaviors = {
+    "v0": (0.0, 1.0, -0.5, 0.5), "v1": (1.0, 3.0, -0.5, 0.5),
+    "v2": (3.0, 6.0, -0.5, 0.5), "v3": (6.0, np.inf, -0.5, 0.5),
+    "p0": (1.0, 3.0, 1, 50), "p1": (3.0, 6.0, 1, 50),
+    "p2": (6.0, 10.0, 1, 50), "p3": (10.0, np.inf, 1, 50)
+}
 
 # meta parameters
-max_neurons = 20
+max_neurons = 50
 sigma_speed = 1
 sigma_rate = 1
-v_bins = 5
-v_max = 10.0
-bins = np.round(np.linspace(0.0, 1.0, num=v_bins+1)*v_max, decimals=1)
 epsilon = 1e-15
+std_norm = False
+window_based = False
 gap_window = 5
-std_norm = True
+corr_window = 200
+spn_window = 3
 
 # mouse identity
 mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
@@ -73,113 +96,100 @@ for condition in ["veh", "amph"]:
     v2 = v2[:-1]
     data_tmp["s_smooth"], data_tmp["v_smooth"], data_tmp["a_smooth"] = s2, v2, a2
 
-    # find discrete behaviors
-    for b, thresholds in conditions.items():
-        idx = (v2 >= thresholds[0]) & (v2 < thresholds[1]) & (a2 >= thresholds[2]) & (a2 < thresholds[3])
-        data_tmp[b] = idx
+    # show recurrence plot for velocity
+    v_tmp = v2 - np.mean(v2)
+    v_tmp /= np.std(v_tmp)
+    idx = 0
+    v_c = []
+    while idx + corr_window < len(v2):
+        v_tmp2 = v_tmp[idx:idx+corr_window]
+        v_c.append(correlate(v_tmp2, v_tmp2, mode="full"))
+        idx += corr_window
+    data_tmp["v_c"] = np.mean(v_c, axis=0)
 
     # calculate neural covariance matrix
-    s_centered = np.zeros_like(s2)
-    for n in range(s2.shape[0]):
-        s_centered[n, :] = s2[n, :] - np.mean(s2[n, :])
-        if std_norm:
-            s_centered[n, :] /= (np.std(s_centered[n, :]) + epsilon)
-    C = np.cov(s_centered, ddof=0)
-
-    # get eigenvalues and eigenvectors of C
-    eigvals, eigvecs = np.linalg.eigh(C)
-    eig_idx = np.argsort(eigvals)[::-1]
-    eigvals, eigvecs = eigvals[eig_idx], eigvecs[:, eig_idx]
-    pr = np.sum(eigvals)**2 / (np.sum(eigvals**2)*C.shape[0])
+    pr, eigvals, eigvecs, C, s_centered = get_eigs(s2, normalize_variance=std_norm)
     pcs = eigvecs.T @ s_centered
 
-    # get speed histogram
-    v_hist = np.histogram(v2, bins=bins)[0]
-    v_hist = v_hist / np.sum(v_hist)
-
     # calculate result variables and save data
-    bin_data = {"v": [], "r": [], "C": [], "PC1": [], "v(t)": [], "d": [], "r_dist": []}
-    for bin in range(v_bins):
+    behavior_data = {"b": [], "v": [], "r": [], "C": [], "D(C)": [], "D(r)": [], "r_dist": [], "b_idx": [], "p(b)": []}
+    for b, thresholds in behaviors.items():
 
-        # find time windows where mouse runs at particular velocity
-        idx = (bins[bin] <= v2) & (v2 < bins[bin + 1])
-        v_indices = np.argwhere(idx == True).squeeze()
-        idx_diff = np.diff(v_indices)
+        # get index where mouse shows target behavior
+        if "v" in b:
+            idx = (v2 >= thresholds[0]) & (v2 < thresholds[1]) & (a2 >= thresholds[2]) & (a2 < thresholds[3])
+        else:
+            idx2, props = find_peaks(v2, distance=gap_window, prominence=(thresholds[0], thresholds[1]),
+                                width=(thresholds[2], thresholds[3]), plateau_size=(0, 2), rel_height=1.0)
+            idx = np.zeros_like(v2) > 0.0
+            for l, r in zip(props["left_ips"], props["right_ips"]):
+                idx[int(np.round(l, decimals=0)):int(np.round(r, decimals=0))] = True
+        idx[0] = False
 
-        # go over different time bins
-        PR, PC1, PC_n, V, Cs, Rn, Rt = [], [], [], [], [], [], []
-        i = 0
-        for gap_idx in np.argwhere(idx_diff > gap_window).squeeze():
+        if window_based:
 
-            # find time window of consistent velocity
-            idx2 = v_indices[i:gap_idx+1]
-            if len(idx2) < gap_window:
-                continue
+            idx_diff = np.diff(1.0 * idx)
+            starts, stops = np.argwhere(idx_diff > 0.0).squeeze(), np.argwhere(idx_diff < 0.0).squeeze()
+            behavior_data_tmp = {"r": [], "C": [], "D(C)": [], "D(r)": [], "r_dist": []}
+            for start, stop in zip(starts, stops):
 
-            # center firing rates
-            s_chunk = s2[:, idx2]
-            s_c2 = np.zeros_like(s_chunk)
-            for n in range(s_chunk.shape[0]):
-                s_c2[n, :] = s_chunk[n, :] - np.mean(s_chunk[n, :])
-                if std_norm:
-                    s_c2[n, :] /= (np.std(s_chunk[n, :]) + epsilon)
+                if stop-start < spn_window:
+                    continue
+
+                # get covariance matrix and calculate dimensionality
+                s2_idx = s2[:, start:stop]
+                pr2, eigvals2, eigvecs2, C2, s_c2 = get_eigs(s2_idx, normalize_variance=std_norm)
+                pcs2 = eigvecs2.T @ s2_idx
+                if not np.isfinite(pr2):
+                    continue
+
+                # save window data
+                r2 = np.mean(s2_idx, axis=1)
+                behavior_data_tmp["r"].append(np.mean(r2))
+                behavior_data_tmp["C"].append(C2)
+                behavior_data_tmp["D(C)"].append(pr2)
+                behavior_data_tmp["D(r)"].append(np.sum(r2)**2 / (np.sum(r2**2)*len(r2)))
+                behavior_data_tmp["r_dist"].append(r2)
+
+            # save behavior specific data
+            behavior_data["b"].append(b)
+            behavior_data["v"].append(np.mean(v2[idx]))
+            behavior_data["r"].append(np.mean(behavior_data_tmp["r"]))
+            behavior_data["C"].append(np.mean(behavior_data_tmp["C"], axis=0))
+            behavior_data["D(C)"].append(np.mean(behavior_data_tmp["D(C)"]))
+            behavior_data["D(r)"].append(np.mean(behavior_data_tmp["D(r)"]))
+            behavior_data["r_dist"].append(np.mean(behavior_data_tmp["r_dist"], axis=0))
+            behavior_data["b_idx"].append(idx)
+            behavior_data["p(b)"].append(np.mean(idx))
+
+        else:
 
             # get covariance matrix and calculate dimensionality
-            C2 = np.cov(s_c2)
-            eigvals2, eigvecs2 = np.linalg.eigh(C2)
-            eig_idx2 = np.argsort(eigvals2)[::-1]
-            eigvals2, eigvecs2 = eigvals2[eig_idx2], eigvecs2[:, eig_idx2]
-            pr2 = np.sum(eigvals2) ** 2 / (np.sum(eigvals2 ** 2) * C2.shape[0])
+            s2_idx = s2[:, idx]
+            pr2, eigvals2, eigvecs2, C2, s_c2 = get_eigs(s2_idx, normalize_variance=std_norm)
+            pcs2 = eigvecs2.T @ s_c2
             if not np.isfinite(pr2):
                 continue
-            Cs.append(C2)
-            PR.append(pr2)
 
-            # get correlation between PCs and velocity
-            pcs2 = eigvecs2.T @ s_c2
-            for n in range(pcs2.shape[1]):
-                if len(PC1) < n+1:
-                    PC1.append(pcs2[0, n])
-                    V.append(v2[idx2[n]])
-                    Rt.append(np.mean(s_chunk[:, n]))
-                    PC_n.append(1)
-                else:
-                    PC1[n] += pcs2[0, n]
-                    V[n] += v2[idx2[n]]
-                    Rt[n] += np.mean(s_chunk[:, n])
-                    PC_n[n] += 1
-            i = gap_idx + 1
-
-            # calculate population statistics
-            Rn.append(np.mean(s_chunk, axis=1))
-
-        # calculate averages over time windows
-        pr2 = np.mean(PR, axis=0)
-        pcn = np.asarray(PC_n)
-        pc1 = np.asarray(PC1) / pcn
-        v3 = np.asarray(V) / pcn
-        C2 = np.mean(Cs, axis=0)
-        C2[np.eye(C2.shape[0]) > 0.0] = 0.0
-        rn = np.mean(Rn, axis=0)
-        rt = np.asarray(Rt) / pcn
-
-        # save bin-based data
-        bin_data["v"].append((bins[bin] + bins[bin+1])*0.5)
-        bin_data["v(t)"].append(v3)
-        bin_data["r"].append(rt)
-        bin_data["PC1"].append(pc1)
-        bin_data["C"].append(C2)
-        bin_data["d"].append(pr2)
+            # save behavior-specific data
+            r2 = np.mean(s2_idx, axis=1)
+            behavior_data["b"].append(b)
+            behavior_data["v"].append(np.mean(v2[idx]))
+            behavior_data["r"].append(np.mean(r2))
+            behavior_data["C"].append(C2)
+            behavior_data["D(C)"].append(pr2)
+            behavior_data["D(r)"].append(np.sum(r2)**2/(np.sum(r2**2)*len(r2)))
+            behavior_data["r_dist"].append(r2)
+            behavior_data["b_idx"].append(idx)
+            behavior_data["p(b)"].append(np.mean(idx))
 
     # save data
-    C[np.eye(C.shape[0]) > 0.0] = 0.0
-    data_tmp["bin_data"] = bin_data
+    data_tmp["behavior_data"] = behavior_data
     data_tmp["C"] = C
     data_tmp["d"] = pr
     data_tmp["PC1"] = pcs[0, :] * eigvals[0]
     data_tmp["PC2"] = pcs[1, :] * eigvals[1]
     data_tmp["PC3"] = pcs[2, :] * eigvals[2]
-    data_tmp["v_hist"] = v_hist
     data_tmp["eigvals"] = eigvals
 
 # plotting
@@ -198,8 +208,8 @@ for condition in ["veh", "amph"]:
 
     data_tmp = data[condition]
 
-    # figure 1
-    ##########
+    # figure 1: trial summary
+    #########################
 
     fig = plt.figure(figsize=(18, 8), layout="constrained")
     grid = fig.add_gridspec(nrows=6, ncols=4)
@@ -207,8 +217,9 @@ for condition in ["veh", "amph"]:
 
     # velocity dynamics
     ax0 = fig.add_subplot(grid[:2, :3])
+    v = data_tmp["v_smooth"]
     ax0.plot(data_tmp["v_raw"], label="raw")
-    ax0.plot(data_tmp["v_smooth"], label="filtered")
+    ax0.plot(v, label="filtered")
     ax0.legend()
     ax0.set_ylabel("v (cm/s)")
     ax0.set_title("mouse velocity")
@@ -226,10 +237,6 @@ for condition in ["veh", "amph"]:
     ax = fig.add_subplot(grid[4:, :3])
     ax.plot(np.mean(data_tmp["s_raw"], axis=0), label="raw")
     ax.plot(np.mean(data_tmp["s_smooth"], axis=0), label="filtered")
-    n = len(data_tmp["v_smooth"])
-    x = np.arange(n)
-    for b in conditions.keys():
-        ax.fill_between(x=x, y1=0.0, y2=np.max(data_tmp["s_raw"]), where=data_tmp[b], label=b, alpha=0.3)
     ax.legend()
     ax.set_ylabel("r (Hz)")
     ax.set_title(f"{spn_type}-SPN dynamics")
@@ -244,68 +251,106 @@ for condition in ["veh", "amph"]:
     ax.set_title(f"{spn_type}-SPN Covariance (d = {np.round(data_tmp['d'], decimals=2)})")
 
     # EV distribution
-    ax = fig.add_subplot(grid[4, 3])
+    ax = fig.add_subplot(grid[4:, 3])
     ax.bar(np.arange(0, len(data_tmp["eigvals"])), data_tmp["eigvals"])
     ax.set_xlabel("index")
     ax.set_ylabel("lambda")
     ax.set_title("eigenvalue distribution")
 
-    # velocity distribution
-    ax = fig.add_subplot(grid[5, 3])
-    ax.bar(np.asarray([(bins[i] + bins[i+1])*0.5 for i in range(v_bins)]), data_tmp["v_hist"])
-    ax.set_xlabel("v (cm/s)")
-    ax.set_ylabel("p(v)")
-    ax.set_title("velocity distribution")
+    # figure 2: behavior-specific analysis
+    ######################################
 
-    # figure 2
-    ##########
-
-    bin_data = data_tmp["bin_data"]
+    b_data = data_tmp["behavior_data"]
     fig2 = plt.figure(figsize=(18, 8), layout="constrained")
     grid = fig2.add_gridspec(nrows=3, ncols=3)
     fig2.suptitle(f"Velocity bin-based results, condition: {condition} (drug: {drug}, dose: {dose}, mouse: {mouse})")
 
-    # velocity dynamics per bin
-    ax = fig2.add_subplot(grid[0, 0])
-    for i, v in enumerate(bin_data["v"]):
-        ax.plot(bin_data["v(t)"][i], label=v)
-    ax.legend()
-    ax.set_ylabel("v")
-    ax.set_title("velocity dynamics")
+    # velocity dynamics and associated behaviors
+    ax = fig2.add_subplot(grid[0, :])
+    v = data_tmp["v_smooth"]
+    ax.plot(v)
+    x = np.arange(len(v))
+    for i, b in enumerate(b_data["b"]):
+        p = b_data["b_idx"][i]
+        w = np.zeros_like(v)
+        w[p] = 1.0
+        ax.fill_between(x=x, y1=0.0, y2=np.max(v), where=w, label=b, alpha=0.6)
+    # ax.legend()
+    ax.set_ylabel("v (cm/s)")
+    ax.set_xlabel("time steps")
+    ax.set_title("mouse behavior")
 
-    # rate dynamics per bin
+    # velocity autocorrelation
     ax = fig2.add_subplot(grid[1, 0])
-    for i, v in enumerate(bin_data["v"]):
-        ax.plot(bin_data["r"][i], label=v)
-    ax.legend()
-    ax.set_ylabel("r")
-    ax.set_title("rate dynamics")
+    ax.plot(data_tmp["v_c"])
+    ax.set_ylabel("corr")
+    ax.set_xlabel("time lag")
+    ax.set_title("velocity autocorrelation")
 
-    # pc1 dynamics per bin
-    ax = fig2.add_subplot(grid[2, 0])
-    for i, v in enumerate(bin_data["v"]):
-        ax.plot(bin_data["PC1"][i], label=v)
-    ax.legend()
+    # behavior distribution
+    ax = fig2.add_subplot(grid[1, 1])
+    fractions = []
+    for i, b in enumerate(b_data["b"]):
+        fractions.append(b_data["p(b)"][i])
+    ax.bar(b_data["b"], fractions, align="center")
+    ax.set_ylabel("p")
+    ax.set_xlabel("behavior")
+    ax.set_title("behavior distribution")
+
+    # rate distribution per behavior
+    ax = fig2.add_subplot(grid[1, 2])
+    for i, b in enumerate(b_data["b"]):
+        ax.hist(b_data["r_dist"][i], label=b, alpha=0.5)
+    # ax.legend()
     ax.set_ylabel("pc1")
     ax.set_title("PC1 dynamics")
     ax.set_xlabel("time")
 
-    # dimensionality distribution
-    ax = fig2.add_subplot(grid[0, 1])
-    ax.plot(bin_data["v"], bin_data["d"])
-    ax.set_xlabel("v (cm/s)")
-    ax.set_ylabel("d")
-    ax.set_title("dimensionality")
+    # dimensionality per behavior
+    ax = fig2.add_subplot(grid[2, 0])
+    ax.plot(b_data["b"], b_data["D(C)"])
+    ax.set_xlabel("behavior")
+    ax.set_ylabel("D(C)")
+    ax.set_title("SPN dimensionality")
 
-    # covariance matrices
-    for v, C, g in zip(bin_data["v"], bin_data["C"], [grid[1, 1], grid[2, 1], grid[0, 2], grid[1, 2], grid[2, 2]]):
-        ax = fig2.add_subplot(g)
-        im = ax.imshow(C, aspect="auto", interpolation="none", cmap="magma")
-        plt.colorbar(im, ax=ax)
-        ax.set_title(f"v = {np.round(v, decimals=1)}")
+    # firing rate per behavior
+    ax = fig2.add_subplot(grid[2, 1])
+    ax.plot(b_data["b"], b_data["r"])
+    ax.set_xlabel("behavior")
+    ax.set_ylabel("r")
+    ax.set_title("SPN firing rates")
 
-fig.set_constrained_layout_pads(w_pad=0.05, h_pad=0.05, hspace=0.01, wspace=0.01)
-fig2.set_constrained_layout_pads(w_pad=0.05, h_pad=0.05, hspace=0.01, wspace=0.01)
-fig.canvas.draw()
-fig2.canvas.draw()
+    # firing rate heterogeneity per behavior
+    ax = fig2.add_subplot(grid[2, 2])
+    ax.plot(b_data["b"], b_data["D(r)"])
+    ax.set_xlabel("behavior")
+    ax.set_ylabel("D(r)")
+    ax.set_title("SPN rate heterogeneity")
+
+    # figure 3
+    ##########
+
+    fig3 = plt.figure(figsize=(16, 6), layout="constrained")
+    nc = 4
+    grid = fig3.add_gridspec(ncols=nc, nrows=2)
+    fig3.suptitle(f"SPN-Behavior Relationship, condition: {condition}")
+    for i, b in enumerate(b_data["b"]):
+
+        ax = fig3.add_subplot(grid[i // nc, i % nc])
+        try:
+            rates = data_tmp["s_smooth"]
+            C, pr = b_data["C"][i], b_data["D(C)"][i]
+            im = ax.imshow(C, aspect="auto", interpolation="none", cmap="magma")
+            plt.colorbar(im, ax=ax)
+            ax.set_title(f"Behavior = {b}, D(C) = {np.round(pr, decimals=3)}")
+        except TypeError:
+            pass
+
+    fig.set_constrained_layout_pads(w_pad=0.05, h_pad=0.05, hspace=0.05, wspace=0.05)
+    fig2.set_constrained_layout_pads(w_pad=0.05, h_pad=0.05, hspace=0.05, wspace=0.05)
+    fig3.set_constrained_layout_pads(w_pad=0.05, h_pad=0.05, hspace=0.05, wspace=0.05)
+    fig.canvas.draw()
+    fig2.canvas.draw()
+    fig3.canvas.draw()
+
 plt.show()

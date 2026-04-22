@@ -2,6 +2,7 @@ import numpy as np
 from scipy.io import loadmat
 import os
 from scipy.ndimage import gaussian_filter1d
+from scipy.signal import find_peaks
 from pandas import DataFrame
 
 def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
@@ -24,28 +25,34 @@ def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
 
 # load processed data or re-process data
 path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
-save_dir = "/home/rgast/data/parker_data"
+save_dir = "/home/richard/data/parker_data"
 
 # plotting parameters
 plot_results = True
-d12_combined = False
 
 # choose condition
-drugs = ["clozapine", "olanzapine", "xanomeline", "MP10", "haloperidol",
-         #"M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
+drugs = ["MP10", "haloperidol", "clozapine", "olanzapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
          ]
 spike_field = "dff_traces_5hz"
 speed_field = "speed_traces_5hz"
 
+# define behaviors of interest
+behaviors = {
+    # "v0": (0.0, 1.0, -0.5, 0.5), "v1": (1.0, 3.0, -0.5, 0.5),
+    # "v2": (3.0, 6.0, -0.5, 0.5), "v3": (6.0, np.inf, -0.5, 0.5),
+    "p0": (1.0, 3.0, 1, 50), "p1": (3.0, 6.0, 1, 50),
+    "p2": (6.0, 10.0, 1, 50), "p3": (10.0, np.inf, 1, 50)
+}
+
 # meta parameters
-max_neurons = 20
-sigma = 1
-conditions = {"rest": (0.0, 1.0, -0.1, 0.1), "start": (1.0, 5.0, 0.5, 5.0), "move": (1.0, 20.0, -0.5, 0.5),
-              "stop": (1.0, 20.0, -10.0, -0.5)}
+max_neurons = 50
+sigma_speed = 1
+sigma_rate = 1
 epsilon = 1e-15
+std_norm = True
+window_based = True
 gap_window = 5
-window_size = 5
-norm_var = False
+spn_window = 3
 
 # mouse identity
 mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
@@ -56,9 +63,8 @@ mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m
 # analysis
 ##########
 
-res = {"drug": [], "dose": [], "condition": [], "mouse": [], "neuron_type": [],
-       "mean(r)": [], "D(r)": [], "D(C)": [],"D_b(C)": [], "std(pc1)": [], "std(pc2)": [],
-       "behavior": [], "corr(v,pc1)": [], "corr(v,pc2)": []}
+res = {"drug": [], "condition": [], "mouse": [], "neuron_type": [],
+       "mean(r)": [], "D(r)": [], "D(C)": [], "behavior": [], "p(behavior)": []}
 for drug in drugs:
 
     print(f"Starting to process data for drug = {drug}.")
@@ -73,90 +79,110 @@ for drug in drugs:
                 data_tmp = loadmat(f"{path}/{drug}/{dose}/{file}/{condition}_drug.mat", simplify_cells=True)
             except NotADirectoryError:
                 continue
-            spikes = data_tmp[f"{condition}_drug"][spike_field]
-            speed = data_tmp[f"{condition}_drug"][speed_field]
+            s = data_tmp[f"{condition}_drug"][spike_field]
+            v = data_tmp[f"{condition}_drug"][speed_field]
+
+            # determine condition
+            if dose == "Vehicle" and condition == "veh":
+                c = "Control"
+            elif dose == "Vehicle" and condition == "amph":
+                c = "Amphetamine"
+            elif dose == "LowDose" and condition == "amph":
+                c = "A + Low Dose"
+            elif dose == "HighDose" and condition == "amph":
+                c = "A + High Dose"
+            else:
+                continue
 
             # calculate smooth variables
-            neurons = np.minimum(max_neurons, spikes.shape[0])
-            smoothed_spikes = np.asarray([gaussian_filter1d(spikes[i, :len(speed)-1], sigma=sigma) for i in range(neurons)])
-            v = gaussian_filter1d(speed, sigma=sigma)
-            a = np.diff(v)
-            v = v[:-1]
+            s2 = np.asarray([gaussian_filter1d(s[i, :], sigma=sigma_rate) for i in range(s.shape[0])])
+            v2 = gaussian_filter1d(v, sigma=sigma_speed)
+            a2 = np.diff(v2)
+            v2 = v2[:-1]
 
             # calculate result variables and save data
-            for b, thresholds in conditions.items():
+            for b, thresholds in behaviors.items():
 
-                # behavior-centered analsyis
-                try:
+                # get index where mouse shows target behavior
+                if "v" in b:
+                    idx = (v2 >= thresholds[0]) & (v2 < thresholds[1]) & (a2 >= thresholds[2]) & (a2 < thresholds[3])
+                else:
+                    idx2, props = find_peaks(v2, distance=gap_window, prominence=(thresholds[0], thresholds[1]),
+                                             width=(thresholds[2], thresholds[3]), plateau_size=(0, 2), rel_height=1.0)
+                    idx = np.zeros_like(v2) > 0.0
+                    for l, r in zip(props["left_ips"], props["right_ips"]):
+                        idx[int(np.round(l, decimals=0)):int(np.round(r, decimals=0))] = True
+                idx[0] = False
 
-                    # find time windows where mouse runs at particular velocity
-                    idx = (v >= thresholds[0]) & (v < thresholds[1]) & (a >= thresholds[2]) & (a < thresholds[3])
-                    indices = np.argwhere(idx == True).squeeze()
+                if window_based:
 
-                    # get eigenvalues and eigenvectors of C
-                    pr, eigvals, eigvecs, C, rates_c = get_eigs(smoothed_spikes[:, idx], normalize_variance=norm_var)
+                    idx_diff = np.diff(1.0 * idx)
+                    starts, stops = np.argwhere(idx_diff > 0.0).squeeze(), np.argwhere(idx_diff < 0.0).squeeze()
+                    behavior_data = {"r": [], "D(C)": [], "D(r)": [], "r_dist": []}
+                    try:
+                        for start, stop in zip(starts, stops):
 
-                    # go over different time bins
-                    PR, CC1, CC2, PC1, PC2, PC_n, Rn = [], [], [], [], [], [], []
-                    for idx2 in indices:
+                            if stop - start < spn_window:
+                                continue
 
-                        # get covariance statistics
-                        start = np.maximum(0, idx2-window_size)
-                        stop = np.minimum(len(a), idx2+window_size)
-                        rates = smoothed_spikes[:, start:stop]
-                        pr_b, eigvals_b, eigvecs_b, _, rates_b = get_eigs(rates, normalize_variance=norm_var)
-                        PR.append(pr_b)
+                            # get covariance matrix and calculate dimensionality
+                            s2_idx = s2[:, start:stop]
+                            pr2, eigvals2, eigvecs2, C2, s_c2 = get_eigs(s2_idx, normalize_variance=std_norm)
+                            pcs2 = eigvecs2.T @ s2_idx
+                            if not np.isfinite(pr2):
+                                continue
 
-                        # get correlation between PCs and velocity
-                        pcs = eigvecs_b.T @ rates
-                        CC1.append(np.corrcoef(v[start:stop], pcs[0, :])[0, 1])
-                        CC2.append(np.corrcoef(v[start:stop], pcs[1, :])[0, 1])
-                        for n in range(pcs.shape[1]):
-                            if len(PC1) < n+1:
-                                PC1.append(pcs[0, n])
-                                PC2.append(pcs[1, n])
-                                PC_n.append(1)
-                            else:
-                                PC1[n] += pcs[0, n]
-                                PC2[n] += pcs[1, n]
-                                PC_n[n] += 1
+                            # save window data
+                            r2 = np.mean(s2_idx, axis=1)
+                            behavior_data["r"].append(np.mean(r2))
+                            behavior_data["D(C)"].append(pr2)
+                            behavior_data["D(r)"].append(np.sum(r2) ** 2 / (np.sum(r2 ** 2) * len(r2)))
+                            behavior_data["r_dist"].append(r2)
 
-                        # calculate population statistics
-                        Rn.append(np.mean(rates, axis=1))
+                        # store results
+                        pr = np.mean(behavior_data["D(C)"])
+                        r = np.mean(behavior_data["r_dist"], axis=0)
+                        if np.isfinite(pr):
+                            res["drug"].append(drug)
+                            res["condition"].append(c)
+                            res["mouse"].append(mouse_id)
+                            res["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
+                            res["mean(r)"].append(np.mean(behavior_data["r"]))
+                            res["D(r)"].append(np.sum(r)**2/(np.sum(r**2)*len(r)))
+                            res["D(C)"].append(pr)
+                            res["behavior"].append(b)
+                            res["p(behavior)"].append(np.mean(idx))
 
-                    # calculate averages over time windows
-                    pr_b = np.mean(PR, axis=0)
-                    cc1 = np.mean(CC1, axis=0)
-                    cc2 = np.mean(CC2, axis=0)
-                    pcn = np.asarray(PC_n)
-                    pc1, pc2 = np.asarray(PC1) / pcn, np.asarray(PC2) / pcn
-                    rn = np.mean(Rn, axis=0)
+                    except TypeError:
+                        pass
 
-                except (TypeError, ValueError):
-                    continue
+                else:
 
-                # store results
-                if np.isfinite(pr_b):
-                    res["drug"].append(drug)
-                    res["dose"].append(dose)
-                    res["condition"].append(condition)
-                    res["mouse"].append(mouse_id)
-                    res["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
-                    res["mean(r)"].append(np.mean(rn))
-                    res["D(r)"].append(np.sum(rn)**2/(np.sum(rn**2)*len(rn)))
-                    res["D(C)"].append(pr)
-                    res["D_b(C)"].append(pr_b)
-                    res["behavior"].append(b)
-                    res["corr(v,pc1)"].append(cc1)
-                    res["corr(v,pc2)"].append(cc2)
-                    res["std(pc1)"].append(np.std(pc1))
-                    res["std(pc2)"].append(np.std(pc2))
+                    # get covariance matrix and calculate dimensionality
+                    s2_idx = s2[:, idx]
+                    pr2, eigvals2, eigvecs2, C2, s_c2 = get_eigs(s2_idx, normalize_variance=std_norm)
+                    pcs2 = eigvecs2.T @ s2_idx
+                    if not np.isfinite(pr2):
+                        continue
+
+                    # store results
+                    r = np.mean(s2_idx, axis=0)
+                    if np.isfinite(pr2):
+                        res["drug"].append(drug)
+                        res["condition"].append(c)
+                        res["mouse"].append(mouse_id)
+                        res["neuron_type"].append("D1" if mouse_id in mice["D1"] else "D2")
+                        res["mean(r)"].append(np.mean(r))
+                        res["D(r)"].append(np.sum(r) ** 2 / (np.sum(r ** 2) * len(r)))
+                        res["D(C)"].append(pr2)
+                        res["behavior"].append(b)
+                        res["p(behavior)"].append(np.mean(idx))
 
     print(f"Finished processing data for drug = {drug}.")
 
 # save data
 df = DataFrame.from_dict(res)
-df.to_csv(f"{save_dir}/spn_dimensionality_behavior.csv")
+df.to_csv(f"{save_dir}/spn_behavior_p{'_normalized' if std_norm else ''}{'_windowed' if window_based else ''}.csv")
 
 # plotting
 if plot_results:
@@ -171,26 +197,14 @@ if plot_results:
     import seaborn as sb
 
     sb.set_palette("colorblind")
-    df.sort_values(["condition", "dose"], inplace=True)
-    for key in ["D(C)", "D_b(C)", "D(r)"]:
+    df.sort_values(["condition", "neuron_type"], inplace=True)
+    for key in ["D(C)", "D(r)"]:
         for drug in drugs:
-            if d12_combined:
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sb.lineplot(df.loc[df.loc[:, "drug"] == drug, :],
-                            x="behavior", y=key, hue="dose", style="condition", ax=ax,
-                            markers=True, dashes=True, err_style='bars', errorbar="se")
-                ax.set_title(drug)
-                plt.tight_layout()
-                fig.canvas.draw()
-            else:
-                fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
-                fig.suptitle(drug)
-                for i, d in enumerate(["D1", "D2"]):
-                    ax = axes[i]
-                    sb.lineplot(df.loc[(df.loc[:, "drug"] == drug) & (df.loc[:, "neuron_type"] == d), :],
-                                x="behavior", y=key, hue="dose", style="condition", ax=ax,
-                                markers=True, dashes=True, err_style='bars', errorbar="se")
-                    ax.set_title(f"{d}")
-                plt.tight_layout()
-                fig.canvas.draw()
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sb.lineplot(df.loc[df.loc[:, "drug"] == drug, :],
+                        x="behavior", y=key, hue="condition", style="neuron_type", ax=ax,
+                        markers=True, dashes=True, err_style='bars', errorbar="se")
+            ax.set_title(drug)
+            plt.tight_layout()
+            fig.canvas.draw()
     plt.show()

@@ -12,37 +12,27 @@ import pickle
 
 # load data
 path = f"/home/rgast/data/parker_data"
-results = read_csv(f"{path}/spn_dimensionality_behavior.csv")
-results.sort_values(["condition", "dose"], inplace=True)
+df = read_csv(f"{path}/spn_dimensionality_behavior_p.csv")
+df.sort_values(["condition", "neuron_type"], inplace=True)
 
 # choose plotting conditions
 drugs = [
     "MP10", "haloperidol"
     # "olanzapine", "clozapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
 ]
-d12_combined = False
+behaviors = np.unique(df.loc[:, "behavior"])
 
 # plotting
 sb.set_palette("colorblind")
-for key in ["D(C)", "D_b(C)", "D(r)", "mean(r)"]:
+for key in ["D(C)", "D(r)", "mean(r)", "p(behavior)"]:
     for drug in drugs:
-        if d12_combined:
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sb.lineplot(results.loc[results.loc[:, "drug"] == drug, :],
-                        x="behavior", y=key, hue="dose", style="condition", ax=ax,
+        fig, axes = plt.subplots(ncols=2, figsize=(12, 5))
+        for i, n in enumerate(["D1", "D2"]):
+            ax = axes[i]
+            sb.lineplot(df.loc[(df.loc[:, "drug"] == drug) & (df.loc[:, "neuron_type"] == n), :],
+                        x="behavior", y=key, hue="condition", ax=ax,
                         markers=True, dashes=True, err_style='bars', errorbar="se")
-            ax.set_title(drug)
-            plt.tight_layout()
-            fig.canvas.draw()
-        else:
-            fig, axes = plt.subplots(ncols=2, figsize=(12, 6), sharex=True, sharey=True)
-            fig.suptitle(drug)
-            for i, d in enumerate(["D1", "D2"]):
-                ax = axes[i]
-                sb.lineplot(results.loc[(results.loc[:, "drug"] == drug) & (results.loc[:, "neuron_type"] == d), :],
-                            x="behavior", y=key, hue="dose", style="condition", ax=ax,
-                            markers=True, dashes=True, err_style='bars', errorbar="se")
-                ax.set_title(f"{d}")
-            plt.tight_layout()
-            fig.canvas.draw()
+        ax.set_title(f"Drug = {drug}")
+        plt.tight_layout()
+        fig.canvas.draw()
 plt.show()

@@ -8,8 +8,8 @@
 ik_op:
   base: OperatorTemplate
   equations:
-    - "r' = ((Delta+d)*k^2*(v-v_r)/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
-    - "v' = (k*v*(v-v_r-v_t) - C*pi*r*(Delta+d+pi*C*r/k) + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
+    - "r' = ((Delta+d)*k/(pi*C) + r*(k*(2.0*v-v_r-v_t) - g_e*s_e - g_i*s_i)) / C"
+    - "v' = (k*v*(v-v_r-v_t) - (pi*C*r)**2/k + k*v_r*v_t + g_e*s_e*(E_e-v) + g_i*s_i*(E_i-v) + I_ext + eta - u) / C"
     - "u' = (b*(v-v_r) - u)/tau_u + kappa*r"
     - "s' = -s/tau_s + r"
   variables:
@@ -77,13 +77,12 @@ mg_op:
 spn_op:
   base: ik_op
   variables:
-    C: 15.0
-    Delta: 2.0
+    C: 50.0
     v_r: -80.0
     v_t: -30.0
     tau_u: 100.0
     b: -20.0
-    kappa: 90.0
+    kappa: 150.0
 
 spn_d1_op:
   base: spn_op
@@ -114,8 +113,8 @@ spn_d2_op:
   equations:
     replace:
       k: k_d2
-      g_ampa: g_ampa_d2
-      g_gaba: g_gaba_d2
+      g_e: g_e_d2
+      g_i: g_i_d2
     add:
       - "k_d2 = k*(1-c1*phi)"
       - "g_e_d2 = g_e*(1+c2*phi)"
@@ -142,7 +141,7 @@ fsi_op:
     Delta: 1.0
     v_r: -70.0
     v_t: -50.0
-    a: 0.2
+    tau_u: 5.0
     b: 0.025
     kappa: 0.0
     c1: 0.1
@@ -224,10 +223,10 @@ str:
     d2_spn: spn_pop
     fsi: fsi_pop
   edges:
-    - [d1_spn/spn_op/s, d1_spn/spn_op/s_i, null, {weight: 0.8}]
-    - [d1_spn/spn_op/s, d2_spn/spn_op/s_i, null, {weight: 0.4}]
-    - [d2_spn/spn_op/s, d1_spn/spn_op/s_i, null, {weight: 1.0}]
-    - [d2_spn/spn_op/s, d2_spn/spn_op/s_i, null, {weight: 1.2}]
-    - [fsi/fsi_op/s, d1_spn/spn_op/s_i, null, {weight: 3.0}]
-    - [fsi/fsi_op/s, d2_spn/spn_op/s_i, null, {weight: 2.0}]
-    - [fsi/fsi_op/s, fsi/fsi_op/s_i, null, {weight: 1.0}]
+    - [d1_spn/spn_op/s, d1_spn/spn_op/s_i, null, {weight: 2.0}]
+    - [d1_spn/spn_op/s, d2_spn/spn_op/s_i, null, {weight: 1.0}]
+    - [d2_spn/spn_op/s, d1_spn/spn_op/s_i, null, {weight: 4.0}]
+    - [d2_spn/spn_op/s, d2_spn/spn_op/s_i, null, {weight: 3.0}]
+    - [fsi/fsi_op/s, d1_spn/spn_op/s_i, null, {weight: 20.0}]
+    - [fsi/fsi_op/s, d2_spn/spn_op/s_i, null, {weight: 15.0}]
+    - [fsi/fsi_op/s, fsi/fsi_op/s_i, null, {weight: 10.0}]
