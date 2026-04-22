@@ -7,12 +7,14 @@ matplotlib.rcParams["axes.labelsize"] = 14
 matplotlib.rcParams["lines.markersize"] = 12.0
 matplotlib.rcParams["lines.linewidth"] = 2.0
 import seaborn as sb
-from pandas import DataFrame, read_csv
+from pandas import read_csv
 import pickle
+import sys
 
 # load data
+condition = sys.argv[-1]
 path = f"/home/rgast/data/parker_data"
-df = read_csv(f"{path}/spn_behavior_v_single_window.csv")
+df = read_csv(f"{path}/spn_behavior_{condition}.csv")
 df.sort_values(["condition", "neuron_type"], inplace=True)
 
 # choose plotting conditions
