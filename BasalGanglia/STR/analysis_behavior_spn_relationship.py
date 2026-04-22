@@ -28,7 +28,7 @@ path = "/media/storage/DATA/Parkerlab/neural_data" #"/mnt/kennedy_labdata/Parker
 save_dir = "/home/richard/data/parker_data"
 
 # plotting parameters
-plot_results = True
+plot_results = False
 
 # choose condition
 drugs = ["MP10", "haloperidol", "clozapine", "olanzapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
