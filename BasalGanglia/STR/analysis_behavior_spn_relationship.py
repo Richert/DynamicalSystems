@@ -24,7 +24,7 @@ def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
     return pr, eigvals, eigvecs, C, x_centered
 
 # load processed data or re-process data
-path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
+path = "/media/storage/DATA/Parkerlab/neural_data" #"/mnt/kennedy_labdata/Parkerlab/neural_data"
 save_dir = "/home/richard/data/parker_data"
 
 # plotting parameters
