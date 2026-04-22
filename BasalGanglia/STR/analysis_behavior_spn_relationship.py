@@ -79,8 +79,8 @@ for drug in drugs:
                 data_tmp = loadmat(f"{path}/{drug}/{dose}/{file}/{condition}_drug.mat", simplify_cells=True)
             except NotADirectoryError:
                 continue
-            s = data_tmp[f"{condition}_drug"][spike_field]
             v = data_tmp[f"{condition}_drug"][speed_field]
+            s = data_tmp[f"{condition}_drug"][spike_field][:max_neurons, :len(v)-1]
 
             # determine condition
             if dose == "Vehicle" and condition == "veh":
@@ -98,7 +98,7 @@ for drug in drugs:
             s2 = np.asarray([gaussian_filter1d(s[i, :], sigma=sigma_rate) for i in range(s.shape[0])])
             v2 = gaussian_filter1d(v, sigma=sigma_speed)
             a2 = np.diff(v2)
-            v2, s2 = v2[:-1], s2[:, :-1]
+            v2 = v2[:-1]
 
             # calculate result variables and save data
             for b, thresholds in behaviors.items():
