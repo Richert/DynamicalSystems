@@ -182,7 +182,7 @@ for drug in drugs:
 
 # save data
 df = DataFrame.from_dict(res)
-df.to_csv(f"{save_dir}/spn_behavior_p{'_normalized' if std_norm else ''}{'_windowed' if window_based else ''}.csv")
+df.to_csv(f"{save_dir}/spn_behavior_p{'_normalized' if std_norm else ''}{'_multi_window' if window_based else '_single_window'}.csv")
 
 # plotting
 if plot_results:
