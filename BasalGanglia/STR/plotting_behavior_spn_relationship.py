@@ -12,14 +12,14 @@ import pickle
 import sys
 
 # load data
-condition = sys.argv[-1]
+condition = "p_single_window" #sys.argv[-1]
 path = f"/home/rgast/data/parker_data"
 df = read_csv(f"{path}/spn_behavior_{condition}.csv")
 df.sort_values(["condition", "neuron_type"], inplace=True)
 
 # choose plotting conditions
 drugs = [
-    #"MP10",
+    "MP10",
     "haloperidol",
     # "olanzapine", "clozapine", "xanomeline", "M4PAM", "SCH23390", "SCH39166", "SEP363856", "SKF38393"
 ]
