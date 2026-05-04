@@ -2,11 +2,11 @@ import numpy as np
 from scipy.io import loadmat
 import os
 from scipy.ndimage import gaussian_filter1d
-from scipy.signal import find_peaks, correlate
+from scipy.signal import find_peaks, correlate, peak_widths
+import pickle
 
-def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
+def get_cov(x: np.ndarray, normalize_variance: bool = False) -> tuple:
 
-    # calculate covariance matrix
     x_centered = np.zeros_like(x)
     for n in range(x.shape[0]):
         x_centered[n, :] = x[n, :] - np.mean(x[n, :])
@@ -14,16 +14,20 @@ def get_eigs(x: np.ndarray, normalize_variance: bool = False) -> tuple:
             x_centered[n, :] /= (np.std(x_centered[n, :]) + epsilon)
     C = np.cov(x_centered, ddof=0)
 
+    return C, x_centered
+
+def get_eigs(C: np.ndarray) -> tuple:
+
     # get eigenvalues and eigenvectors of C
     eigvals, eigvecs = np.linalg.eigh(C)
     eig_idx = np.argsort(eigvals)[::-1]
     eigvals, eigvecs = eigvals[eig_idx], eigvecs[:, eig_idx]
     pr = np.sum(eigvals) ** 2 / (np.sum(eigvals ** 2) * len(eigvals))
 
-    return pr, eigvals, eigvecs, C, x_centered
+    return pr, eigvals, eigvecs
 
 # load processed data or re-process data
-path = "/mnt/kennedy_labdata/Parkerlab/neural_data"
+path = "/home/rgast/data/parker_data/neural_data"
 save_dir = "/home/rgast/data/parker_data"
 spike_field = "dff_traces_5hz"
 speed_field = "speed_traces_5hz"
@@ -35,10 +39,10 @@ drug = "haloperidol"
 dose = "Vehicle"
 mouse = "m972"
 behaviors = {
-    "v0": (0.0, 1.0, -0.5, 0.5), "v1": (1.0, 3.0, -0.5, 0.5),
-    "v2": (3.0, 6.0, -0.5, 0.5), "v3": (6.0, np.inf, -0.5, 0.5),
-    "p0": (1.0, 3.0, 1, 50), "p1": (3.0, 6.0, 1, 50),
-    "p2": (6.0, 10.0, 1, 50), "p3": (10.0, np.inf, 1, 50)
+    # "v0": (0.0, 1.0, -0.5, 0.5), "v1": (1.0, 3.0, -0.5, 0.5),
+    # "v2": (3.0, 6.0, -0.5, 0.5), "v3": (6.0, np.inf, -0.5, 0.5),
+    "p3": (9.0, 30.0, 12, 30), "p2": (9.0, 30.0, 1, 12),
+    "p1": (3.0, 9.0, 10, 20), "p0": (3.0, 9.0, 1, 10),
 }
 
 # meta parameters
@@ -47,10 +51,10 @@ sigma_speed = 1
 sigma_rate = 1
 epsilon = 1e-15
 std_norm = False
-window_based = False
 gap_window = 5
-corr_window = 200
-spn_window = 3
+corr_window = 50
+spn_window = 5
+spike_scaling = 20.0 * 60.0
 
 # mouse identity
 mice = {"D1":["m085", "m040", "m298", "m404", "f487", "f694", "f857", "f859", "m794", "m797", "m795", "m973",
@@ -84,7 +88,7 @@ for condition in ["veh", "amph"]:
     # get condition data
     data_tmp = data[condition]
     s, v = data_tmp["s_raw"], data_tmp["v_raw"]
-    s = s[:max_neurons, :len(v) - 1]
+    s = s[:max_neurons, :len(v) - 1] * spike_scaling
     data_tmp["a_raw"] = np.diff(v)
     data_tmp["s_raw"] = s
     data_tmp["v_raw"] = v[:-1]
@@ -96,23 +100,26 @@ for condition in ["veh", "amph"]:
     v2 = v2[:-1]
     data_tmp["s_smooth"], data_tmp["v_smooth"], data_tmp["a_smooth"] = s2, v2, a2
 
-    # show recurrence plot for velocity
-    v_tmp = v2 - np.mean(v2)
-    v_tmp /= np.std(v_tmp)
+    # calculate velocity autocorrelation
+    v_scaled = v2 - np.mean(v2)
+    v_scaled /= np.std(v_scaled)
     idx = 0
     v_c = []
     while idx + corr_window < len(v2):
-        v_tmp2 = v_tmp[idx:idx+corr_window]
+        v_tmp2 = v_scaled[idx:idx + corr_window]
         v_c.append(correlate(v_tmp2, v_tmp2, mode="full"))
         idx += corr_window
     data_tmp["v_c"] = np.mean(v_c, axis=0)
 
     # calculate neural covariance matrix
-    pr, eigvals, eigvecs, C, s_centered = get_eigs(s2, normalize_variance=std_norm)
+    C, s_centered = get_cov(s2, normalize_variance=std_norm)
+    pr, eigvals, eigvecs = get_eigs(C)
     pcs = eigvecs.T @ s_centered
 
     # calculate result variables and save data
-    behavior_data = {"b": [], "v": [], "r": [], "C": [], "D(C)": [], "D(r)": [], "r_dist": [], "b_idx": [], "p(b)": []}
+    behavior_data = {"b": [], "v_c": [], "r": [], "C": [], "eigvals": [],
+                     "D(C)": [], "D(r)": [], "r_dist": [], "b_idx": [], "p(b)": []}
+    b_indices = np.zeros_like(v2)
     for b, thresholds in behaviors.items():
 
         # get index where mouse shows target behavior
@@ -120,68 +127,59 @@ for condition in ["veh", "amph"]:
             idx = (v2 >= thresholds[0]) & (v2 < thresholds[1]) & (a2 >= thresholds[2]) & (a2 < thresholds[3])
         else:
             idx2, props = find_peaks(v2, distance=gap_window, prominence=(thresholds[0], thresholds[1]),
-                                width=(thresholds[2], thresholds[3]), plateau_size=(0, 2), rel_height=1.0)
+                                width=(thresholds[2], thresholds[3]), plateau_size=(0, 3), rel_height=0.6)
             idx = np.zeros_like(v2) > 0.0
-            for l, r in zip(props["left_ips"], props["right_ips"]):
+            width_data = peak_widths(v2, idx2, rel_height=0.75,
+                                     prominence_data=(props["prominences"], props["left_bases"], props["right_bases"])
+                                     )
+            for l, r in zip(width_data[2], width_data[3]):
                 idx[int(np.round(l, decimals=0)):int(np.round(r, decimals=0))] = True
         idx[0] = False
+        idx[b_indices > 0.0] = False
+        b_indices[idx == True] = 1.0
 
-        if window_based:
+        idx_diff = np.diff(1.0 * idx)
+        starts, stops = np.argwhere(idx_diff > 0.0).squeeze(axis=1), np.argwhere(idx_diff < 0.0).squeeze(axis=1)
+        behavior_data_tmp = {"r": [], "C": [], "v_c": []}
+        if len(starts) < 1 or len(stops) < 1:
+            continue
+        for start, stop in zip(starts, stops):
 
-            idx_diff = np.diff(1.0 * idx)
-            starts, stops = np.argwhere(idx_diff > 0.0).squeeze(), np.argwhere(idx_diff < 0.0).squeeze()
-            behavior_data_tmp = {"r": [], "C": [], "D(C)": [], "D(r)": [], "r_dist": []}
-            for start, stop in zip(starts, stops):
-
-                if stop-start < spn_window:
-                    continue
-
-                # get covariance matrix and calculate dimensionality
-                s2_idx = s2[:, start:stop]
-                pr2, eigvals2, eigvecs2, C2, s_c2 = get_eigs(s2_idx, normalize_variance=std_norm)
-                pcs2 = eigvecs2.T @ s2_idx
-                if not np.isfinite(pr2):
-                    continue
-
-                # save window data
-                r2 = np.mean(s2_idx, axis=1)
-                behavior_data_tmp["r"].append(np.mean(r2))
-                behavior_data_tmp["C"].append(C2)
-                behavior_data_tmp["D(C)"].append(pr2)
-                behavior_data_tmp["D(r)"].append(np.sum(r2)**2 / (np.sum(r2**2)*len(r2)))
-                behavior_data_tmp["r_dist"].append(r2)
-
-            # save behavior specific data
-            behavior_data["b"].append(b)
-            behavior_data["v"].append(np.mean(v2[idx]))
-            behavior_data["r"].append(np.mean(behavior_data_tmp["r"]))
-            behavior_data["C"].append(np.mean(behavior_data_tmp["C"], axis=0))
-            behavior_data["D(C)"].append(np.mean(behavior_data_tmp["D(C)"]))
-            behavior_data["D(r)"].append(np.mean(behavior_data_tmp["D(r)"]))
-            behavior_data["r_dist"].append(np.mean(behavior_data_tmp["r_dist"], axis=0))
-            behavior_data["b_idx"].append(idx)
-            behavior_data["p(b)"].append(np.mean(idx))
-
-        else:
-
-            # get covariance matrix and calculate dimensionality
-            s2_idx = s2[:, idx]
-            pr2, eigvals2, eigvecs2, C2, s_c2 = get_eigs(s2_idx, normalize_variance=std_norm)
-            pcs2 = eigvecs2.T @ s_c2
-            if not np.isfinite(pr2):
+            if stop - start < spn_window:
                 continue
 
-            # save behavior-specific data
+            # get covariance matrix and calculate dimensionality
+            s2_idx = s2[:, start:stop]
+            C2, _ = get_cov(s2_idx, normalize_variance=std_norm)
+
+            # calculate velocity autocorrelation
+            center = int((start + stop) / 2)
+            wh = int(corr_window / 2)
+            if center - wh >= 0 and center + wh < len(v_scaled):
+                v_tmp = v_scaled[center-wh:center+wh]
+                v_c = correlate(v_tmp, v_tmp, mode="full")
+                behavior_data_tmp["v_c"].append(v_c)
+
+            # save window data
             r2 = np.mean(s2_idx, axis=1)
-            behavior_data["b"].append(b)
-            behavior_data["v"].append(np.mean(v2[idx]))
-            behavior_data["r"].append(np.mean(r2))
-            behavior_data["C"].append(C2)
-            behavior_data["D(C)"].append(pr2)
-            behavior_data["D(r)"].append(np.sum(r2)**2/(np.sum(r2**2)*len(r2)))
-            behavior_data["r_dist"].append(r2)
-            behavior_data["b_idx"].append(idx)
-            behavior_data["p(b)"].append(np.mean(idx))
+            behavior_data_tmp["r"].append(r2)
+            behavior_data_tmp["C"].append(C2)
+
+        # store results
+        C2 = np.mean(behavior_data_tmp["C"], axis=0)
+        r2 = np.mean(behavior_data_tmp["r"], axis=0)
+        v_c2 = np.mean(behavior_data_tmp["v_c"], axis=0)
+        pr2, eigvals2, eigvecs2 = get_eigs(C2)
+        behavior_data["b"].append(b)
+        behavior_data["v_c"].append(v_c2)
+        behavior_data["r"].append(np.mean(r2))
+        behavior_data["C"].append(C2)
+        behavior_data["D(C)"].append(pr2)
+        behavior_data["D(r)"].append(np.sum(r2)**2/(np.sum(r2**2)*len(r2)))
+        behavior_data["r_dist"].append(r2)
+        behavior_data["b_idx"].append(idx)
+        behavior_data["p(b)"].append(np.mean(idx))
+        behavior_data["eigvals"].append(eigvals2)
 
     # save data
     data_tmp["behavior_data"] = behavior_data
@@ -191,6 +189,9 @@ for condition in ["veh", "amph"]:
     data_tmp["PC2"] = pcs[1, :] * eigvals[1]
     data_tmp["PC3"] = pcs[2, :] * eigvals[2]
     data_tmp["eigvals"] = eigvals
+
+# store data on disk
+pickle.dump(data, open(f"{save_dir}/mouse_data_{mouse}_{drug}_{dose}.pkl", "wb"))
 
 # plotting
 import matplotlib.pyplot as plt
