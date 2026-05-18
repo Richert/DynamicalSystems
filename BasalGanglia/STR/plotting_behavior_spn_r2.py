@@ -36,7 +36,7 @@ multi_data = {key: val[idx_c] for key, val in multi_data.items()}
 idx_c2 = df.loc[:, "condition"] == "A + High Dose"
 df.loc[idx_c2, "condition"] = "A + Drug"
 multi_data["condition"][idx_c2] = "A + Drug"
-df_sorted = df.sort_values(["condition", "behavior", "SPNs"], inplace=False)
+df_sorted = df.sort_values(["condition", "behavior", "SPNs"], inplace=False, ascending=[False, True, True])
 
 # data parameters
 rate_bins = np.linspace(0.0, 0.5, num=20)
