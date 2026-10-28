@@ -36,9 +36,10 @@ import h5py
 # configuration
 # ---------------------------------------------------------------------------
 
-raw_root = "/mnt/kennedy_labdata/Parkerlab/raw_miniscope"
-old_root = "/mnt/kennedy_labdata/Parkerlab/neural_data"
-work_root = "/home/rgast/data/parker_data/raw_pipeline"
+# paths (environment variables override the defaults, e.g. on the server)
+raw_root = os.environ.get("RAW_ROOT", "/mnt/kennedy_labdata/Parkerlab/raw_miniscope")
+old_root = os.environ.get("OLD_ROOT", "/mnt/kennedy_labdata/Parkerlab/neural_data")
+work_root = os.environ.get("WORK_ROOT", "/home/rgast/data/parker_data/raw_pipeline")
 
 # recording to process: raw folder <drug>/<dose>/<session> and the index of the
 # recording in it (files sorted by time): 0 = first, 15-min drug/vehicle recording
@@ -46,16 +47,19 @@ work_root = "/home/rgast/data/parker_data/raw_pipeline"
 # recording (old session = folder name, "amph")
 raw_session = "Clozapine/HighDose/20191207_m085_clo04_amph"
 recording = 0
-if len(sys.argv) > 1:        # optional CLI override: pipeline_raw_spikes.py <raw_session> [recording]
+seed_override = {}
+if len(sys.argv) > 1:        # CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]]
     raw_session = sys.argv[1]
     recording = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+    if len(sys.argv) > 4:
+        seed_override = dict(min_corr=float(sys.argv[3]), min_pnr=float(sys.argv[4]))
 
 fs = 20.0                    # raw frame rate (Hz)
 fs_old = 5.0                 # frame rate of the old pipeline's outputs (Hz)
 
 # which steps to recompute (otherwise cached results in work_dir are reused)
 rerun = dict(convert=False, motion=False, cnmf=False)
-n_processes = 8
+n_processes = int(os.environ.get("N_PROCESSES", 8))   # CaImAn worker processes per run
 
 # motion correction (NoRMCorre)
 mc_params = dict(
@@ -79,7 +83,12 @@ cnmf_params = dict(
     only_init=True, normalize_init=False, update_background_components=True,
     del_duplicates=True, method_deconvolution="oasis", decay_time=1.0,
 )
+cnmf_params.update(seed_override)
 quality = dict(min_SNR=3.0, rval_thr=0.85, use_cnn=False)
+
+def cnmf_tag():
+    """Identifies a CNMF-E setting in cache/output names (AR order + seeding thresholds)."""
+    return f"p{cnmf_params['p']}_c{cnmf_params['min_corr']:g}_pnr{cnmf_params['min_pnr']:g}"
 
 # spike detection on the OASIS output
 # spike if deconvolved activity > spike_thr x noise level; 1.5-2 gives high recall of
@@ -153,17 +162,18 @@ def motion_correct(tif, work, dview):
     fname = cm.save_memmap(fname_mc, base_name="memmap_", order="C", border_to_0=0)
     for f in fname_mc:                            # drop the intermediate F-order movie
         os.remove(f)
-    # CaImAn writes memmaps to its temp dir; keep the result with this recording
-    # (the file name encodes the dimensions, so it is kept)
-    import shutil
+    # CaImAn writes memmaps to its temp dir (set to work_dir in main); make sure the
+    # result stays with this recording (the file name encodes the dimensions)
     dest = f"{work}/{os.path.basename(fname)}"
-    shutil.move(fname, dest)
+    if os.path.abspath(fname) != os.path.abspath(dest):
+        import shutil
+        shutil.move(fname, dest)
     return dest
 
 def run_cnmfe(fname, work, dview):
     import caiman as cm
     from caiman.source_extraction.cnmf import cnmf, params
-    out = f"{work}/cnmfe_p{cnmf_params['p']}.hdf5"     # AR order in the name: no stale reuse
+    out = f"{work}/cnmfe_{cnmf_tag()}.hdf5"            # setting in the name: no stale reuse
     Yr, dims, T = cm.load_memmap(fname)
     images = Yr.T.reshape((T,) + dims, order="F")
     if os.path.isfile(out) and not rerun["cnmf"]:
@@ -397,6 +407,14 @@ def evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old):
                    rate_new_median_hz=float(np.median(rate_new) / 60),
                    rate_old_median_hz=float(np.median([len(t) for t in t_old]) / minutes / 60),
                    noise_fp_share=float(fp_new.sum() / max(rate_new.sum(), 1e-12)),
+                   min_corr=cnmf_params["min_corr"], min_pnr=cnmf_params["min_pnr"],
+                   # cell-detection scores: share of ACTIVE old neurons (>= 5 events)
+                   # recovered, match quality, new cells without an old counterpart
+                   frac_active_old_matched=float(np.isin(np.flatnonzero(E_old.sum(1) >= 5),
+                                                         [i for i, _ in pairs]).mean()),
+                   n_old_active=int((E_old.sum(1) >= 5).sum()),
+                   r_matched_median=float(np.median([R[i, j] for i, j in pairs])) if pairs else np.nan,
+                   n_new_unmatched=int(len(C) - len(pairs)),
                    burst_frac_new=float(bf_new), burst_frac_old=float(bf_old))
     return df, summary, dict(lag=lag, T=T, R=R, pairs=pairs, fn=fn, C5=C5, C_old=C_old,
                              E_old=E_old, spk=spk, sweep=sweep, isi_new=isi_new,
@@ -537,7 +555,7 @@ def make_figure(work, cn, cents, spk, C, ev, df, summary, xy_old):
     fig.suptitle(f"{raw_session} rec{recording}: new pipeline (CaImAn CNMF-E + OASIS) vs old "
                  f"| old {summary['n_old']} / new {summary['n_new']} / matched "
                  f"{summary['n_matched']} neurons", fontsize=13)
-    out = f"{work}/pipeline_vs_old_p{cnmf_params['p']}_thr{spike_thr}.png"
+    out = f"{work}/pipeline_vs_old_{cnmf_tag()}_thr{spike_thr}.png"
     fig.savefig(out, dpi=110)
     plt.close(fig)
     print(f"saved figure {out}")
@@ -550,6 +568,9 @@ def main():
     import caiman as cm
     import json
     raw_file, old_file, cond, work = session_paths()
+    # CaImAn's temp files (memmaps) are named only by movie dimensions/frame count,
+    # so parallel runs must not share a temp dir: use this recording's work dir
+    os.environ["CAIMAN_TEMP"] = work
     print(f"raw: {raw_file}\nold: {old_file}\nwork: {work}")
     _, dview, _ = cm.cluster.setup_cluster(backend="multiprocessing", n_processes=n_processes)
     try:
@@ -560,18 +581,18 @@ def main():
         cm.stop_server(dview=dview)
     C, S, S_noise, sn, cents = deconvolve_all(cnm, dims)
     E_old, C_old, xy_old = load_old(old_file, cond)
-    np.savez_compressed(f"{work}/new_pipeline_outputs_p{cnmf_params['p']}.npz", C=C, S=S,
+    np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}.npz", C=C, S=S,
                         S_noise=S_noise, sn=sn, centroids_px=cents, fs=fs)
     global spike_thr
     for spike_thr in fig_thresholds:          # full evaluation + figure per threshold
-        tag = f"p{cnmf_params['p']}_thr{spike_thr}"
+        tag = f"{cnmf_tag()}_thr{spike_thr}"
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)
         df.to_csv(f"{work}/matched_neurons_{tag}.csv", index=False)
         json.dump(summary, open(f"{work}/summary_{tag}.json", "w"), indent=1)
         np.save(f"{work}/spikes_{tag}.npy", ev["spk"])
         print(f"\n[{tag}] summary:", summary)
         make_figure(work, cn, cents, ev["spk"], C, ev, df, summary, xy_old)
-    ev["sweep"].to_csv(f"{work}/threshold_sweep_p{cnmf_params['p']}.csv", index=False)
+    ev["sweep"].to_csv(f"{work}/threshold_sweep_{cnmf_tag()}.csv", index=False)
     print(ev["sweep"].round(3).to_string(index=False))
 
 
