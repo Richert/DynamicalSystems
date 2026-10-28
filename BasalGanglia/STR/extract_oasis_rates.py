@@ -20,6 +20,7 @@ Run with the dedicated env:
 """
 
 import os
+import sys
 import numpy as np
 import h5py
 from scipy.io import loadmat
@@ -29,14 +30,14 @@ from oasis.functions import deconvolve
 # configuration
 # ---------------------------------------------------------------------------
 
-path = "/home/rgast/data/parker_data/neural_data"
+path = "/mnt/kennedy_labdata/Parkerlab/neural_data"   # server copy (10 drugs; local copy has 5)
 save_dir = "/home/rgast/data/parker_data"
-out_path = f"{save_dir}/oasis_rates.h5"   # single HDF5 file collecting all sessions
 
 # which drugs to process; None -> every drug subfolder found under `path`
 drugs = None
-# which doses to process; None -> every dose subfolder found per drug
-doses = None
+# which doses to process; None -> every subfolder found per drug (note: SCH23390
+# on the server also has stray session folders directly under the drug folder)
+doses = ["Vehicle", "HighDose"]
 
 # input trace the deconvolution runs on:
 #   "dff_traces_5hz"   -> dF/F
@@ -49,6 +50,10 @@ oasis_opts = {
     "ar_order": 1,             # 1 (AR1) or 2 (AR2) calcium model
     "penalty": 1,              # 1 -> L1 (graded), 0 -> L0 (sparse) sparsity penalty
 }
+if len(sys.argv) > 1:          # optional CLI override: python extract_oasis_rates.py <penalty>
+    oasis_opts["penalty"] = int(sys.argv[1])
+# single HDF5 file collecting all sessions (L0 output gets its own file)
+out_path = f"{save_dir}/oasis_rates{'_L0' if oasis_opts['penalty'] == 0 else ''}.h5"
 
 # output options
 save_denoised = False          # also store the denoised calcium trace `c`
