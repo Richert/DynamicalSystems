@@ -90,6 +90,11 @@ cnmf_params = dict(
     del_duplicates=True, method_deconvolution="oasis", decay_time=1.0,
 )
 quality = dict(min_SNR=3.0, rval_thr=0.85, use_cnn=False)
+# footprint shape filter (after CaImAn's quality check), on the footprint above 30% of
+# its max: rejects lens-edge arcs, vessel/neuropil bands and fragmented components.
+# On 4 clozapine recordings matched (real) cells have area ~50 px (95%: <=112 px at
+# 3.3 um/px), elongation ~1.4, solidity ~0.96; these limits reject ~1% of them
+shape_filter = dict(max_area_px=200, max_elongation=3.5, min_solidity=0.75, single_part=True)
 
 def cnmf_tag():
     """Identifies a CNMF-E setting in cache/output names (AR order + seeding thresholds)."""
@@ -113,6 +118,7 @@ r_seed = 0.7                 # trace correlation of mutual-best pairs used to fi
 r_min = 0.4                  # min trace correlation of an accepted old/new neuron pair
 max_dist_um = 20.0           # max centroid distance (after the transform) of a pair
 tol_s = 0.25                 # spike-matching tolerance (s); old bins are 0.2 s wide
+min_old_events = 5           # reference = old cells with >= this many events (clear activity)
 n_examples = 4               # example neurons in the figure
 
 # ---------------------------------------------------------------------------
@@ -199,16 +205,38 @@ def run_cnmfe(fname, work, dview):
     cnm.save(out)
     return cnm, cn, dims
 
+def footprint_shape(a, frac=0.3):
+    """(area px, elongation, solidity, n_parts) of a 2-D footprint above frac x max."""
+    from skimage.measure import label, regionprops
+    lab = label(a > frac * a.max())
+    p = max(regionprops(lab), key=lambda r: r.area)
+    return p.area, p.major_axis_length / max(p.minor_axis_length, 1e-6), p.solidity, lab.max()
+
+def accepted_components(cnm, dims):
+    """Indices of components passing CaImAn's quality check AND the shape filter."""
+    est = cnm.estimates
+    keep, rejected = [], []
+    for k in est.idx_components:
+        a = est.A[:, k].toarray().reshape(dims, order="F")
+        area, el, sol, parts = footprint_shape(a)
+        bad = (area > shape_filter["max_area_px"] or el > shape_filter["max_elongation"]
+               or sol < shape_filter["min_solidity"]
+               or (shape_filter["single_part"] and parts > 1))
+        (rejected if bad else keep).append(int(k))
+    print(f"shape filter: {len(keep)} of {len(est.idx_components)} accepted components kept")
+    return np.array(keep, dtype=int), rejected
+
 def deconvolve_all(cnm, dims):
     """Accepted components: denoised traces C, OASIS deconvolution S of the raw trace
     (C + residual YrA) and S_noise of a noise-only surrogate (the sign-flipped
     residual: realistic noise, no calcium transients), both with the neuron's own
     AR coefficient and noise level, so real and surrogate use the identical
-    detector. Also returns noise levels sn and centroids (row, col) in pixels."""
+    detector. Also returns the raw extracted traces Yraw = C + YrA, the component
+    indices, noise levels sn and centroids (row, col) in pixels."""
     import caiman as cm
     from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi
     est = cnm.estimates
-    idx = est.idx_components
+    idx, _ = accepted_components(cnm, dims)
     C, YrA = est.C[idx], est.YrA[idx]
     sn = np.asarray(est.neurons_sn)[idx]
     g = np.asarray(est.g)[idx]
@@ -223,7 +251,7 @@ def deconvolve_all(cnm, dims):
                  if S[k].std() > 0 and est.S[idx][k].std() > 0])
     print(f"re-deconvolved {len(idx)} traces (mean corr with CNMF-E's S: {r:.3f})")
     cents = cm.base.rois.com(est.A[:, idx], *dims)
-    return C, S, S_noise, sn, cents
+    return C, C + YrA, S, S_noise, sn, cents, idx
 
 def detect(S, sn, thr):
     """Binary event trains: deconvolved activity above thr x the neuron's noise level,
@@ -371,7 +399,18 @@ def burst_fraction(times_list):
         n_burst += near.sum(); n += len(t)
     return n_burst / max(n, 1), (np.concatenate(isis) if isis else np.array([]))
 
+def active_old(E_old):
+    """Old cells used as reference: those with clear activity (>= min_old_events)."""
+    return np.flatnonzero(E_old.sum(1) >= min_old_events)
+
 def evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old):
+    # reference = old cells with clear activity; silent/near-silent old cells are
+    # excluded before matching (they cannot be matched by trace correlation anyway
+    # and must not claim new cells). old_index maps back to the old pipeline's rows.
+    n_old_total = len(E_old)
+    old_index = active_old(E_old)
+    E_old, C_old, xy_old = E_old[old_index], C_old[old_index], xy_old[old_index]
+    print(f"reference: {len(old_index)} of {n_old_total} old cells with >= {min_old_events} events")
     lag = estimate_lag(C, C_old)
     C5 = to_old_rate(C, lag)
     T = min(C5.shape[1], C_old.shape[1])
@@ -398,13 +437,15 @@ def evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old):
     spk, fp = detect(S, sn, spike_thr), detect(S_noise, sn, spike_thr)
     df = pair_metrics(pairs, R, spk, E_old, lag, T)
     df["fp_per_min"] = [len(new_times(fp[j], lag, T)) / minutes for j in df.new]
+    df.insert(1, "old_index", old_index[df.old.values] if len(df) else [])
     t_new = [new_times(s, lag, T) for s in spk]
     t_old = [(np.flatnonzero(e) + 0.5) / fs_old for e in E_old]
     bf_new, isi_new = burst_fraction(t_new)
     bf_old, isi_old = burst_fraction(t_old)
     rate_new = np.array([len(t) for t in t_new]) / minutes
     fp_new = np.array([len(new_times(s, lag, T)) for s in fp]) / minutes
-    summary = dict(n_old=len(C_old), n_new=len(C), n_matched=len(pairs), lag_frames=lag,
+    summary = dict(n_old=len(C_old), n_old_total=n_old_total, n_new=len(C),
+                   n_matched=len(pairs), lag_frames=lag,
                    spike_thr=spike_thr,
                    loss_median=float(np.median(df.loss[np.isfinite(df.loss)])) if len(df) else np.nan,
                    recall_mean=float(df.recall.mean()) if len(df) else np.nan,
@@ -413,23 +454,24 @@ def evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old):
                    rate_old_median_hz=float(np.median([len(t) for t in t_old]) / minutes / 60),
                    noise_fp_share=float(fp_new.sum() / max(rate_new.sum(), 1e-12)),
                    min_corr=cnmf_params["min_corr"], min_pnr=cnmf_params["min_pnr"],
-                   # cell-detection scores: share of ACTIVE old neurons (>= 5 events)
+                   # cell-detection scores: share of the (active) old reference cells
                    # recovered, match quality, new cells without an old counterpart
-                   frac_active_old_matched=float(np.isin(np.flatnonzero(E_old.sum(1) >= 5),
-                                                         [i for i, _ in pairs]).mean()),
-                   n_old_active=int((E_old.sum(1) >= 5).sum()),
+                   frac_active_old_matched=float(len(pairs) / max(len(C_old), 1)),
+                   n_old_active=int(len(C_old)),
                    r_matched_median=float(np.median([R[i, j] for i, j in pairs])) if pairs else np.nan,
                    n_new_unmatched=int(len(C) - len(pairs)),
                    burst_frac_new=float(bf_new), burst_frac_old=float(bf_old))
     return df, summary, dict(lag=lag, T=T, R=R, pairs=pairs, fn=fn, C5=C5, C_old=C_old,
-                             E_old=E_old, spk=spk, sweep=sweep, isi_new=isi_new,
+                             E_old=E_old, xy_old=xy_old, old_index=old_index,
+                             spk=spk, sweep=sweep, isi_new=isi_new,
                              isi_old=isi_old, rate_new=rate_new, fp_new=fp_new)
 
 # ---------------------------------------------------------------------------
 # figure
 # ---------------------------------------------------------------------------
 
-def make_figure(work, cn, cents, spk, C, ev, df, summary, xy_old):
+def make_figure(work, cn, cents, spk, C, Yraw, ev, df, summary):
+    xy_old = ev["xy_old"]                                   # reference (active) old cells
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -540,26 +582,28 @@ def make_figure(work, cn, cents, spk, C, ev, df, summary, xy_old):
         ax = fig.add_subplot(sub[a])
         i, j = int(row.old), int(row.new)
         zo = C_old[i, win] / (C_old[i, win].max() + 1e-12)
-        cn_raw = C[j, max(lag, 0):]
-        tn = np.arange(len(cn_raw)) / fs
+        cn_den = C[j, max(lag, 0):]
+        tn = np.arange(len(cn_den)) / fs
         keep = tn < t5[-1]
-        zn = cn_raw[keep] / (cn_raw[keep].max() + 1e-12)
+        scale = cn_den[keep].max() + 1e-12          # raw and denoised share one scale
+        ax.plot(tn[keep], Yraw[j, max(lag, 0):][keep] / scale, c="0.7", lw=0.5)
         ax.plot(t5, zo + 1.2, c=old_c, lw=1)
-        ax.plot(tn[keep], zn, c=new_c, lw=0.8)
+        ax.plot(tn[keep], cn_den[keep] / scale, c=new_c, lw=0.8)
         ax.plot(t5[E_old[i, win]], np.full(E_old[i, win].sum(), 2.35), "|", c=old_c, ms=8)
         fs_new = (np.flatnonzero(spk[j]) - lag) / fs
         fs_new = fs_new[(fs_new >= 0) & (fs_new < t5[-1])]
         ax.plot(fs_new, np.full(len(fs_new), -0.15), "|", c=new_c, ms=8)
-        ax.set(yticks=[], ylabel=f"old {i}\nnew {j}", xlim=(0, t5[-1]))
+        ax.set(yticks=[], ylabel=f"old {int(row.old_index)}\nnew {j}", xlim=(0, t5[-1]))
         ax.text(1.0, 1.0, f"r={row.r:.2f}  loss={row.loss:.2f}s  recall={row.recall:.2f}",
                 transform=ax.transAxes, ha="right", va="top", fontsize=8)
         if a < len(ex) - 1:
             ax.set_xticklabels([])
-    ax.set_xlabel("time (s); old trace (blue, top) + events, new trace (red) + spikes")
+    ax.set_xlabel("time (s); old CNMF-E trace (blue, top) + events; new CNMF-E denoised "
+                  "trace (red) on the raw extracted trace C + residual (grey) + spikes")
 
     fig.suptitle(f"{raw_session} rec{recording}: new pipeline (CaImAn CNMF-E + OASIS) vs old "
-                 f"| old {summary['n_old']} / new {summary['n_new']} / matched "
-                 f"{summary['n_matched']} neurons", fontsize=13)
+                 f"| old {summary['n_old']} active (of {summary['n_old_total']}) / new "
+                 f"{summary['n_new']} / matched {summary['n_matched']} neurons", fontsize=13)
     out = f"{work}/pipeline_vs_old_{cnmf_tag()}_thr{spike_thr}.png"
     fig.savefig(out, dpi=110)
     plt.close(fig)
@@ -584,19 +628,20 @@ def main():
         cnm, cn, dims = run_cnmfe(fname, work, dview)
     finally:
         cm.stop_server(dview=dview)
-    C, S, S_noise, sn, cents = deconvolve_all(cnm, dims)
+    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims)
     E_old, C_old, xy_old = load_old(old_file, cond)
-    np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}.npz", C=C, S=S,
-                        S_noise=S_noise, sn=sn, centroids_px=cents, fs=fs)
+    np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}.npz", C=C, Yraw=Yraw, S=S,
+                        S_noise=S_noise, sn=sn, centroids_px=cents, component=idx, fs=fs)
     global spike_thr
     for spike_thr in fig_thresholds:          # full evaluation + figure per threshold
         tag = f"{cnmf_tag()}_thr{spike_thr}"
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)
+        df.insert(3, "component", idx[df.new.values] if len(df) else [])   # CNMF-E component id
         df.to_csv(f"{work}/matched_neurons_{tag}.csv", index=False)
         json.dump(summary, open(f"{work}/summary_{tag}.json", "w"), indent=1)
         np.save(f"{work}/spikes_{tag}.npy", ev["spk"])
         print(f"\n[{tag}] summary:", summary)
-        make_figure(work, cn, cents, ev["spk"], C, ev, df, summary, xy_old)
+        make_figure(work, cn, cents, ev["spk"], C, Yraw, ev, df, summary)
     ev["sweep"].to_csv(f"{work}/threshold_sweep_{cnmf_tag()}.csv", index=False)
     print(ev["sweep"].round(3).to_string(index=False))
 

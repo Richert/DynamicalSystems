@@ -7,7 +7,9 @@ ACTIVE at that time (calcium trace above act_frac x the neuron's maximum):
   - new cells (CNMF-E footprint contours, red)
   - old cells (circles at the old centroids mapped into pixels, blue)
   solid = matched across pipelines, dashed = unmatched.
-An overview panel shows all cells on the correlation image.
+An overview panel shows all cells on the correlation image. As in the pipeline's
+evaluation, new cells pass CaImAn's quality check and the footprint shape filter, and
+the old reference cells are those with clear activity (>= P.min_old_events events).
 
 Also prints/saves diagnostics: where the unmatched old neurons lie (inside the field
 of view? distance to the nearest new cell?) and the CNMF-E quality scores (SNR,
@@ -56,7 +58,7 @@ def load():
     images = Yr.T.reshape((T,) + dims, order="F")
     cnm = cnmf.load_CNMF(f"{work}/cnmfe_{P.cnmf_tag()}.hdf5")
     est = cnm.estimates
-    idx = est.idx_components
+    idx, _ = P.accepted_components(cnm, dims)       # quality check + shape filter
     A = est.A[:, idx].tocsc()
     C = est.C[idx]
     cents = cm.base.rois.com(A, *dims)
@@ -64,7 +66,9 @@ def load():
     rval = np.asarray(est.r_values)[idx] if est.r_values is not None else None
     cn = np.load(f"{work}/corr_image.npy")
     E_old, C_old, xy_old = P.load_old(old_file, cond)
-    return work, images, dims, A, C, cents, snr, rval, cn, E_old, C_old, xy_old
+    act = P.active_old(E_old)                        # reference: old cells with clear activity
+    print(f"reference: {len(act)} of {len(E_old)} old cells with >= {P.min_old_events} events")
+    return work, images, dims, A, C, cents, snr, rval, cn, E_old[act], C_old[act], xy_old[act]
 
 def old_to_px(xy_old, cents, pairs):
     """Affine map old um centroids -> new pixel (row, col), fitted on matched pairs."""
