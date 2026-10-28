@@ -47,12 +47,15 @@ work_root = os.environ.get("WORK_ROOT", "/home/rgast/data/parker_data/raw_pipeli
 # recording (old session = folder name, "amph")
 raw_session = "Clozapine/HighDose/20191207_m085_clo04_amph"
 recording = 0
-seed_override = {}
-if len(sys.argv) > 1:        # CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]]
-    raw_session = sys.argv[1]
-    recording = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-    if len(sys.argv) > 4:
-        seed_override = dict(min_corr=float(sys.argv[3]), min_pnr=float(sys.argv[4]))
+def apply_cli(argv):
+    """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]]
+    (only applied when run as a script, so other scripts can import this module)."""
+    global raw_session, recording
+    if len(argv) > 1:
+        raw_session = argv[1]
+        recording = int(argv[2]) if len(argv) > 2 else 0
+        if len(argv) > 4:
+            cnmf_params.update(min_corr=float(argv[3]), min_pnr=float(argv[4]))
 
 fs = 20.0                    # raw frame rate (Hz)
 fs_old = 5.0                 # frame rate of the old pipeline's outputs (Hz)
@@ -74,7 +77,10 @@ mc_params = dict(
 gSig = (3, 3)                # expected half-size of a neuron
 cnmf_params = dict(
     method_init="corr_pnr", K=None, gSig=gSig, gSiz=(4 * gSig[0] + 1, 4 * gSig[1] + 1),
-    center_psf=True, min_corr=0.8, min_pnr=10,
+    # seeding thresholds: grid on 4 clozapine recordings (min_corr 0.7/0.8 x min_pnr
+    # 6/8/10) -> 0.7/6 recovers the most active old neurons (82% vs 73% for 0.8/10)
+    # with unchanged match quality, recall, timing and no noise false positives
+    center_psf=True, min_corr=0.7, min_pnr=6,
     # AR(1): on the development recording AR(2) gave the same recall at equal event
     # rates but twice the timing loss, noise-driven detections and hardly less
     # rise-edge fragmentation (2-3 frame intervals 11% vs 13%)
@@ -83,7 +89,6 @@ cnmf_params = dict(
     only_init=True, normalize_init=False, update_background_components=True,
     del_duplicates=True, method_deconvolution="oasis", decay_time=1.0,
 )
-cnmf_params.update(seed_override)
 quality = dict(min_SNR=3.0, rval_thr=0.85, use_cnn=False)
 
 def cnmf_tag():
@@ -597,4 +602,5 @@ def main():
 
 
 if __name__ == "__main__":
+    apply_cli(sys.argv)
     main()

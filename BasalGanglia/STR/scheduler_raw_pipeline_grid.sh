@@ -10,7 +10,8 @@ work_dir="$HOME/PycharmProjects/DynamicalSystems/BasalGanglia/STR"
 data_root="/media/storage/DATA"
 export RAW_ROOT="$data_root/Parkerlab/raw_miniscope"
 export OLD_ROOT="$data_root/Parkerlab/neural_data"
-export WORK_ROOT="$HOME/data/parker_data/raw_pipeline"
+# results go to the shared drive (= /mnt/kennedy_labdata/Parkerlab/results/... on the workstation)
+export WORK_ROOT="$data_root/Parkerlab/results/raw_pipeline"
 log_dir="$WORK_ROOT/grid_logs"
 
 # environment (needs CaImAn: mamba install -n parker -c conda-forge caiman)
@@ -25,8 +26,8 @@ recordings=( "Clozapine/HighDose/20191207_m085_clo04_amph"
              "Clozapine/Vehicle/20191205_m972_clo01_amph"
              "Clozapine/HighDose/20200918_m485_clo04_amph" )
 rec_idx=0                      # 0 = 15-min drug/vehicle recording, 1 = 45-min amphetamine recording
-corrs=( 0.8 0.7 )
-pnrs=( 10 8 6 )
+corrs=( 0.7 0.8 )
+pnrs=( 6 8 10 )
 batch_size=5                   # parallel runs (~10-15 GB RAM each for a 15-min recording)
 
 # limit threads per run: parallelism comes from CaImAn's worker processes
