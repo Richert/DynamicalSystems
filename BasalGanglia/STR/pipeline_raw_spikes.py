@@ -616,6 +616,7 @@ def make_figure(work, cn, cents, spk, C, Yraw, ev, df, summary):
 def main():
     import caiman as cm
     import json
+    global spike_thr                                 # looped over fig_thresholds below
     raw_file, old_file, cond, work = session_paths()
     # CaImAn's temp files (memmaps) are named only by movie dimensions/frame count,
     # so parallel runs must not share a temp dir: use this recording's work dir
@@ -629,10 +630,13 @@ def main():
     finally:
         cm.stop_server(dview=dview)
     C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims)
-    E_old, C_old, xy_old = load_old(old_file, cond)
     np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}.npz", C=C, Yraw=Yraw, S=S,
                         S_noise=S_noise, sn=sn, centroids_px=cents, component=idx, fs=fs)
-    global spike_thr
+    np.save(f"{work}/spikes_{cnmf_tag()}_thr{spike_thr}.npy", detect(S, sn, spike_thr))
+    if not os.path.isfile(old_file):                 # e.g. folder-name mismatch (m85 vs m085)
+        print(f"no old-pipeline file {old_file}: extraction saved, evaluation skipped")
+        return
+    E_old, C_old, xy_old = load_old(old_file, cond)
     for spike_thr in fig_thresholds:          # full evaluation + figure per threshold
         tag = f"{cnmf_tag()}_thr{spike_thr}"
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)

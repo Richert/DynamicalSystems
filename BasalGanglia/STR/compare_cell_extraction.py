@@ -38,6 +38,17 @@ act_frac = 0.3               # "recently active": trace > act_frac x the neuron'
 footprint_frac = 0.3         # contour level of a footprint (fraction of its max)
 old_radius_px = 4.0          # circle radius for old cells (no footprints available)
 
+# focus mode (flag "--focus"): poorly matched pairs at old events without a response
+# of the matched new cell; zoomed event-triggered images show where fluorescence rose
+focus = "--focus" in sys.argv
+if focus:
+    sys.argv.remove("--focus")
+n_focus_pairs = 4            # pairs shown (lowest recall among old cells with many events)
+min_focus_events = 15        # old events required for a pair to be shown
+n_focus_events = 3           # missed old events shown per pair
+crop_half_px = 20            # half-size of the zoomed crops
+resp_frac = 0.2              # "no response": new trace stays < resp_frac x its max after the event
+
 if len(sys.argv) > 1:
     P.raw_session = sys.argv[1]
     P.recording = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -68,6 +79,8 @@ def load():
     E_old, C_old, xy_old = P.load_old(old_file, cond)
     act = P.active_old(E_old)                        # reference: old cells with clear activity
     print(f"reference: {len(act)} of {len(E_old)} old cells with >= {P.min_old_events} events")
+    load.yraw = C + est.YrA[idx]                     # raw extracted traces (for focus mode)
+    load.old_index = act
     return work, images, dims, A, C, cents, snr, rval, cn, E_old[act], C_old[act], xy_old[act]
 
 def old_to_px(xy_old, cents, pairs):
@@ -107,6 +120,106 @@ def draw_cells(ax, A, dims, cents_old_px, new_ids, old_ids, matched_new, matched
         ax.add_patch(Circle((c, r), old_radius_px, fill=False, ec=old_c, lw=lw,
                             ls="solid" if i in matched_old else "dashed"))
 
+def focus_figure(work, images, dims, A, C, Yraw, cents, E_old, C_old, old_px, pairs, lag,
+                 mean_img, old_index):
+    """Poorly matched pairs: zoomed event-triggered images at old events where the
+    matched new cell does not respond, with all new cells in the crop outlined."""
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle
+    k = int(P.fs / P.fs_old)
+    T = images.shape[0]
+    H, W = dims
+    um_per_px = 3.33
+    # per-pair recall of old events by a new-trace response (trace-based, threshold-free)
+    rows = []
+    for i, j in pairs:
+        f_ev = np.flatnonzero(E_old[i]) * k + lag
+        f_ev = f_ev[(f_ev > 30) & (f_ev < T - 20)]
+        if len(f_ev) < min_focus_events:
+            continue
+        resp = np.array([C[j, f:f + 12].max() - C[j, max(f - 4, 0):f].mean() for f in f_ev])
+        missed = f_ev[resp < resp_frac * C[j].max()]
+        rows.append((len(missed) / len(f_ev), i, j, missed))
+    rows = sorted(rows, key=lambda r: -r[0])[:n_focus_pairs]
+    if not rows:
+        print("focus: no pair with enough events")
+        return
+    fig, axes = plt.subplots(len(rows), n_focus_events + 1, layout="constrained", squeeze=False,
+                             figsize=(3.3 * n_focus_events + 6, 3.4 * len(rows)),
+                             gridspec_kw=dict(width_ratios=[1] * n_focus_events + [2.2]))
+    for r, (miss_frac, i, j, missed) in enumerate(rows):
+        cy, cx = old_px[i]
+        y0, y1 = int(max(cy - crop_half_px, 0)), int(min(cy + crop_half_px, H))
+        x0, x1 = int(max(cx - crop_half_px, 0)), int(min(cx + crop_half_px, W))
+        near = [m for m in range(len(C)) if y0 <= cents[m, 0] < y1 and x0 <= cents[m, 1] < x1]
+        sel = missed[np.linspace(0, len(missed) - 1, min(n_focus_events, len(missed))).astype(int)]
+        for c in range(n_focus_events):
+            ax = axes[r, c]
+            if c >= len(sel):
+                ax.axis("off")
+                continue
+            f = int(sel[c])
+            post = images[f:f + 8].mean(0)
+            pre = images[max(f - 25, 0):f - 5].mean(0)
+            d = ((post - pre) / (np.abs(mean_img) + 1e-6))[y0:y1, x0:x1]
+            lim = np.percentile(np.abs(d), 99.5)
+            ax.imshow(d, cmap="RdBu_r", vmin=-lim, vmax=lim, extent=(x0, x1, y1, y0))
+            # which new cell in the crop rises most (mean event-triggered change on its footprint)
+            best, best_v = None, 0.0
+            for m in near:
+                a = A[:, m].toarray().reshape(dims, order="F")
+                w = a / a.sum()
+                v = float((w * (post - pre) / (np.abs(mean_img) + 1e-6)).sum())
+                lw, col = (2.0, "k") if m == j else (0.8, "0.25")
+                ax.contour(np.arange(W), np.arange(H), a, levels=[0.3 * a.max()], colors=col,
+                           linewidths=lw)
+                if v > best_v:
+                    best, best_v = m, v
+            for io in range(len(old_px)):
+                oy, ox = old_px[io]
+                if y0 <= oy < y1 and x0 <= ox < x1:
+                    ax.add_patch(Circle((ox, oy), 4, fill=False, ec="#1f77b4",
+                                        lw=2.0 if io == i else 0.8, ls="-" if io == i else "--"))
+            ax.set_xlim(x0, x1); ax.set_ylim(y1, y0)
+            ax.set_xticks([]); ax.set_yticks([])
+            if best is None:
+                who = "none"
+            elif best == j:
+                who = "matched new cell"
+            else:
+                who = f"new {best} ({np.linalg.norm(cents[best] - cents[j]) * um_per_px:.0f} um away)"
+            ax.set_title(f"old event t={f / P.fs:.1f}s\nlargest rise: {who}", fontsize=8)
+        # traces around the shown events
+        ax = axes[r, -1]
+        f_mid = int(sel[0])
+        w0, w1 = max(f_mid - 200, 0), min(f_mid + 400, T)
+        t = np.arange(w0, w1) / P.fs
+        sc = C[j].max() + 1e-12
+        ax.plot(t, Yraw[j, w0:w1] / sc, c="0.7", lw=0.5, label="new raw (C + residual)")
+        ax.plot(t, C[j, w0:w1] / sc, c="#d1495b", lw=0.9, label="new denoised")
+        i5 = (np.arange(w0, w1) - lag) // k
+        i5 = np.clip(i5, 0, C_old.shape[1] - 1)
+        ax.plot(t, C_old[i, i5] / (C_old[i].max() + 1e-12) + 1.2, c="#3b6fb6", lw=0.9,
+                label="old trace")
+        ev = np.flatnonzero(E_old[i]) * k + lag
+        ev = ev[(ev >= w0) & (ev < w1)]
+        ax.plot(ev / P.fs, np.full(len(ev), 2.3), "|", c="#3b6fb6", ms=8)
+        ax.axvline(f_mid / P.fs, c="k", ls=":", lw=0.8)       # first shown event
+        ax.set(yticks=[], xlabel=f"time (s), around the first shown event", xlim=(w0 / P.fs, w1 / P.fs),
+               title=f"old {int(old_index[i])} / new {j}: {miss_frac:.0%} of old events "
+                     f"without a new response", )
+        ax.title.set_fontsize(9)
+        if r == 0:
+            ax.legend(fontsize=7, loc="upper right")
+    fig.suptitle(f"{P.raw_session} rec{P.recording}: poorly matched pairs - event-triggered "
+                 f"change (0-0.4 s after vs 1.25-0.25 s before each old event, / mean image); "
+                 f"bold black = matched new cell, grey = other new cells, blue = old cells",
+                 fontsize=10)
+    out = f"{work}/cell_focus_{P.cnmf_tag()}.png"
+    fig.savefig(out, dpi=120)
+    plt.close(fig)
+    print(f"saved {out}")
+
 def main():
     import matplotlib
     matplotlib.use("Agg")
@@ -133,6 +246,10 @@ def main():
 
     # dF/F images relative to the session mean image
     mean_img = images[::max(1, T // 2000)].mean(0)
+    if focus:
+        focus_figure(work, images, dims, A, C, load.yraw, cents, E_old, C_old, old_px, pairs,
+                     lag, mean_img, load.old_index)
+        return
 
     # --- diagnostics ---------------------------------------------------------
     H, W = dims
