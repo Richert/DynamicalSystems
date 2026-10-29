@@ -53,6 +53,13 @@ recording = 0
 # recording. Outputs go to <session>_joint, per-recording files carry _rec0 / _rec1.
 joint = False
 out_suffix = ""              # appended to per-recording output names (joint mode)
+# joint mode, per-recording refit: the joint fit's background and AR decay are dominated
+# by the longer amphetamine recording, which degraded the shorter rec0 traces (m797:
+# events of the same cells 97 -> 54, recall vs old 0.90 -> 0.78). With refit, only the
+# footprints (cell identities) are shared: ring background, traces and AR(1) coefficient
+# are re-estimated per recording (refit_iters alternations; outputs carry "_refit")
+joint_refit = True
+refit_iters = 2
 
 def apply_cli(argv):
     """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]] [--joint]
@@ -178,7 +185,8 @@ def motion_correct(tifs, work, dview):
     from caiman.motion_correction import MotionCorrect
     done = glob.glob(f"{work}/memmap_*_order_C_*.mmap")
     if done and not rerun["motion"]:
-        return done[0]
+        # joint mode leaves per-movie memmaps next to the concatenated one: take the longest
+        return max(done, key=lambda f: int(f.split("_frames_")[1].split(".")[0]))
     mc = MotionCorrect(list(tifs), dview=dview, **mc_params)
     mc.motion_correct(save_movie=True)
     fname_mc = mc.fname_tot_els if mc_params["pw_rigid"] else mc.fname_tot_rig
@@ -242,7 +250,51 @@ def accepted_components(cnm, dims):
     print(f"shape filter: {len(keep)} of {len(est.idx_components)} accepted components kept")
     return np.array(keep, dtype=int), rejected
 
-def deconvolve_all(cnm, dims, segments=None):
+def refit_segment(cnm, fname, seg, dims, work, name):
+    """Per-recording refit with the joint footprints fixed (all components, so rejected
+    ones do not leak into the background): alternate (1) ring background W, b0 fitted
+    on this recording only (CaImAn's compute_W, as in CNMF-E) and (2) raw traces
+    Yraw = C + YrA (projection of the background-corrected movie on the footprints,
+    neighbour overlap removed with the current C), denoised by OASIS with an AR(1)
+    coefficient estimated from this recording. Returns C, Yraw, g for all components."""
+    import caiman as cm
+    from caiman.source_extraction.cnmf.initialization import compute_W
+    from caiman.source_extraction.cnmf.estimates import Estimates
+    from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi
+    out = f"{work}/refit_{cnmf_tag()}_{name}.npz"
+    if os.path.isfile(out) and not rerun["cnmf"]:
+        d = np.load(out)
+        return d["C"], d["Yraw"], d["g"]
+    est = cnm.estimates
+    A = est.A.tocsc()
+    Yr, _, _ = cm.load_memmap(fname)
+    Y = np.asarray(Yr[:, seg], dtype=np.float32)               # pixels x frames
+    C = np.asarray(est.C[:, seg], dtype=np.float32).copy()
+    T = Y.shape[1]
+    nA2 = np.ravel(A.power(2).sum(0)) + np.finfo(np.float32).eps
+    AA = (A.T @ A).toarray()
+    radius = cnmf_params["ring_size_factor"] * cnmf_params["gSiz"][0]
+    g = np.zeros(len(C))
+    for it in range(refit_iters):
+        W, b0 = compute_W(Y, A.toarray(), C, dims, radius, ssub=cnmf_params["ssub_B"])
+        bg = Estimates(A=A, C=C, b=None, f=None, dims=dims)
+        bg.W, bg.b0 = W, b0
+        AtY = np.zeros_like(C)
+        for t0 in range(0, T, 2000):                           # background in frame chunks
+            t1 = min(T, t0 + 2000)
+            bg.C = C[:, t0:t1]
+            AtY[:, t0:t1] = A.T @ (Y[:, t0:t1] - bg.compute_background(Y[:, t0:t1]))
+        Yraw = C + (AtY - AA @ C) / nA2[:, None]
+        for k in range(len(C)):
+            c, _, _, gk, _, _, _ = constrained_foopsi(Yraw[k], p=cnmf_params["p"],
+                                                      method_deconvolution="oasis")
+            C[k], g[k] = c, np.atleast_1d(gk)[0]
+        print(f"refit {name} iteration {it + 1}: median g {np.median(g):.4f}")
+    Yraw = C + (AtY - AA @ C) / nA2[:, None]                   # residuals w.r.t. the final C
+    np.savez_compressed(out, C=C, Yraw=Yraw, g=g)
+    return C, Yraw, g
+
+def deconvolve_all(cnm, dims, segments=None, refit=None):
     """Accepted components: denoised traces C, OASIS deconvolution S of the raw trace
     (C + residual YrA) and S_noise of a noise-only surrogate (the sign-flipped
     residual: realistic noise, no calcium transients), both with the neuron's own
@@ -250,23 +302,29 @@ def deconvolve_all(cnm, dims, segments=None):
     detector. Also returns the raw extracted traces Yraw = C + YrA, the component
     indices, noise levels sn and centroids (row, col) in pixels.
     segments: list of frame slices (joint mode: one per recording) deconvolved
-    separately, each with its own noise level; sn is then (cells, segments)."""
+    separately, each with its own noise level; sn is then (cells, segments).
+    refit: per segment (C, Yraw, g) of all components from refit_segment, used in place
+    of the joint C, YrA and AR coefficient."""
     import caiman as cm
     from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi, GetSn
     est = cnm.estimates
     idx, _ = accepted_components(cnm, dims)
-    C, YrA = est.C[idx], est.YrA[idx]
-    g = np.asarray(est.g)[idx]
+    C, YrA = est.C[idx].copy(), est.YrA[idx].copy()
+    segs = segments or [slice(0, C.shape[1])]
+    gs = [np.asarray(est.g)[idx]] * len(segs)
+    if refit is not None:
+        for seg, (Cs, Ys, g_s), s in zip(segs, refit, range(len(segs))):
+            C[:, seg], YrA[:, seg] = Cs[idx], Ys[idx] - Cs[idx]
+            gs[s] = g_s[idx]
     S, S_noise = np.zeros_like(C), np.zeros_like(C)
     p = cnmf_params["p"]
-    segs = segments or [slice(0, C.shape[1])]
     sn = np.zeros((len(idx), len(segs)))
     for k in range(len(idx)):
         for s, seg in enumerate(segs):
             y = C[k, seg] + YrA[k, seg]
             sn[k, s] = np.asarray(est.neurons_sn)[idx][k] if segments is None else GetSn(y)
             for out, trace in [(S, y), (S_noise, -YrA[k, seg])]:
-                *_, sp, _ = constrained_foopsi(trace, g=np.atleast_1d(g[k])[:p], sn=sn[k, s],
+                *_, sp, _ = constrained_foopsi(trace, g=np.atleast_1d(gs[s][k])[:p], sn=sn[k, s],
                                                p=p, method_deconvolution="oasis")
                 out[k, seg] = sp
     if segments is None:
@@ -690,9 +748,11 @@ def main():
     bounds = np.cumsum([0] + [n for _, n in tifs])
     segs = [slice(bounds[i], bounds[i + 1]) for i in range(len(tifs))]
     print(f"joint extraction: segments {[(s.start, s.stop) for s in segs]}")
-    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, segments=segs)
+    refit = ([refit_segment(cnm, fname, seg, dims, work, f"rec{r}") for r, seg in zip(recs, segs)]
+             if joint_refit else None)
+    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, segments=segs, refit=refit)
     for i, (r, seg) in enumerate(zip(recs, segs)):
-        recording, out_suffix = r, f"_rec{r}"
+        recording, out_suffix = r, f"_rec{r}" + ("_refit" if joint_refit else "")
         save_and_evaluate(work, cn, cents, idx, C[:, seg], Yraw[:, seg], S[:, seg],
                           S_noise[:, seg], sn[:, i], *paths[i][1:3])
 
