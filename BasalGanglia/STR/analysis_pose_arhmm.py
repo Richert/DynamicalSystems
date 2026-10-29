@@ -4,12 +4,26 @@ Per session (imaging period only, aligned with align_pose_to_imaging.py), from t
 keypoints in cm (session cm/px scale), smoothed (Gaussian, smooth_s) against keypoint
 jitter, at 20 Hz:
   log_speed   log10(torso speed + speed_eps), torso = mean of neck, hips, tail base
-  turn        |angular speed| of the body heading (tail base -> neck), deg/s
-  log_turn    log10(turn + turn_eps) (used for the HMM; turn is heavy-tailed)
-  head_angle  |angle| of the head (neck -> nose) relative to the body axis, deg
+  turn        signed angular speed of the body heading (tail base -> neck), deg/s
+  turn_asinh  arcsinh(turn / turn_eps): signed, log-like compression of the heavy tail
+              (used for the HMM)
+  head_angle  signed angle of the head (neck -> nose) relative to the body axis, deg
   body_len    nose - tail base length relative to the session median
+  bend        signed body curvature: angle at the hip midpoint between the tail base ->
+              hips and hips -> neck segments, deg (0 = straight; grooming, tight turns)
+  head_speed  speed of the nose in the body frame (origin neck, x along the body axis),
+              cm/s: head scanning / sniffing independent of locomotion
+              (log_head_speed = log10(head_speed + speed_eps) for the HMM)
+  head_turn   signed angular speed of the head relative to the body, deg/s
+              (head_turn_asinh = arcsinh(head_turn / turn_eps) for the HMM)
+  ear_width   ear - ear distance relative to the session median (shrinks in the top view
+              when the head pitches up, e.g. rearing)
+  hip_width   hip - hip distance relative to the session median (hunched vs stretched)
   wall_dist   torso distance to the arena wall (cm; stored, not used for the HMM)
-Absolute values for turn / head angle: left and right are not split into states.
+Turn, head angle, bend and head turn are signed, so the HMM may form separate left /
+right states.
+Sign convention: positive = counter-clockwise as seen in the (top-down) video, i.e.
+a left turn / head to the left if the video is not mirrored (image y axis points down).
 
 The HMM features are z-scored globally (block means to fs_fit if below fs), and a
 sticky AR-HMM (ssm) is fitted for each K in K_grid on a training split of sessions
@@ -40,8 +54,9 @@ fs = 20.0
 arena_cm = 30.48
 smooth_s = 0.1                     # Gaussian SD for keypoint smoothing (s)
 speed_eps = 0.5                    # cm/s, offset of the log speed (rest threshold scale)
-turn_eps = 5.0                     # deg/s, offset of the log turning speed (heavy tail)
-features = ["log_speed", "log_turn", "head_angle", "body_len"]
+turn_eps = 5.0                     # deg/s, scale of the arcsinh compression of turning speed
+features = ["log_speed", "turn_asinh", "head_angle", "body_len", "bend", "log_head_speed",
+            "head_turn_asinh", "ear_width", "hip_width"]
 conditions = ["Control", drug, "Amphetamine", f"A + {drug}"]
 cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine",
            ("HighDose", "Control"): drug, ("HighDose", "Amph"): f"A + {drug}"}
@@ -81,18 +96,33 @@ def session_features(f, off, n_frames, scale):
     kp = gaussian_filter1d(kp, sigma=smooth_s * fs, axis=0, mode="nearest")
     ix = {n: i for i, n in enumerate(nodes)}
     nose, neck, tail = kp[:, ix["nose"]], kp[:, ix["neck"]], kp[:, ix["tail_base"]]
+    hips = (kp[:, ix["hip1"]] + kp[:, ix["hip2"]]) / 2
     torso = kp[:, [ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(1)
     speed = np.r_[0.0, np.linalg.norm(np.diff(torso, axis=0), axis=1)] * fs
     body = neck - tail
     heading = np.unwrap(np.arctan2(body[:, 1], body[:, 0]))
-    turn = np.abs(np.degrees(np.gradient(heading)) * fs)
-    head = np.abs(angle_between(body, nose - neck))
+    # image y points down: negate so that positive = counter-clockwise on screen
+    turn = gaussian_filter1d(-np.degrees(np.gradient(heading)) * fs, smooth_s * fs)
+    head = -angle_between(body, nose - neck)
+    head_turn = gaussian_filter1d(np.gradient(np.unwrap(np.radians(head))), smooth_s * fs)
+    head_turn = np.degrees(head_turn) * fs
+    bend = -angle_between(hips - tail, neck - hips)
+    # nose in the body frame (origin neck, x along the body axis): head movement
+    # relative to the body (scanning / sniffing), independent of locomotion
+    c, s = np.cos(-heading), np.sin(-heading)
+    rel = nose - neck
+    ego = np.c_[c * rel[:, 0] - s * rel[:, 1], s * rel[:, 0] + c * rel[:, 1]]
+    head_speed = np.r_[0.0, np.linalg.norm(np.diff(ego, axis=0), axis=1)] * fs
     length = np.linalg.norm(nose - tail, axis=1)
+    ears = np.linalg.norm(kp[:, ix["ear1"]] - kp[:, ix["ear2"]], axis=1)
+    hipw = np.linalg.norm(kp[:, ix["hip1"]] - kp[:, ix["hip2"]], axis=1)
     return pd.DataFrame(dict(
         log_speed=np.log10(speed + speed_eps), speed=speed,
-        turn=gaussian_filter1d(turn, smooth_s * fs), head_angle=head,
-        log_turn=np.log10(gaussian_filter1d(turn, smooth_s * fs) + turn_eps),
-        body_len=length / np.median(length),
+        turn=turn, head_angle=head, turn_asinh=np.arcsinh(turn / turn_eps),
+        body_len=length / np.median(length), bend=bend,
+        head_speed=head_speed, log_head_speed=np.log10(head_speed + speed_eps),
+        head_turn=head_turn, head_turn_asinh=np.arcsinh(head_turn / turn_eps),
+        ear_width=ears / np.median(ears), hip_width=hipw / np.median(hipw),
         wall_dist=arena_cm / 2 - np.linalg.norm(torso - centre, axis=1)))
 
 def load_all():
@@ -198,14 +228,18 @@ def summarise(sessions, models, mu, sd, sweep):
     ink, ink2 = "#1f1f1e", "#5f5e5a"
     colors = dict(zip(conditions, ["#2a78d6", "#1baf7a", "#eda100", "#e34948"]))
     rows = []
-    fig, axes = plt.subplots(1 + len(models), 3, figsize=(17, 3.4 * (1 + len(models))),
+    fig, axes = plt.subplots(1 + len(models), 3, figsize=(18, 4.5 * (1 + len(models))),
                              layout="constrained", squeeze=False)
     ax = axes[0, 0]
     ax.plot(sweep.K, sweep.heldout_ll_per_frame, "o-", color=ink)
     ax.set(xlabel="K", ylabel="held-out log-likelihood / frame", title="K sweep (held-out sessions)")
     for a in axes[0, 1:]:
         a.axis("off")
-    raw_cols = ["speed", "turn", "head_angle", "body_len", "wall_dist"]
+    raw_cols = ["speed", "turn", "head_angle", "body_len", "bend", "head_speed", "head_turn",
+                "ear_width", "hip_width", "wall_dist"]
+    raw_labels = ["speed cm/s", "turn deg/s (+ = CCW)", "head deg (+ = CCW)", "body len (rel)",
+                  "bend deg (+ = CCW)", "head speed cm/s", "head turn deg/s", "ear width (rel)",
+                  "hip width (rel)", "wall dist cm"]
     for r, (K, hmm) in enumerate(models.items(), start=1):
         lab = {s["session"]: label(hmm, s, mu, sd) for s in sessions}
         # per-state raw feature means (20 Hz features, labels upsampled)
@@ -235,8 +269,7 @@ def summarise(sessions, models, mu, sd, sweep):
         for i in range(K):
             for j, c in enumerate(raw_cols):
                 ax.text(i, j, f"{prof.iloc[i][c]:.2g}", ha="center", va="center", fontsize=7)
-        ax.set_yticks(range(len(raw_cols)), ["speed cm/s", "turn deg/s", "head deg",
-                                             "body len (rel)", "wall dist cm"], fontsize=8)
+        ax.set_yticks(range(len(raw_cols)), raw_labels, fontsize=8)
         ax.set_xticks(range(K), [f"S{k}" for k in range(K)], fontsize=8)
         ax.set_title(f"K = {K}: state profiles (mean feature values; colour = z across states)",
                      fontsize=9, loc="left")
