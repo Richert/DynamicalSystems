@@ -47,10 +47,20 @@ work_root = os.environ.get("WORK_ROOT", "/home/rgast/data/parker_data/raw_pipeli
 # recording (old session = folder name, "amph")
 raw_session = "Clozapine/HighDose/20191207_m085_clo04_amph"
 recording = 0
+# joint mode: both recordings of a day (15-min drug/vehicle + 45-min amphetamine, same
+# field of view) are motion-corrected to one template and extracted together by one
+# CNMF-E run, so cells are tracked across them; spikes are inferred and evaluated per
+# recording. Outputs go to <session>_joint, per-recording files carry _rec0 / _rec1.
+joint = False
+out_suffix = ""              # appended to per-recording output names (joint mode)
+
 def apply_cli(argv):
-    """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]]
+    """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]] [--joint]
     (only applied when run as a script, so other scripts can import this module)."""
-    global raw_session, recording
+    global raw_session, recording, joint
+    if "--joint" in argv:
+        joint = True
+        argv = [a for a in argv if a != "--joint"]
     if len(argv) > 1:
         raw_session = argv[1]
         recording = int(argv[2]) if len(argv) > 2 else 0
@@ -125,19 +135,22 @@ n_examples = 4               # example neurons in the figure
 # paths
 # ---------------------------------------------------------------------------
 
-def session_paths():
+def session_paths(rec=None):
+    """Raw file, old-pipeline file, condition and work dir of recording `rec`
+    (default: the global `recording`; joint mode: shared <session>_joint dir)."""
+    rec = recording if rec is None else rec
     drug_raw, dose, folder = raw_session.split("/")
     files = sorted(glob.glob(f"{raw_root}/{raw_session}/*.h5"),
                    key=lambda f: os.path.basename(f).split("_video")[0][-19:])
-    raw_file = files[recording]
+    raw_file = files[rec]
     # old pipeline: drug folder names are lower-case except abbreviations
     drug_old = next(d for d in os.listdir(old_root) if d.lower() == drug_raw.lower())
-    if recording == 0:
+    if rec == 0:
         old_session, cond = folder.replace("_amph", ""), "veh"
     else:
         old_session, cond = folder, "amph"
     old_file = f"{old_root}/{drug_old}/{dose}/{old_session}/{cond}_drug.mat"
-    work = f"{work_root}/{folder}_rec{recording}"
+    work = f"{work_root}/{folder}_joint" if joint else f"{work_root}/{folder}_rec{rec}"
     os.makedirs(work, exist_ok=True)
     return raw_file, old_file, cond, work
 
@@ -145,25 +158,28 @@ def session_paths():
 # 1-4: preprocessing, extraction, spikes
 # ---------------------------------------------------------------------------
 
-def convert(raw_file, work):
-    """Raw HDF5 movie (dataset "1", T x H x W uint16) -> local TIFF."""
+def convert(raw_file, work, name="raw.tif"):
+    """Raw HDF5 movie (dataset "1", T x H x W uint16) -> local TIFF. Returns (path, frames)."""
     import tifffile
-    out = f"{work}/raw.tif"
+    out = f"{work}/{name}"
     if os.path.isfile(out) and not rerun["convert"]:
-        return out
+        with tifffile.TiffFile(out) as t:
+            return out, len(t.pages)
     with h5py.File(raw_file, "r") as h:
         mov = h["1"][...]                         # ~1.3 GB (15 min) / ~4 GB (45 min)
     tifffile.imwrite(out, mov, bigtiff=True)
     print(f"converted {raw_file} -> {out} {mov.shape} {mov.dtype}")
-    return out
+    return out, mov.shape[0]
 
-def motion_correct(tif, work, dview):
+def motion_correct(tifs, work, dview):
+    """NoRMCorre on one or several movies (joint mode: both recordings of a day, one
+    template); returns a single C-order memmap (movies concatenated in time)."""
     import caiman as cm
     from caiman.motion_correction import MotionCorrect
     done = glob.glob(f"{work}/memmap_*_order_C_*.mmap")
     if done and not rerun["motion"]:
         return done[0]
-    mc = MotionCorrect([tif], dview=dview, **mc_params)
+    mc = MotionCorrect(list(tifs), dview=dview, **mc_params)
     mc.motion_correct(save_movie=True)
     fname_mc = mc.fname_tot_els if mc_params["pw_rigid"] else mc.fname_tot_rig
     shifts = np.array(mc.shifts_rig) if not mc_params["pw_rigid"] else None
@@ -226,27 +242,35 @@ def accepted_components(cnm, dims):
     print(f"shape filter: {len(keep)} of {len(est.idx_components)} accepted components kept")
     return np.array(keep, dtype=int), rejected
 
-def deconvolve_all(cnm, dims):
+def deconvolve_all(cnm, dims, segments=None):
     """Accepted components: denoised traces C, OASIS deconvolution S of the raw trace
     (C + residual YrA) and S_noise of a noise-only surrogate (the sign-flipped
     residual: realistic noise, no calcium transients), both with the neuron's own
     AR coefficient and noise level, so real and surrogate use the identical
     detector. Also returns the raw extracted traces Yraw = C + YrA, the component
-    indices, noise levels sn and centroids (row, col) in pixels."""
+    indices, noise levels sn and centroids (row, col) in pixels.
+    segments: list of frame slices (joint mode: one per recording) deconvolved
+    separately, each with its own noise level; sn is then (cells, segments)."""
     import caiman as cm
-    from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi
+    from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi, GetSn
     est = cnm.estimates
     idx, _ = accepted_components(cnm, dims)
     C, YrA = est.C[idx], est.YrA[idx]
-    sn = np.asarray(est.neurons_sn)[idx]
     g = np.asarray(est.g)[idx]
     S, S_noise = np.zeros_like(C), np.zeros_like(C)
     p = cnmf_params["p"]
+    segs = segments or [slice(0, C.shape[1])]
+    sn = np.zeros((len(idx), len(segs)))
     for k in range(len(idx)):
-        for out, y in [(S, C[k] + YrA[k]), (S_noise, -YrA[k])]:
-            *_, sp, _ = constrained_foopsi(y, g=np.atleast_1d(g[k])[:p], sn=sn[k], p=p,
-                                           method_deconvolution="oasis")
-            out[k] = sp
+        for s, seg in enumerate(segs):
+            y = C[k, seg] + YrA[k, seg]
+            sn[k, s] = np.asarray(est.neurons_sn)[idx][k] if segments is None else GetSn(y)
+            for out, trace in [(S, y), (S_noise, -YrA[k, seg])]:
+                *_, sp, _ = constrained_foopsi(trace, g=np.atleast_1d(g[k])[:p], sn=sn[k, s],
+                                               p=p, method_deconvolution="oasis")
+                out[k, seg] = sp
+    if segments is None:
+        sn = sn[:, 0]
     r = np.mean([np.corrcoef(S[k], est.S[idx][k])[0, 1] for k in range(len(idx))
                  if S[k].std() > 0 and est.S[idx][k].std() > 0])
     print(f"re-deconvolved {len(idx)} traces (mean corr with CNMF-E's S: {r:.3f})")
@@ -604,7 +628,7 @@ def make_figure(work, cn, cents, spk, C, Yraw, ev, df, summary):
     fig.suptitle(f"{raw_session} rec{recording}: new pipeline (CaImAn CNMF-E + OASIS) vs old "
                  f"| old {summary['n_old']} active (of {summary['n_old_total']}) / new "
                  f"{summary['n_new']} / matched {summary['n_matched']} neurons", fontsize=13)
-    out = f"{work}/pipeline_vs_old_{cnmf_tag()}_thr{spike_thr}.png"
+    out = f"{work}/pipeline_vs_old_{cnmf_tag()}_thr{spike_thr}{out_suffix}.png"
     fig.savefig(out, dpi=110)
     plt.close(fig)
     print(f"saved figure {out}")
@@ -613,26 +637,15 @@ def make_figure(work, cn, cents, spk, C, Yraw, ev, df, summary):
 # main
 # ---------------------------------------------------------------------------
 
-def main():
-    import caiman as cm
+def save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, old_file, cond):
+    """Save one recording's outputs and evaluate it against the old pipeline (file
+    names carry out_suffix, e.g. _rec0 / _rec1 in joint mode)."""
     import json
     global spike_thr                                 # looped over fig_thresholds below
-    raw_file, old_file, cond, work = session_paths()
-    # CaImAn's temp files (memmaps) are named only by movie dimensions/frame count,
-    # so parallel runs must not share a temp dir: use this recording's work dir
-    os.environ["CAIMAN_TEMP"] = work
-    print(f"raw: {raw_file}\nold: {old_file}\nwork: {work}")
-    _, dview, _ = cm.cluster.setup_cluster(backend="multiprocessing", n_processes=n_processes)
-    try:
-        tif = convert(raw_file, work)
-        fname = motion_correct(tif, work, dview)
-        cnm, cn, dims = run_cnmfe(fname, work, dview)
-    finally:
-        cm.stop_server(dview=dview)
-    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims)
-    np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}.npz", C=C, Yraw=Yraw, S=S,
-                        S_noise=S_noise, sn=sn, centroids_px=cents, component=idx, fs=fs)
-    np.save(f"{work}/spikes_{cnmf_tag()}_thr{spike_thr}.npy", detect(S, sn, spike_thr))
+    sfx = out_suffix
+    np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}{sfx}.npz", C=C, Yraw=Yraw,
+                        S=S, S_noise=S_noise, sn=sn, centroids_px=cents, component=idx, fs=fs)
+    np.save(f"{work}/spikes_{cnmf_tag()}_thr{spike_thr}{sfx}.npy", detect(S, sn, spike_thr))
     if not os.path.isfile(old_file):                 # e.g. folder-name mismatch (m85 vs m085)
         print(f"no old-pipeline file {old_file}: extraction saved, evaluation skipped")
         return
@@ -641,13 +654,47 @@ def main():
         tag = f"{cnmf_tag()}_thr{spike_thr}"
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)
         df.insert(3, "component", idx[df.new.values] if len(df) else [])   # CNMF-E component id
-        df.to_csv(f"{work}/matched_neurons_{tag}.csv", index=False)
-        json.dump(summary, open(f"{work}/summary_{tag}.json", "w"), indent=1)
-        np.save(f"{work}/spikes_{tag}.npy", ev["spk"])
-        print(f"\n[{tag}] summary:", summary)
+        df.to_csv(f"{work}/matched_neurons_{tag}{sfx}.csv", index=False)
+        json.dump(summary, open(f"{work}/summary_{tag}{sfx}.json", "w"), indent=1)
+        np.save(f"{work}/spikes_{tag}{sfx}.npy", ev["spk"])
+        print(f"\n[{tag}{sfx}] summary:", summary)
         make_figure(work, cn, cents, ev["spk"], C, Yraw, ev, df, summary)
-    ev["sweep"].to_csv(f"{work}/threshold_sweep_{cnmf_tag()}.csv", index=False)
+    ev["sweep"].to_csv(f"{work}/threshold_sweep_{cnmf_tag()}{sfx}.csv", index=False)
     print(ev["sweep"].round(3).to_string(index=False))
+
+def main():
+    import caiman as cm
+    global recording, out_suffix
+    recs = [0, 1] if joint else [recording]
+    paths = [session_paths(r) for r in recs]          # (raw, old, cond, work) per recording
+    work = paths[0][3]
+    # CaImAn's temp files (memmaps) are named only by movie dimensions/frame count,
+    # so parallel runs must not share a temp dir: use this recording's work dir
+    os.environ["CAIMAN_TEMP"] = work
+    for (raw_file, old_file, _, _), r in zip(paths, recs):
+        print(f"rec{r} raw: {raw_file}\nrec{r} old: {old_file}")
+    print(f"work: {work}")
+    _, dview, _ = cm.cluster.setup_cluster(backend="multiprocessing", n_processes=n_processes)
+    try:
+        tifs = [convert(p[0], work, "raw.tif" if not joint else f"raw_rec{r}.tif")
+                for p, r in zip(paths, recs)]
+        fname = motion_correct([t for t, _ in tifs], work, dview)
+        cnm, cn, dims = run_cnmfe(fname, work, dview)
+    finally:
+        cm.stop_server(dview=dview)
+    if not joint:
+        C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims)
+        save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, *paths[0][1:3])
+        return
+    # joint: one set of cells; spikes inferred and evaluated per recording segment
+    bounds = np.cumsum([0] + [n for _, n in tifs])
+    segs = [slice(bounds[i], bounds[i + 1]) for i in range(len(tifs))]
+    print(f"joint extraction: segments {[(s.start, s.stop) for s in segs]}")
+    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, segments=segs)
+    for i, (r, seg) in enumerate(zip(recs, segs)):
+        recording, out_suffix = r, f"_rec{r}"
+        save_and_evaluate(work, cn, cents, idx, C[:, seg], Yraw[:, seg], S[:, seg],
+                          S_noise[:, seg], sn[:, i], *paths[i][1:3])
 
 
 if __name__ == "__main__":
