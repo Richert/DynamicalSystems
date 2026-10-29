@@ -49,6 +49,16 @@ n_focus_events = 3           # missed old events shown per pair
 crop_half_px = 20            # half-size of the zoomed crops
 resp_frac = 0.2              # "no response": new trace stays < resp_frac x its max after the event
 
+# figures / diagnostics go to the recording's work dir, or all into FIG_DIR (batch runs,
+# file names then carry the recording: <session>_rec<r>_cell_overlay_<tag>.png)
+fig_dir = os.environ.get("FIG_DIR")
+
+def out_path(work, name):
+    if not fig_dir:
+        return f"{work}/{name}"
+    os.makedirs(fig_dir, exist_ok=True)
+    return f"{fig_dir}/{os.path.basename(P.raw_session)}_rec{P.recording}_{name}"
+
 if len(sys.argv) > 1:
     P.raw_session = sys.argv[1]
     P.recording = int(sys.argv[2]) if len(sys.argv) > 2 else 0
@@ -215,7 +225,7 @@ def focus_figure(work, images, dims, A, C, Yraw, cents, E_old, C_old, old_px, pa
                  f"change (0-0.4 s after vs 1.25-0.25 s before each old event, / mean image); "
                  f"bold black = matched new cell, grey = other new cells, blue = old cells",
                  fontsize=10)
-    out = f"{work}/cell_focus_{P.cnmf_tag()}.png"
+    out = out_path(work, f"cell_focus_{P.cnmf_tag()}.png")
     fig.savefig(out, dpi=120)
     plt.close(fig)
     print(f"saved {out}")
@@ -273,7 +283,8 @@ def main():
                     rval_matched_median=float(np.median(rval[list(matched_new)])),
                     rval_unmatched_median=float(np.median(rval[unm_new])) if unm_new else np.nan)
     print(json.dumps(diag, indent=1))
-    json.dump(diag, open(f"{work}/cell_overlay_diagnostics_{P.cnmf_tag()}.json", "w"), indent=1)
+    json.dump(diag, open(out_path(work, f"cell_overlay_diagnostics_{P.cnmf_tag()}.json"), "w"),
+              indent=1)
 
     # --- figure ------------------------------------------------------------
     ncol = 3
@@ -310,7 +321,7 @@ def main():
     fig.suptitle(f"{P.raw_session} rec{P.recording} ({P.cnmf_tag()}): recently active cells "
                  f"(trace > {act_frac:g} x max) at high-activity times; images = dF/F "
                  f"(mean of {avg_frames} frames)", fontsize=11)
-    out = f"{work}/cell_overlay_{P.cnmf_tag()}.png"
+    out = out_path(work, f"cell_overlay_{P.cnmf_tag()}.png")
     fig.savefig(out, dpi=120)
     plt.close(fig)
     print(f"saved {out}")
