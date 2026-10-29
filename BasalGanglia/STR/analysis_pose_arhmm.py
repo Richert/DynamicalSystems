@@ -11,7 +11,7 @@ jitter, at 20 Hz:
   wall_dist   torso distance to the arena wall (cm; stored, not used for the HMM)
 Absolute values for turn / head angle: left and right are not split into states.
 
-The HMM features are z-scored globally, downsampled to fs_fit (block means), and a
+The HMM features are z-scored globally (block means to fs_fit if below fs), and a
 sticky AR-HMM (ssm) is fitted for each K in K_grid on a training split of sessions
 (stratified by condition, at most fit_cap_s per session); K is judged by held-out
 log-likelihood per frame. Outputs (pose_arhmm/): per-session features (20 Hz), the
@@ -47,10 +47,10 @@ cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine"
            ("HighDose", "Control"): drug, ("HighDose", "Amph"): f"A + {drug}"}
 
 # AR-HMM
-fs_fit = 10.0                      # fit at 10 Hz (block means of 2 frames)
+fs_fit = 20.0                      # fit at the full video rate (no downsampling)
 fit_cap_s = 900                    # at most 15 min per session in the fit
 K_grid = [3, 4, 5, 6, 7, 8, 10, 12]
-ar_lags = 2                        # 200 ms of context at 10 Hz
+ar_lags = 4                        # 200 ms of context at 20 Hz
 kappa = 100.0
 em_iters = 50
 n_restarts = 3
