@@ -25,12 +25,16 @@ right states.
 Sign convention: positive = counter-clockwise as seen in the (top-down) video, i.e.
 a left turn / head to the left if the video is not mirrored (image y axis points down).
 
+Keypoints with a MARS confidence score < min_score are interpolated in time first
+(interp_share = share of interpolated keypoints per frame, stored for QC).
+
 The HMM features are z-scored globally (block means to fs_fit if below fs), and a
-sticky AR-HMM (ssm) is fitted for each K in K_grid on a training split of sessions
-(stratified by condition, at most fit_cap_s per session); K is judged by held-out
-log-likelihood per frame. Outputs (pose_arhmm/): per-session features (20 Hz), the
-K sweep, the fitted models and a figure with the held-out curve and, per candidate K,
-the state feature profiles, dwell times and occupancy per drug condition.
+sticky AR-HMM (ssm) is fitted for each K in K_grid and stickiness kappa in kappa_grid
+on a training split of sessions (stratified by condition, at most fit_cap_s per
+session); K / kappa are judged by held-out log-likelihood per frame and state dwell
+times. Outputs (pose_arhmm/): per-session features (20 Hz), the sweep (K_sweep.csv,
+pose_arhmm_kappa_K_sweep.png), the fitted models and per kappa a figure with, per
+candidate K, the state feature profiles, dwell times and occupancy per drug condition.
 
   /home/rgast/conda/envs/arhmm/bin/python analysis_pose_arhmm.py
 Paths / processes can be set via POSE_ROOT, OFFSETS_CSV, OUT_DIR and N_PROCESSES (server).
@@ -53,6 +57,8 @@ drug = "Clozapine"
 fs = 20.0
 arena_cm = 30.48
 smooth_s = 0.1                     # Gaussian SD for keypoint smoothing (s)
+min_score = 0.5                    # MARS keypoint confidence below which a keypoint is
+                                   # interpolated (~5% of frames have one such keypoint)
 speed_eps = 0.5                    # cm/s, offset of the log speed (rest threshold scale)
 turn_eps = 5.0                     # deg/s, scale of the arcsinh compression of turning speed
 features = ["log_speed", "turn_asinh", "head_angle", "body_len", "bend", "log_head_speed",
@@ -64,15 +70,17 @@ cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine"
 # AR-HMM
 fs_fit = 20.0                      # fit at the full video rate (no downsampling)
 fit_cap_s = 900                    # at most 15 min per session in the fit
-K_grid = [3, 4, 5, 6, 7, 8, 10, 12]
+K_grid = [4, 5, 6, 8]
 ar_lags = 4                        # 200 ms of context at 20 Hz
-kappa = 100.0
+# stickiness: at kappa = 100 states switched every 50-300 ms (median dwell) at 20 Hz with
+# 9 features; swept to reach realistic behavioural dwell times (~0.3-1 s)
+kappa_grid = [1e3, 1e4, 1e5]
 em_iters = 50
 n_restarts = 3
 heldout_frac = 0.2
 n_jobs = int(os.environ.get("N_PROCESSES", 8))
 seed = 1
-show_K = [4, 5, 6, 8]              # candidate K values summarised in the figure
+show_K = [4, 5, 6, 8]              # candidate K values summarised in the figures (one per kappa)
 
 # ---------------------------------------------------------------------------
 # features
@@ -86,8 +94,15 @@ def angle_between(u, v):
 def session_features(f, off, n_frames, scale):
     with h5py.File(f, "r") as h:
         tr = h["tracks"][0]                                   # (2, 7, T)
+        score = h["point_scores"][0].T                        # (T, 7)
         nodes = [n.decode() for n in h["node_names"][...]]
     kp = np.transpose(tr, (2, 1, 0)) * scale                  # (T, 7, 2) in cm
+    # low-confidence keypoints (occlusion / tracking errors) -> linear interpolation in time
+    low = score < min_score
+    kp[low] = np.nan
+    kp = pd.DataFrame(kp.reshape(len(kp), -1)).interpolate(limit_direction="both") \
+        .values.reshape(kp.shape)
+    interp_share = low[off:off + n_frames].mean(1)
     # arena centre from the keypoint extent over the whole video (as in the paper)
     lo = np.nanpercentile(kp.reshape(-1, 2), 0.01, axis=0)
     hi = np.nanpercentile(kp.reshape(-1, 2), 99.99, axis=0)
@@ -123,7 +138,8 @@ def session_features(f, off, n_frames, scale):
         head_speed=head_speed, log_head_speed=np.log10(head_speed + speed_eps),
         head_turn=head_turn, head_turn_asinh=np.arcsinh(head_turn / turn_eps),
         ear_width=ears / np.median(ears), hip_width=hipw / np.median(hipw),
-        wall_dist=arena_cm / 2 - np.linalg.norm(torso - centre, axis=1)))
+        wall_dist=arena_cm / 2 - np.linalg.norm(torso - centre, axis=1),
+        abs_turn=np.abs(turn), abs_head_turn=np.abs(head_turn), interp_share=interp_share))
 
 def load_all():
     offsets = pd.read_csv(offsets_csv).set_index("session")
@@ -154,13 +170,13 @@ def _init(train, test):
 def _fit(task):
     import ssm
     import numpy.random as npr
-    K, s = task
+    K, kappa, s = task
     npr.seed(s)
     hmm = ssm.HMM(K, len(features), observations="ar", transitions="sticky",
                   observation_kwargs=dict(lags=ar_lags), transition_kwargs=dict(kappa=kappa))
     hmm.fit(_DATA["train"], method="em", num_iters=em_iters, verbose=0)
     n_test = sum(len(x) for x in _DATA["test"])
-    return K, float(hmm.log_likelihood(_DATA["train"])), \
+    return K, kappa, float(hmm.log_likelihood(_DATA["train"])), \
         float(hmm.log_likelihood(_DATA["test"])) / n_test, hmm
 
 def to_fit_rate(X):
@@ -196,21 +212,50 @@ def main():
     print(f"train {len(train)} / test {len(held)} sessions, "
           f"{sum(map(len, train)) / fs_fit / 3600:.1f} h of training data at {fs_fit:g} Hz")
 
-    tasks = [(K, int(rng.integers(0, 2 ** 31))) for K in K_grid for _ in range(n_restarts)]
+    tasks = [(K, kap, int(rng.integers(0, 2 ** 31)))
+             for kap in kappa_grid for K in K_grid for _ in range(n_restarts)]
     with ProcessPoolExecutor(n_jobs, initializer=_init, initargs=(train, held)) as ex:
         res = list(ex.map(_fit, tasks))
     best = {}
-    for K, ll_tr, ll_te, hmm in res:
-        if K not in best or ll_tr > best[K][0]:
-            best[K] = (ll_tr, ll_te, hmm)
-    sweep = pd.DataFrame([dict(K=K, train_ll=v[0], heldout_ll_per_frame=v[1])
-                          for K, v in sorted(best.items())])
+    for K, kap, ll_tr, ll_te, hmm in res:
+        if (K, kap) not in best or ll_tr > best[(K, kap)][0]:
+            best[(K, kap)] = (ll_tr, ll_te, hmm)
+    sweep = pd.DataFrame([dict(K=K, kappa=kap, train_ll=v[0], heldout_ll_per_frame=v[1])
+                          for (K, kap), v in sorted(best.items())])
+    pickle.dump(dict(models={key: v[2] for key, v in best.items()}, mu=mu, sd=sd,
+                     features=features, fs_fit=fs_fit,
+                     test_sessions=[sessions[i]["session"] for i in sorted(test)]),
+                open(f"{out_dir}/models_K_sweep.pkl", "wb"))
+    dwell = []
+    for kap in kappa_grid:
+        models = {K: best[(K, kap)][2] for K in show_K if (K, kap) in best}
+        dwell += summarise(sessions, models, mu, sd, sweep[sweep.kappa == kap], kap)
+    sweep = sweep.merge(pd.DataFrame(dwell), on=["K", "kappa"], how="left")
     sweep.to_csv(f"{out_dir}/K_sweep.csv", index=False)
     print(sweep.round(4).to_string(index=False))
-    pickle.dump(dict(models={K: v[2] for K, v in best.items()}, mu=mu, sd=sd, features=features,
-                     fs_fit=fs_fit, test_sessions=[sessions[i]["session"] for i in sorted(test)]),
-                open(f"{out_dir}/models_K_sweep.pkl", "wb"))
-    summarise(sessions, {K: best[K][2] for K in show_K if K in best}, mu, sd, sweep)
+    sweep_figure(sweep)
+
+def sweep_figure(sweep):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4), layout="constrained")
+    shades = ["#9ec5f0", "#2a78d6", "#0b3d7a"]
+    for kap, c in zip(kappa_grid, shades):
+        d = sweep[sweep.kappa == kap]
+        axes[0].plot(d.K, d.heldout_ll_per_frame, "o-", color=c, label=f"kappa = {kap:g}")
+        axes[1].plot(d.K, d.median_dwell_s, "o-", color=c, label=f"kappa = {kap:g}")
+    axes[0].set(xlabel="K", ylabel="held-out log-likelihood / frame", title="held-out fit")
+    axes[1].axhspan(0.3, 1.0, color="#e6e5e0", zorder=0)
+    axes[1].set(xlabel="K", ylabel="median bout duration (s), all states",
+                title="state dwell (grey: 0.3-1 s target range)", yscale="log")
+    for a in axes:
+        a.legend(fontsize=8, frameon=False)
+        for sp in ("top", "right"):
+            a.spines[sp].set_visible(False)
+    fig.savefig(f"{out_dir}/pose_arhmm_kappa_K_sweep.png", dpi=130, facecolor="white")
+    plt.close(fig)
+    print(f"saved {out_dir}/pose_arhmm_kappa_K_sweep.png")
 
 # ---------------------------------------------------------------------------
 # summaries
@@ -221,25 +266,27 @@ def label(hmm, s, mu, sd):
     X = np.ascontiguousarray(to_fit_rate((s["feat"][features].values - mu) / sd))
     return hmm.most_likely_states(X)
 
-def summarise(sessions, models, mu, sd, sweep):
+def summarise(sessions, models, mu, sd, sweep, kap):
+    """Figure + occupancy table for one kappa; returns the pooled dwell statistics per K."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     ink, ink2 = "#1f1f1e", "#5f5e5a"
     colors = dict(zip(conditions, ["#2a78d6", "#1baf7a", "#eda100", "#e34948"]))
-    rows = []
-    fig, axes = plt.subplots(1 + len(models), 3, figsize=(18, 4.5 * (1 + len(models))),
+    rows, dwell_stats = [], []
+    fig, axes = plt.subplots(1 + len(models), 3, figsize=(18, 5.2 * (1 + len(models))),
                              layout="constrained", squeeze=False)
     ax = axes[0, 0]
     ax.plot(sweep.K, sweep.heldout_ll_per_frame, "o-", color=ink)
     ax.set(xlabel="K", ylabel="held-out log-likelihood / frame", title="K sweep (held-out sessions)")
     for a in axes[0, 1:]:
         a.axis("off")
-    raw_cols = ["speed", "turn", "head_angle", "body_len", "bend", "head_speed", "head_turn",
-                "ear_width", "hip_width", "wall_dist"]
-    raw_labels = ["speed cm/s", "turn deg/s (+ = CCW)", "head deg (+ = CCW)", "body len (rel)",
-                  "bend deg (+ = CCW)", "head speed cm/s", "head turn deg/s", "ear width (rel)",
-                  "hip width (rel)", "wall dist cm"]
+    raw_cols = ["speed", "turn", "abs_turn", "head_angle", "body_len", "bend", "head_speed",
+                "head_turn", "abs_head_turn", "ear_width", "hip_width", "wall_dist", "interp_share"]
+    raw_labels = ["speed cm/s", "turn deg/s (+ = CCW)", "|turn| deg/s", "head deg (+ = CCW)",
+                  "body len (rel)", "bend deg (+ = CCW)", "head speed cm/s",
+                  "head turn deg/s (+ = CCW)", "|head turn| deg/s", "ear width (rel)",
+                  "hip width (rel)", "wall dist cm", "interpolated keypoints"]
     for r, (K, hmm) in enumerate(models.items(), start=1):
         lab = {s["session"]: label(hmm, s, mu, sd) for s in sessions}
         # per-state raw feature means (20 Hz features, labels upsampled)
@@ -260,8 +307,11 @@ def summarise(sessions, models, mu, sd, sweep):
             en = np.r_[st[1:], len(z)]
             dwell[s["condition"]] += list(zip(z[st], (en - st) / fs_fit))
             for k in range(K):
-                rows.append(dict(K=K, state=k, session=s["session"], mouse=s["mouse"],
+                rows.append(dict(K=K, kappa=kap, state=k, session=s["session"], mouse=s["mouse"],
                                  condition=s["condition"], occupancy=np.mean(z == k)))
+        durs = np.array([d for c in conditions for _, d in dwell[c]])
+        dwell_stats.append(dict(K=K, kappa=kap, median_dwell_s=float(np.median(durs)),
+                                mean_dwell_s=float(durs.mean())))
         # (a) state profiles (z-scored across states, raw means annotated)
         ax = axes[r, 0]
         zprof = (prof - prof.mean()) / (prof.std() + 1e-12)
@@ -297,12 +347,14 @@ def summarise(sessions, models, mu, sd, sweep):
         for a in axes[r]:
             for sp in ("top", "right"):
                 a.spines[sp].set_visible(False)
-    fig.suptitle("Keypoint-feature AR-HMM: K sweep and candidate state sets (states ordered by speed)",
-                 fontsize=11, color=ink)
-    fig.savefig(f"{out_dir}/pose_arhmm_K_candidates.png", dpi=120, facecolor="white")
+    fig.suptitle(f"Keypoint-feature AR-HMM, kappa = {kap:g}: K sweep and candidate state sets "
+                 f"(states ordered by speed)", fontsize=11, color=ink)
+    out = f"{out_dir}/pose_arhmm_K_candidates_kappa{kap:g}.png"
+    fig.savefig(out, dpi=120, facecolor="white")
     plt.close(fig)
-    pd.DataFrame(rows).to_csv(f"{out_dir}/state_occupancy_candidates.csv", index=False)
-    print(f"saved {out_dir}/pose_arhmm_K_candidates.png")
+    pd.DataFrame(rows).to_csv(f"{out_dir}/state_occupancy_candidates_kappa{kap:g}.csv", index=False)
+    print(f"saved {out}")
+    return dwell_stats
 
 
 if __name__ == "__main__":
