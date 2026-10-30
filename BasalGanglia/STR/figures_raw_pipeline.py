@@ -26,10 +26,12 @@ drive = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"
 local = "/home/rgast/data/parker_data/raw_pipeline"
 rec = os.environ.get("RECORDING", "20191205_m85_clo01_amph_rec1")
 tag = "p1_c0.6_pnr5"
-sel = "snr2_eta0.4"
+sel = "snr2_eta0.4_sz_rim5"        # component selection of the outputs shown
+sel_base = "snr2_eta0.4"            # (fallback: derived from these outputs, see Recording)
 out_dir = os.environ.get("SLIDE_DIR", "/home/rgast/OneDrive/presentations/parker/images")
 um_per_px = 3.3                     # 192 x 192 movie (lens FOV ~630 um)
-spike_thr = 1.5
+# spike detection as in the pipeline batch (summed over 3 frames, 2 x noise)
+P.detect_method, P.sum_frames, spike_thr = "sum", 3, 2.0
 
 import matplotlib
 matplotlib.use("Agg")
@@ -88,9 +90,6 @@ class Recording:
 
     def __init__(self, name):
         self.name, self.dir = name, f"{local}/{name}"
-        z = np.load(f"{self.dir}/new_pipeline_outputs_{tag}_{sel}.npz")
-        self.C, self.Yraw, self.S, self.sn = z["C"], z["Yraw"], z["S"], z["sn"]
-        self.kept, self.fs = z["component"], float(z["fs"])
         li = np.load(f"{self.dir}/lens_inputs_{tag}.npz")
         self.dims = tuple(li["dims"])
         self.A = sp.csc_matrix((li["A_data"], li["A_indices"], li["A_indptr"]),
@@ -100,10 +99,30 @@ class Recording:
         self.W = sp.csr_matrix((ex["W_data"], ex["W_indices"], ex["W_indptr"]),
                                shape=tuple(ex["W_shape"]))
         self.snr = ex["snr"]
+        self.eta = pd.read_csv(f"{self.dir}/eta_{tag}.csv").set_index("component")
+        f = f"{self.dir}/new_pipeline_outputs_{tag}_{sel}.npz"
+        if os.path.isfile(f):
+            z = np.load(f)
+            keep = np.arange(len(z["component"]))
+        else:
+            # not yet rerun: the selection only removes cells and each cell is deconvolved
+            # on its own, so the new outputs are the base outputs restricted to the cells
+            # the pipeline's selection keeps (same functions, mock CNMF-E estimates)
+            import types
+            z = np.load(f"{self.dir}/new_pipeline_outputs_{tag}_{sel_base}.npz")
+            P.selection_cli(["x", "--min_snr", "2", "--min_eta", "0.4", "--size_rel",
+                             "--lens_rim", "5"])
+            P.eta = self.eta
+            est = types.SimpleNamespace(A=self.A, SNR_comp=self.snr, b0=self.b0,
+                                        r_values=np.zeros(self.A.shape[1]),
+                                        idx_components=np.flatnonzero(self.snr >= 3))
+            idx, _ = P.accepted_components(types.SimpleNamespace(estimates=est), self.dims)
+            keep = np.flatnonzero(np.isin(z["component"], idx))
+        self.C, self.Yraw, self.S = z["C"][keep], z["Yraw"][keep], z["S"][keep]
+        self.sn, self.kept, self.fs = z["sn"][keep], z["component"][keep], float(z["fs"])
         self.shifts = np.load(f"{self.dir}/mc_shifts.npy")
         self.cn = np.load(f"{self.dir}/corr_image.npy")
         self.pnr = np.load(f"{self.dir}/pnr_image.npy")
-        self.eta = pd.read_csv(f"{self.dir}/eta_{tag}.csv").set_index("component")
         self.events = P.detect(self.S, self.sn, spike_thr)
         self.T = self.C.shape[1]
 
@@ -296,7 +315,7 @@ def slide_cells(r):
         a = r.footprint(k)
         ax.contour(a, [0.4 * a.max()], colors=ACCENT, linewidths=0.4)
     frame_axes(ax, f"{len(r.kept)} cells")
-    ax.text(0, -0.03, "on the seeding image (corr. × PNR)", transform=ax.transAxes,
+    ax.text(0, -0.03, "on the seeding image", transform=ax.transAxes,
             va="top", fontsize=6.5, color=INK2)
     # (d) accepted vs rejected: footprint and event-triggered average
     acc, rej, e = examples(r)
