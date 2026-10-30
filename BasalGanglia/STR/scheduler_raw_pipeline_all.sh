@@ -6,9 +6,11 @@
 # Ends with a summary table of the evaluation vs the old pipeline. Recordings without
 # an old-pipeline counterpart are extracted only.
 # Settings from the extraction / SNR tests on 5 recordings: seeding min_corr 0.6 /
-# min_pnr 5, SNR >= 2, event-triggered footprint consistency r >= 0.4 (outputs carry
-# p1_c0.6_pnr5 ... _snr2_eta0.4; the consistency table eta_p1_c0.6_pnr5.csv incl. the
-# margin over shifted footprints is stored per recording). Motion correction is reused.
+# min_pnr 5, SNR >= 2, event-triggered footprint consistency r >= 0.4; plus (selection-
+# stage rerun, everything up to CNMF-E and the consistency tables cached): relative size
+# filter (--size_rel), lens-rim exclusion (--lens_rim 5) and summed spike detection at
+# 2 x noise (--detect_sum 2). Outputs carry p1_c0.6_pnr5 ... _snr2_eta0.4_sz_rim5 and
+# thr2_sum3.
 
 # paths on the server (/media/storage/DATA there = /mnt/kennedy_labdata on the workstation)
 work_dir="$HOME/PycharmProjects/DynamicalSystems/BasalGanglia/STR"
@@ -21,15 +23,17 @@ export WORK_ROOT="$data_root/Parkerlab/results/raw_pipeline"
 # extraction settings (seeding thresholds, component selection flags)
 corr=0.6
 pnr=5
-sel="--min_snr 2 --min_eta 0.4"
-sfx="c${corr}_pnr${pnr}$(echo $sel | tr -d ' -' | sed 's/min_/_/g')"     # c0.6_pnr5_snr2_eta0.4
+sel="--min_snr 2 --min_eta 0.4 --size_rel --lens_rim 5 --detect_sum 2"
+sfx="c${corr}_pnr${pnr}_snr2_eta0.4_sz_rim5_sum3"
+spike_tag="2_sum3"                 # summary_<...>_thr2_sum3 (collect_raw_pipeline_grid.py)
 log_dir="$WORK_ROOT/logs_$sfx"
 export FIG_DIR="$WORK_ROOT/cell_overlays_$sfx"
 
 # environment (needs CaImAn: mamba install -n parker -c conda-forge caiman)
 cd $work_dir
 source $HOME/.bashrc
-mamba activate parker
+mamba activate parker 2>/dev/null
+export PATH="$HOME/miniforge3/envs/parker/bin:$PATH"   # (mamba activate fails in non-interactive shells)
 mkdir -p $log_dir $FIG_DIR
 
 # set condition
@@ -73,5 +77,5 @@ done
 
 echo "All jobs finished."
 grep -L "summary" $(ls $log_dir/*.log | grep -v _overlay) | sed 's/^/no evaluation summary: /'
-python collect_raw_pipeline_grid.py "$WORK_ROOT" 1.5 > "$WORK_ROOT/summary_$sfx.txt"
+python collect_raw_pipeline_grid.py "$WORK_ROOT" $spike_tag > "$WORK_ROOT/summary_$sfx.txt"
 echo "$(ls $FIG_DIR/*_cell_overlay_*.png | wc -l) overlay figures in $FIG_DIR"

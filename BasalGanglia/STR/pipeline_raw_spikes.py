@@ -62,14 +62,20 @@ joint_refit = True
 refit_iters = 2
 
 def selection_cli(argv):
-    """Component-selection flags (--filt2, --min_snr X, --min_eta R), shared with
-    compare_cell_extraction.py: sets them and out_suffix, returns the remaining argv."""
-    global filt2, min_snr, min_eta, min_eta_margin, out_suffix
+    """Component-selection flags (--filt2, --min_snr X, --min_eta R, --min_eta_margin M,
+    --size_rel, --lens_rim B), shared with compare_cell_extraction.py: sets them and
+    out_suffix; and the spike detector (--detect_sum THR: summed detection at THR, see
+    detect_method; outputs carry det_tag()). Returns the remaining argv."""
+    global filt2, min_snr, min_eta, min_eta_margin, size_rel, lens_rim, out_suffix
+    global detect_method, spike_thr, fig_thresholds
     argv = list(argv)
     if "--filt2" in argv:
         filt2, out_suffix = True, out_suffix + "_f2"
         argv.remove("--filt2")
-    for flag in ("--min_snr", "--min_eta", "--min_eta_margin"):
+    size_flag = "--size_rel" in argv
+    if size_flag:
+        argv.remove("--size_rel")
+    for flag in ("--min_snr", "--min_eta", "--min_eta_margin", "--lens_rim", "--detect_sum"):
         if flag in argv:
             i = argv.index(flag)
             val = float(argv[i + 1])
@@ -78,8 +84,16 @@ def selection_cli(argv):
                 min_snr, out_suffix = val, out_suffix + f"_snr{val:g}"
             elif flag == "--min_eta":
                 min_eta, out_suffix = val, out_suffix + f"_eta{val:g}"
-            else:
+            elif flag == "--min_eta_margin":
                 min_eta_margin, out_suffix = val, out_suffix + f"_etam{val:g}"
+            elif flag == "--lens_rim":
+                lens_rim = val                         # suffix after _sz (fixed order)
+            else:
+                detect_method, spike_thr, fig_thresholds = "sum", val, [val]
+    if size_flag:
+        size_rel, out_suffix = True, out_suffix + "_sz"
+    if lens_rim is not None:
+        out_suffix += f"_rim{lens_rim:g}"
     return argv
 
 def eta_needed():
@@ -172,6 +186,23 @@ min_snr = None
 # eta: DataFrame indexed by component (eta_r, eta_margin, n_events); None: not used
 min_eta = None
 min_eta_margin = None
+# relative size (CLI --size_rel, outputs carry "_sz"): the fixed max_area_px (200) is far
+# above the cell size of mice with small cells (median accepted area 37-79 px across
+# recordings), so large blobs at the frame border (out-of-focus / neuropil, 4-5 x the
+# median) passed. Dropped: area > max_rel x the recording's median accepted area, or
+# touching the frame border and > max_rel_edge x. On 75 recordings (snr2_eta0.4): 3.4
+# components per recording, 0.3% of old-matched (real) and 2.1% of unmatched cells
+# (a plain 2 x median cut: 2.1% of matched)
+size_rel = False
+size_params = dict(max_rel=3.0, max_rel_edge=2.0)
+# lens rim (CLI --lens_rim B, outputs carry "_rimB"): components centred outside the GRIN
+# lens rim or within B px inside it are dropped. The rim is a circle fitted (Hough) to the
+# sharp, outward darkening edges near the frame border of the baseline image b0; it is
+# accepted only with enough edge support and contrast (most recordings show no rim: no
+# mask). On 77 recordings: rim found in 26, B = 5 dropped 1-24 components where a rim was
+# found (rows of rim-artefact components in m795 / f414), none elsewhere
+lens_rim = None
+rim_params = dict(radii=(95, 240, 4), border_frac=0.25, min_support=0.4, min_contrast=0.08)
 eta_params = dict(n_events=20, min_sep_s=1.0, base_window_s=(1.0, 0.5), box_half_px=12, shift_px=8,
                   min_snr=2.0)
 eta = None
@@ -189,6 +220,17 @@ def cnmf_tag():
 # more conservative alternative, to revisit if downstream readouts call for it)
 spike_thr = 1.5
 fig_thresholds = [1.5]       # one full evaluation + figure per threshold (e.g. [1.5, 2.0])
+# detector (CLI --detect sum, outputs carry "_sum<n>"): the GCaMP7f rise spans 2-4 frames
+# at 20 Hz but OASIS-AR(1) assumes an instantaneous rise, so one transient's spike mass is
+# spread over consecutive frames: per frame ("frame"), small transients stay below the
+# threshold and large ones yield several events. "sum": spike mass summed over sum_frames
+# frames, one event per peak (>= min_event_sep_s apart) above thr x noise. On CASCADE's
+# GCaMP7f ground truth at 20 Hz with real (sign-flipped) 1p noise
+# (benchmark_spike_detection.py, single-AP amplitude 2 x noise): frame/1.5 -> 53% of
+# bursts at 87% precision, 1.45 events per burst; sum3/2.0 -> 54%, 87%, 1.08 per burst
+detect_method = "frame"
+sum_frames = 3
+min_event_sep_s = 0.5
 thr_sweep = [1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0]   # thresholds for the sweep
 # burst spikes: a neighbouring spike of the same neuron within [min, max) s; intervals
 # below 0.2 s (<= 3 frames) are mostly one rising edge split by the deconvolution
@@ -301,6 +343,52 @@ def footprint_shape(a, frac=0.3):
     p = max(regionprops(lab), key=lambda r: r.area)
     return p.area, p.major_axis_length / max(p.minor_axis_length, 1e-6), p.solidity, lab.max()
 
+def fit_lens_rim(b0, dims):
+    """GRIN-lens rim as a circle (cy, cx, r) in pixels, or None if no rim is visible:
+    Hough fit to Canny edges of the log baseline image that lie near the frame border and
+    darken towards the outside; accepted with enough edge support along the in-frame arc
+    and inside-outside contrast (rim_params)."""
+    from scipy import ndimage as ndi
+    from skimage.feature import canny
+    from skimage.transform import hough_circle, hough_circle_peaks
+    p = rim_params
+    img = np.asarray(b0).reshape(dims, order="F")
+    s = ndi.gaussian_filter(np.log(np.maximum(img, 1e-3)), 2)
+    e = canny(s, sigma=3.5, low_threshold=0.8, high_threshold=0.93, use_quantiles=True)
+    Y, X = np.indices(dims)
+    border = np.minimum.reduce([Y, X, dims[0] - 1 - Y, dims[1] - 1 - X])
+    gy, gx = np.gradient(ndi.gaussian_filter(s, 3))
+    vy, vx = (dims[0] - 1) / 2 - Y, (dims[1] - 1) / 2 - X
+    cos = (gy * vy + gx * vx) / (np.hypot(gy, gx) * np.hypot(vy, vx) + 1e-9)
+    e &= (border < p["border_frac"] * min(dims)) & (cos > 0.6)
+    if e.sum() < 20:
+        return None
+    pad = 120                                         # circle centres may lie outside the frame
+    radii = np.arange(*p["radii"])
+    h = hough_circle(np.pad(e, pad), radii, normalize=False)
+    _, cx, cy, r = hough_circle_peaks(h, radii, total_num_peaks=1)
+    if not len(r):
+        return None
+    cy, cx, r = cy[0] - pad, cx[0] - pad, r[0]
+    t = np.linspace(0, 2 * np.pi, 720)
+    yy, xx = cy + r * np.sin(t), cx + r * np.cos(t)
+    inn = (yy >= 0) & (yy < dims[0] - 1) & (xx >= 0) & (xx < dims[1] - 1)
+    if not inn.any():
+        return None
+    support = ndi.binary_dilation(e, iterations=2)[yy[inn].astype(int), xx[inn].astype(int)].mean()
+    d = np.hypot(Y - cy, X - cx) - r
+    ins, out = s[(d > -12) & (d < -4)], s[(d > 4) & (d < 12)]
+    contrast = ins.mean() - out.mean() if min(len(ins), len(out)) > 20 else np.nan
+    if support > p["min_support"] and contrast > p["min_contrast"]:
+        return float(cy), float(cx), float(r)
+    return None
+
+def footprint_centroid(a):
+    """(row, col) centroid of a 2-D footprint's positive weights."""
+    w = np.maximum(a, 0)
+    Y, X = np.indices(a.shape)
+    return (w * Y).sum() / w.sum(), (w * X).sum() / w.sum()
+
 def quality_passed(est):
     """Components passing CaImAn's quality check, or with min_snr the looser re-selection
     (SNR >= min_snr or r_value >= rval_thr) from the stored values."""
@@ -388,6 +476,35 @@ def accepted_components(cnm, dims, cn=None):
         keep = [k for k in keep if k not in set(low)]
         extra_summary[f"n_{col}_dropped"] = len(low)
         print(f"event-triggered footprint consistency ({col} < {lim:g}): {len(low)} dropped, {len(keep)} kept")
+    if size_rel and keep:
+        med = np.median([areas[k] for k in keep])
+        big = []
+        for k in keep:
+            a = est.A[:, k].toarray().reshape(dims, order="F")
+            ys, xs = np.nonzero(a > 0.3 * a.max())
+            edge = min(ys.min(), xs.min(), dims[0] - 1 - ys.max(), dims[1] - 1 - xs.max()) == 0
+            if areas[k] > size_params["max_rel"] * med or \
+                    (edge and areas[k] > size_params["max_rel_edge"] * med):
+                big.append(k)
+        rejected += big
+        keep = [k for k in keep if k not in set(big)]
+        extra_summary.update(n_size_rel_dropped=len(big), median_area_px=float(med))
+        print(f"relative size (median area {med:.0f} px): {len(big)} dropped, {len(keep)} kept")
+    if lens_rim is not None and keep:
+        rim = fit_lens_rim(est.b0, dims)
+        out = []
+        if rim is not None:
+            cy, cx, r = rim
+            for k in keep:
+                y, x = footprint_centroid(est.A[:, k].toarray().reshape(dims, order="F"))
+                if np.hypot(y - cy, x - cx) - r > -lens_rim:
+                    out.append(k)
+        rejected += out
+        keep = [k for k in keep if k not in set(out)]
+        extra_summary.update(lens_rim_found=rim is not None, n_lens_rim_dropped=len(out),
+                             lens_rim=list(rim) if rim is not None else None)
+        print(f"lens rim: {'circle (%.0f, %.0f, r %.0f)' % rim if rim else 'none'}, "
+              f"{len(out)} dropped, {len(keep)} kept")
     if filt2 and keep:
         lim = post_filter["max_area_rel"] * np.median([areas[k] for k in keep])
         big = [k for k in keep if areas[k] > lim]
@@ -506,15 +623,35 @@ def deconvolve_all(cnm, dims, segments=None, refit=None, cn=None):
     return C, C + YrA, S, S_noise, sn, cents, idx
 
 def detect(S, sn, thr):
-    """Binary event trains: deconvolved activity above thr x the neuron's noise level,
-    with runs of consecutive above-threshold frames merged into one event at the run
-    onset (OASIS spreads one calcium-transient onset over adjacent 50 ms frames, so
-    adjacent frames are not separate spikes; separate increments within a transient
-    remain separate events -> bursts)."""
-    above = S > thr * sn[:, None]
-    onset = above.copy()
-    onset[:, 1:] &= ~above[:, :-1]
-    return onset
+    """Binary event trains (see detect_method).
+    frame: deconvolved activity above thr x the neuron's noise level, with runs of
+    consecutive above-threshold frames merged into one event at the run onset (OASIS
+    spreads one calcium-transient onset over adjacent 50 ms frames, so adjacent frames
+    are not separate spikes; separate increments within a transient remain separate
+    events -> bursts).
+    sum: spike mass in [t, t + sum_frames) above thr x noise, at its peaks (>=
+    min_event_sep_s apart); the event is placed at the first frame of the window with
+    spike mass."""
+    if detect_method == "frame":
+        above = S > thr * sn[:, None]
+        onset = above.copy()
+        onset[:, 1:] &= ~above[:, :-1]
+        return onset
+    from scipy.ndimage import uniform_filter1d
+    from scipy.signal import find_peaks
+    w = sum_frames
+    M = uniform_filter1d(S, w, axis=1, origin=-(w // 2), mode="constant") * w
+    out = np.zeros(S.shape, bool)
+    for k in range(len(S)):
+        pk, _ = find_peaks(M[k], height=thr * sn[k], distance=max(1, int(min_event_sep_s * fs)))
+        for p in pk:
+            nz = np.flatnonzero(S[k, p:p + w] > 0)
+            out[k, p + (nz[0] if len(nz) else 0)] = True
+    return out
+
+def det_tag():
+    """Spike-detection setting in output names: thr<X>[_sum<n>]."""
+    return f"thr{spike_thr:g}" + (f"_sum{sum_frames}" if detect_method == "sum" else "")
 
 # ---------------------------------------------------------------------------
 # evaluation against the old pipeline
@@ -856,7 +993,7 @@ def make_figure(work, cn, cents, spk, C, Yraw, ev, df, summary):
     fig.suptitle(f"{raw_session} rec{recording}: new pipeline (CaImAn CNMF-E + OASIS) vs old "
                  f"| old {summary['n_old']} active (of {summary['n_old_total']}) / new "
                  f"{summary['n_new']} / matched {summary['n_matched']} neurons", fontsize=13)
-    out = f"{work}/pipeline_vs_old_{cnmf_tag()}_thr{spike_thr}{out_suffix}.png"
+    out = f"{work}/pipeline_vs_old_{cnmf_tag()}_{det_tag()}{out_suffix}.png"
     fig.savefig(out, dpi=110)
     plt.close(fig)
     print(f"saved figure {out}")
@@ -873,23 +1010,26 @@ def save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, old_file, c
     sfx = out_suffix
     np.savez_compressed(f"{work}/new_pipeline_outputs_{cnmf_tag()}{sfx}.npz", C=C, Yraw=Yraw,
                         S=S, S_noise=S_noise, sn=sn, centroids_px=cents, component=idx, fs=fs)
-    np.save(f"{work}/spikes_{cnmf_tag()}_thr{spike_thr}{sfx}.npy", detect(S, sn, spike_thr))
+    np.save(f"{work}/spikes_{cnmf_tag()}_{det_tag()}{sfx}.npy", detect(S, sn, spike_thr))
     if not os.path.isfile(old_file):                 # e.g. folder-name mismatch (m85 vs m085)
         print(f"no old-pipeline file {old_file}: extraction saved, evaluation skipped")
         return
     E_old, C_old, xy_old = load_old(old_file, cond)
     for spike_thr in fig_thresholds:          # full evaluation + figure per threshold
-        tag = f"{cnmf_tag()}_thr{spike_thr}"
+        tag = f"{cnmf_tag()}_{det_tag()}"
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)
         df.insert(3, "component", idx[df.new.values] if len(df) else [])   # CNMF-E component id
         df.to_csv(f"{work}/matched_neurons_{tag}{sfx}.csv", index=False)
         summary.update(extra_summary, filt2=filt2, min_snr=min_snr or quality["min_SNR"], min_eta=min_eta,
-                       min_eta_margin=min_eta_margin)
+                       min_eta_margin=min_eta_margin, size_rel=size_rel, lens_rim_band=lens_rim,
+                       detect_method=detect_method,
+                       sum_frames=sum_frames if detect_method == "sum" else None)
         json.dump(summary, open(f"{work}/summary_{tag}{sfx}.json", "w"), indent=1)
         np.save(f"{work}/spikes_{tag}{sfx}.npy", ev["spk"])
         print(f"\n[{tag}{sfx}] summary:", summary)
         make_figure(work, cn, cents, ev["spk"], C, Yraw, ev, df, summary)
-    ev["sweep"].to_csv(f"{work}/threshold_sweep_{cnmf_tag()}{sfx}.csv", index=False)
+    dsfx = f"_sum{sum_frames}" if detect_method == "sum" else ""
+    ev["sweep"].to_csv(f"{work}/threshold_sweep_{cnmf_tag()}{dsfx}{sfx}.csv", index=False)
     print(ev["sweep"].round(3).to_string(index=False))
 
 def main():

@@ -2,7 +2,7 @@
 into one table (per recording and averaged over recordings), incl. the stricter
 post-filter (filt2) and the correlation-image peaks without an accepted cell.
 
-  python collect_raw_pipeline_grid.py [work_root] [spike_thr] [rec1,rec2,...]
+  python collect_raw_pipeline_grid.py [work_root] [spike_thr, e.g. 1.5 or 2_sum3] [rec1,rec2,...]
 """
 import glob
 import json
@@ -23,6 +23,10 @@ for f in glob.glob(f"{work_root}/*_rec?/summary_p*_c*_pnr*_thr{thr}*.json"):
                      min_eta_margin=s.get("min_eta_margin") or 0.0,
                      eta_dropped=s.get("n_eta_r_dropped", s.get("n_eta_dropped", 0)),
                      margin_dropped=s.get("n_eta_margin_dropped", 0),
+                     size_rel=bool(s.get("size_rel", False)), lens_rim=s.get("lens_rim_band") or 0.0,
+                     detect=s.get("detect_method", "frame"),
+                     size_dropped=s.get("n_size_rel_dropped", 0),
+                     rim_dropped=s.get("n_lens_rim_dropped", 0),
                      corr_peaks_uncovered=s.get("n_corr_peaks_uncovered", float("nan")),
                      corr_peaks=s.get("n_corr_peaks", float("nan")),
                      n_old=s["n_old"], n_new=s["n_new"],
@@ -31,7 +35,8 @@ for f in glob.glob(f"{work_root}/*_rec?/summary_p*_c*_pnr*_thr{thr}*.json"):
                      new_unmatched=s["n_new_unmatched"],
                      recall=s["recall_mean"], loss_s=s["loss_median"],
                      rate_hz=s["rate_new_median_hz"], noise_fp=s["noise_fp_share"]))
-sel = ["min_corr", "min_pnr", "filt2", "min_snr", "min_eta", "min_eta_margin"]
+sel = ["min_corr", "min_pnr", "filt2", "min_snr", "min_eta", "min_eta_margin", "size_rel",
+       "lens_rim", "detect"]
 df = pd.DataFrame(rows).sort_values(["recording"] + sel)
 if len(sys.argv) > 3:                       # restrict to the given recordings (comma-separated)
     df = df[df.recording.isin(sys.argv[3].split(","))]
