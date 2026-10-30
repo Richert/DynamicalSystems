@@ -43,6 +43,10 @@ old_radius_px = 4.0          # circle radius for old cells (no footprints availa
 focus = "--focus" in sys.argv
 if focus:
     sys.argv.remove("--focus")
+# stricter post-filter of pipeline_raw_spikes.py (relative area + duplicates; names carry "_f2")
+if "--filt2" in sys.argv:
+    sys.argv.remove("--filt2")
+    P.filt2, P.out_suffix = True, "_f2"
 n_focus_pairs = 4            # pairs shown (lowest recall among old cells with many events)
 min_focus_events = 15        # old events required for a pair to be shown
 n_focus_events = 3           # missed old events shown per pair
@@ -106,8 +110,9 @@ def pick_frames(active_new, T):
     k = avg_frames
     score = np.convolve(score, np.ones(k) / k, mode="same")
     chosen = []
+    edge = int(2 * P.fs)                     # some movies end with blank (all-zero) frames
     for t in np.argsort(score)[::-1]:
-        if t < k or t > T - k:
+        if t < edge or t > T - edge:
             continue
         if all(abs(t - c) >= min_sep_s * P.fs for c in chosen):
             chosen.append(int(t))
@@ -225,7 +230,7 @@ def focus_figure(work, images, dims, A, C, Yraw, cents, E_old, C_old, old_px, pa
                  f"change (0-0.4 s after vs 1.25-0.25 s before each old event, / mean image); "
                  f"bold black = matched new cell, grey = other new cells, blue = old cells",
                  fontsize=10)
-    out = out_path(work, f"cell_focus_{P.cnmf_tag()}.png")
+    out = out_path(work, f"cell_focus_{P.cnmf_tag()}{P.out_suffix}.png")
     fig.savefig(out, dpi=120)
     plt.close(fig)
     print(f"saved {out}")
@@ -283,7 +288,7 @@ def main():
                     rval_matched_median=float(np.median(rval[list(matched_new)])),
                     rval_unmatched_median=float(np.median(rval[unm_new])) if unm_new else np.nan)
     print(json.dumps(diag, indent=1))
-    json.dump(diag, open(out_path(work, f"cell_overlay_diagnostics_{P.cnmf_tag()}.json"), "w"),
+    json.dump(diag, open(out_path(work, f"cell_overlay_diagnostics_{P.cnmf_tag()}{P.out_suffix}.json"), "w"),
               indent=1)
 
     # --- figure ------------------------------------------------------------
@@ -318,10 +323,10 @@ def main():
                Line2D([], [], c="#4da6ff", ls="-", label="old, matched"),
                Line2D([], [], c="#4da6ff", ls="--", label="old, unmatched")]
     fig.legend(handles=handles, loc="outside lower center", ncol=4, fontsize=9)
-    fig.suptitle(f"{P.raw_session} rec{P.recording} ({P.cnmf_tag()}): recently active cells "
+    fig.suptitle(f"{P.raw_session} rec{P.recording} ({P.cnmf_tag()}{P.out_suffix}): recently active cells "
                  f"(trace > {act_frac:g} x max) at high-activity times; images = dF/F "
                  f"(mean of {avg_frames} frames)", fontsize=11)
-    out = out_path(work, f"cell_overlay_{P.cnmf_tag()}.png")
+    out = out_path(work, f"cell_overlay_{P.cnmf_tag()}{P.out_suffix}.png")
     fig.savefig(out, dpi=120)
     plt.close(fig)
     print(f"saved {out}")

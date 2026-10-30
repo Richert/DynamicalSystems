@@ -64,10 +64,13 @@ refit_iters = 2
 def apply_cli(argv):
     """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]] [--joint]
     (only applied when run as a script, so other scripts can import this module)."""
-    global raw_session, recording, joint
+    global raw_session, recording, joint, filt2, out_suffix
     if "--joint" in argv:
         joint = True
         argv = [a for a in argv if a != "--joint"]
+    if "--filt2" in argv:
+        filt2, out_suffix = True, "_f2"
+        argv = [a for a in argv if a != "--filt2"]
     if len(argv) > 1:
         raw_session = argv[1]
         recording = int(argv[2]) if len(argv) > 2 else 0
@@ -112,6 +115,19 @@ quality = dict(min_SNR=3.0, rval_thr=0.85, use_cnn=False)
 # On 4 clozapine recordings matched (real) cells have area ~50 px (95%: <=112 px at
 # 3.3 um/px), elongation ~1.4, solidity ~0.96; these limits reject ~1% of them
 shape_filter = dict(max_area_px=200, max_elongation=3.5, min_solidity=0.75, single_part=True)
+# stricter post-filter (CLI flag --filt2, outputs carry "_f2"): the overlay figures showed
+# implausible large components (lens edge, bright background) and duplicates in dense
+# fields of view. Area relative to the recording's median cell area (cell size in pixels
+# differs between mice, median 41-72 px; a fixed 120 px cut removed 16% of m106's cells):
+# on 4 recordings, > 2 x median holds 3% of matched (real) and 16% of unmatched cells.
+# Duplicates: of two accepted cells whose cores (> 50% of max) overlap by more than
+# max_core_overlap (of the smaller core), the one with the lower SNR is dropped.
+# (A core-vs-ring contrast test on the correlation image separated matched and unmatched
+# cells too poorly to be used: a cut removing 29% of unmatched also removed 12% of matched.)
+filt2 = False
+post_filter = dict(max_area_rel=2.0, max_core_overlap=0.5)
+# extraction diagnostics added to the evaluation summary (set by accepted_components)
+extra_summary = {}
 
 def cnmf_tag():
     """Identifies a CNMF-E setting in cache/output names (AR order + seeding thresholds)."""
@@ -236,10 +252,12 @@ def footprint_shape(a, frac=0.3):
     p = max(regionprops(lab), key=lambda r: r.area)
     return p.area, p.major_axis_length / max(p.minor_axis_length, 1e-6), p.solidity, lab.max()
 
-def accepted_components(cnm, dims):
-    """Indices of components passing CaImAn's quality check AND the shape filter."""
+def accepted_components(cnm, dims, cn=None):
+    """Indices of components passing CaImAn's quality check AND the shape filter (and,
+    with filt2, the stricter post-filter). With the correlation image cn, also counts
+    its peaks (>= 0.6) not covered by any accepted cell (-> extra_summary)."""
     est = cnm.estimates
-    keep, rejected = [], []
+    keep, rejected, areas = [], [], {}
     for k in est.idx_components:
         a = est.A[:, k].toarray().reshape(dims, order="F")
         area, el, sol, parts = footprint_shape(a)
@@ -247,7 +265,38 @@ def accepted_components(cnm, dims):
                or sol < shape_filter["min_solidity"]
                or (shape_filter["single_part"] and parts > 1))
         (rejected if bad else keep).append(int(k))
+        areas[int(k)] = area
     print(f"shape filter: {len(keep)} of {len(est.idx_components)} accepted components kept")
+    if filt2 and keep:
+        lim = post_filter["max_area_rel"] * np.median([areas[k] for k in keep])
+        big = [k for k in keep if areas[k] > lim]
+        rejected += big
+        keep = [k for k in keep if areas[k] <= lim]
+        print(f"relative area filter (> {lim:.0f} px): {len(big)} dropped, {len(keep)} kept")
+    cores = {k: (lambda a: a > 0.5 * a.max())(est.A[:, k].toarray().ravel()) for k in keep}
+    if filt2 and keep:
+        snr = np.asarray(est.SNR_comp).ravel()
+        drop = set()
+        for i, k in enumerate(keep):
+            for l in keep[i + 1:]:
+                if k in drop or l in drop:
+                    continue
+                inter = np.sum(cores[k] & cores[l])
+                if inter > post_filter["max_core_overlap"] * min(cores[k].sum(), cores[l].sum()):
+                    drop.add(k if snr[k] < snr[l] else l)
+        rejected += sorted(drop)
+        keep = [k for k in keep if k not in drop]
+        print(f"duplicate filter: {len(drop)} overlapping components dropped, {len(keep)} kept")
+    if cn is not None:
+        from skimage.feature import peak_local_max
+        peaks = peak_local_max(cn, min_distance=4, threshold_abs=0.6, exclude_border=4)
+        cover = np.zeros(dims, bool)
+        for k in keep:
+            a = est.A[:, k].toarray().reshape(dims, order="F")
+            cover |= a > 0.3 * a.max()
+        unc = sum(not cover[y, x] for y, x in peaks)
+        extra_summary.update(n_corr_peaks=len(peaks), n_corr_peaks_uncovered=int(unc))
+        print(f"correlation-image peaks >= 0.6: {len(peaks)}, {unc} without an accepted cell")
     return np.array(keep, dtype=int), rejected
 
 def refit_segment(cnm, fname, seg, dims, work, name):
@@ -294,7 +343,7 @@ def refit_segment(cnm, fname, seg, dims, work, name):
     np.savez_compressed(out, C=C, Yraw=Yraw, g=g)
     return C, Yraw, g
 
-def deconvolve_all(cnm, dims, segments=None, refit=None):
+def deconvolve_all(cnm, dims, segments=None, refit=None, cn=None):
     """Accepted components: denoised traces C, OASIS deconvolution S of the raw trace
     (C + residual YrA) and S_noise of a noise-only surrogate (the sign-flipped
     residual: realistic noise, no calcium transients), both with the neuron's own
@@ -308,7 +357,7 @@ def deconvolve_all(cnm, dims, segments=None, refit=None):
     import caiman as cm
     from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi, GetSn
     est = cnm.estimates
-    idx, _ = accepted_components(cnm, dims)
+    idx, _ = accepted_components(cnm, dims, cn)
     C, YrA = est.C[idx].copy(), est.YrA[idx].copy()
     segs = segments or [slice(0, C.shape[1])]
     gs = [np.asarray(est.g)[idx]] * len(segs)
@@ -713,6 +762,7 @@ def save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, old_file, c
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)
         df.insert(3, "component", idx[df.new.values] if len(df) else [])   # CNMF-E component id
         df.to_csv(f"{work}/matched_neurons_{tag}{sfx}.csv", index=False)
+        summary.update(extra_summary, filt2=filt2)
         json.dump(summary, open(f"{work}/summary_{tag}{sfx}.json", "w"), indent=1)
         np.save(f"{work}/spikes_{tag}{sfx}.npy", ev["spk"])
         print(f"\n[{tag}{sfx}] summary:", summary)
@@ -741,7 +791,7 @@ def main():
     finally:
         cm.stop_server(dview=dview)
     if not joint:
-        C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims)
+        C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, cn=cn)
         save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, *paths[0][1:3])
         return
     # joint: one set of cells; spikes inferred and evaluated per recording segment
@@ -750,7 +800,7 @@ def main():
     print(f"joint extraction: segments {[(s.start, s.stop) for s in segs]}")
     refit = ([refit_segment(cnm, fname, seg, dims, work, f"rec{r}") for r, seg in zip(recs, segs)]
              if joint_refit else None)
-    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, segments=segs, refit=refit)
+    C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, segments=segs, refit=refit, cn=cn)
     for i, (r, seg) in enumerate(zip(recs, segs)):
         recording, out_suffix = r, f"_rec{r}" + ("_refit" if joint_refit else "")
         save_and_evaluate(work, cn, cents, idx, C[:, seg], Yraw[:, seg], S[:, seg],
