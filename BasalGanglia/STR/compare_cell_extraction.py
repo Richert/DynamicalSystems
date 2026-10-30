@@ -44,7 +44,8 @@ focus = "--focus" in sys.argv
 if focus:
     sys.argv.remove("--focus")
 # component selection as in pipeline_raw_spikes.py: --filt2 (relative area + duplicates),
-# --min_snr X (looser quality check), --min_eta R (event-triggered footprint consistency);
+# --min_snr X (looser quality check), --min_eta R / --min_eta_margin M (event-triggered
+# footprint consistency, absolute / relative to shifted footprints);
 # names carry the same suffixes
 sys.argv = P.selection_cli(sys.argv)
 n_focus_pairs = 4            # pairs shown (lowest recall among old cells with many events)
@@ -83,8 +84,8 @@ def load():
     images = Yr.T.reshape((T,) + dims, order="F")
     cnm = cnmf.load_CNMF(f"{work}/cnmfe_{P.cnmf_tag()}.hdf5")
     est = cnm.estimates
-    if P.min_snr is not None or P.min_eta is not None:
-        P.eta_r = P.compute_eta(cnm, fname, work, dims)    # cached by the pipeline run
+    if P.eta_needed():
+        P.eta = P.compute_eta(cnm, fname, work, dims)      # cached by the pipeline run
     idx, _ = P.accepted_components(cnm, dims)       # quality check + shape filter
     A = est.A[:, idx].tocsc()
     C = est.C[idx]
