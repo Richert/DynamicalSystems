@@ -37,6 +37,8 @@ pose_arhmm_kappa_K_sweep.png), the fitted models and per kappa a figure with, pe
 candidate K, the state feature profiles, dwell times and occupancy per drug condition.
 
   /home/rgast/conda/envs/arhmm/bin/python analysis_pose_arhmm.py
+  /home/rgast/conda/envs/arhmm/bin/python analysis_pose_arhmm.py export   (selected model ->
+      per-session state sequences, see export_states)
 Paths / processes can be set via POSE_ROOT, OFFSETS_CSV, OUT_DIR and N_PROCESSES (server).
 """
 
@@ -88,6 +90,23 @@ heldout_frac = 0.2
 n_jobs = int(os.environ.get("N_PROCESSES", 8))
 seed = 1
 show_K = [8, 10, 12]       # candidate K values summarised in the figures (one per kappa)
+
+# selected model (v5): K = 10 / kappa = 6e6; K = 8 merged fast turning with the rearing /
+# artefact state, K = 12 only added near-empty or ~0.2 s states (held-out gain within the
+# restart noise). States are numbered by mean speed (as in the figures).
+# Turning states are not direction-specific per bout despite their mean turn: turn_fast
+# (mean -18 deg/s) has CW and CCW bouts (net turn > 20 deg: 39% CW / 33% CCW under
+# amphetamine), reorient (mean +17 deg/s, 0.2 s bouts) turns < 20 deg net in ~90% of bouts
+# (brief head-led jerks, 58% followed by turn_fast). Direction has to come from the signed
+# turn within the bout.
+final_K = 10
+final_kappa = 6e6
+state_names = ["rest", "quiet", "shift", "slow_walk", "reorient", "walk", "rear_artifact",
+               "turn_fast", "run", "run_fast"]
+# excluded from the behavioural analyses: rearing / tracking artefact (5-7% interpolated
+# keypoints); the rare reorient state (~0.6% of frames) is kept in the labels, its use
+# (drop or merge with turn_fast) is decided on the neural response profiles
+excluded_states = ["rear_artifact"]
 
 # ---------------------------------------------------------------------------
 # features
@@ -363,6 +382,42 @@ def summarise(sessions, models, mu, sd, sweep, kap):
     print(f"saved {out}")
     return dwell_stats
 
+# ---------------------------------------------------------------------------
+# export of the selected model
+# ---------------------------------------------------------------------------
+
+def export_states():
+    """Viterbi states of the selected model (final_K, final_kappa) for every session, from
+    the stored features and models_K_sweep.pkl in out_dir: states_<session>.csv.gz (20 Hz,
+    imaging period, numbered by mean speed as in the figures) and pose_states.csv (state
+    names, exclusion flag, feature means)."""
+    m = pickle.load(open(f"{out_dir}/models_K_sweep.pkl", "rb"))
+    hmm, mu, sd = m["models"][(final_K, final_kappa)], m["mu"], m["sd"]
+    k = int(fs / fs_fit)
+    sessions = []
+    for f in sorted(glob.glob(f"{out_dir}/features_*.csv.gz")):
+        feat = pd.read_csv(f)
+        z = np.repeat(label(hmm, dict(feat=feat), mu, sd), k)
+        sessions.append((os.path.basename(f)[9:-7], feat.iloc[:len(z)], z))
+    allf = pd.concat([f for _, f, _ in sessions])
+    allz = np.concatenate([z for _, _, z in sessions])
+    prof = allf.groupby(allz).mean(numeric_only=True)
+    order = prof.speed.sort_values().index.tolist()
+    remap = np.argsort(order)                                  # fitted state -> speed rank
+    for name, feat, z in sessions:
+        pd.DataFrame(dict(frame=np.arange(len(z)), state=remap[z])).to_csv(
+            f"{out_dir}/states_{name}.csv.gz", index=False)
+    prof = prof.loc[order].reset_index(drop=True)
+    prof.insert(0, "occupancy", np.bincount(remap[allz], minlength=final_K) / len(allz))
+    prof.insert(0, "excluded", [n in excluded_states for n in state_names])
+    prof.insert(0, "name", state_names)
+    prof.index.name = "state"
+    prof.to_csv(f"{out_dir}/pose_states.csv")
+    print(prof[["name", "excluded", "occupancy", "speed", "turn", "head_speed",
+                "abs_head_turn"]].round(3).to_string())
+    print(f"saved {len(sessions)} state sequences and {out_dir}/pose_states.csv")
+
 
 if __name__ == "__main__":
-    main()
+    import sys
+    export_states() if sys.argv[1:] == ["export"] else main()
