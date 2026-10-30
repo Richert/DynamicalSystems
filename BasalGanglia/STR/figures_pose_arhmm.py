@@ -26,13 +26,13 @@ import analysis_pose_arhmm as A
 video_root = os.environ.get("VIDEO_ROOT", "/mnt/kennedy_labdata/Parkerlab/sample_videos")
 fig_dir = f"{A.out_dir}/figures"
 example = "20191205_m085_clo01_amph"      # example session (amphetamine, video available)
-window_s = 60                              # example time series
+window_s = 120                             # example time series (fig. 1; fig. 2: first 60 s)
 seed = 1
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap, to_rgb
 from matplotlib.patches import Patch, Rectangle, FancyArrowPatch
 
 # ---------------------------------------------------------------------------
@@ -50,8 +50,8 @@ plt.rcParams.update({
     "ytick.major.size": 2.5, "figure.facecolor": "white", "savefig.facecolor": "white",
     "svg.fonttype": "none"})
 
-# states: hue = behaviour family (blue immobile, orange locomotion, violet turning, grey
-# excluded), lightness = order within the family; names are shown wherever colour is used
+# states: hue = behaviour family (blue immobile, orange locomotion, violet turning, aqua
+# excluded rear / artefact), lightness = order within the family; names are shown wherever colour is used
 STATE_LABELS = {"rest": "rest", "quiet": "quiet", "shift": "shift in place",
                 "slow_walk": "slow walk", "reorient": "reorient", "walk": "walk",
                 "rear_artifact": "rear / artefact", "turn_fast": "fast turn", "run": "run",
@@ -59,7 +59,8 @@ STATE_LABELS = {"rest": "rest", "quiet": "quiet", "shift": "shift in place",
 STATE_COLORS = {"rest": "#0d366b", "quiet": "#2a78d6", "shift": "#86b6ef",
                 "slow_walk": "#f3a77f", "walk": "#eb6834", "run": "#b84a1c",
                 "run_fast": "#6e2a0e", "reorient": "#a99ef0", "turn_fast": "#5140c4",
-                "rear_artifact": "#b5b3ac"}
+                "rear_artifact": "#1baf7a"}
+START_GREY = "#d3d1cb"                     # bout start in fig 3
 # feature annotation colours (fig 1), shared between the frames and the time series
 FC = dict(torso="#2a78d6", head="#eb6834", bend="#6250d6", length="#c98500", ears="#1baf7a",
           hips="#e87ba4", wall="#008300")
@@ -188,11 +189,16 @@ def skeleton(ax, p, ix, color="white", lw=1.0, ms=9, alpha=1.0, edge=INK, z=3):
     ax.scatter(p[:, 0], p[:, 1], s=ms, color=color, edgecolor=edge, lw=0.5, alpha=alpha,
                zorder=z + 1)
 
-def arc(ax, c, v0, v1, r, color, lw=1.2):
+def arc(ax, c, v0, v1, r, color, lw=1.2, fill=False):
+    """Arc of radius r around c from direction v0 to v1 (optionally a filled wedge);
+    returns a point just outside its middle."""
     a0 = np.arctan2(v0[1], v0[0])
     d = np.arctan2(v0[0] * v1[1] - v0[1] * v1[0], v0 @ v1)
     t = np.linspace(a0, a0 + d, 30)
     ax.plot(c[0] + r * np.cos(t), c[1] + r * np.sin(t), color=color, lw=lw, zorder=5)
+    if fill:
+        ax.fill(np.r_[c[0], c[0] + r * np.cos(t)], np.r_[c[1], c[1] + r * np.sin(t)],
+                color=color, alpha=0.35, lw=0, zorder=5)
     return c + r * 1.35 * np.array([np.cos(a0 + d / 2), np.sin(a0 + d / 2)])
 
 def arrow(ax, p0, p1, color, lw=1.2, ms=7, z=5):
@@ -226,7 +232,7 @@ def callouts(ax, centre, items, dist, min_sep=np.radians(38)):
     for (anchor, text, color), t in zip(items, ang):
         pos = centre + dist * np.array([np.cos(t), np.sin(t)])
         ha = "left" if np.cos(t) > 0.3 else "right" if np.cos(t) < -0.3 else "center"
-        lo, hi = {"left": (x0, x1 - 0.32 * w), "right": (x0 + 0.32 * w, x1),
+        lo, hi = {"left": (x0, x1 - 0.45 * w), "right": (x0 + 0.45 * w, x1),
                   "center": (x0 + 0.16 * w, x1 - 0.16 * w)}[ha]
         pos = np.array([np.clip(pos[0], lo, hi), np.clip(pos[1], y0 + 0.05 * w, y1 - 0.05 * w)])
         ax.plot(*np.c_[anchor, pos], color=color, lw=0.5, zorder=6)
@@ -251,28 +257,39 @@ def fig_features(states, sessions):
     px = kp / scale                                                # pixels
     t0, t1 = example_window(s, states)
     clean = feat.interp_share.rolling(11, center=True).max().values == 0
-    # posture frame: still, clearly turned head and bent body, but plausible keypoints
-    # (lengths / widths near the session median), away from the wall; movement frame:
-    # moderate-speed fast turn, several seconds apart
+    # example frames: still with plausible keypoints (lengths / widths near the session
+    # median), mouse well inside the image and away from the wall; (b) clearly bent body,
+    # (c) clearly turned head (another frame), (d) moderate-speed fast turn
     win = np.zeros(len(feat), bool)
     win[t0 + 20:t1 - 20] = True
     tors_px = px[:, [ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(1)
     win &= (tors_px.min(1) > 90) & (tors_px[:, 0] < 640 - 90) & (tors_px[:, 1] < 480 - 90)
-    normal = feat.body_len.between(0.95, 1.08) & feat.ear_width.between(0.93, 1.07) & \
+    normal = feat.body_len.between(0.95, 1.08) & feat.ear_width.between(0.95, 1.05) & \
         feat.hip_width.between(0.93, 1.07)
-    still = win & clean & normal & (feat.speed < 0.5) & (feat.wall_dist > 4) & \
-        feat.head_angle.abs().between(20, 45) & feat.bend.abs().between(8, 30)
+    still = win & clean & normal & (feat.speed < 0.5) & (feat.wall_dist > 4)
     if not still.any():
         still = win & clean & normal & (feat.speed < 0.5)
-    tb = int((feat.head_angle.abs() + feat.bend.abs()).where(still).idxmax())
+    tb = int(feat.bend.abs().where(still & feat.bend.abs().between(10, 35)
+                                   & (feat.head_angle.abs() < 20)).idxmax())
+    far = np.abs(np.arange(len(feat)) - tb) > 3 * A.fs
+    tc = int(feat.head_angle.abs().where(still & far & feat.head_angle.abs().between(25, 55))
+             .idxmax())
     moving = win & clean & np.isin(s["z"], [states.index[states.name == "turn_fast"][0]]) & \
-        feat.speed.between(6, 14) & (np.abs(np.arange(len(feat)) - tb) > 5 * A.fs)
-    tc = int(feat.turn.abs().where(moving).idxmax())
+        feat.speed.between(6, 14) & far & (np.abs(np.arange(len(feat)) - tc) > 3 * A.fs)
+    td = int(feat.turn.abs().where(moving).idxmax())
+    torso_of = lambda q: q[[ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(0)
 
-    fig = plt.figure(figsize=(7.2, 8.4))
-    gs = fig.add_gridspec(2, 1, height_ratios=[0.62, 1.6], hspace=0.14)
-    top = gs[0].subgridspec(1, 3, wspace=0.16, width_ratios=[1.33, 1, 1])
-    bot = gs[1].subgridspec(1, 2, wspace=0.5, width_ratios=[1.5, 1])
+    fig = plt.figure(figsize=(9.6, 8.4))
+    gs = fig.add_gridspec(2, 1, height_ratios=[0.55, 1.6], hspace=0.14)
+    top = gs[0].subgridspec(1, 4, wspace=0.14, width_ratios=[1.33, 1, 1, 1])
+    bot = gs[1].subgridspec(1, 2, wspace=0.32, width_ratios=[2.1, 1])
+
+    def zoom(ax, q, z=80):
+        H, W = 480, 640
+        cz = np.clip(q, z, [W - z, H - z])
+        ax.set_xlim(cz[0] - z, cz[0] + z)
+        ax.set_ylim(cz[1] + z, cz[1] - z)
+        return cz
 
     # (a) full frame: arena, wall distance
     ax = fig.add_subplot(top[0])
@@ -283,69 +300,96 @@ def fig_features(states, sessions):
     c = centre / scale
     th = np.linspace(0, 2 * np.pi, 200)
     ax.plot(c[0] + R * np.cos(th), c[1] + R * np.sin(th), color=MUTED, lw=0.8, ls=(0, (3, 2)))
-    torso = p[[ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(0)
+    torso = torso_of(p)
     u = (torso - c) / np.linalg.norm(torso - c)
-    ax.plot(*np.c_[torso, c + R * u], color=FC["wall"], lw=1.4, zorder=5)
+    wall = c + R * u
+    ax.plot(*np.c_[torso, wall], color=FC["wall"], lw=1.4, zorder=5)
     skeleton(ax, p, ix, ms=5, lw=0.7)
     H, W = img.shape
     ax.set_xlim(-0.5, W - 0.5)
     ax.set_ylim(H - 0.5, -0.5)
-    zb = 85
+    zb = 80
     zcen = np.clip(torso, zb, [W - zb, H - zb])                    # zoom box inside the frame
     ax.add_patch(Rectangle(zcen - zb, 2 * zb, 2 * zb, fill=False, ec=INK, lw=0.6, ls="--"))
-    wm = (torso + c + R * u) / 2
-    tag_in(ax, wm + [10, 0], "wall distance", FC["wall"])
+    # wall-distance label beside the line, on the side away from the keypoints
+    perp = np.array([-u[1], u[0]])
+    wm = (torso + wall) / 2
+    if ((p - wm) @ perp).mean() > 0:
+        perp = -perp
+    pos = wall + 0.6 * zb * perp
+    ax.plot(*np.c_[wm, pos], color=FC["wall"], lw=0.5, zorder=6)
+    tag_in(ax, pos, "wall distance", FC["wall"], ha="left" if perp[0] > 0 else "right")
     tag_in(ax, c + [0, 0.85 * R], "arena (keypoint extent)", INK2, ha="center", margin=0.2)
     ax.set_title("top-view frame with MARS keypoints", loc="left")
     panel(ax, "a", fx=0.01, y=1.02)
 
-    # (b) posture features
+    # (b) body posture: body axis, body length, bend, hip width
     ax = fig.add_subplot(top[1])
     show_frame(ax, img)
     nose, neck, tail = p[ix["nose"]], p[ix["neck"]], p[ix["tail_base"]]
     hips = (p[ix["hip1"]] + p[ix["hip2"]]) / 2
-    skeleton(ax, p, ix, ms=12)
-    ax.set_xlim(zcen[0] - zb, zcen[0] + zb)
-    ax.set_ylim(zcen[1] + zb, zcen[1] - zb)
+    skeleton(ax, p, ix, ms=10, lw=0.8)
+    zoom(ax, torso, zb)
     body = neck - tail
-    ax.plot(*np.c_[tail, neck + 0.45 * body], color=FC["torso"], lw=0.8, ls=(0, (2, 1.5)), zorder=4)
-    arrow(ax, tail, neck, FC["torso"])
-    arrow(ax, neck, nose, FC["head"])
-    a_head = arc(ax, neck, body, nose - neck, 17, FC["head"])
-    a_bend = arc(ax, hips, hips - tail, neck - hips, 13, FC["bend"])
-    ax.plot(*np.c_[p[ix["ear1"]], p[ix["ear2"]]], color=FC["ears"], lw=1.6, zorder=5)
+    arrow(ax, tail, neck, FC["torso"], lw=1.0)
+    # bend: angle at the hip midpoint between the tail -> hips segment (extended, dashed)
+    # and the hips -> neck segment
+    seg1 = hips - tail
+    ax.plot(*np.c_[tail, hips], color=FC["bend"], lw=2.0, zorder=6, solid_capstyle="round")
+    ax.plot(*np.c_[hips, neck], color=FC["bend"], lw=2.0, zorder=6, solid_capstyle="round")
+    ax.plot(*np.c_[hips, hips + 1.1 * seg1 / np.linalg.norm(seg1) * np.linalg.norm(neck - hips)],
+            color=FC["bend"], lw=0.9, ls=(0, (2, 1.5)), zorder=6)
+    ax.scatter(*hips, s=14, color=FC["bend"], edgecolor="white", lw=0.6, zorder=7)
+    a_bend = arc(ax, hips, seg1, neck - hips, 38, FC["bend"], lw=1.2, fill=True)
     ax.plot(*np.c_[p[ix["hip1"]], p[ix["hip2"]]], color=FC["hips"], lw=1.6, zorder=5)
     n = np.array([-body[1], body[0]]) / np.linalg.norm(body)       # body normal
-    side = 1 if (nose - neck) @ n < 0 else -1                      # opposite to the head
-    o = side * 22 * n
+    side = 1 if (neck - hips) @ n < 0 else -1                      # opposite to the bend
+    o = side * 24 * n
     ax.plot(*np.c_[tail + o, nose + o], color=FC["length"], lw=1.0, zorder=5)
     for q in (tail, nose):
         ax.plot(*np.c_[q + o * 0.75, q + o * 1.25], color=FC["length"], lw=1.0, zorder=5)
     mid = (tail + nose) / 2
     callouts(ax, mid, [
         (mid + o, "body length", FC["length"]),
-        (a_head, "head angle", FC["head"]),
-        (a_bend, "bend", FC["bend"]),
-        ((p[ix["ear1"]] + p[ix["ear2"]]) / 2, "ear width", FC["ears"]),
-        ((p[ix["hip1"]] + p[ix["hip2"]]) / 2, "hip width", FC["hips"]),
-        (tail + 0.25 * body, "body axis", FC["torso"])], dist=0.62 * zb)
-    ax.set_title("posture", loc="left")
+        (a_bend, f"bend ({feat.bend[tb]:+.0f}°)".replace("-", "−"), FC["bend"]),
+        (p[ix["hip1"]] * 0.35 + p[ix["hip2"]] * 0.65, "hip width", FC["hips"]),
+        (tail + 0.35 * body, "body axis", FC["torso"])], dist=0.68 * zb,
+        min_sep=np.radians(55))
+    ax.set_title("body posture", loc="left")
     panel(ax, "b", x=-0.1, y=1.02)
 
-    # (c) movement features: torso / nose paths, torso velocity, heading change
+    # (c) head posture: head angle, ear width (another still frame)
     ax = fig.add_subplot(top[2])
-    img = video_frame(example, off + tc)
+    show_frame(ax, video_frame(example, off + tc))
+    q = px[tc]
+    nose, neck, tail = q[ix["nose"]], q[ix["neck"]], q[ix["tail_base"]]
+    skeleton(ax, q, ix, ms=10, lw=0.8)
+    cz = zoom(ax, (torso_of(q) + nose) / 2, 70)
+    body = neck - tail
+    ax.plot(*np.c_[tail, neck], color=FC["torso"], lw=1.0, zorder=5)
+    ax.plot(*np.c_[neck, neck + 0.5 * body], color=FC["torso"], lw=0.9, ls=(0, (2, 1.5)),
+            zorder=5)
+    arrow(ax, neck, nose, FC["head"], lw=1.6)
+    a_head = arc(ax, neck, body, nose - neck, 24, FC["head"], lw=1.2, fill=True)
+    ax.plot(*np.c_[q[ix["ear1"]], q[ix["ear2"]]], color=FC["ears"], lw=2.0, zorder=6)
+    callouts(ax, neck, [
+        (a_head, f"head angle ({feat.head_angle[tc]:+.0f}°)".replace("-", "−"), FC["head"]),
+        ((q[ix["ear1"]] + q[ix["ear2"]]) / 2, "ear width", FC["ears"]),
+        (tail * 0.4 + neck * 0.6, "body axis", FC["torso"])], dist=0.75 * 70,
+        min_sep=np.radians(60))
+    ax.set_title("head posture", loc="left")
+    panel(ax, "c", x=-0.1, y=1.02)
+
+    # (d) movement features: torso / nose paths, torso velocity, heading change
+    ax = fig.add_subplot(top[3])
+    img = video_frame(example, off + td)
     show_frame(ax, img)
     lag = int(0.4 * A.fs)
-    seg = px[tc - lag:tc + 1]
-    zc = 80
-    c2 = np.clip((seg.reshape(-1, 2).min(0) + seg.reshape(-1, 2).max(0)) / 2, zc,
-                 [W - zc, H - zc])
-    ax.set_xlim(c2[0] - zc, c2[0] + zc)
-    ax.set_ylim(c2[1] + zc, c2[1] - zc)
+    seg = px[td - lag:td + 1]
+    zoom(ax, (seg.reshape(-1, 2).min(0) + seg.reshape(-1, 2).max(0)) / 2, zb)
     tors = seg[:, [ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(1)
     skeleton(ax, seg[0], ix, color="white", ms=6, lw=0.6, alpha=0.6)
-    skeleton(ax, seg[-1], ix, ms=12)
+    skeleton(ax, seg[-1], ix, ms=10, lw=0.8)
     ax.plot(tors[:, 0], tors[:, 1], color=FC["torso"], lw=1.4, zorder=6)
     ax.plot(seg[:, ix["nose"], 0], seg[:, ix["nose"], 1], color=FC["head"], lw=1.4, zorder=6)
     b0 = seg[0, ix["neck"]] - seg[0, ix["tail_base"]]
@@ -359,9 +403,9 @@ def fig_features(states, sessions):
     tag_in(ax, nz + 22 * (nz - tors[-1]) / np.linalg.norm(nz - tors[-1]), "head speed / turn",
            FC["head"], ha="center", margin=0.3)
     ax.set_title(f"movement (last {lag / A.fs:.1f} s)", loc="left")
-    panel(ax, "c", x=-0.1, y=1.02)
+    panel(ax, "d", x=-0.1, y=1.02)
 
-    # (d) feature time series
+    # (e) feature time series
     rows = [("speed", "speed\ncm/s", FC["torso"]), ("turn", "turn\n°/s", FC["torso"]),
             ("head_angle", "head\nangle °", FC["head"]),
             ("head_speed", "head speed\ncm/s", FC["head"]),
@@ -379,7 +423,7 @@ def fig_features(states, sessions):
         if col in ("turn", "head_angle", "head_turn", "bend"):
             ax.axhline(0, color=GRID, lw=0.6)
         ax.plot(t, y, color=color, lw=0.7)
-        for tt, l in ((tb, "b"), (tc, "c")):
+        for tt, l in ((tb, "a, b"), (tc, "c"), (td, "d")):
             if t0 <= tt < t1:
                 ax.axvline((tt - t0) / A.fs, color=MUTED, lw=0.5, ls=(0, (2, 2)))
                 if r == 0:
@@ -395,9 +439,9 @@ def fig_features(states, sessions):
             ax.set_xlabel("time (s)")
         if r == 0:
             ax.set_title(f"feature time series (example session, amphetamine)", loc="left", pad=10)
-            panel(ax, "d", fx=0.01, y=1.3)
+            panel(ax, "e", fx=0.01, y=1.3)
 
-    # (e, f) correlation matrices of the HMM input features: example session and the mean
+    # (f, g) correlation matrices of the HMM input features: example session and the mean
     # over all sessions
     right = bot[1].subgridspec(2, 1, hspace=0.55)
     labels = [FEAT_LABELS[f] for f in A.features]
@@ -421,14 +465,14 @@ def fig_features(states, sessions):
         for sp in ax.spines.values():
             sp.set_visible(False)
         ax.set_title(title, loc="left")
-        panel(ax, "ef"[r], fx=0.56, y=1.02)
+        panel(ax, "fg"[r], fx=0.645, y=1.02)
         if r == 0:
             sm = plt.cm.ScalarMappable(cmap=DIVERGING, norm=plt.Normalize(-1, 1))
             cb = fig.colorbar(sm, cax=ax.inset_axes([1.05, 0.2, 0.05, 0.6]), ticks=[-1, 0, 1])
             cb.outline.set_visible(False)
             cb.ax.tick_params(labelsize=6)
             cb.set_label("Pearson r", color=INK2)
-    fig.subplots_adjust(left=0.11, right=0.92, top=0.96, bottom=0.09)
+    fig.subplots_adjust(left=0.08, right=0.94, top=0.96, bottom=0.09)
     save(fig, "fig_pose_features")
 
 # ---------------------------------------------------------------------------
@@ -479,7 +523,7 @@ def heat(ax, M, labels_y, labels_x, cmap, vmin, vmax, fmt, thr, mask_diag=False)
 def state_ticklabels(ax, names, axis="y"):
     labs = ax.get_yticklabels() if axis == "y" else ax.get_xticklabels()
     for l, n in zip(labs, names):
-        l.set_color(STATE_COLORS[n] if n != "rear_artifact" else MUTED)
+        l.set_color(STATE_COLORS[n])
         l.set_fontweight("bold")
 
 def fig_hmm(states, sessions, b):
@@ -575,22 +619,23 @@ def fig_hmm(states, sessions, b):
 
     # (f) example: speed + state sequence
     s = next(x for x in sessions if x["session"] == example)
-    t0, t1 = example_window(s, states)
+    t0, _ = example_window(s, states)
+    t1 = t0 + int(60 * A.fs)
     sub = gs[2].subgridspec(2, 1, height_ratios=[1, 0.22], hspace=0.08)
     t = np.arange(t1 - t0) / A.fs
     ax = fig.add_subplot(sub[0])
     ax.plot(t, s["feat"].speed.values[t0:t1], color=INK2, lw=0.7)
-    ax.set_xlim(0, window_s)
+    ax.set_xlim(0, 60)
     ax.set_ylabel("speed (cm/s)")
     ax.tick_params(axis="x", labelbottom=False, length=0)
     ax.spines["bottom"].set_visible(False)
-    ax.set_title("example: torso speed and state sequence (same session and window as "
-                 "fig. 1d)", loc="left")
+    ax.set_title("example: torso speed and state sequence (same session as fig. 1e, first "
+                 "60 s of its window)", loc="left")
     panel(ax, "f", fx=0.01, y=1.08)
     ax2 = fig.add_subplot(sub[1], sharex=ax)
     cmap = ListedColormap([STATE_COLORS[n] for n in names])
     ax2.imshow(s["z"][t0:t1][None], cmap=cmap, vmin=-0.5, vmax=K - 0.5, aspect="auto",
-               extent=(0, window_s, 0, 1), interpolation="nearest")
+               extent=(0, 60, 0, 1), interpolation="nearest")
     ax2.set_yticks([])
     ax2.set_xlabel("time (s)")
     for sp in ("left",):
@@ -646,14 +691,14 @@ def fig_states(states, sessions, b):
         kp, _, _, _, ix = cache[sess]
         seq = egocentric(kp[int(bt.start):int(bt.end) + 1], ix)   # incl. the first frame after
         col = STATE_COLORS[names[k]]
-        for g in seq[1:-1:max(1, len(seq) // 4)]:                 # intermediate poses
-            skeleton(ax, g, ix, color=col, lw=0.5, ms=0, alpha=0.18, edge="none", z=2)
-        skeleton(ax, seq[0], ix, color="#c3c2b7", lw=1.0, ms=10, edge="white", z=3)
-        skeleton(ax, seq[-1], ix, color=col, lw=1.2, ms=12, edge="white", z=5)
-        for j in range(7):
-            dp = seq[-1, j] - seq[0, j]
-            if np.linalg.norm(dp) > 0.25:
-                arrow(ax, seq[0, j], seq[-1, j], INK, lw=0.6, ms=5, z=6)
+        # poses over the bout, coloured from light grey (start) to the state colour (end)
+        idx = np.unique(np.linspace(0, len(seq) - 1, min(len(seq), 6)).round().astype(int))
+        c0, c1 = np.array(to_rgb(START_GREY)), np.array(to_rgb(col))
+        for i, t in enumerate(idx):
+            w = i / (len(idx) - 1)
+            last = i == len(idx) - 1
+            skeleton(ax, seq[t], ix, color=(1 - w) * c0 + w * c1, lw=1.3 if last else 0.9,
+                     ms=12 if last else 5, edge="white", z=3 + i)
         for kpn in ("nose", "tail_base"):
             ax.plot(seq[:, ix[kpn], 0], seq[:, ix[kpn], 1], color=INK2, lw=0.5, ls=(0, (1.5, 1)),
                     zorder=4)
@@ -663,7 +708,7 @@ def fig_states(states, sessions, b):
         nose = np.linalg.norm(np.diff(seq[:, ix["nose"]], axis=0), axis=1).sum()
         net = f.turn.sum() / A.fs
         ax.set_title(STATE_LABELS[names[k]] + (" (excl.)" if states.excluded[k] else ""),
-                     color=col if names[k] != "rear_artifact" else MUTED, fontweight="bold",
+                     color=col, fontweight="bold",
                      loc="left")
         ax.text(0.02, 0.0, f"{bt.dur:.2f} s · torso {disp:.1f} cm\nnose {nose:.1f} cm · "
                 f"turn {net:+.0f}°".replace("-", "−"),
@@ -675,17 +720,13 @@ def fig_states(states, sessions, b):
     ax = axes.flat[0]
     ax.plot([-5, -4], [8.8, 8.8], color=INK, lw=1)
     ax.text(-4.5, 9.0, "1 cm", ha="center", va="bottom", fontsize=5.8, color=INK)
-    fig.legend(handles=[plt.Line2D([], [], color="#c3c2b7", marker="o", lw=1, ms=4, mec="white",
-                                   label="start pose"),
-                        plt.Line2D([], [], color=INK2, marker="o", lw=1.2, ms=4, mec="white",
-                                   label="end pose (state colour)"),
-                        plt.Line2D([], [], color=INK2, lw=0.6, alpha=0.4,
-                                   label="intermediate poses"),
-                        plt.Line2D([], [], color=INK, lw=0.6, marker=">", ms=3,
-                                   label="keypoint displacement"),
+    fig.legend(handles=[plt.Line2D([], [], color=START_GREY, marker="o", lw=0.9, ms=3,
+                                   mec="white", label="bout start (light grey)"),
+                        plt.Line2D([], [], color=INK2, marker="o", lw=1.3, ms=4.5, mec="white",
+                                   label="→ bout end (state colour), poses at equal time steps"),
                         plt.Line2D([], [], color=INK2, lw=0.5, ls=(0, (1.5, 1)),
                                    label="nose / tail-base path")],
-               loc="lower center", ncol=5, frameon=False, handlelength=2)
+               loc="lower center", ncol=3, frameon=False, handlelength=2)
     fig.suptitle("Typical bout per state (egocentric: start body axis pointing up; one bout "
                  "each, not averaged)", x=0.02, ha="left", fontsize=8, color=INK)
     fig.subplots_adjust(left=0.01, right=0.99, top=0.88, bottom=0.08, wspace=0.05, hspace=0.25)
