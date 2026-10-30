@@ -70,20 +70,24 @@ cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine"
 # AR-HMM
 fs_fit = 20.0                      # fit at the full video rate (no downsampling)
 fit_cap_s = 900                    # at most 15 min per session in the fit
-K_grid = [5, 6, 8]                 # K = 4 merged the turning / fast states (v3)
+# K = 4 merged the turning / fast states (v3); K = 5/6 merged the rare rearing-like state
+# with clockwise turning (v4)
+K_grid = [8, 10, 12]
 ar_lags = 4                        # 200 ms of context at 20 Hz
 # stickiness: at kappa = 100 states switched every 50-300 ms (median dwell) at 20 Hz with
 # 9 features; swept to reach realistic behavioural dwell times (~0.3-1 s). In ssm, kappa
 # is a pseudo-count added to the diagonal of the expected transition counts (~1.1 M
 # training frames, ~0.3 M state switches), so kappa = 1e3-1e5 hardly changed the median
-# dwell (0.15 -> 0.2 s, v3); it has to be of the order of the per-state counts
-kappa_grid = [3e5, 1e6, 3e6]
+# dwell (0.15 -> 0.2 s, v3); it has to be of the order of the per-state counts.
+# v4: 3e5 -> 3e6 raised the median dwell 0.2 -> 0.3 s (K = 8) at a held-out cost of only
+# 0.04 nats/frame
+kappa_grid = [3e6, 6e6, 9e6]
 em_iters = 50
-n_restarts = 3
+n_restarts = 7                     # 63 fits: one round on ~70 server workers
 heldout_frac = 0.2
 n_jobs = int(os.environ.get("N_PROCESSES", 8))
 seed = 1
-show_K = [5, 6, 8]            # candidate K values summarised in the figures (one per kappa)
+show_K = [8, 10, 12]       # candidate K values summarised in the figures (one per kappa)
 
 # ---------------------------------------------------------------------------
 # features
