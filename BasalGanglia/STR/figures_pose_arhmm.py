@@ -250,16 +250,24 @@ def show_frame(ax, img):
 # figure 1: feature extraction
 # ---------------------------------------------------------------------------
 
-def fig_features(states, sessions):
+FEATURE_ROWS = [("speed", "speed\ncm/s", "torso"), ("turn", "turn\n°/s", "torso"),
+                ("head_angle", "head\nangle °", "head"), ("head_speed", "head speed\ncm/s", "head"),
+                ("head_turn", "head\nturn °/s", "head"), ("bend", "bend °", "bend"),
+                ("body_len", "body\nlength", "length"), ("ear_width", "ear\nwidth", "ears"),
+                ("hip_width", "hip\nwidth", "hips"), ("wall_dist", "wall\ndist. cm", "wall")]
+
+def feature_example(states, sessions):
+    """Example session, its keypoints (pixels) and the frames of the feature panels: still
+    with plausible keypoints (lengths / widths near the session median), mouse well inside
+    the image and away from the wall; tb clearly bent body, tc clearly turned head (another
+    frame), td moderate-speed fast turn."""
+    import types
     s = next(x for x in sessions if x["session"] == example)
     feat = s["feat"]
     kp, centre, scale, off, ix = keypoints(example)
     px = kp / scale                                                # pixels
     t0, t1 = example_window(s, states)
     clean = feat.interp_share.rolling(11, center=True).max().values == 0
-    # example frames: still with plausible keypoints (lengths / widths near the session
-    # median), mouse well inside the image and away from the wall; (b) clearly bent body,
-    # (c) clearly turned head (another frame), (d) moderate-speed fast turn
     win = np.zeros(len(feat), bool)
     win[t0 + 20:t1 - 20] = True
     tors_px = px[:, [ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(1)
@@ -277,30 +285,30 @@ def fig_features(states, sessions):
     moving = win & clean & np.isin(s["z"], [states.index[states.name == "turn_fast"][0]]) & \
         feat.speed.between(6, 14) & far & (np.abs(np.arange(len(feat)) - tc) > 3 * A.fs)
     td = int(feat.turn.abs().where(moving).idxmax())
-    torso_of = lambda q: q[[ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(0)
+    return types.SimpleNamespace(s=s, feat=feat, px=px, centre=centre, scale=scale, off=off,
+                                 ix=ix, t0=t0, t1=t1, tb=tb, tc=tc, td=td, zb=80)
 
-    fig = plt.figure(figsize=(9.6, 8.4))
-    gs = fig.add_gridspec(2, 1, height_ratios=[0.55, 1.6], hspace=0.14)
-    top = gs[0].subgridspec(1, 4, wspace=0.14, width_ratios=[1.33, 1, 1, 1])
-    bot = gs[1].subgridspec(1, 2, wspace=0.32, width_ratios=[2.1, 1])
+def torso_of(q, ix):
+    return q[[ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(0)
 
-    def zoom(ax, q, z=80):
-        H, W = 480, 640
-        cz = np.clip(q, z, [W - z, H - z])
-        ax.set_xlim(cz[0] - z, cz[0] + z)
-        ax.set_ylim(cz[1] + z, cz[1] - z)
-        return cz
+def zoom(ax, q, z=80):
+    H, W = 480, 640
+    cz = np.clip(q, z, [W - z, H - z])
+    ax.set_xlim(cz[0] - z, cz[0] + z)
+    ax.set_ylim(cz[1] + z, cz[1] - z)
+    return cz
 
-    # (a) full frame: arena, wall distance
-    ax = fig.add_subplot(top[0])
-    img = video_frame(example, off + tb)
+def panel_frame(ax, ex, title="top-view frame with MARS keypoints"):
+    """Full frame: keypoints, arena (keypoint extent), wall distance, zoom box of panel_body."""
+    ix, zb = ex.ix, ex.zb
+    img = video_frame(example, ex.off + ex.tb)
     show_frame(ax, img)
-    p = px[tb]
-    R = A.arena_cm / 2 / scale
-    c = centre / scale
+    p = ex.px[ex.tb]
+    R = A.arena_cm / 2 / ex.scale
+    c = ex.centre / ex.scale
     th = np.linspace(0, 2 * np.pi, 200)
     ax.plot(c[0] + R * np.cos(th), c[1] + R * np.sin(th), color=MUTED, lw=0.8, ls=(0, (3, 2)))
-    torso = torso_of(p)
+    torso = torso_of(p, ix)
     u = (torso - c) / np.linalg.norm(torso - c)
     wall = c + R * u
     ax.plot(*np.c_[torso, wall], color=FC["wall"], lw=1.4, zorder=5)
@@ -308,7 +316,6 @@ def fig_features(states, sessions):
     H, W = img.shape
     ax.set_xlim(-0.5, W - 0.5)
     ax.set_ylim(H - 0.5, -0.5)
-    zb = 80
     zcen = np.clip(torso, zb, [W - zb, H - zb])                    # zoom box inside the frame
     ax.add_patch(Rectangle(zcen - zb, 2 * zb, 2 * zb, fill=False, ec=INK, lw=0.6, ls="--"))
     # wall-distance label beside the line, on the side away from the keypoints
@@ -320,16 +327,18 @@ def fig_features(states, sessions):
     ax.plot(*np.c_[wm, pos], color=FC["wall"], lw=0.5, zorder=6)
     tag_in(ax, pos, "wall distance", FC["wall"], ha="left" if perp[0] > 0 else "right")
     tag_in(ax, c + [0, 0.85 * R], "arena (keypoint extent)", INK2, ha="center", margin=0.2)
-    ax.set_title("top-view frame with MARS keypoints", loc="left")
-    panel(ax, "a", fx=0.01, y=1.02)
+    if title:
+        ax.set_title(title, loc="left")
 
-    # (b) body posture: body axis, body length, bend, hip width
-    ax = fig.add_subplot(top[1])
-    show_frame(ax, img)
+def panel_body(ax, ex, title="body posture", values=True):
+    """Zoomed frame tb: body axis, body length, bend construction, hip width."""
+    ix, zb, feat = ex.ix, ex.zb, ex.feat
+    show_frame(ax, video_frame(example, ex.off + ex.tb))
+    p = ex.px[ex.tb]
     nose, neck, tail = p[ix["nose"]], p[ix["neck"]], p[ix["tail_base"]]
     hips = (p[ix["hip1"]] + p[ix["hip2"]]) / 2
     skeleton(ax, p, ix, ms=10, lw=0.8)
-    zoom(ax, torso, zb)
+    zoom(ax, torso_of(p, ix), zb)
     body = neck - tail
     arrow(ax, tail, neck, FC["torso"], lw=1.0)
     # bend: angle at the hip midpoint between the tail -> hips segment (extended, dashed)
@@ -351,20 +360,22 @@ def fig_features(states, sessions):
     mid = (tail + nose) / 2
     callouts(ax, mid, [
         (mid + o, "body length", FC["length"]),
-        (a_bend, f"bend ({feat.bend[tb]:+.0f}°)".replace("-", "−"), FC["bend"]),
+        (a_bend, f"bend ({feat.bend[ex.tb]:+.0f}°)".replace("-", "−") if values else "bend",
+         FC["bend"]),
         (p[ix["hip1"]] * 0.35 + p[ix["hip2"]] * 0.65, "hip width", FC["hips"]),
         (tail + 0.35 * body, "body axis", FC["torso"])], dist=0.68 * zb,
         min_sep=np.radians(55))
-    ax.set_title("body posture", loc="left")
-    panel(ax, "b", x=-0.1, y=1.02)
+    if title:
+        ax.set_title(title, loc="left")
 
-    # (c) head posture: head angle, ear width (another still frame)
-    ax = fig.add_subplot(top[2])
-    show_frame(ax, video_frame(example, off + tc))
-    q = px[tc]
+def panel_head(ax, ex, title="head posture", values=True):
+    """Zoomed frame tc: head angle, ear width."""
+    ix, feat = ex.ix, ex.feat
+    show_frame(ax, video_frame(example, ex.off + ex.tc))
+    q = ex.px[ex.tc]
     nose, neck, tail = q[ix["nose"]], q[ix["neck"]], q[ix["tail_base"]]
     skeleton(ax, q, ix, ms=10, lw=0.8)
-    cz = zoom(ax, (torso_of(q) + nose) / 2, 70)
+    zoom(ax, (torso_of(q, ix) + nose) / 2, 70)
     body = neck - tail
     ax.plot(*np.c_[tail, neck], color=FC["torso"], lw=1.0, zorder=5)
     ax.plot(*np.c_[neck, neck + 0.5 * body], color=FC["torso"], lw=0.9, ls=(0, (2, 1.5)),
@@ -373,20 +384,21 @@ def fig_features(states, sessions):
     a_head = arc(ax, neck, body, nose - neck, 24, FC["head"], lw=1.2, fill=True)
     ax.plot(*np.c_[q[ix["ear1"]], q[ix["ear2"]]], color=FC["ears"], lw=2.0, zorder=6)
     callouts(ax, neck, [
-        (a_head, f"head angle ({feat.head_angle[tc]:+.0f}°)".replace("-", "−"), FC["head"]),
+        (a_head, f"head angle ({feat.head_angle[ex.tc]:+.0f}°)".replace("-", "−") if values
+         else "head angle", FC["head"]),
         ((q[ix["ear1"]] + q[ix["ear2"]]) / 2, "ear width", FC["ears"]),
         (tail * 0.4 + neck * 0.6, "body axis", FC["torso"])], dist=0.75 * 70,
         min_sep=np.radians(60))
-    ax.set_title("head posture", loc="left")
-    panel(ax, "c", x=-0.1, y=1.02)
+    if title:
+        ax.set_title(title, loc="left")
 
-    # (d) movement features: torso / nose paths, torso velocity, heading change
-    ax = fig.add_subplot(top[3])
-    img = video_frame(example, off + td)
-    show_frame(ax, img)
+def panel_movement(ax, ex, title=True):
+    """Zoomed frame td: torso / nose paths over the last 0.4 s, speed, heading change."""
+    ix = ex.ix
+    show_frame(ax, video_frame(example, ex.off + ex.td))
     lag = int(0.4 * A.fs)
-    seg = px[td - lag:td + 1]
-    zoom(ax, (seg.reshape(-1, 2).min(0) + seg.reshape(-1, 2).max(0)) / 2, zb)
+    seg = ex.px[ex.td - lag:ex.td + 1]
+    zoom(ax, (seg.reshape(-1, 2).min(0) + seg.reshape(-1, 2).max(0)) / 2, ex.zb)
     tors = seg[:, [ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(1)
     skeleton(ax, seg[0], ix, color="white", ms=6, lw=0.6, alpha=0.6)
     skeleton(ax, seg[-1], ix, ms=10, lw=0.8)
@@ -402,44 +414,61 @@ def fig_features(states, sessions):
     nz = seg[-1, ix["nose"]]
     tag_in(ax, nz + 22 * (nz - tors[-1]) / np.linalg.norm(nz - tors[-1]), "head speed / turn",
            FC["head"], ha="center", margin=0.3)
-    ax.set_title(f"movement (last {lag / A.fs:.1f} s)", loc="left")
-    panel(ax, "d", x=-0.1, y=1.02)
+    if title:
+        ax.set_title(f"movement (last {lag / A.fs:.1f} s)", loc="left")
 
-    # (e) feature time series
-    rows = [("speed", "speed\ncm/s", FC["torso"]), ("turn", "turn\n°/s", FC["torso"]),
-            ("head_angle", "head\nangle °", FC["head"]),
-            ("head_speed", "head speed\ncm/s", FC["head"]),
-            ("head_turn", "head\nturn °/s", FC["head"]), ("bend", "bend °", FC["bend"]),
-            ("body_len", "body\nlength", FC["length"]), ("ear_width", "ear\nwidth", FC["ears"]),
-            ("hip_width", "hip\nwidth", FC["hips"]), ("wall_dist", "wall\ndist. cm", FC["wall"])]
-    sub = bot[0].subgridspec(len(rows), 1, hspace=0.18)
+def panel_feature_series(fig, spec, ex, rows=FEATURE_ROWS, window=None, marks=True,
+                         title="feature time series (example session, amphetamine)",
+                         label_size=6.3, hspace=0.18):
+    """Stacked feature traces of the example window (first `window` s); returns the axes."""
+    t0 = ex.t0
+    t1 = ex.t1 if window is None else t0 + int(window * A.fs)
+    sub = spec.subgridspec(len(rows), 1, hspace=hspace)
     t = (np.arange(t0, t1) - t0) / A.fs
-    for r, (col, lab, color) in enumerate(rows):
+    axes = []
+    for r, (col, lab, fc) in enumerate(rows):
         ax = fig.add_subplot(sub[r])
-        y = feat[col].values[t0:t1]
+        y = ex.feat[col].values[t0:t1]
         if col in ("turn", "head_turn"):
             lim = np.percentile(np.abs(y), 99)
             y = np.clip(y, -lim, lim)
         if col in ("turn", "head_angle", "head_turn", "bend"):
             ax.axhline(0, color=GRID, lw=0.6)
-        ax.plot(t, y, color=color, lw=0.7)
-        for tt, l in ((tb, "a, b"), (tc, "c"), (td, "d")):
-            if t0 <= tt < t1:
-                ax.axvline((tt - t0) / A.fs, color=MUTED, lw=0.5, ls=(0, (2, 2)))
-                if r == 0:
-                    ax.text((tt - t0) / A.fs, 1.08, l, transform=ax.get_xaxis_transform(),
-                            ha="center", fontsize=6.5, fontweight="bold", color=INK2)
-        ax.set_ylabel(lab, rotation=0, ha="right", va="center", fontsize=6.3, labelpad=4)
-        ax.set_xlim(0, window_s)
+        ax.plot(t, y, color=FC[fc], lw=0.7)
+        if marks:
+            for tt, l in ((ex.tb, "a, b"), (ex.tc, "c"), (ex.td, "d")):
+                if t0 <= tt < t1:
+                    ax.axvline((tt - t0) / A.fs, color=MUTED, lw=0.5, ls=(0, (2, 2)))
+                    if r == 0:
+                        ax.text((tt - t0) / A.fs, 1.08, l, transform=ax.get_xaxis_transform(),
+                                ha="center", fontsize=6.5, fontweight="bold", color=INK2)
+        ax.set_ylabel(lab, rotation=0, ha="right", va="center", fontsize=label_size, labelpad=4)
+        ax.set_xlim(0, t[-1])
         ax.yaxis.set_major_locator(plt.MaxNLocator(2))
         if r < len(rows) - 1:
             ax.tick_params(axis="x", length=0, labelbottom=False)
             ax.spines["bottom"].set_visible(False)
         else:
             ax.set_xlabel("time (s)")
-        if r == 0:
-            ax.set_title(f"feature time series (example session, amphetamine)", loc="left", pad=10)
-            panel(ax, "e", fx=0.01, y=1.3)
+        if r == 0 and title:
+            ax.set_title(title, loc="left", pad=10)
+        axes.append(ax)
+    return axes
+
+def fig_features(states, sessions):
+    ex = feature_example(states, sessions)
+    s = ex.s
+    fig = plt.figure(figsize=(9.6, 8.4))
+    gs = fig.add_gridspec(2, 1, height_ratios=[0.55, 1.6], hspace=0.14)
+    top = gs[0].subgridspec(1, 4, wspace=0.14, width_ratios=[1.33, 1, 1, 1])
+    bot = gs[1].subgridspec(1, 2, wspace=0.32, width_ratios=[2.1, 1])
+    for i, (fn, l) in enumerate(((panel_frame, "a"), (panel_body, "b"), (panel_head, "c"),
+                                 (panel_movement, "d"))):
+        ax = fig.add_subplot(top[i])
+        fn(ax, ex)
+        panel(ax, l, fx=0.01, y=1.02) if i == 0 else panel(ax, l, x=-0.1, y=1.02)
+    axes = panel_feature_series(fig, bot[0], ex)
+    panel(axes[0], "e", fx=0.01, y=1.3)
 
     # (f, g) correlation matrices of the HMM input features: example session and the mean
     # over all sessions
