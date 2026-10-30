@@ -65,58 +65,181 @@ def slide_features(states, sessions):
         t.set_x(0.005)
     save(fig, "behavior_features")
 
+def state_matrix_axes(fig, ax, M, show, names, title, cmap, vmin, vmax, ylabels, xlabel=None,
+                      ylabel=None, fmt=None, thr=0.1, cbar=None):
+    labels = [STATE_LABELS[names[k]] for k in show]
+    F.heat(ax, M, labels, labels, cmap, vmin, vmax,
+           fmt or (lambda v: f"{v:.2f}".lstrip("0")), thr)
+    ax.set_xticks(range(M.shape[1]), labels if M.shape[1] == len(show) else ax.get_xticklabels(),
+                  rotation=90)
+    if ylabels is True:
+        for l, k in zip(ax.get_yticklabels(), show):
+            l.set_color(STATE_COLORS[names[k]])
+            l.set_fontweight("bold")
+    else:
+        ax.set_yticklabels([])
+    if M.shape[1] == len(show):
+        for l, k in zip(ax.get_xticklabels(), show):
+            l.set_color(STATE_COLORS[names[k]])
+            l.set_fontweight("bold")
+    ax.tick_params(labelsize=6.5)
+    for t in ax.texts:
+        t.set_fontsize(5)
+    if xlabel:
+        ax.set_xlabel(xlabel, labelpad=2)
+    if ylabel:
+        ax.set_ylabel(ylabel, labelpad=2)
+    ax.set_title(title, loc="left")
+    if cbar:
+        sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin, vmax))
+        cb = fig.colorbar(sm, cax=ax.inset_axes([1.04, 0.25, 0.05, 0.5]), ticks=cbar[0])
+        cb.outline.set_visible(False)
+        cb.ax.tick_params(labelsize=6)
+        cb.set_label(cbar[1], color=INK2, labelpad=1)
+
 def slide_hmm(states, sessions):
+    """State feature profiles, state confusability (held-out decoder) and transitions
+    (switches only), without the excluded rear / artefact state."""
     show = shown_states(states)
     names = states.name.tolist()
-    labels = [STATE_LABELS[names[k]] for k in show]
-    fig = plt.figure(figsize=(6.0, 2.75))
-    gs = fig.add_gridspec(1, 2, width_ratios=[0.95, 1.6], wspace=0.42, left=0.14, right=0.99,
-                          top=0.88, bottom=0.3)
+    K = len(states)
+    fig = plt.figure(figsize=(6.0, 2.7))
+    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.5, left=0.13, right=0.985,
+                          top=0.88, bottom=0.27)
     # (a) state profiles: mean z-scored feature per state
     ax = fig.add_subplot(gs[0])
     allX = np.concatenate([s["X"] for s in sessions])
     allz = np.concatenate([s["z"] for s in sessions])
     L = np.array([allX[allz == k].mean(0) for k in show])
     flab = [F.FEAT_LABELS[f].replace(" (log)", "") for f in A.features]
-    F.heat(ax, L, labels, flab, F.DIVERGING, -2, 2, lambda v: "", 9)
+    F.heat(ax, L, [STATE_LABELS[names[k]] for k in show], flab, F.DIVERGING, -2, 2,
+           lambda v: "", 9)
     for l, k in zip(ax.get_yticklabels(), show):
         l.set_color(STATE_COLORS[names[k]])
         l.set_fontweight("bold")
     ax.set_xticks(range(len(A.features)), flab, rotation=90)
     ax.tick_params(labelsize=6.5)
-    ax.set_title("state feature profiles", loc="left")
+    ax.set_title("feature profiles", loc="left")
     sm = plt.cm.ScalarMappable(cmap=F.DIVERGING, norm=plt.Normalize(-2, 2))
-    cb = fig.colorbar(sm, cax=ax.inset_axes([1.04, 0.25, 0.05, 0.5]), ticks=[-2, 0, 2])
+    cb = fig.colorbar(sm, cax=ax.inset_axes([1.03, 0.3, 0.05, 0.4]), ticks=[-2, 0, 2])
     cb.outline.set_visible(False)
     cb.ax.tick_params(labelsize=6)
     cb.set_label("z", color=INK2, labelpad=1)
-    # (b) example: speed and state sequence (first 60 s of the example window)
-    s = next(x for x in sessions if x["session"] == F.example)
-    t0, _ = F.example_window(s, states)
-    t1 = t0 + int(60 * A.fs)
-    sub = gs[1].subgridspec(2, 1, height_ratios=[1, 0.2], hspace=0.06)
-    t = np.arange(t1 - t0) / A.fs
-    ax = fig.add_subplot(sub[0])
-    ax.plot(t, s["feat"].speed.values[t0:t1], color=INK2, lw=0.7)
-    ax.set_xlim(0, 60)
-    ax.set_ylabel("speed (cm/s)")
-    ax.tick_params(axis="x", labelbottom=False, length=0)
-    ax.spines["bottom"].set_visible(False)
-    ax.set_title("example: speed and AR-HMM state sequence", loc="left")
-    ax2 = fig.add_subplot(sub[1], sharex=ax)
-    from matplotlib.colors import ListedColormap
-    from matplotlib.patches import Patch
-    cmap = ListedColormap([STATE_COLORS[n] for n in names])
-    ax2.imshow(s["z"][t0:t1][None], cmap=cmap, vmin=-0.5, vmax=len(names) - 0.5, aspect="auto",
-               extent=(0, 60, 0, 1), interpolation="nearest")
-    ax2.set_yticks([])
-    ax2.spines["left"].set_visible(False)
-    ax2.set_xlabel("time (s)")
-    fig.legend(handles=[Patch(color=STATE_COLORS[names[k]], label=STATE_LABELS[names[k]])
-                        for k in show], ncol=5, loc="lower left", bbox_to_anchor=(0.43, 0.0),
-               frameon=False, handlelength=1, columnspacing=0.9, fontsize=6.8)
-    letters(fig, [(0.005, "a"), (0.39, "b")], 0.93)
+    # (b) confusability: held-out decoder of the state from the features (rows: HMM state)
+    cm = F.decoder_confusion(sessions, K)[np.ix_(show, show)]
+    cm = cm / cm.sum(1, keepdims=True)
+    ax = fig.add_subplot(gs[1])
+    state_matrix_axes(fig, ax, cm, show, names,
+                      f"confusability (diag. {np.diag(cm).mean():.2f})", F.SEQUENTIAL, 0, 1,
+                      False, xlabel="decoded state", ylabel="HMM state")
+    # (c) transitions between states (switches only)
+    T = np.zeros((K, K))
+    for s in sessions:
+        z = s["z"]
+        sw = np.flatnonzero(np.diff(z) != 0)
+        np.add.at(T, (z[sw], z[sw + 1]), 1)
+    T = T[np.ix_(show, show)]
+    T = T / T.sum(1, keepdims=True)
+    T[np.eye(len(T), dtype=bool)] = np.nan
+    ax = fig.add_subplot(gs[2])
+    state_matrix_axes(fig, ax, T, show, names, "transitions (at a switch)", F.SEQUENTIAL, 0, 1,
+                      False, xlabel="next state", ylabel="current state")
+    letters(fig, [(0.005, "a"), (0.4, "b"), (0.705, "c")], 0.93)
     save(fig, "behavior_hmm")
+
+def slide_arhmm(states, sessions):
+    """How the AR-HMM works: graphical model + equations, and feature traces of the example
+    session segmented by the inferred states."""
+    from matplotlib.patches import Circle, FancyArrowPatch, Rectangle
+    from matplotlib.colors import ListedColormap
+    names = states.name.tolist()
+    s = next(x for x in sessions if x["session"] == F.example)
+    t0w, t1w = F.example_window(s, states)
+    # 20-s segment of the example window with the most state switches
+    w = int(20 * A.fs)
+    sw = np.r_[0, np.diff(s["z"]) != 0].cumsum()
+    best = max(range(t0w, t1w - w, int(A.fs)), key=lambda a: sw[a + w] - sw[a])
+    t0, t1 = best, best + w
+    fig = plt.figure(figsize=(6.0, 2.85))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.2], wspace=0.2, left=0.01, right=0.99,
+                          top=0.9, bottom=0.14)
+    # (a) graphical model
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 10)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    xs = [2.9, 4.95, 7.0, 9.05]
+    zy, xy, r = 8.3, 5.4, 0.66
+    labs = ["t−3", "t−2", "t−1", "t"]
+    zcols = [STATE_COLORS[n] for n in ("rest", "slow_walk", "slow_walk", "walk")]
+    for x, l, c in zip(xs, labs, zcols):
+        ax.add_patch(Circle((x, zy), r, fc=c, ec="white", lw=1.2, zorder=3))
+        ax.text(x, zy, f"$z_{{{l}}}$", ha="center", va="center", color="white", fontsize=7.5,
+                zorder=4)
+        ax.add_patch(Circle((x, xy), r, fc="white", ec=INK2, lw=0.9, zorder=3))
+        ax.text(x, xy, f"$x_{{{l}}}$", ha="center", va="center", color=INK, fontsize=7.5,
+                zorder=4)
+        ax.add_patch(FancyArrowPatch((x, zy - r), (x, xy + r), arrowstyle="-|>",
+                                     mutation_scale=7, color=INK2, lw=0.8, zorder=2))
+    for a, b in zip(xs[:-1], xs[1:]):
+        ax.add_patch(FancyArrowPatch((a + r, zy), (b - r, zy), arrowstyle="-|>",
+                                     mutation_scale=7, color=INK2, lw=0.8))
+    for a in xs[:-1]:                                     # AR: past observations -> x_t
+        ax.add_patch(FancyArrowPatch((a + 0.3, xy - r + 0.1), (xs[-1] - 0.4, xy - r + 0.1),
+                                     arrowstyle="-|>", mutation_scale=6, color=F.FC["head"],
+                                     lw=0.8, connectionstyle=f"arc3,rad={0.12 + 0.1 * (xs[-1] - a) / 3}"))
+    ax.text(0.0, zy, "hidden\nstate", fontsize=7, color=INK2, va="center")
+    ax.text(0.0, xy, "9 pose\nfeatures\n(20 Hz)", fontsize=7, color=INK2, va="center")
+    ax.text(6.0, 2.45, "autoregressive: 4 lags (200 ms)", fontsize=6.5, color=F.FC["head"],
+            ha="center")
+    eq = (r"$x_t = \sum_{l=1}^{4} A_l^{(z_t)}\, x_{t-l} + b^{(z_t)} + \varepsilon_t,"
+          r"\quad \varepsilon_t \sim \mathcal{N}(0, \Sigma^{(z_t)})$")
+    ax.text(5.0, 1.25, eq, ha="center", va="center", fontsize=7.2, color=INK)
+    ax.text(5.0, 0.15, r"$P(z_t = j \mid z_{t-1} = i)$: sticky ($+\kappa$ on self-transitions)"
+            r"  ·  $K = 10$", ha="center", va="center", fontsize=6.6, color=INK2)
+    ax.set_title("each state: its own linear feature dynamics", loc="left", fontsize=8)
+    # (b) data: z-scored HMM inputs over 20 s, background = inferred state
+    rows = [("log_speed", "speed"), ("turn_asinh", "turn"), ("head_angle", "head angle"),
+            ("bend", "bend"), ("log_head_speed", "head speed")]
+    sub = gs[1].subgridspec(len(rows) + 1, 1, height_ratios=[1] * len(rows) + [0.45],
+                            hspace=0.12)
+    t = np.arange(t1 - t0) / A.fs
+    z = s["z"][t0:t1]
+    st = np.flatnonzero(np.diff(np.r_[-1, z]) != 0)
+    en = np.r_[st[1:], len(z)]
+    X = s["X"]
+    for i, (col, lab) in enumerate(rows):
+        ax = fig.add_subplot(sub[i])
+        for a, b in zip(st, en):
+            ax.axvspan(t[a], t[min(b, len(t) - 1)], color=STATE_COLORS[names[z[a]]], alpha=0.18,
+                       lw=0)
+        ax.plot(t, X[t0:t1, A.features.index(col)], color=INK, lw=0.7)
+        ax.set_xlim(0, t[-1])
+        ax.set_yticks([])
+        ax.set_ylabel(lab, rotation=0, ha="right", va="center", fontsize=6.8, labelpad=2)
+        ax.tick_params(axis="x", labelbottom=False, length=0)
+        for sp in ("left", "bottom"):
+            ax.spines[sp].set_visible(False)
+        if i == 0:
+            ax.set_title("example: features (z-scored), shaded by inferred state",
+                         loc="left", fontsize=8)
+    ax = fig.add_subplot(sub[-1])
+    cmap = ListedColormap([STATE_COLORS[n] for n in names])
+    ax.imshow(z[None], cmap=cmap, vmin=-0.5, vmax=len(names) - 0.5, aspect="auto",
+              extent=(0, t[-1], 0, 1), interpolation="nearest")
+    ax.set_yticks([])
+    ax.set_ylabel("state", rotation=0, ha="right", va="center", fontsize=6.8, labelpad=2)
+    ax.spines["left"].set_visible(False)
+    ax.set_xlabel("time (s)")
+    # state names on the longest bouts
+    for a, b in zip(st, en):
+        if (b - a) / A.fs >= 1.2:
+            ax.text((t[a] + t[min(b, len(t) - 1)]) / 2, 0.5, STATE_LABELS[names[z[a]]],
+                    ha="center", va="center", fontsize=5.5, color="white")
+    fig.subplots_adjust(left=0.01)
+    letters(fig, [(0.005, "a"), (0.48, "b")], 0.93)
+    save(fig, "behavior_arhmm")
 
 def slide_states(states, sessions, b):
     # the paper figure's layout at slide size and font
@@ -159,6 +282,7 @@ def slide_drugs(states, sessions):
 if __name__ == "__main__":
     states, sessions = F.load_data()
     slide_features(states, sessions)
+    slide_arhmm(states, sessions)
     slide_hmm(states, sessions)
     slide_drugs(states, sessions)
     slide_states(states, sessions, F.bouts(sessions))
