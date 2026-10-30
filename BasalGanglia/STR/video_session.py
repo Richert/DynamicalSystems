@@ -1,4 +1,4 @@
-"""Slide video: behaviour and SPN activity of one session in real time.
+"""Slide video: behaviour and SPN activity of one session (playback speed_factor x real time).
 
 Top: arena video (top view) with the MARS keypoint skeleton | motion-corrected calcium
 movie with the outlines of the extracted cells, each filled in proportion to its denoised
@@ -21,7 +21,8 @@ from figures_pose_arhmm import A, STATE_COLORS, STATE_LABELS
 out_dir = os.environ.get("VIDEO_DIR", "/home/rgast/OneDrive/presentations/parker/videos")
 pose_session = "20191205_m085_clo01_amph"
 win0 = 6800                          # start of the 120-s example window (frames)
-fps = 20
+fps = 20                             # recording frame rate (pose and imaging)
+speed_factor = 0.5                   # playback speed (0.5: half speed, every frame shown)
 
 import matplotlib
 matplotlib.use("Agg")
@@ -100,6 +101,10 @@ def main(t0_s=0.0, dur_s=40.0):
     dots = axv.scatter(np.zeros(7), np.zeros(7), s=10, color="#f4f3ee", edgecolor=INK, lw=0.4,
                        zorder=4)
     trail, = axv.plot([], [], color=R.ACCENT, lw=1.0, alpha=0.8)
+    # current behavioural state in the arena centre (keypoint extent)
+    arena_txt = axv.text(c[0], c[1], "", ha="center", va="center", fontsize=13,
+                         fontweight="bold", zorder=6,
+                         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="none", alpha=0.85))
     axc = fig.add_subplot(top[1])
     im_c = axc.imshow(Y[0], cmap=R.FLUO, vmin=lo, vmax=hi, interpolation="bilinear")
     R.frame_axes(axc, f"striatum: calcium imaging, {len(r.kept)} SPNs")
@@ -138,7 +143,8 @@ def main(t0_s=0.0, dur_s=40.0):
     cursors = [ax.axvline(0, color=INK, lw=0.8) for ax in (ax1, ax2, ax3)]
     state_txt = ax2.text(1.01, 0.5, "", transform=ax2.transAxes, va="center", ha="left",
                          fontsize=8.5, fontweight="bold")
-    fig.text(0.99, 0.015, "m085, vehicle + amphetamine · real time", ha="right", va="bottom",
+    pace = "real time" if speed_factor == 1 else f"{speed_factor:g}× speed"
+    fig.text(0.99, 0.015, f"m085, vehicle + amphetamine · {pace}", ha="right", va="bottom",
              fontsize=7, color=MUTED)
 
     def draw(i):
@@ -157,6 +163,8 @@ def main(t0_s=0.0, dur_s=40.0):
             cl.set_xdata([t[i], t[i]])
         state_txt.set_text(STATE_LABELS[names[z[i]]])
         state_txt.set_color(STATE_COLORS[names[z[i]]])
+        arena_txt.set_text(STATE_LABELS[names[z[i]]])
+        arena_txt.set_color(STATE_COLORS[names[z[i]]])
         return []
 
     from matplotlib.animation import FuncAnimation, FFMpegWriter
@@ -164,11 +172,12 @@ def main(t0_s=0.0, dur_s=40.0):
     draw(int(np.argmax(rate)))
     fig.savefig(f"{out_dir}/session_poster.png", dpi=160)
     anim = FuncAnimation(fig, draw, frames=n, blit=False)
-    writer = FFMpegWriter(fps=fps, codec="libx264", bitrate=4000,
+    writer = FFMpegWriter(fps=fps * speed_factor, codec="libx264", bitrate=4000,
                           extra_args=["-pix_fmt", "yuv420p", "-preset", "slow", "-crf", "20"])
     anim.save(f"{out_dir}/session.mp4", writer=writer, dpi=160)
     plt.close(fig)
-    print(f"saved {out_dir}/session.mp4 ({n} frames, {dur_s:g} s) and session_poster.png")
+    print(f"saved {out_dir}/session.mp4 ({n} frames, {dur_s:g} s of recording, "
+          f"{dur_s / speed_factor:g} s video) and session_poster.png")
 
 
 if __name__ == "__main__":
