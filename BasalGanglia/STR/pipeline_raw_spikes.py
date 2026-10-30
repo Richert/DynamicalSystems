@@ -61,16 +61,33 @@ out_suffix = ""              # appended to per-recording output names (joint mod
 joint_refit = True
 refit_iters = 2
 
+def selection_cli(argv):
+    """Component-selection flags (--filt2, --min_snr X, --min_eta R), shared with
+    compare_cell_extraction.py: sets them and out_suffix, returns the remaining argv."""
+    global filt2, min_snr, min_eta, out_suffix
+    argv = list(argv)
+    if "--filt2" in argv:
+        filt2, out_suffix = True, out_suffix + "_f2"
+        argv.remove("--filt2")
+    for flag in ("--min_snr", "--min_eta"):
+        if flag in argv:
+            i = argv.index(flag)
+            val = float(argv[i + 1])
+            del argv[i:i + 2]
+            if flag == "--min_snr":
+                min_snr, out_suffix = val, out_suffix + f"_snr{val:g}"
+            else:
+                min_eta, out_suffix = val, out_suffix + f"_eta{val:g}"
+    return argv
+
 def apply_cli(argv):
     """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]] [--joint]
     (only applied when run as a script, so other scripts can import this module)."""
-    global raw_session, recording, joint, filt2, out_suffix
+    global raw_session, recording, joint
     if "--joint" in argv:
         joint = True
         argv = [a for a in argv if a != "--joint"]
-    if "--filt2" in argv:
-        filt2, out_suffix = True, "_f2"
-        argv = [a for a in argv if a != "--filt2"]
+    argv = selection_cli(argv)
     if len(argv) > 1:
         raw_session = argv[1]
         recording = int(argv[2]) if len(argv) > 2 else 0
@@ -126,6 +143,24 @@ shape_filter = dict(max_area_px=200, max_elongation=3.5, min_solidity=0.75, sing
 # cells too poorly to be used: a cut removing 29% of unmatched also removed 12% of matched.)
 filt2 = False
 post_filter = dict(max_area_rel=2.0, max_core_overlap=0.5)
+# looser quality check (CLI --min_snr X, outputs carry "_snrX"): accepted cells pass
+# CaImAn's check by SNR alone (r_values ~0.3, rval_thr 0.85 is practically never met),
+# and at seeding min_corr 0.6 many compact, bright correlation-image blobs that look
+# like cells are rejected with SNR 2-3 (m106/m120/m797: 40/56/102 vs 91/104/209
+# accepted). With min_snr, components are re-selected from the stored SNR_comp/r_values
+# (no CNMF-E rerun).
+min_snr = None
+# event-triggered footprint consistency (CLI --min_eta R, outputs carry "_etaR"): at the
+# component's strongest transients (peaks of C), the frame minus the mean of the frames
+# 0.5-1 s earlier (removes static structure such as the bright lens edge), averaged and
+# correlated with the footprint in a box around it. Real cells: a blob matching the
+# footprint; lens-edge / background components whose 'activity' is not visible in the
+# dF/F frames: low correlation. (Peak dF/F did not separate them: dim real cells have
+# the lowest dF/F.) Computed for all components with SNR >= eta_params["min_snr"],
+# cached in eta_<tag>.csv; eta_r: component -> correlation (None: not used)
+min_eta = None
+eta_params = dict(n_events=20, min_sep_s=1.0, base_window_s=(1.0, 0.5), box_half_px=12, min_snr=2.0)
+eta_r = None
 # extraction diagnostics added to the evaluation summary (set by accepted_components)
 extra_summary = {}
 
@@ -252,13 +287,62 @@ def footprint_shape(a, frac=0.3):
     p = max(regionprops(lab), key=lambda r: r.area)
     return p.area, p.major_axis_length / max(p.minor_axis_length, 1e-6), p.solidity, lab.max()
 
+def quality_passed(est):
+    """Components passing CaImAn's quality check, or with min_snr the looser re-selection
+    (SNR >= min_snr or r_value >= rval_thr) from the stored values."""
+    if min_snr is None:
+        return [int(k) for k in est.idx_components]
+    snr, rval = np.asarray(est.SNR_comp).ravel(), np.asarray(est.r_values).ravel()
+    return [int(k) for k in np.flatnonzero((snr >= min_snr) | (rval >= quality["rval_thr"]))]
+
+def compute_eta(cnm, fname, work, dims):
+    """Event-triggered footprint consistency (see eta_params) of all components with
+    SNR >= eta_params["min_snr"]; cached in eta_<tag>.csv. Returns {component: r}."""
+    import pandas as pd
+    out = f"{work}/eta_{cnmf_tag()}.csv"
+    if os.path.isfile(out):
+        d = pd.read_csv(out)
+        return dict(zip(d.component, d.eta_r))
+    import caiman as cm
+    from scipy.signal import find_peaks
+    est = cnm.estimates
+    comps = np.flatnonzero(np.asarray(est.SNR_comp).ravel() >= eta_params["min_snr"])
+    Yr, _, T = cm.load_memmap(fname)
+    Y = np.array(Yr, dtype=np.float32)            # pixels (F order) x frames, into RAM once
+    b0, b1 = (int(round(s * fs)) for s in eta_params["base_window_s"])
+    h = eta_params["box_half_px"]
+    rows = []
+    for k in comps:
+        a = est.A[:, k].toarray().reshape(dims, order="F")
+        y, x = np.unravel_index(np.argmax(a), dims)
+        ys, xs = slice(max(0, y - h), min(dims[0], y + h + 1)), slice(max(0, x - h), min(dims[1], x + h + 1))
+        yy, xx = np.meshgrid(np.arange(dims[0])[ys], np.arange(dims[1])[xs], indexing="ij")
+        pix = np.ravel_multi_index((yy.ravel(), xx.ravel()), dims, order="F")
+        c = np.asarray(est.C[k]).ravel()
+        pk, prop = find_peaks(c, height=0, distance=max(1, int(eta_params["min_sep_s"] * fs)))
+        pk = pk[pk >= b0]
+        pk = pk[np.argsort(c[pk])[::-1][:eta_params["n_events"]]]
+        if len(pk) == 0:
+            rows.append(dict(component=int(k), eta_r=np.nan, n_events=0))
+            continue
+        diff = [Y[pix, t] - Y[pix, t - b0:t - b1].mean(1) for t in pk]
+        r = np.corrcoef(np.mean(diff, 0), a[ys, xs].ravel())[0, 1]
+        rows.append(dict(component=int(k), eta_r=r, n_events=len(pk)))
+    del Y
+    d = pd.DataFrame(rows)
+    d.to_csv(out, index=False)
+    print(f"event-triggered footprint consistency of {len(d)} components: median r {d.eta_r.median():.2f}")
+    return dict(zip(d.component, d.eta_r))
+
 def accepted_components(cnm, dims, cn=None):
-    """Indices of components passing CaImAn's quality check AND the shape filter (and,
+    """Indices of components passing CaImAn's quality check (or the min_snr re-selection)
+    AND the shape filter (and, with min_eta, the event-triggered footprint consistency;
     with filt2, the stricter post-filter). With the correlation image cn, also counts
     its peaks (>= 0.6) not covered by any accepted cell (-> extra_summary)."""
     est = cnm.estimates
+    passed = quality_passed(est)
     keep, rejected, areas = [], [], {}
-    for k in est.idx_components:
+    for k in passed:
         a = est.A[:, k].toarray().reshape(dims, order="F")
         area, el, sol, parts = footprint_shape(a)
         bad = (area > shape_filter["max_area_px"] or el > shape_filter["max_elongation"]
@@ -266,7 +350,13 @@ def accepted_components(cnm, dims, cn=None):
                or (shape_filter["single_part"] and parts > 1))
         (rejected if bad else keep).append(int(k))
         areas[int(k)] = area
-    print(f"shape filter: {len(keep)} of {len(est.idx_components)} accepted components kept")
+    print(f"shape filter: {len(keep)} of {len(passed)} accepted components kept")
+    if min_eta is not None and keep:
+        low = [k for k in keep if eta_r.get(k, np.nan) < min_eta]     # not computed: kept
+        rejected += low
+        keep = [k for k in keep if k not in set(low)]
+        extra_summary.update(n_eta_dropped=len(low))
+        print(f"event-triggered footprint consistency (r < {min_eta:g}): {len(low)} dropped, {len(keep)} kept")
     if filt2 and keep:
         lim = post_filter["max_area_rel"] * np.median([areas[k] for k in keep])
         big = [k for k in keep if areas[k] > lim]
@@ -762,7 +852,7 @@ def save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, old_file, c
         df, summary, ev = evaluate(C, S, S_noise, sn, cents, E_old, C_old, xy_old)
         df.insert(3, "component", idx[df.new.values] if len(df) else [])   # CNMF-E component id
         df.to_csv(f"{work}/matched_neurons_{tag}{sfx}.csv", index=False)
-        summary.update(extra_summary, filt2=filt2)
+        summary.update(extra_summary, filt2=filt2, min_snr=min_snr or quality["min_SNR"], min_eta=min_eta)
         json.dump(summary, open(f"{work}/summary_{tag}{sfx}.json", "w"), indent=1)
         np.save(f"{work}/spikes_{tag}{sfx}.npy", ev["spk"])
         print(f"\n[{tag}{sfx}] summary:", summary)
@@ -790,6 +880,9 @@ def main():
         cnm, cn, dims = run_cnmfe(fname, work, dview)
     finally:
         cm.stop_server(dview=dview)
+    global eta_r
+    if min_snr is not None or min_eta is not None:    # metric also stored for evaluation
+        eta_r = compute_eta(cnm, fname, work, dims)
     if not joint:
         C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, cn=cn)
         save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, *paths[0][1:3])

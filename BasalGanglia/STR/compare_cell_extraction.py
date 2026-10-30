@@ -43,10 +43,10 @@ old_radius_px = 4.0          # circle radius for old cells (no footprints availa
 focus = "--focus" in sys.argv
 if focus:
     sys.argv.remove("--focus")
-# stricter post-filter of pipeline_raw_spikes.py (relative area + duplicates; names carry "_f2")
-if "--filt2" in sys.argv:
-    sys.argv.remove("--filt2")
-    P.filt2, P.out_suffix = True, "_f2"
+# component selection as in pipeline_raw_spikes.py: --filt2 (relative area + duplicates),
+# --min_snr X (looser quality check), --min_eta R (event-triggered footprint consistency);
+# names carry the same suffixes
+sys.argv = P.selection_cli(sys.argv)
 n_focus_pairs = 4            # pairs shown (lowest recall among old cells with many events)
 min_focus_events = 15        # old events required for a pair to be shown
 n_focus_events = 3           # missed old events shown per pair
@@ -83,6 +83,8 @@ def load():
     images = Yr.T.reshape((T,) + dims, order="F")
     cnm = cnmf.load_CNMF(f"{work}/cnmfe_{P.cnmf_tag()}.hdf5")
     est = cnm.estimates
+    if P.min_snr is not None or P.min_eta is not None:
+        P.eta_r = P.compute_eta(cnm, fname, work, dims)    # cached by the pipeline run
     idx, _ = P.accepted_components(cnm, dims)       # quality check + shape filter
     A = est.A[:, idx].tocsc()
     C = est.C[idx]
