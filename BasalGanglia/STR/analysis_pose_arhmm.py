@@ -117,7 +117,10 @@ def angle_between(u, v):
     a = np.arctan2(u[:, 0] * v[:, 1] - u[:, 1] * v[:, 0], (u * v).sum(1))
     return np.degrees(a)
 
-def session_features(f, off, n_frames, scale):
+def load_keypoints(f, off, n_frames, scale):
+    """Keypoints of the imaging period in cm (T, 7, 2): low-confidence keypoints
+    interpolated, smoothed; with the per-frame interpolated share, the arena centre (cm)
+    and the node names."""
     with h5py.File(f, "r") as h:
         tr = h["tracks"][0]                                   # (2, 7, T)
         score = h["point_scores"][0].T                        # (T, 7)
@@ -135,6 +138,10 @@ def session_features(f, off, n_frames, scale):
     centre = (lo + hi) / 2
     kp = kp[off:off + n_frames]
     kp = gaussian_filter1d(kp, sigma=smooth_s * fs, axis=0, mode="nearest")
+    return kp, interp_share, centre, nodes
+
+def session_features(f, off, n_frames, scale):
+    kp, interp_share, centre, nodes = load_keypoints(f, off, n_frames, scale)
     ix = {n: i for i, n in enumerate(nodes)}
     nose, neck, tail = kp[:, ix["nose"]], kp[:, ix["neck"]], kp[:, ix["tail_base"]]
     hips = (kp[:, ix["hip1"]] + kp[:, ix["hip2"]]) / 2
