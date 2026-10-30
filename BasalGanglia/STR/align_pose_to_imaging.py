@@ -32,6 +32,7 @@ fs = 20.0
 arena_cm = 30.48
 down = 4                          # 20 Hz -> 5 Hz
 expected_offset_s = 600.0         # 10-min wait before imaging
+min_r = 0.3                       # below: no reliable correlation peak
 
 def load_pose(f):
     """Keypoints (T, 7, 2) in pixels and node names."""
@@ -96,10 +97,15 @@ def main():
             scale = cm_per_px(kp)
             v20 = speed_20hz(kp, scale)
             off, r, second, ratio, curve, v5 = best_offset(v20, old)
+            # no clear peak (e.g. LowDose m797 control: r = 0.16 at 489 s, all other
+            # sessions at 600 +/- 1 s): fall back to the protocol offset, flagged
+            fallback = r < min_r and abs(off / fs - expected_offset_s) > 5
+            if fallback:
+                off = int(expected_offset_s * fs)
             rows.append(dict(session=key, dose=dose, part=part, video_frames=len(kp),
                              old_frames_5hz=len(old), offset_frames=off, offset_s=off / fs,
                              r_peak=r, r_second=second, cm_per_px=scale,
-                             old_over_new_speed=ratio))
+                             old_over_new_speed=ratio, fallback=fallback))
             examples.append((key, curve, old, v5))
             print(f"{key:45s} offset {off:6d} frames ({off / fs:6.1f} s)  r = {r:.3f} "
                   f"(next {second:.3f})  scale {scale:.4f} cm/px  speed ratio {ratio:.2f}")

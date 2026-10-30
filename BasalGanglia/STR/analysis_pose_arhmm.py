@@ -65,9 +65,14 @@ speed_eps = 0.5                    # cm/s, offset of the log speed (rest thresho
 turn_eps = 5.0                     # deg/s, scale of the arcsinh compression of turning speed
 features = ["log_speed", "turn_asinh", "head_angle", "body_len", "bend", "log_head_speed",
             "head_turn_asinh", "ear_width", "hip_width"]
-conditions = ["Control", drug, "Amphetamine", f"A + {drug}"]
+conditions = ["Control", f"{drug} low", f"{drug} high", "Amphetamine", f"A + {drug} low",
+              f"A + {drug} high"]
 cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine",
-           ("HighDose", "Control"): drug, ("HighDose", "Amph"): f"A + {drug}"}
+           ("LowDose", "Control"): f"{drug} low", ("LowDose", "Amph"): f"A + {drug} low",
+           ("HighDose", "Control"): f"{drug} high", ("HighDose", "Amph"): f"A + {drug} high"}
+# the model was fitted on Vehicle / HighDose (v5); LowDose (added later) is only labelled
+# with it (export), so that the states stay identical across doses
+fit_conditions = ["Control", f"{drug} high", "Amphetamine", f"A + {drug} high"]
 
 # AR-HMM
 fs_fit = 20.0                      # fit at the full video rate (no downsampling)
@@ -174,14 +179,17 @@ def session_features(f, off, n_frames, scale):
         wall_dist=arena_cm / 2 - np.linalg.norm(torso - centre, axis=1),
         abs_turn=np.abs(turn), abs_head_turn=np.abs(head_turn), interp_share=interp_share))
 
-def load_all():
+def load_all(only=None):
+    """Features of every session with a known condition and pose-imaging offset
+    (only: restrict to these session names)."""
     offsets = pd.read_csv(offsets_csv).set_index("session")
     sessions = []
     for f in sorted(glob.glob(f"{pose_root}/*/*/*_pose_top_v1_8.h5")):
         dose, part = f.split("/")[-3:-1]
         base = os.path.basename(f).split("_pose_top")[0]
         key = f"{drug.lower()}/{dose}/{base}"
-        if (dose, part) not in cond_of or key not in offsets.index:
+        if (dose, part) not in cond_of or key not in offsets.index or \
+                (only is not None and base not in only):
             continue
         o = offsets.loc[key]
         feat = session_features(f, int(o.offset_frames), int(o.old_frames_5hz) * 4,
@@ -221,7 +229,7 @@ def main():
     from concurrent.futures import ProcessPoolExecutor
     os.makedirs(out_dir, exist_ok=True)
     rng = np.random.default_rng(seed)
-    sessions = load_all()
+    sessions = [s for s in load_all() if s["condition"] in fit_conditions]
     print(f"{len(sessions)} sessions, {sum(len(s['feat']) for s in sessions) / fs / 3600:.1f} h")
     for s in sessions:
         s["feat"].to_csv(f"{out_dir}/features_{s['session']}.csv.gz", index=False)
@@ -230,7 +238,7 @@ def main():
 
     # stratified held-out split of sessions
     test = set()
-    for c in conditions:
+    for c in fit_conditions:
         idx = [i for i, s in enumerate(sessions) if s["condition"] == c]
         test.update(rng.choice(idx, max(1, round(heldout_frac * len(idx))), replace=False).tolist())
     cap = int(fit_cap_s * fs_fit)
@@ -305,6 +313,7 @@ def summarise(sessions, models, mu, sd, sweep, kap):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     ink, ink2 = "#1f1f1e", "#5f5e5a"
+    conditions = fit_conditions
     colors = dict(zip(conditions, ["#2a78d6", "#1baf7a", "#eda100", "#e34948"]))
     rows, dwell_stats = [], []
     fig, axes = plt.subplots(1 + len(models), 3, figsize=(18, 5.2 * (1 + len(models))),
@@ -395,19 +404,30 @@ def summarise(sessions, models, mu, sd, sweep, kap):
 
 def export_states():
     """Viterbi states of the selected model (final_K, final_kappa) for every session, from
-    the stored features and models_K_sweep.pkl in out_dir: states_<session>.csv.gz (20 Hz,
-    imaging period, numbered by mean speed as in the figures) and pose_states.csv (state
-    names, exclusion flag, feature means)."""
+    the features and models_K_sweep.pkl in out_dir (features of sessions added later, e.g.
+    LowDose, are computed and stored first): states_<session>.csv.gz (20 Hz, imaging period,
+    numbered by mean speed in the fitting sessions, as in the figures) and pose_states.csv
+    (state names, exclusion flag, feature means over the fitting sessions)."""
     m = pickle.load(open(f"{out_dir}/models_K_sweep.pkl", "rb"))
     hmm, mu, sd = m["models"][(final_K, final_kappa)], m["mu"], m["sd"]
     k = int(fs / fs_fit)
+    cond = {}
+    for f in glob.glob(f"{pose_root}/*/*/*_pose_top_v1_8.h5"):
+        dose, part = f.split("/")[-3:-1]
+        if (dose, part) in cond_of:
+            cond[os.path.basename(f).split("_pose_top")[0]] = cond_of[(dose, part)]
+    have = {os.path.basename(f)[9:-7] for f in glob.glob(f"{out_dir}/features_*.csv.gz")}
+    for s in load_all(only=set(cond) - have):
+        s["feat"].to_csv(f"{out_dir}/features_{s['session']}.csv.gz", index=False)
+        print(f"features of {s['session']} ({s['condition']})")
     sessions = []
     for f in sorted(glob.glob(f"{out_dir}/features_*.csv.gz")):
         feat = pd.read_csv(f)
         z = np.repeat(label(hmm, dict(feat=feat), mu, sd), k)
         sessions.append((os.path.basename(f)[9:-7], feat.iloc[:len(z)], z))
-    allf = pd.concat([f for _, f, _ in sessions])
-    allz = np.concatenate([z for _, _, z in sessions])
+    fit = [cond.get(n) in fit_conditions for n, _, _ in sessions]
+    allf = pd.concat([f for (_, f, _), u in zip(sessions, fit) if u])
+    allz = np.concatenate([z for (_, _, z), u in zip(sessions, fit) if u])
     prof = allf.groupby(allz).mean(numeric_only=True)
     order = prof.speed.sort_values().index.tolist()
     remap = np.argsort(order)                                  # fitted state -> speed rank

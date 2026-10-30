@@ -533,7 +533,7 @@ def fig_hmm(states, sessions, b):
     fig = plt.figure(figsize=(7.2, 9.6))
     gs = fig.add_gridspec(3, 1, height_ratios=[1, 0.95, 0.6], hspace=0.75)
     r1 = gs[0].subgridspec(1, 3, wspace=0.12, width_ratios=[1, 1, 1])
-    r2 = gs[1].subgridspec(1, 2, wspace=0.5, width_ratios=[1.6, 1])
+    r2 = gs[1].subgridspec(1, 2, wspace=0.5, width_ratios=[1.35, 1.25])
 
     # (a) loadings: mean z-scored HMM input feature per state
     ax = fig.add_subplot(r1[0])
@@ -610,7 +610,10 @@ def fig_hmm(states, sessions, b):
     conds = A.conditions
     occ = np.array([[np.mean([np.mean(s["z"] == k) for s in sessions if s["condition"] == c])
                      for c in conds] for k in range(K)])
-    heat(ax, occ * 100, labels, ["Control", "Clozapine", "Amph.", "Amph. +\nClozapine"],
+    short = {"Control": "Control", "Amphetamine": "Amph.", f"{A.drug} low": "Cloz.\nlow",
+             f"{A.drug} high": "Cloz.\nhigh", f"A + {A.drug} low": "Amph.+\nCloz.\nlow",
+             f"A + {A.drug} high": "Amph.+\nCloz.\nhigh"}
+    heat(ax, occ * 100, labels, [short[c] for c in conds],
          SEQUENTIAL, 0, 50, lambda v: f"{v:.0f}" if v >= 1 else "<1", 0)
     state_ticklabels(ax, names)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=0, ha="center")
