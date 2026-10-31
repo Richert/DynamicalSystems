@@ -80,8 +80,10 @@ def main(t0_s=0.0, dur_s=40.0):
     feat = pd.read_csv(f"{F.A.out_dir}/features_{pose_session}.csv.gz", usecols=["speed"])
     speed = feat.speed.values[t0:t0 + n]
     states = pd.read_csv(f"{F.A.out_dir}/pose_states.csv", index_col="state")
-    names = states.name.tolist()
-    z = pd.read_csv(f"{F.A.out_dir}/states_{pose_session}.csv.gz").state.values[t0:t0 + n]
+    # behaviour labels (merged fitted states, analysis_pose_arhmm.label_groups)
+    lmap, names = F.label_map(states)
+    z = lmap[pd.read_csv(f"{F.A.out_dir}/states_{pose_session}.csv.gz").state.values[t0:t0 + n]]
+    LCOL, LNAME = F.LABEL_COLORS, F.LABEL_NAMES
     # arena crop: square around the arena centre (keypoint extent)
     c = centre / sc
     H, W = video.shape[1:]
@@ -121,11 +123,11 @@ def main(t0_s=0.0, dur_s=40.0):
     ax1.plot(t, speed, color=INK2, lw=0.8)
     ax1.set_ylabel("speed\n(cm/s)", rotation=0, ha="right", va="center")
     ax2 = fig.add_subplot(sub[1], sharex=ax1)
-    ax2.imshow(z[None], cmap=ListedColormap([STATE_COLORS[k] for k in names]), vmin=-0.5,
+    ax2.imshow(z[None], cmap=ListedColormap([LCOL[k] for k in names]), vmin=-0.5,
                vmax=len(names) - 0.5, aspect="auto", extent=(0, t[-1], 0, 1),
                interpolation="nearest")
     ax2.set_yticks([])
-    ax2.set_ylabel("state", rotation=0, ha="right", va="center")
+    ax2.set_ylabel("behaviour", rotation=0, ha="right", va="center")
     ax3 = fig.add_subplot(sub[2], sharex=ax1)
     ax3.plot(t, rate, color=R.ACCENT, lw=1.0)
     ax3.set_ylabel("SPN rate\n(Hz)", rotation=0, ha="right", va="center")
@@ -161,10 +163,10 @@ def main(t0_s=0.0, dur_s=40.0):
         pc.set_facecolors(fc)
         for cl in cursors:
             cl.set_xdata([t[i], t[i]])
-        state_txt.set_text(STATE_LABELS[names[z[i]]])
-        state_txt.set_color(STATE_COLORS[names[z[i]]])
-        arena_txt.set_text(STATE_LABELS[names[z[i]]])
-        arena_txt.set_color(STATE_COLORS[names[z[i]]])
+        state_txt.set_text(LNAME[names[z[i]]])
+        state_txt.set_color(LCOL[names[z[i]]])
+        arena_txt.set_text(LNAME[names[z[i]]])
+        arena_txt.set_color(LCOL[names[z[i]]])
         return []
 
     from matplotlib.animation import FuncAnimation, FFMpegWriter

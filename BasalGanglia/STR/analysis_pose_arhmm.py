@@ -112,6 +112,14 @@ state_names = ["rest", "quiet", "shift", "slow_walk", "reorient", "walk", "rear_
 # keypoints); the rare reorient state (~0.6% of frames) is kept in the labels, its use
 # (drop or merge with turn_fast) is decided on the neural response profiles
 excluded_states = ["rear_artifact"]
+# behaviour labels: fitted states merged where the split is not behaviourally meaningful
+# (label -> states, in display order). rest + quiet: both immobile (median speed 0.04 /
+# 0.07 cm/s), most switches between the two (rest -> quiet 100%, quiet -> rest 56%),
+# decoder confusion 0.34; run + run_fast: the same locomotion at different speeds.
+label_groups = {"rest": ["rest", "quiet"], "shift": ["shift"], "slow_walk": ["slow_walk"],
+                "walk": ["walk"], "run": ["run", "run_fast"], "reorient": ["reorient"],
+                "turn_fast": ["turn_fast"], "rear_artifact": ["rear_artifact"]}
+label_of = {st: lab for lab, sts in label_groups.items() for st in sts}
 
 # ---------------------------------------------------------------------------
 # features
@@ -437,6 +445,7 @@ def export_states():
     prof = prof.loc[order].reset_index(drop=True)
     prof.insert(0, "occupancy", np.bincount(remap[allz], minlength=final_K) / len(allz))
     prof.insert(0, "excluded", [n in excluded_states for n in state_names])
+    prof.insert(0, "label", [label_of[n] for n in state_names])
     prof.insert(0, "name", state_names)
     prof.index.name = "state"
     prof.to_csv(f"{out_dir}/pose_states.csv")

@@ -246,6 +246,74 @@ def slide_states(states, sessions, b):
     F.save, F.fig_dir = (lambda fig, name: save(fig, "behavior_states")), out_dir
     F.fig_states(states, sessions, b)
 
+def slide_merge(states, sessions):
+    """From fitted states to behaviour labels: mapping diagram (A.label_groups) and the speed
+    distribution of each fitted state with the merged groups marked."""
+    from matplotlib.patches import FancyBboxPatch
+    names = states.name.tolist()
+    lmap, labels = F.label_map(states)
+    fig = plt.figure(figsize=(6.0, 2.7))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.15], wspace=0.25, left=0.01, right=0.98,
+                          top=0.88, bottom=0.15)
+    # (a) mapping: fitted states (left) -> behaviour labels (right)
+    ax = fig.add_subplot(gs[0])
+    ax.set_xlim(0, 10)
+    ax.set_ylim(-0.6, len(names) - 0.4)
+    ax.invert_yaxis()
+    ax.axis("off")
+    ys = {k: k for k in range(len(names))}
+    # label rows: centred on the mean row of their states
+    ly = {li: np.mean([k for k in range(len(names)) if lmap[k] == li]) for li in range(len(labels))}
+    for k, n in enumerate(names):
+        li = lmap[k]
+        merged = len(A.label_groups[labels[li]]) > 1
+        ax.plot([3.7, 6.3], [ys[k], ly[li]], color=F.LABEL_COLORS[labels[li]] if merged else GRID,
+                lw=1.6 if merged else 0.8, zorder=1)
+        ax.add_patch(FancyBboxPatch((0.2, k - 0.36), 3.5, 0.72, boxstyle="round,pad=0,rounding_size=0.15",
+                                    fc=STATE_COLORS[n], ec="white", lw=1, zorder=2))
+        ax.text(1.95, k, STATE_LABELS[n], ha="center", va="center", fontsize=7, color="white",
+                fontweight="bold", zorder=3)
+    for li, lab in enumerate(labels):
+        merged = len(A.label_groups[lab]) > 1
+        ax.add_patch(FancyBboxPatch((6.3, ly[li] - 0.36), 3.5, 0.72,
+                                    boxstyle="round,pad=0,rounding_size=0.15",
+                                    fc=F.LABEL_COLORS[lab], ec=INK if merged else "white",
+                                    lw=1.2 if merged else 1, zorder=2))
+        ax.text(8.05, ly[li], F.LABEL_NAMES[lab], ha="center", va="center", fontsize=7,
+                color="white", fontweight="bold", zorder=3)
+    ax.text(1.95, -0.85, "fitted HMM states", ha="center", fontsize=7.5, color=INK2)
+    ax.text(8.05, -0.85, "behaviour labels", ha="center", fontsize=7.5, color=INK2)
+    # (b) speed per fitted state (log), merged groups bracketed
+    ax = fig.add_subplot(gs[1])
+    allf = np.concatenate([s["feat"].speed.values for s in sessions])
+    allz = np.concatenate([s["z"] for s in sessions])
+    rng = np.random.default_rng(1)
+    for k, n in enumerate(names):
+        v = allf[allz == k]
+        v = rng.choice(v, min(len(v), 20000), replace=False)
+        q = np.percentile(v, [5, 25, 50, 75, 95])
+        ax.plot([q[0], q[4]], [k, k], color=STATE_COLORS[n], lw=1)
+        ax.plot([q[1], q[3]], [k, k], color=STATE_COLORS[n], lw=6, solid_capstyle="butt")
+        ax.plot([q[2]], [k], "|", color="white", ms=6, mew=1.5)
+    ax.set_xscale("log")
+    ax.set_xlim(0.01, 40)
+    ax.set_ylim(len(names) - 0.4, -0.6)
+    ax.set_yticks(range(len(names)), [STATE_LABELS[n] for n in names])
+    for l, n in zip(ax.get_yticklabels(), names):
+        l.set_color(STATE_COLORS[n])
+        l.set_fontweight("bold")
+    ax.tick_params(axis="y", length=0, labelsize=7)
+    ax.set_xlabel("torso speed (cm/s; box 25–75%, line 5–95%)")
+    for lab, sts in A.label_groups.items():
+        if len(sts) > 1:
+            ks = [names.index(st) for st in sts]
+            ax.axhspan(min(ks) - 0.45, max(ks) + 0.45, color=F.LABEL_COLORS[lab], alpha=0.1, lw=0)
+            ax.text(38, np.mean(ks), f"→ {F.LABEL_NAMES[lab]}", ha="right", va="center",
+                    fontsize=7, color=F.LABEL_COLORS[lab], fontweight="bold")
+    ax.set_title("speed per fitted state", loc="left")
+    letters(fig, [(0.005, "a"), (0.47, "b")], 0.93)
+    save(fig, "behavior_merge")
+
 def slide_drugs(states, sessions):
     show = shown_states(states)
     names = states.name.tolist()
@@ -284,5 +352,6 @@ if __name__ == "__main__":
     slide_features(states, sessions)
     slide_arhmm(states, sessions)
     slide_hmm(states, sessions)
+    slide_merge(states, sessions)
     slide_drugs(states, sessions)
     slide_states(states, sessions, F.bouts(sessions))

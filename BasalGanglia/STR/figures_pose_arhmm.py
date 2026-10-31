@@ -60,6 +60,19 @@ STATE_COLORS = {"rest": "#0d366b", "quiet": "#2a78d6", "shift": "#86b6ef",
                 "slow_walk": "#f3a77f", "walk": "#eb6834", "run": "#b84a1c",
                 "run_fast": "#6e2a0e", "reorient": "#a99ef0", "turn_fast": "#5140c4",
                 "rear_artifact": "#1baf7a"}
+# behaviour labels (merged states, A.label_groups): name and colour
+LABEL_NAMES = {"rest": "rest", "shift": "shift in place", "slow_walk": "slow walk",
+               "walk": "walk", "run": "run", "reorient": "reorient", "turn_fast": "fast turn",
+               "rear_artifact": "rear / artefact"}
+LABEL_COLORS = {"rest": "#0d366b", "shift": "#86b6ef", "slow_walk": "#f3a77f",
+                "walk": "#eb6834", "run": "#8f3a14", "reorient": "#a99ef0",
+                "turn_fast": "#5140c4", "rear_artifact": "#1baf7a"}
+
+def label_map(states):
+    """Fitted state index -> behaviour-label index (order of A.label_groups), label keys."""
+    labels = list(A.label_groups)
+    return np.array([labels.index(A.label_of[n]) for n in states.name]), labels
+
 START_GREY = "#d3d1cb"                     # bout start in fig 3
 # feature annotation colours (fig 1), shared between the frames and the time series
 FC = dict(torso="#2a78d6", head="#eb6834", bend="#6250d6", length="#c98500", ears="#1baf7a",
