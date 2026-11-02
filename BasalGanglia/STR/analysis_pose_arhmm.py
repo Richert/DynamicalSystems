@@ -19,7 +19,15 @@ jitter, at 20 Hz:
   ear_width   ear - ear distance relative to the session median (shrinks in the top view
               when the head pitches up, e.g. rearing)
   hip_width   hip - hip distance relative to the session median (hunched vs stretched)
-  wall_dist   torso distance to the arena wall (cm; stored, not used for the HMM)
+  wall_dist   torso distance to the arena wall (cm); arena circle from the top-view video
+              (arena_circles.py: Hough fit; LowDose without video: same mouse's nearest
+              video day), which also sets the cm/px scale (arena diameter arena_cm).
+              (wall_dist_c = clipped to [0, wall_clip_cm] for the HMM, v6: beyond a few cm
+              the distance is location, not behaviour)
+  wall_facing cos of the angle between the body heading and the outward radial direction
+              (1 = facing the wall, 0 = parallel, -1 = facing the centre), weighted by
+              proximity max(0, 1 - wall_dist / wall_clip_cm) (undefined far from the wall);
+              v6: separates moving / turning along the wall from open-field running
 Turn, head angle, bend and head turn are signed, so the HMM may form separate left /
 right states.
 Sign convention: positive = counter-clockwise as seen in the (top-down) video, i.e.
@@ -39,7 +47,10 @@ candidate K, the state feature profiles, dwell times and occupancy per drug cond
   /home/rgast/conda/envs/arhmm/bin/python analysis_pose_arhmm.py
   /home/rgast/conda/envs/arhmm/bin/python analysis_pose_arhmm.py export   (selected model ->
       per-session state sequences, see export_states)
-Paths / processes can be set via POSE_ROOT, OFFSETS_CSV, OUT_DIR and N_PROCESSES (server).
+  /home/rgast/conda/envs/arhmm/bin/python analysis_pose_arhmm.py summary  (per-session
+      distance travelled / immobile share -> session_behavior.csv)
+Paths / processes can be set via POSE_ROOT, OFFSETS_CSV, ARENA_CSV, OUT_DIR and N_PROCESSES
+(server).
 """
 
 import os
@@ -54,6 +65,8 @@ from scipy.ndimage import gaussian_filter1d
 pose_root = os.environ.get("POSE_ROOT", "/home/rgast/data/parker_data/pose_data/Clozapine")
 offsets_csv = os.environ.get("OFFSETS_CSV",
                              "/home/rgast/data/parker_data/pose_alignment/pose_imaging_offsets.csv")
+arena_csv = os.environ.get("ARENA_CSV", os.path.join(os.path.dirname(offsets_csv),
+                                                     "arena_circles.csv"))
 out_dir = os.environ.get("OUT_DIR", "/home/rgast/data/parker_data/pose_arhmm")
 drug = "Clozapine"
 fs = 20.0
@@ -63,8 +76,12 @@ min_score = 0.5                    # MARS keypoint confidence below which a keyp
                                    # interpolated (~5% of frames have one such keypoint)
 speed_eps = 0.5                    # cm/s, offset of the log speed (rest threshold scale)
 turn_eps = 5.0                     # deg/s, scale of the arcsinh compression of turning speed
+wall_clip_cm = 8.0                 # wall features: distance clipped / proximity weight scale
+immobile_cm_s = 1.0                # session summary: immobile below this torso speed
+# HMM inputs (v6: + wall distance and wall facing; the v5 model used the first 9, the fitted
+# models store their feature list)
 features = ["log_speed", "turn_asinh", "head_angle", "body_len", "bend", "log_head_speed",
-            "head_turn_asinh", "ear_width", "hip_width"]
+            "head_turn_asinh", "ear_width", "hip_width", "wall_dist_c", "wall_facing"]
 conditions = ["Control", f"{drug} low", f"{drug} high", "Amphetamine", f"A + {drug} low",
               f"A + {drug} high"]
 cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine",
@@ -79,7 +96,9 @@ fs_fit = 20.0                      # fit at the full video rate (no downsampling
 fit_cap_s = 900                    # at most 15 min per session in the fit
 # K = 4 merged the turning / fast states (v3); K = 5/6 merged the rare rearing-like state
 # with clockwise turning (v4)
-K_grid = [8, 10, 12]
+# v6 (wall features): K 10 / 12 / 15 at kappa 1e7 (kappa scaled up with K, as it acts on
+# the per-state transition counts), larger K to prune / merge states afterwards
+K_grid = [10, 12, 15]
 ar_lags = 4                        # 200 ms of context at 20 Hz
 # stickiness: at kappa = 100 states switched every 50-300 ms (median dwell) at 20 Hz with
 # 9 features; swept to reach realistic behavioural dwell times (~0.3-1 s). In ssm, kappa
@@ -88,13 +107,14 @@ ar_lags = 4                        # 200 ms of context at 20 Hz
 # dwell (0.15 -> 0.2 s, v3); it has to be of the order of the per-state counts.
 # v4: 3e5 -> 3e6 raised the median dwell 0.2 -> 0.3 s (K = 8) at a held-out cost of only
 # 0.04 nats/frame
-kappa_grid = [3e6, 6e6, 9e6]
+# v5: 6e6 / 9e6 gave the same median dwell (0.3 s) at K = 10
+kappa_grid = [1e7]
 em_iters = 50
-n_restarts = 7                     # 63 fits: one round on ~70 server workers
+n_restarts = 10                    # 30 fits: one round on ~70 server workers
 heldout_frac = 0.2
 n_jobs = int(os.environ.get("N_PROCESSES", 8))
 seed = 1
-show_K = [8, 10, 12]       # candidate K values summarised in the figures (one per kappa)
+show_K = [10, 12, 15]      # candidate K values summarised in the figures (one per kappa)
 
 # selected model (v5): K = 10 / kappa = 6e6; K = 8 merged fast turning with the rearing /
 # artefact state, K = 12 only added near-empty or ~0.2 s states (held-out gain within the
@@ -130,10 +150,16 @@ def angle_between(u, v):
     a = np.arctan2(u[:, 0] * v[:, 1] - u[:, 1] * v[:, 0], (u * v).sum(1))
     return np.degrees(a)
 
-def load_keypoints(f, off, n_frames, scale):
+def arena(key):
+    """(cm per px, arena centre in px) of a session (key drug/dose/session) from the arena
+    table (arena_circles.py)."""
+    a = pd.read_csv(arena_csv).set_index("session").loc[key]
+    return arena_cm / 2 / float(a.R_px), np.array([a.cx, a.cy], float)
+
+def load_keypoints(f, off, n_frames, scale, centre_px=None):
     """Keypoints of the imaging period in cm (T, 7, 2): low-confidence keypoints
-    interpolated, smoothed; with the per-frame interpolated share, the arena centre (cm)
-    and the node names."""
+    interpolated, smoothed; with the per-frame interpolated share, the arena centre (cm;
+    centre_px given: from the arena table, else the keypoint extent) and the node names."""
     with h5py.File(f, "r") as h:
         tr = h["tracks"][0]                                   # (2, 7, T)
         score = h["point_scores"][0].T                        # (T, 7)
@@ -145,16 +171,18 @@ def load_keypoints(f, off, n_frames, scale):
     kp = pd.DataFrame(kp.reshape(len(kp), -1)).interpolate(limit_direction="both") \
         .values.reshape(kp.shape)
     interp_share = low[off:off + n_frames].mean(1)
-    # arena centre from the keypoint extent over the whole video (as in the paper)
-    lo = np.nanpercentile(kp.reshape(-1, 2), 0.01, axis=0)
-    hi = np.nanpercentile(kp.reshape(-1, 2), 99.99, axis=0)
-    centre = (lo + hi) / 2
+    if centre_px is not None:
+        centre = np.asarray(centre_px, float) * scale
+    else:                                         # keypoint extent (fails with little exploration)
+        lo = np.nanpercentile(kp.reshape(-1, 2), 0.01, axis=0)
+        hi = np.nanpercentile(kp.reshape(-1, 2), 99.99, axis=0)
+        centre = (lo + hi) / 2
     kp = kp[off:off + n_frames]
     kp = gaussian_filter1d(kp, sigma=smooth_s * fs, axis=0, mode="nearest")
     return kp, interp_share, centre, nodes
 
-def session_features(f, off, n_frames, scale):
-    kp, interp_share, centre, nodes = load_keypoints(f, off, n_frames, scale)
+def session_features(f, off, n_frames, scale, centre_px=None):
+    kp, interp_share, centre, nodes = load_keypoints(f, off, n_frames, scale, centre_px)
     ix = {n: i for i, n in enumerate(nodes)}
     nose, neck, tail = kp[:, ix["nose"]], kp[:, ix["neck"]], kp[:, ix["tail_base"]]
     hips = (kp[:, ix["hip1"]] + kp[:, ix["hip2"]]) / 2
@@ -177,6 +205,11 @@ def session_features(f, off, n_frames, scale):
     length = np.linalg.norm(nose - tail, axis=1)
     ears = np.linalg.norm(kp[:, ix["ear1"]] - kp[:, ix["ear2"]], axis=1)
     hipw = np.linalg.norm(kp[:, ix["hip1"]] - kp[:, ix["hip2"]], axis=1)
+    radial = torso - centre
+    wall_dist = arena_cm / 2 - np.linalg.norm(radial, axis=1)
+    out = radial / np.maximum(np.linalg.norm(radial, axis=1, keepdims=True), 1e-6)
+    facing = (body * out).sum(1) / np.maximum(np.linalg.norm(body, axis=1), 1e-6)
+    prox = np.clip(1 - wall_dist / wall_clip_cm, 0, 1)
     return pd.DataFrame(dict(
         log_speed=np.log10(speed + speed_eps), speed=speed,
         turn=turn, head_angle=head, turn_asinh=np.arcsinh(turn / turn_eps),
@@ -184,7 +217,8 @@ def session_features(f, off, n_frames, scale):
         head_speed=head_speed, log_head_speed=np.log10(head_speed + speed_eps),
         head_turn=head_turn, head_turn_asinh=np.arcsinh(head_turn / turn_eps),
         ear_width=ears / np.median(ears), hip_width=hipw / np.median(hipw),
-        wall_dist=arena_cm / 2 - np.linalg.norm(torso - centre, axis=1),
+        wall_dist=wall_dist, wall_dist_c=np.clip(wall_dist, 0, wall_clip_cm),
+        wall_facing=facing * prox,
         abs_turn=np.abs(turn), abs_head_turn=np.abs(head_turn), interp_share=interp_share))
 
 def load_all(only=None):
@@ -200,8 +234,9 @@ def load_all(only=None):
                 (only is not None and base not in only):
             continue
         o = offsets.loc[key]
+        scale, centre_px = arena(key)
         feat = session_features(f, int(o.offset_frames), int(o.old_frames_5hz) * 4,
-                                float(o.cm_per_px))
+                                scale, centre_px)
         sessions.append(dict(session=base, mouse=re.search(r"_(m\d+|f\d+)_", base).group(1),
                              condition=cond_of[(dose, part)], feat=feat))
     return sessions
@@ -310,9 +345,10 @@ def sweep_figure(sweep):
 # summaries
 # ---------------------------------------------------------------------------
 
-def label(hmm, s, mu, sd):
-    """Viterbi states at fs_fit for a whole session, renumbered later by speed."""
-    X = np.ascontiguousarray(to_fit_rate((s["feat"][features].values - mu) / sd))
+def label(hmm, s, mu, sd, feats=None):
+    """Viterbi states at fs_fit for a whole session, renumbered later by speed (feats: the
+    model's input features, default the current ones)."""
+    X = np.ascontiguousarray(to_fit_rate((s["feat"][feats or features].values - mu) / sd))
     return hmm.most_likely_states(X)
 
 def summarise(sessions, models, mu, sd, sweep, kap):
@@ -418,6 +454,7 @@ def export_states():
     (state names, exclusion flag, feature means over the fitting sessions)."""
     m = pickle.load(open(f"{out_dir}/models_K_sweep.pkl", "rb"))
     hmm, mu, sd = m["models"][(final_K, final_kappa)], m["mu"], m["sd"]
+    feats = list(m.get("features", features))
     k = int(fs / fs_fit)
     cond = {}
     for f in glob.glob(f"{pose_root}/*/*/*_pose_top_v1_8.h5"):
@@ -431,7 +468,7 @@ def export_states():
     sessions = []
     for f in sorted(glob.glob(f"{out_dir}/features_*.csv.gz")):
         feat = pd.read_csv(f)
-        z = np.repeat(label(hmm, dict(feat=feat), mu, sd), k)
+        z = np.repeat(label(hmm, dict(feat=feat), mu, sd, feats), k)
         sessions.append((os.path.basename(f)[9:-7], feat.iloc[:len(z)], z))
     fit = [cond.get(n) in fit_conditions for n, _, _ in sessions]
     allf = pd.concat([f for (_, f, _), u in zip(sessions, fit) if u])
@@ -454,6 +491,32 @@ def export_states():
     print(f"saved {len(sessions)} state sequences and {out_dir}/pose_states.csv")
 
 
+def session_summary():
+    """Per-session behaviour over the imaging period from the stored features in out_dir:
+    distance travelled (m), share of time immobile (torso speed < immobile_cm_s), mean
+    speed; -> session_behavior.csv (e.g. to flag sedated sessions in later analyses)."""
+    cond = {}
+    for f in glob.glob(f"{pose_root}/*/*/*_pose_top_v1_8.h5"):
+        dose, part = f.split("/")[-3:-1]
+        if (dose, part) in cond_of:
+            cond[os.path.basename(f).split("_pose_top")[0]] = cond_of[(dose, part)]
+    rows = []
+    for f in sorted(glob.glob(f"{out_dir}/features_*.csv.gz")):
+        name = os.path.basename(f)[9:-7]
+        v = pd.read_csv(f, usecols=["speed"]).speed.values
+        rows.append(dict(session=name, mouse=re.search(r"_(m\d+|f\d+)_", name).group(1),
+                         condition=cond.get(name), minutes=len(v) / fs / 60,
+                         distance_m=v.sum() / fs / 100, mean_speed_cm_s=v.mean(),
+                         immobile_share=np.mean(v < immobile_cm_s)))
+    d = pd.DataFrame(rows)
+    d.to_csv(f"{out_dir}/session_behavior.csv", index=False)
+    pd.set_option("display.width", 200)
+    print(d.groupby("condition")[["distance_m", "mean_speed_cm_s", "immobile_share"]]
+          .describe().round(2).T.to_string())
+    print(f"saved {out_dir}/session_behavior.csv")
+
+
 if __name__ == "__main__":
     import sys
-    export_states() if sys.argv[1:] == ["export"] else main()
+    cmd = sys.argv[1:]
+    export_states() if cmd == ["export"] else session_summary() if cmd == ["summary"] else main()
