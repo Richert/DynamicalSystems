@@ -261,6 +261,7 @@ blob_contrast, blob_ratio, on_peak_px = 0.25, 2.5, 2.0
 vessel_px = None
 offpeak_px = None
 frag_r = None
+frag_max_area_rel = 0.6              # fragment: footprint area < this x the brighter neighbour's
 pnr_img = None                       # PNR image of the recording (set in main / by callers)
 rim_params = dict(radii=(95, 240, 4), border_frac=0.25, min_support=0.4, min_contrast=0.08)
 eta_params = dict(n_events=20, min_sep_s=1.0, base_window_s=(1.0, 0.5), box_half_px=12, shift_px=8,
@@ -472,16 +473,32 @@ def footprint_centroid(a):
     Y, X = np.indices(a.shape)
     return (w * Y).sum() / w.sum(), (w * X).sum() / w.sum()
 
+vessel_params = dict(top_frac=0.07, min_area_px=300, min_length_px=60, max_dark_ratio=0.85)
+
 def vessel_distance(b0, dims):
-    """Distance (px) of every pixel to the nearest blood vessel: dark tubular structures in the
-    baseline image (Sato ridge filter, sigmas 3-8 px, top 7% response, connected parts > 300 px)."""
+    """Distance (px) of every pixel to the nearest blood vessel and the vessel mask. Vessel
+    candidates: dark tubular structures in the baseline image (Sato ridge filter, sigmas 3-8 px,
+    top 7% response, connected parts > 300 px); kept only if long (major axis >= 60 px) and
+    clearly darker than the tissue around them (median b0 <= 0.85 x the median of a 2-8 px ring):
+    the top-7% mask alone also marked tissue in recordings without a vessel (m797 / m040: real
+    vessels 0.80-0.83, false candidates 0.88-1.00). No vessel: distances inf."""
     from scipy import ndimage as ndi
     from skimage.filters import sato
+    from skimage.measure import label, regionprops
+    p = vessel_params
     img = np.asarray(b0).reshape(dims, order="F")
     v = sato(ndi.gaussian_filter(img, 1), sigmas=range(3, 9), black_ridges=True)
-    m = v > np.percentile(v, 93)
-    lab, n = ndi.label(m)
-    m = np.isin(lab, 1 + np.flatnonzero(ndi.sum(m, lab, range(1, n + 1)) > 300))
+    lab = label(v > np.percentile(v, 100 * (1 - p["top_frac"])))
+    m = np.zeros(dims, bool)
+    for r in regionprops(lab):
+        if r.area <= p["min_area_px"] or r.major_axis_length < p["min_length_px"]:
+            continue
+        reg = lab == r.label
+        ring = ndi.binary_dilation(reg, iterations=8) & ~ndi.binary_dilation(reg, iterations=2)
+        if np.median(img[reg]) <= p["max_dark_ratio"] * np.median(img[ring]):
+            m |= reg
+    if not m.any():
+        return np.full(dims, np.inf), m
     return ndi.distance_transform_edt(~m), m
 
 def final_rules(est, dims, cn, keep):
@@ -532,10 +549,12 @@ def final_rules(est, dims, cn, keep):
         Z = (C - C.mean(1, keepdims=True)) / (C.std(1, keepdims=True) + 1e-9)
         Rr = Z @ Z.T / C.shape[1]
         masks = [ndi.binary_dilation(fp[k] > 0.2 * fp[k].max()) for k in keep]
+        area = [(fp[k] > 0.4 * fp[k].max()).sum() for k in keep]
         bad = []
         for i, k in enumerate(keep):
             for j, l in enumerate(keep):
-                if j != i and snr[l] > snr[k] and Rr[i, j] > frag_r and (masks[i] & masks[j]).any():
+                if j != i and snr[l] > snr[k] and Rr[i, j] > frag_r and \
+                        area[i] < frag_max_area_rel * area[j] and (masks[i] & masks[j]).any():
                     bad.append(k)
                     break
         drop(bad, "rim fragment")
