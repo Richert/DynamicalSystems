@@ -5,12 +5,13 @@
 # each followed by its overlay figure (compare_cell_extraction.py, all in FIG_DIR).
 # Ends with a summary table of the evaluation vs the old pipeline. Recordings without
 # an old-pipeline counterpart are extracted only.
-# Settings from the extraction / SNR tests on 5 recordings: seeding min_corr 0.6 /
-# min_pnr 5, SNR >= 2, event-triggered footprint consistency r >= 0.4; plus (selection-
-# stage rerun, everything up to CNMF-E and the consistency tables cached): relative size
-# filter (--size_rel), lens-rim exclusion (--lens_rim 5) and summed spike detection at
-# 2 x noise (--detect_sum 2). Outputs carry p1_c0.6_pnr5 ... _snr2_eta0.4_sz_rim5 and
-# thr2_sum3.
+# Final settings (CNMF-E settings tests, rounds 1-6 on six recordings): seeding min_corr 0.6 /
+# min_pnr 5; footprint trimming nrgthr 0.999, ring factor 1.4, merging 0.7. Selection: SNR >= 2,
+# relative size, lens rim 5 px, hybrid consistency (r >= 0.3, or a local blob, or r >= 0.2 on a
+# correlation peak), vessel 3 px, off-peak 6 px, greedy edge-piece rule 1.05. Spikes: OASIS,
+# summed detection over 3 frames at 1.5 x noise. Motion correction is reused; CNMF-E is refitted
+# (new trimming). Outputs carry p1_c0.6_pnr5_nrg0.999 ... _snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05
+# and thr1.5_sum3.
 
 # paths on the server (/media/storage/DATA there = /mnt/kennedy_labdata on the workstation)
 work_dir="$HOME/PycharmProjects/DynamicalSystems/BasalGanglia/STR"
@@ -23,9 +24,9 @@ export WORK_ROOT="$data_root/Parkerlab/results/raw_pipeline"
 # extraction settings (seeding thresholds, component selection flags)
 corr=0.6
 pnr=5
-sel="--min_snr 2 --min_eta 0.4 --size_rel --lens_rim 5 --detect_sum 2"
-sfx="c${corr}_pnr${pnr}_snr2_eta0.4_sz_rim5_sum3"
-spike_tag="2_sum3"                 # summary_<...>_thr2_sum3 (collect_raw_pipeline_grid.py)
+sel="--nrgthr 0.999 --min_snr 2 --size_rel --lens_rim 5 --hybrid 0.3 0.2 --vessel 3 --offpeak 6 --frag_edge 1.05 --detect_sum 1.5"
+sfx="final_nrg0.999"
+spike_tag="1.5_sum3"               # summary_<...>_thr1.5_sum3 (collect_raw_pipeline_grid.py)
 log_dir="$WORK_ROOT/logs_$sfx"
 export FIG_DIR="$WORK_ROOT/cell_overlays_$sfx"
 
