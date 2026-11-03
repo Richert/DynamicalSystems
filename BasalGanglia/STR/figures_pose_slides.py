@@ -331,7 +331,7 @@ def slide_merge(states, sessions):
 def slide_drugs(states, sessions):
     show = shown_states(states)
     names = states.name.tolist()
-    conds = A.conditions
+    conds = getattr(A, "analysis_conditions", A.conditions) if "display" in A.cfg else A.conditions
     short = {"Control": "Control", f"{A.drug} low": "Cloz. low", f"{A.drug} high": "Cloz. high",
              "Amphetamine": "Amph.", f"A + {A.drug} low": "Amph. +\nCloz. low",
              f"A + {A.drug} high": "Amph. +\nCloz. high"}
@@ -341,7 +341,8 @@ def slide_drugs(states, sessions):
     n = [sum(s["condition"] == c for s in sessions) for c in conds]
     fig, ax = plt.subplots(figsize=(6.0, 2.45))
     fig.subplots_adjust(left=0.08, right=0.78, top=0.85, bottom=0.17)
-    x = np.array([0, 1, 2, 3.4, 4.4, 5.4])               # gap between drug-only and amph
+    x = np.array([0, 1, 2, 3.4, 4.4, 5.4]) if len(conds) == 6 else \
+        np.r_[0, 1.4 + np.arange(len(conds) - 1)]          # gap after the drug-free control(s)
     bottom = np.zeros(len(conds))
     for i, k in enumerate(show):
         ax.bar(x, occ[i] * 100, 0.72, bottom=bottom * 100, color=STATE_COLORS[names[k]],

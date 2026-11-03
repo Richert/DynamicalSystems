@@ -32,10 +32,16 @@ import h5py
 
 import pipeline_raw_spikes as P
 
+def _display_names(model_dir):
+    """Label display names of the pose model version (analysis_pose_arhmm.model_cfg)."""
+    import importlib, analysis_pose_arhmm as A
+    cfg = A.model_cfg.get(os.path.basename(os.path.normpath(model_dir)), {})
+    return {k: v[0] for k, v in cfg.get("display", {}).items()}
+
 drive = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"
 local = "/home/rgast/data/parker_data/raw_pipeline"
 tracking_dir = "/home/rgast/data/parker_data/cell_tracking"
-pose_dir = os.environ.get("POSE_MODEL_DIR", "/home/rgast/data/parker_data/pose_arhmm_v5")
+pose_dir = os.environ.get("POSE_MODEL_DIR", "/home/rgast/data/parker_data/pose_arhmm_v7")
 out = os.environ.get("DATASET", "/home/rgast/data/parker_data/dataset/clozapine_spn.h5")
 tag, sel = "p1_c0.6_pnr5", "snr2_eta0.4_sz_rim5"
 P.detect_method, P.sum_frames, P.spike_thr = "sum", 3, 2.0          # as in the pipeline batch
@@ -110,6 +116,7 @@ def write_behaviour(h, day):
     st = pd.read_csv(f"{pose_dir}/pose_states.csv", index_col="state")
     labels = list(dict.fromkeys(st.label)) if "label" in st else list(st.name)
     lmap = np.array([labels.index(l) for l in (st.label if "label" in st else st.name)])
+    excl_idx = sorted({lmap[k] for k in st.index if st.excluded[k]})
     for rec in (0, 1):
         r = h[f"{day}/rec{rec}"]
         if "behaviour" in r:
@@ -137,9 +144,17 @@ def write_behaviour(h, day):
         b.create_dataset("state", data=s, **gz)
         lab = np.full(T, -1, np.int16)
         lab[ok] = lmap[z[idx[ok]]]
+        lab[np.isin(lab, excl_idx)] = -1                  # excluded labels (artefacts): -1
         b.create_dataset("label", data=lab, **gz)
+        zc = pd.read_csv(fz).state_clean.values if "state_clean" in pd.read_csv(fz, nrows=1) else z
+        labc = np.full(T, -1, np.int16)                   # bouts < min_bout_s unlabelled too
+        okc = ok & (zc[np.clip(idx, 0, len(zc) - 1)] >= 0)
+        labc[okc] = lmap[zc[idx[okc]]]
+        labc[np.isin(labc, excl_idx)] = -1
+        b.create_dataset("label_clean", data=labc, **gz)
         b.attrs.update(available=True, model=pose_dir, labels=labels,
                        states=list(st.name), excluded=list(st.name[st.excluded]),
+                       label_names=[_display_names(pose_dir).get(l, l) for l in labels],
                        lag_used=lag)
 
 def main(what="all"):

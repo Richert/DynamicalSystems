@@ -96,6 +96,9 @@ cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine"
 # the model was fitted on Vehicle / HighDose (v5); LowDose (added later) is only labelled
 # with it (export), so that the states stay identical across doses
 fit_conditions = ["Control", f"{drug} high", "Amphetamine", f"A + {drug} high"]
+# conditions of the behaviour-conditioned SPN analyses (user, 2026-11-03): the running / turning
+# labels hardly occur under clozapine alone
+analysis_conditions = ["Control", "Amphetamine", f"A + {drug} low", f"A + {drug} high"]
 
 # AR-HMM
 fs_fit = 20.0                      # fit at the full video rate (no downsampling)
@@ -158,7 +161,8 @@ model_cfg = {
     # both fast clockwise turns). Review 3: slow walk + walk (s03, s04, s07, s08), walk (CCW) +
     # fast walk (s11, s12): walking by speed; the scanning walk (strong head movement) stays.
     # Review 4: fast walk into walk (decoded correctly 38% only), open-field run (s19, ~1%
-    # occupancy) into run. Label names provisional.
+    # occupancy) into run. Final (user, 2026-11-03): 8 labels, names below; behaviour-conditioned
+    # analyses restricted to analysis_conditions.
     "pose_arhmm_v7": dict(
         K=20, kappa=1e7, names=[f"s{i:02d}" for i in range(20)],
         excluded=["s05", "s06", "s10"],
@@ -169,7 +173,7 @@ model_cfg = {
         display={"rest": ("rest", "#0d366b"),
                  "walk": ("walk", "#ef8a55"), "scan_walk": ("scanning walk", "#d9a400"),
                  "turn_fast": ("sharp turn (CW)", "#5140c4"),
-                 "run_turn_ccw": ("turning run (CCW)", "#e87ba4"), "run": ("run", "#8f3a14"),
+                 "run_turn_ccw": ("turning run (CCW)", "#e87ba4"), "run": ("straight run", "#8f3a14"),
                  "run_turn_cw": ("turning run (CW)", "#b0306a"), "run_wall": ("wall run", "#5a1f0c"),
                  "rear_artifact": ("rear / artefact", "#1baf7a")}),
     # same fit, kappa 2e7 (exported into its own directory; models / features linked)
