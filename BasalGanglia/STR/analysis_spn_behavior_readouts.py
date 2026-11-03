@@ -5,14 +5,18 @@ Equal-time / equal-neuron sampling: per label a time budget T (smallest median l
 the conditions, clipped to [t_min, t_max]); recordings with less than T in the label are left
 out. Per recording and label, n_rep random draws of n_sub cells and of bouts (random order,
 the last one cut) up to T; readouts averaged over the draws.
+Label "whole session": the recording cut into win_all_s windows, drawn like bouts (budget t_max,
+behaviour-independent).
   log rate      per cell log10(events / T), zero counts floored at 0.5 events; per draw the
                 mean and SD over the drawn cells
   within-bout   mean pairwise correlation of the cells' spike trains, smoothed with a Gaussian
   correlation   kernel (sigma kernel_s, spike-time jitter), within bouts >= corr_bout_s drawn up
-                to the budget T_corr (as T, from the time in bouts >= corr_bout_s); pairs of
-                cells with spikes in (or within 3 sigma before) the bout
+                to the budget T_corr (as T, from the time in bouts >= corr_bout_s); n_act cells
+                drawn from those active in the drawn bouts; pairs of cells with spikes in (or
+                within 3 sigma before) the bout
   participation participation ratio (sum lambda)^2 / sum lambda^2 of the covariance of the
-  ratio         smoothed spike trains of the drawn cells over the drawn (concatenated) bouts:
+  ratio         smoothed spike trains of n_act cells drawn from those active in the drawn
+                bouts, over the drawn (concatenated) bouts:
                 high when different cells carry the activity in different bouts
 Rate distributions: per cell log10(mean event count over the draws / T) (all cells, equal time),
 pooled over the recordings of a condition.
@@ -38,7 +42,9 @@ kernel_s = 0.1                     # Gaussian kernel SD for the correlation meas
 corr_bout_s = 0.5                  # bouts used for the within-bout correlation
 t_min, t_max = 20.0, 120.0         # time budget per label (rates, participation ratio)
 tc_min, tc_max = 10.0, 60.0        # time budget per label (within-bout correlation)
-n_sub, n_rep = 50, 50              # cells per draw, draws
+n_sub, n_rep = 50, 50              # cells per draw (rates), draws
+n_act = 30                         # active cells per draw (correlation, participation ratio)
+win_all_s = 5.0                    # whole session: random windows of this length
 seed = 1
 
 def bouts_of(lab):
@@ -85,7 +91,9 @@ def budgets(h):
                 rows.append(dict(condition=r.attrs["condition"], label=name, secs=L.sum(),
                                  secs_long=L[L >= corr_bout_s].sum()))
     d = pd.DataFrame(rows).groupby(["label", "condition"]).median().groupby("label").min()
-    return (d.secs.clip(t_min, t_max).to_dict(), d.secs_long.clip(tc_min, tc_max).to_dict())
+    T_lab, Tc_lab = d.secs.clip(t_min, t_max).to_dict(), d.secs_long.clip(tc_min, tc_max).to_dict()
+    T_lab["whole session"], Tc_lab["whole session"] = t_max, tc_max
+    return T_lab, Tc_lab
 
 def recording_readouts(r, attrs, rng, T_lab, Tc_lab):
     beh = r["behaviour"]
@@ -101,7 +109,10 @@ def recording_readouts(r, attrs, rng, T_lab, Tc_lab):
     cs = np.concatenate([np.zeros((n, 1), np.float32), np.cumsum(E, 1)], 1)   # event counts
     pad = int(3 * kernel_s * fs)
     rows, cells = [], []
-    for name, (st, en) in label_bouts(lab, names).items():
+    lb = label_bouts(lab, names)
+    w = int(win_all_s * fs)
+    lb["whole session"] = (np.arange(0, T - w + 1, w), np.arange(w, T + 1, w))
+    for name, (st, en) in lb.items():
         if name not in T_lab:
             continue
         budget = int(round(T_lab[name] * fs))
@@ -121,10 +132,19 @@ def recording_readouts(r, attrs, rng, T_lab, Tc_lab):
             lr = np.log10(np.maximum(cnt[sel], 0.5) / T_lab[name])
             m_lr.append(lr.mean()); s_lr.append(lr.std()); sil.append(np.mean(cnt[sel] == 0))
             fr_idx = np.concatenate([np.arange(a, b) for a, b in bts])
-            pr.append(participation_ratio(Sm[np.ix_(sel, fr_idx)]))
+            act = np.flatnonzero(cnt > 0)
+            if len(act) >= n_act:
+                pa = np.sort(rng.choice(act, n_act, replace=False))
+                pr.append(participation_ratio(Sm[np.ix_(pa, fr_idx)]))
             if do_corr:
                 v = []
-                for a, b in draw_bouts(st[long_], en[long_], bc, rng):
+                cb = draw_bouts(st[long_], en[long_], bc, rng)
+                act = np.flatnonzero(sum(cs[:, b] - cs[:, a] for a, b in cb) > 0)
+                if len(act) < n_act:
+                    wb.append(np.nan)
+                    continue
+                sel = np.sort(rng.choice(act, n_act, replace=False))
+                for a, b in cb:
                     if (b - a) < corr_bout_s * fs:
                         continue
                     act = sel[E[sel, max(0, a - pad):b].sum(1) > 0]
@@ -142,7 +162,8 @@ def recording_readouts(r, attrs, rng, T_lab, Tc_lab):
                          T_corr=Tc_lab[name] if do_corr else np.nan,
                          mean_log_rate=np.mean(m_lr), sd_log_rate=np.mean(s_lr), silent=np.mean(sil),
                          within_bout_corr=np.nanmean(wb) if do_corr and np.isfinite(wb).any() else np.nan,
-                         participation_ratio=np.nanmean(pr)))
+                         participation_ratio=np.mean(pr) if len(pr) >= n_rep // 2 else np.nan,
+                         n_active=np.mean(np.sum(cnt_sum > 0))))
         mc = cnt_sum / n_rep
         cells.append(pd.DataFrame(dict(base, log_rate=np.log10(np.maximum(mc, 0.5) / T_lab[name]),
                                        silent=mc == 0)))
@@ -173,7 +194,7 @@ def figure_label(rd, cl, label, path):
         for sp in ("top", "right"):
             ax.spines[sp].set_visible(False)
     readouts = [("mean_log_rate", "mean log10 rate"), ("sd_log_rate", "SD of log10 rate"),
-                ("within_bout_corr", "within-bout pairwise corr."), ("participation_ratio", f"participation ratio ({n_sub} cells)")]
+                ("within_bout_corr", "within-bout pairwise corr."), ("participation_ratio", f"participation ratio ({n_act} active cells)")]
     for i, (col, lab) in enumerate(readouts):
         ax = fig.add_subplot(gs[1, i])
         for gi, (gname, spns) in enumerate(groups):
