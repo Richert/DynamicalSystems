@@ -88,13 +88,13 @@ def selection_cli(argv):
     size_flag = "--size_rel" in argv
     if size_flag:
         argv.remove("--size_rel")
-    global hybrid, vessel_px, offpeak_px, frag_r
+    global hybrid, vessel_px, offpeak_px, frag_r, frag_edge
     if "--hybrid" in argv:
         i = argv.index("--hybrid")
         hybrid = (float(argv[i + 1]), float(argv[i + 2]))
         del argv[i:i + 3]
     rule_sfx = ""
-    for flag in ("--vessel", "--offpeak", "--frag"):
+    for flag in ("--vessel", "--offpeak", "--frag", "--frag_edge"):
         if flag in argv:
             i = argv.index(flag)
             val = float(argv[i + 1])
@@ -103,8 +103,10 @@ def selection_cli(argv):
                 vessel_px = val
             elif flag == "--offpeak":
                 offpeak_px = val
-            else:
+            elif flag == "--frag":
                 frag_r = val
+            else:
+                frag_edge = val
     for flag in ("--min_snr", "--min_eta", "--min_eta_margin", "--lens_rim", "--detect_sum"):
         if flag in argv:
             i = argv.index(flag)
@@ -132,6 +134,8 @@ def selection_cli(argv):
         out_suffix += f"_off{offpeak_px:g}"
     if frag_r is not None:
         out_suffix += f"_frag{frag_r:g}"
+    if frag_edge is not None:
+        out_suffix += f"_fedge{frag_edge:g}"
     if refit_flag:
         refit_selected, out_suffix = True, out_suffix + "_refit"
     return argv
@@ -262,6 +266,14 @@ vessel_px = None
 offpeak_px = None
 frag_r = None
 frag_max_area_rel = 0.6              # fragment: footprint area < this x the brighter neighbour's
+#   --frag_edge T (outputs _fedge<T>): edge pieces by the correlation image, greedily: components
+#       whose outlines (> 40% of max, dilated 1 px) touch others form a contact graph; starting
+#       from the component with the most contacts, it is dropped if the mean correlation-image
+#       value in its outer band (outermost 2 px of the outline) exceeds T x that in its core
+#       (> 70% of its max), i.e. its correlation mass sits at its edge rather than its centre;
+#       a dropped component leaves the graph (its neighbours' contact counts drop), checked ones
+#       are not revisited
+frag_edge = None
 pnr_img = None                       # PNR image of the recording (set in main / by callers)
 rim_params = dict(radii=(95, 240, 4), border_frac=0.25, min_support=0.4, min_contrast=0.08)
 eta_params = dict(n_events=20, min_sep_s=1.0, base_window_s=(1.0, 0.5), box_half_px=12, shift_px=8,
@@ -501,6 +513,45 @@ def vessel_distance(b0, dims):
         return np.full(dims, np.inf), m
     return ndi.distance_transform_edt(~m), m
 
+def edge_scores(fp, keep, cn):
+    """Per component: mean correlation-image value (clipped at 0) in the outer band of its
+    outline / that in its core; and the contact sets (outlines touching)."""
+    from scipy import ndimage as ndi
+    out, score = {}, {}
+    cnp = np.maximum(cn, 0)
+    for k in keep:
+        a = fp[k]
+        lab, _ = ndi.label(a > 0.4 * a.max())
+        m = lab == lab[np.unravel_index(np.argmax(a), a.shape)]
+        band = m & ~ndi.binary_erosion(m, iterations=2)
+        core = a > 0.7 * a.max()
+        score[k] = cnp[band].mean() / max(cnp[core].mean(), 1e-6) if band.any() else 0.0
+        out[k] = ndi.binary_dilation(m)
+    contacts = {k: set() for k in keep}
+    for i, k in enumerate(keep):
+        for l in keep[i + 1:]:
+            if (out[k] & out[l]).any():
+                contacts[k].add(l)
+                contacts[l].add(k)
+    return score, contacts
+
+def edge_pieces(fp, keep, cn, thr):
+    """Greedy edge-piece pruning (see frag_edge). Returns the dropped components."""
+    score, contacts = edge_scores(fp, keep, cn)
+    cand = {k for k in keep if contacts[k]}
+    dropped = []
+    while cand:
+        k = max(cand, key=lambda c: (len(contacts[c]), score[c]))
+        cand.discard(k)
+        if score[k] > thr:
+            dropped.append(k)
+            for l in contacts[k]:
+                contacts[l].discard(k)
+                if not contacts[l]:
+                    cand.discard(l)
+            contacts[k] = set()
+    return dropped
+
 def final_rules(est, dims, cn, keep):
     """hybrid / vessel / offpeak / frag rules (see settings) on the kept components.
     Returns (kept, dropped)."""
@@ -558,6 +609,8 @@ def final_rules(est, dims, cn, keep):
                     bad.append(k)
                     break
         drop(bad, "rim fragment")
+    if frag_edge is not None and keep:
+        drop(edge_pieces(fp, keep, cn, frag_edge), "edge piece")
     extra_summary.update(stats)
     return keep, dropped
 
@@ -677,7 +730,7 @@ def accepted_components(cnm, dims, cn=None):
                              lens_rim=list(rim) if rim is not None else None)
         print(f"lens rim: {'circle (%.0f, %.0f, r %.0f)' % rim if rim else 'none'}, "
               f"{len(out)} dropped, {len(keep)} kept")
-    if (hybrid or vessel_px or offpeak_px or frag_r) and keep:
+    if (hybrid or vessel_px or offpeak_px or frag_r or frag_edge) and keep:
         keep, dropped = final_rules(est, dims, cn, keep)
         rejected += dropped
     if filt2 and keep:
@@ -1301,7 +1354,7 @@ def save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, old_file, c
         summary.update(extra_summary, filt2=filt2, min_snr=min_snr or quality["min_SNR"], min_eta=min_eta,
                        min_eta_margin=min_eta_margin, size_rel=size_rel, lens_rim_band=lens_rim,
                        hybrid=list(hybrid) if hybrid else None, vessel_px=vessel_px,
-                       offpeak_px=offpeak_px, frag_r=frag_r,
+                       offpeak_px=offpeak_px, frag_r=frag_r, frag_edge=frag_edge,
                        detect_method=detect_method,
                        sum_frames=sum_frames if detect_method == "sum" else None)
         json.dump(summary, open(f"{work}/summary_{tag}{sfx}.json", "w"), indent=1)
