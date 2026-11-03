@@ -4,7 +4,7 @@ state sequences in OUT_DIR (analysis_pose_arhmm.py export):
   review_summary.png   feature profiles (all features incl. wall distance / facing; values,
                        colour = z across states), occupancy per condition, median bout,
                        transitions (at a switch), confusability (held-out decoder)
-  review_states_<i>.png  per state: speed / wall-distance / wall-facing distributions, three
+  review_states_<i>.png  per state: speed / wall-distance / wall-ahead distributions, three
                        example bouts (egocentric keypoints, start grey -> end dark) and their
                        torso paths in the arena (allocentric, arena circle from the video)
 
@@ -22,10 +22,10 @@ out = f"{A.out_dir}/review"
 seed = 2
 n_examples = 3
 cols = ["speed", "turn", "abs_turn", "head_angle", "body_len", "bend", "head_speed", "abs_head_turn",
-        "ear_width", "hip_width", "wall_dist", "wall_facing", "interp_share"]
+        "ear_width", "hip_width", "wall_dist", "wall_ahead", "wall_facing", "interp_share"]
 labels = ["speed cm/s", "turn °/s (+ CCW)", "|turn| °/s", "head angle °", "body length", "bend °",
           "head speed cm/s", "|head turn| °/s", "ear width", "hip width", "wall dist cm",
-          "wall facing (+ = wall)", "interpolated kp"]
+          "wall ahead cm", "wall facing (+ = wall)", "interpolated kp"]
 
 def summary(states, sessions, b):
     K = len(states)
@@ -117,7 +117,7 @@ def state_pages(states, sessions, b, per_page=5):
             f = allf[allz == k]
             for ax, c, rng_, lab in ((row[0], "speed", (0, 25), "speed cm/s"),
                                      (row[1], "wall_dist", (0, 16), "wall distance cm"),
-                                     (row[2], "wall_facing", (-1, 1), "wall facing")):
+                                     (row[2], "wall_ahead", (0, 31), "wall ahead cm")):
                 ax.hist(allf[c].clip(*rng_), bins=40, range=rng_, density=True, color="#c3c2b7")
                 ax.hist(f[c].clip(*rng_), bins=40, range=rng_, density=True, color="#2a78d6", alpha=0.8)
                 ax.set_xlabel(lab, fontsize=8); ax.set_yticks([])

@@ -153,6 +153,10 @@ model_cfg = {
     "pose_arhmm_v7": dict(
         K=20, kappa=1e7, names=[f"s{i:02d}" for i in range(20)], excluded=[],
         labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(20)}),
+    # same fit, kappa 2e7 (exported into its own directory; models / features linked)
+    "pose_arhmm_v7_k2e7": dict(
+        K=20, kappa=2e7, names=[f"s{i:02d}" for i in range(20)], excluded=[],
+        labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(20)}),
 }
 cfg = model_cfg.get(os.path.basename(os.path.normpath(out_dir)), model_cfg["pose_arhmm_v5"])
 final_K, final_kappa = cfg["K"], cfg["kappa"]
