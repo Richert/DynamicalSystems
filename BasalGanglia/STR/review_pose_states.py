@@ -18,7 +18,9 @@ os.environ.setdefault("OUT_DIR", "/home/rgast/data/parker_data/pose_arhmm_v6")
 import figures_pose_arhmm as F
 from figures_pose_arhmm import A, plt
 
-out = f"{A.out_dir}/review"
+# REVIEW_LEVEL=labels: merged behaviour labels of the model's label table (excluded dropped)
+level = os.environ.get("REVIEW_LEVEL", "states")
+out = f"{A.out_dir}/review" + ("_labels" if level == "labels" else "")
 seed = 2
 n_examples = 3
 cols = ["speed", "turn", "abs_turn", "head_angle", "body_len", "bend", "head_speed", "abs_head_turn",
@@ -29,12 +31,13 @@ labels = ["speed cm/s", "turn °/s (+ CCW)", "|turn| °/s", "head angle °", "bo
 
 def summary(states, sessions, b):
     K = len(states)
-    names = [f"S{k}" for k in range(K)]
+    names = [f"S{k}" for k in range(K)] if level == "states" else \
+        [F.STATE_LABELS.get(n, n) for n in states.name]
     allf = pd.concat([s["feat"] for s in sessions])
     allz = np.concatenate([s["z"] for s in sessions])
     prof = allf[cols].groupby(allz).mean().reindex(range(K))
     fig = plt.figure(figsize=(17, 11))
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.15, 1], hspace=0.35, wspace=0.3)
+    gs = fig.add_gridspec(2, 3, height_ratios=[1.15, 1], hspace=0.45, wspace=0.45)
     ax = fig.add_subplot(gs[0, :2])
     z = ((prof - prof.mean()) / (prof.std() + 1e-12)).T.values
     ax.imshow(z, cmap=F.DIVERGING, vmin=-2, vmax=2, aspect="auto")
@@ -43,7 +46,7 @@ def summary(states, sessions, b):
             v = prof.iloc[j, i]
             ax.text(j, i, f"{v:.2g}", ha="center", va="center", fontsize=7)
     ax.set_yticks(range(len(cols)), labels, fontsize=8)
-    ax.set_xticks(range(K), names, fontsize=8)
+    ax.set_xticks(range(K), names, fontsize=8, rotation=45, ha="right")
     ax.set_title("state profiles (mean; colour = z across states)", loc="left")
     # occupancy per condition + median bout
     ax = fig.add_subplot(gs[0, 2])
@@ -54,7 +57,7 @@ def summary(states, sessions, b):
                                   for c in conds], F.SEQUENTIAL, 0, 40,
            lambda v: f"{v:.0f}" if v >= 1 else ("<1" if v > 0 else "0"), 0)
     med = b.groupby("state").dur.median().reindex(range(K))
-    ax.set_yticks(range(K), [f"S{k}  ({med[k]:.2f} s)" for k in range(K)], fontsize=8)
+    ax.set_yticks(range(K), [f"{names[k]}  ({med[k]:.2f} s)" for k in range(K)], fontsize=8)
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", fontsize=7)
     ax.set_title("occupancy % per condition (median bout)", loc="left")
     # transitions
@@ -62,6 +65,7 @@ def summary(states, sessions, b):
     T = np.zeros((K, K))
     for s in sessions:
         sw = np.flatnonzero(np.diff(s["z"]) != 0)
+        sw = sw[(s["z"][sw] >= 0) & (s["z"][sw + 1] >= 0)]              # excluded frames: -1
         np.add.at(T, (s["z"][sw], s["z"][sw + 1]), 1)
     T = T / np.maximum(T.sum(1, keepdims=True), 1)
     F.heat(ax, T, names, names, F.SEQUENTIAL, 0, 1, lambda v: f"{v:.2f}".lstrip("0"), 0.08,
@@ -84,7 +88,7 @@ def summary(states, sessions, b):
             ax.plot([k - 0.25, k + 0.25], [np.median(d)] * 2, color="k", lw=1.2)
     ax.axhline(np.log10(A.min_bout_s), color="#e34948", lw=0.8, ls="--")
     ax.set_yticks(np.log10([0.05, 0.1, 0.2, 0.5, 1, 3]), ["0.05", "0.1", "0.2", "0.5", "1", "3"])
-    ax.set_xticks(range(K), names, fontsize=8)
+    ax.set_xticks(range(K), names, fontsize=8, rotation=45, ha="right")
     ax.set(ylabel="bout duration (s)")
     ax.set_title(f"bout durations (red: min. bout {A.min_bout_s} s)", loc="left")
     fig.suptitle(f"{os.path.basename(A.out_dir)}: K = {K}, kappa = {A.final_kappa:g} "
@@ -122,7 +126,8 @@ def state_pages(states, sessions, b, per_page=5):
                 ax.hist(f[c].clip(*rng_), bins=40, range=rng_, density=True, color="#2a78d6", alpha=0.8)
                 ax.set_xlabel(lab, fontsize=8); ax.set_yticks([])
             occ = np.mean(allz == k)
-            row[0].set_ylabel(f"S{k}\n{occ:.1%}", rotation=0, ha="right", va="center", fontsize=12,
+            nm = f"S{k}" if level == "states" else F.STATE_LABELS.get(states.name[k], states.name[k])
+            row[0].set_ylabel(f"{nm}\n{occ:.1%}", rotation=0, ha="right", va="center", fontsize=12,
                               fontweight="bold")
             ex = example_bouts(b, k, rng)
             arena_ax = row[-1]
@@ -163,7 +168,10 @@ def state_pages(states, sessions, b, per_page=5):
 if __name__ == "__main__":
     os.makedirs(out, exist_ok=True)
     states, sessions = F.load_data()
+    if level == "labels":
+        states, sessions = F.label_level(states, sessions)
     b = F.bouts(sessions)
+    b = b[b.state >= 0]
     summary(states, sessions, b)
     state_pages(states, sessions, b)
     print(f"saved review sheets in {out}")

@@ -68,6 +68,35 @@ LABEL_COLORS = {"rest": "#0d366b", "shift": "#86b6ef", "slow_walk": "#f3a77f",
                 "walk": "#eb6834", "run": "#8f3a14", "reorient": "#a99ef0",
                 "turn_fast": "#5140c4", "rear_artifact": "#1baf7a"}
 
+# model versions with their own label table / display (A.cfg["display"]): register label
+# names / colours, and per fitted state its label's colour and "label (sNN)" as its name
+if "display" in A.cfg:
+    for lab, (nm, col) in A.cfg["display"].items():
+        LABEL_NAMES[lab], LABEL_COLORS[lab] = nm, col
+    for lab, sts in A.label_groups.items():
+        for st in sts:
+            STATE_COLORS[st] = LABEL_COLORS[lab]
+            STATE_LABELS[st] = f"{LABEL_NAMES[lab]} ({st})"
+
+def label_level(states, sessions):
+    """Label-level view: (states table with one row per kept label, sessions with z mapped to
+    the label index; frames of excluded labels -1). Label keys act as state names, so the
+    figure functions work unchanged on merged labels."""
+    lmap, labels = label_map(states)
+    excl = {l for l in labels if all(st in A.excluded_states for st in A.label_groups[l])}
+    keep = [l for l in labels if l not in excl]
+    new = np.array([keep.index(labels[i]) if labels[i] in keep else -1 for i in lmap])
+    for l in keep:
+        STATE_COLORS.setdefault(l, LABEL_COLORS.get(l, "#898781"))
+        STATE_LABELS[l] = LABEL_NAMES.get(l, l)
+    tab = pd.DataFrame(dict(name=keep, excluded=False))
+    out = []
+    for s in sessions:
+        s2 = dict(s)
+        s2["z"] = new[s["z"]]
+        out.append(s2)
+    return tab, out
+
 def label_map(states):
     """Fitted state index -> behaviour-label index (order of A.label_groups), label keys."""
     labels = list(A.label_groups)
@@ -83,7 +112,9 @@ SEQUENTIAL = LinearSegmentedColormap.from_list("seq", ["#f7f9fc", "#b7d3f6", "#5
                                                        "#1c5cab", "#0d366b"])
 FEAT_LABELS = {"log_speed": "speed (log)", "turn_asinh": "turn", "head_angle": "head angle",
                "body_len": "body length", "bend": "body bend", "log_head_speed": "head speed (log)",
-               "head_turn_asinh": "head turn", "ear_width": "ear width", "hip_width": "hip width"}
+               "head_turn_asinh": "head turn", "ear_width": "ear width", "hip_width": "hip width",
+               "wall_dist": "wall distance", "wall_ahead": "wall ahead",
+               "wall_dist_c": "wall distance", "wall_facing": "wall facing"}
 
 def panel(ax, letter, x=-0.12, y=1.04, fx=None):
     """Panel letter at axes coordinates (x, y), or at figure x = fx (aligned letters)."""
@@ -172,11 +203,17 @@ def bouts(sessions):
     b["dur"] = (b.end - b.start) / A.fs
     return b
 
+example_frames = (6800, 9200)        # example session's window (v5 choice; also used by the
+                                     # pipeline figures and the video): fixed across model versions
+
 def example_window(s, states):
     """Window of the example session with the most even state mix (excluded states and
-    frames with interpolated keypoints avoided)."""
+    frames with interpolated keypoints avoided); fixed to example_frames for the example
+    session."""
+    if s.get("session") == example and example_frames is not None:
+        return example_frames
     n, w = len(s["z"]), int(window_s * A.fs)
-    bad = set(states.index[states.excluded])
+    bad = set(states.index[states.excluded]) | {-1}           # -1: excluded labels
     best, t_best = -1, 0
     for t0 in range(0, n - w, int(5 * A.fs)):
         z = s["z"][t0:t0 + w]
@@ -287,16 +324,24 @@ def feature_example(states, sessions):
     win &= (tors_px.min(1) > 90) & (tors_px[:, 0] < 640 - 90) & (tors_px[:, 1] < 480 - 90)
     normal = feat.body_len.between(0.95, 1.08) & feat.ear_width.between(0.95, 1.05) & \
         feat.hip_width.between(0.93, 1.07)
-    still = win & clean & normal & (feat.speed < 0.5) & (feat.wall_dist > 4)
-    if not still.any():
-        still = win & clean & normal & (feat.speed < 0.5)
-    tb = int(feat.bend.abs().where(still & feat.bend.abs().between(10, 35)
-                                   & (feat.head_angle.abs() < 20)).idxmax())
+    still_any = win & clean & normal & (feat.speed < 0.5)
+    stills = [still_any & (feat.wall_dist > 4), still_any]       # away from the wall if possible
+
+    def pick(values, conds):
+        for st in stills:
+            m = st & conds
+            if m.any():
+                return int(values.where(m).idxmax())
+        raise ValueError("no suitable example frame")
+    tb = pick(feat.bend.abs(), feat.bend.abs().between(10, 35) & (feat.head_angle.abs() < 20))
     far = np.abs(np.arange(len(feat)) - tb) > 3 * A.fs
-    tc = int(feat.head_angle.abs().where(still & far & feat.head_angle.abs().between(25, 55))
-             .idxmax())
-    moving = win & clean & np.isin(s["z"], [states.index[states.name == "turn_fast"][0]]) & \
-        feat.speed.between(6, 14) & far & (np.abs(np.arange(len(feat)) - tc) > 3 * A.fs)
+    tc = pick(feat.head_angle.abs(), far & feat.head_angle.abs().between(25, 55))
+    turning = np.isin(s["z"], list(states.index[states.name.str.startswith("turn_fast")]))
+    away = far & (np.abs(np.arange(len(feat)) - tc) > 3 * A.fs)
+    for lo, hi in ((6, 14), (3, 20), (1, 30)):          # (v7 sharp turns are slower than v5's)
+        moving = win & clean & turning & feat.speed.between(lo, hi) & away
+        if moving.any():
+            break
     td = int(feat.turn.abs().where(moving).idxmax())
     return types.SimpleNamespace(s=s, feat=feat, px=px, centre=centre, scale=scale, off=off,
                                  ix=ix, t0=t0, t1=t1, tb=tb, tc=tc, td=td, zb=80)
@@ -533,7 +578,8 @@ def decoder_confusion(sessions, K):
             x = sessions[i]["X"]
             X.append(np.c_[x[lag:], x[lag:] - x[:-lag]][::5])
             y.append(sessions[i]["z"][lag:][::5])
-        return np.concatenate(X), np.concatenate(y)
+        X, y = np.concatenate(X), np.concatenate(y)
+        return X[y >= 0], y[y >= 0]                                     # excluded frames: -1
     rng = np.random.default_rng(seed)
     perm = rng.permutation(len(sessions))
     halves = perm[::2], perm[1::2]
@@ -614,6 +660,7 @@ def fig_hmm(states, sessions, b):
     for s in sessions:
         z = s["z"]
         sw = np.flatnonzero(np.diff(z) != 0)
+        sw = sw[(z[sw] >= 0) & (z[sw + 1] >= 0)]                        # excluded frames: -1
         np.add.at(T, (z[sw], z[sw + 1]), 1)
     T = T / T.sum(1, keepdims=True)
     heat(ax, T, labels, labels, SEQUENTIAL, 0, 1, lambda v: f"{v:.2f}".lstrip("0"), 0.05,
@@ -731,7 +778,10 @@ def fig_states(states, sessions, b):
     order = [k for fam in (("rest", "quiet", "shift"), ("slow_walk", "walk", "run", "run_fast"),
                            ("reorient", "turn_fast", "rear_artifact"))
              for k in range(K) if names[k] in fam]
-    fig, axes = plt.subplots(2, 5, figsize=(7.2, 4.6))
+    if len(order) < K:                                  # other model versions: label order
+        order = list(range(K))
+    nrow = int(np.ceil(K / 5))
+    fig, axes = plt.subplots(nrow, 5, figsize=(7.2, 2.3 * nrow))
     cache = {}
     for ax, k in zip(axes.flat, order):
         bt = typical_bout(b, k)
@@ -766,6 +816,8 @@ def fig_states(states, sessions, b):
         ax.set_aspect("equal")
         ax.set_xlim(-5.5, 5.5)
         ax.set_ylim(-6.5, 9.5)
+        ax.axis("off")
+    for ax in axes.flat[len(order):]:
         ax.axis("off")
     ax = axes.flat[0]
     ax.plot([-5, -4], [8.8, 8.8], color=INK, lw=1)

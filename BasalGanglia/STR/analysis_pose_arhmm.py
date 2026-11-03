@@ -150,9 +150,27 @@ model_cfg = {
         K=15, kappa=1e7, names=[f"s{i:02d}" for i in range(15)], excluded=[],
         labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(15)}),
     # v7 (raw wall distance + wall ahead): K = 20, kappa chosen from 1e7 / 2e7 after review
+    # selected: kappa 1e7 (held-out 37.70 vs 37.60 at 2e7, no systematically longer bouts).
+    # Review 1 (user, 2026-11-03): s05 / s06 / s10 excluded (rearing / tracking artefact: body
+    # length 0.56-0.76, 7% interpolated keypoints, < 1%); merged s01 + s02, s03 + s04. Label
+    # names provisional (from the state profiles), further merges after the next review.
     "pose_arhmm_v7": dict(
-        K=20, kappa=1e7, names=[f"s{i:02d}" for i in range(20)], excluded=[],
-        labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(20)}),
+        K=20, kappa=1e7, names=[f"s{i:02d}" for i in range(20)],
+        excluded=["s05", "s06", "s10"],
+        labels={"rest": ["s00"], "quiet_shift": ["s01", "s02"], "slow_walk": ["s03", "s04"],
+                "walk_a": ["s07"], "walk_b": ["s08"], "scan_walk": ["s09"], "walk_ccw": ["s11"],
+                "walk_fast": ["s12"], "turn_fast_a": ["s13"], "turn_fast_b": ["s14"],
+                "run_turn_ccw": ["s15"], "run": ["s16"], "run_turn_cw": ["s17"],
+                "run_wall": ["s18"], "run_open": ["s19"], "rear_artifact": ["s05", "s06", "s10"]},
+        display={"rest": ("rest", "#0d366b"), "quiet_shift": ("quiet / shift", "#2a78d6"),
+                 "slow_walk": ("slow walk", "#86b6ef"), "walk_a": ("walk A", "#f3a77f"),
+                 "walk_b": ("walk B", "#ef8a55"), "scan_walk": ("scanning walk", "#d9a400"),
+                 "walk_ccw": ("walk (CCW)", "#eb6834"), "walk_fast": ("fast walk", "#c4511f"),
+                 "turn_fast_a": ("sharp turn A", "#5140c4"), "turn_fast_b": ("sharp turn B", "#a99ef0"),
+                 "run_turn_ccw": ("turning run (CCW)", "#e87ba4"), "run": ("run", "#8f3a14"),
+                 "run_turn_cw": ("turning run (CW)", "#b0306a"), "run_wall": ("wall run", "#5a1f0c"),
+                 "run_open": ("open-field run", "#008300"),
+                 "rear_artifact": ("rear / artefact", "#1baf7a")}),
     # same fit, kappa 2e7 (exported into its own directory; models / features linked)
     "pose_arhmm_v7_k2e7": dict(
         K=20, kappa=2e7, names=[f"s{i:02d}" for i in range(20)], excluded=[],

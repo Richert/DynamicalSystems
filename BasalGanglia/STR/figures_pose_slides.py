@@ -104,7 +104,7 @@ def slide_hmm(states, sessions):
     names = states.name.tolist()
     K = len(states)
     fig = plt.figure(figsize=(6.0, 2.7))
-    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.5, left=0.13, right=0.985,
+    gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.5, left=0.17, right=0.985,
                           top=0.88, bottom=0.27)
     # (a) state profiles: mean z-scored feature per state
     ax = fig.add_subplot(gs[0])
@@ -137,6 +137,7 @@ def slide_hmm(states, sessions):
     for s in sessions:
         z = s["z"]
         sw = np.flatnonzero(np.diff(z) != 0)
+        sw = sw[(z[sw] >= 0) & (z[sw + 1] >= 0)]                        # excluded frames: -1
         np.add.at(T, (z[sw], z[sw + 1]), 1)
     T = T[np.ix_(show, show)]
     T = T / T.sum(1, keepdims=True)
@@ -172,7 +173,9 @@ def slide_arhmm(states, sessions):
     xs = [2.9, 4.95, 7.0, 9.05]
     zy, xy, r = 8.3, 5.4, 0.66
     labs = ["t−3", "t−2", "t−1", "t"]
-    zcols = [STATE_COLORS[n] for n in ("rest", "slow_walk", "slow_walk", "walk")]
+    seq_names = [n for n in ("rest", "slow_walk", "slow_walk", "walk") if n in STATE_COLORS] \
+        if "walk" in names else [names[0], names[2], names[2], names[3]]
+    zcols = [STATE_COLORS[n] for n in seq_names]
     for x, l, c in zip(xs, labs, zcols):
         ax.add_patch(Circle((x, zy), r, fc=c, ec="white", lw=1.2, zorder=3))
         ax.text(x, zy, f"$z_{{{l}}}$", ha="center", va="center", color="white", fontsize=7.5,
@@ -190,14 +193,14 @@ def slide_arhmm(states, sessions):
                                      arrowstyle="-|>", mutation_scale=6, color=F.FC["head"],
                                      lw=0.8, connectionstyle=f"arc3,rad={0.12 + 0.1 * (xs[-1] - a) / 3}"))
     ax.text(0.0, zy, "hidden\nstate", fontsize=7, color=INK2, va="center")
-    ax.text(0.0, xy, "9 pose\nfeatures\n(20 Hz)", fontsize=7, color=INK2, va="center")
+    ax.text(0.0, xy, f"{len(A.features)} pose\nfeatures\n(20 Hz)", fontsize=7, color=INK2, va="center")
     ax.text(6.0, 2.45, "autoregressive: 4 lags (200 ms)", fontsize=6.5, color=F.FC["head"],
             ha="center")
     eq = (r"$x_t = \sum_{l=1}^{4} A_l^{(z_t)}\, x_{t-l} + b^{(z_t)} + \varepsilon_t,"
           r"\quad \varepsilon_t \sim \mathcal{N}(0, \Sigma^{(z_t)})$")
     ax.text(5.0, 1.25, eq, ha="center", va="center", fontsize=7.2, color=INK)
     ax.text(5.0, 0.15, r"$P(z_t = j \mid z_{t-1} = i)$: sticky ($+\kappa$ on self-transitions)"
-            r"  ·  $K = 10$", ha="center", va="center", fontsize=6.6, color=INK2)
+            rf"  ·  $K = {A.final_K}$", ha="center", va="center", fontsize=6.6, color=INK2)
     ax.set_title("each state: its own linear feature dynamics", loc="left", fontsize=8)
     # (b) data: z-scored HMM inputs over 20 s, background = inferred state
     rows = [("log_speed", "speed"), ("turn_asinh", "turn"), ("head_angle", "head angle"),
@@ -252,7 +255,9 @@ def slide_merge(states, sessions):
     from matplotlib.patches import FancyBboxPatch
     names = states.name.tolist()
     lmap, labels = F.label_map(states)
-    fig = plt.figure(figsize=(6.0, 2.7))
+    many = len(names) > 12                             # e.g. v7 (20 states): compact labels
+    fs_box = 5.6 if many else 7
+    fig = plt.figure(figsize=(6.0, 3.6 if many else 2.7))
     gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.15], wspace=0.25, left=0.01, right=0.98,
                           top=0.88, bottom=0.15)
     # (a) mapping: fitted states (left) -> behaviour labels (right)
@@ -264,6 +269,13 @@ def slide_merge(states, sessions):
     ys = {k: k for k in range(len(names))}
     # label rows: centred on the mean row of their states
     ly = {li: np.mean([k for k in range(len(names)) if lmap[k] == li]) for li in range(len(labels))}
+    # labels at least one row apart (a merged label's mean row can coincide with another's)
+    order_l = sorted(ly, key=ly.get)
+    for i in range(1, len(order_l)):
+        ly[order_l[i]] = max(ly[order_l[i]], ly[order_l[i - 1]] + 1)
+    shift = (max(ly.values()) - (len(names) - 1)) / 2
+    if shift > 0:
+        ly = {li: y - shift for li, y in ly.items()}
     for k, n in enumerate(names):
         li = lmap[k]
         merged = len(A.label_groups[labels[li]]) > 1
@@ -271,7 +283,8 @@ def slide_merge(states, sessions):
                 lw=1.6 if merged else 0.8, zorder=1)
         ax.add_patch(FancyBboxPatch((0.2, k - 0.36), 3.5, 0.72, boxstyle="round,pad=0,rounding_size=0.15",
                                     fc=STATE_COLORS[n], ec="white", lw=1, zorder=2))
-        ax.text(1.95, k, STATE_LABELS[n], ha="center", va="center", fontsize=7, color="white",
+        ax.text(1.95, k, n if many else STATE_LABELS[n], ha="center", va="center", fontsize=fs_box,
+                color="white",
                 fontweight="bold", zorder=3)
     for li, lab in enumerate(labels):
         merged = len(A.label_groups[lab]) > 1
@@ -279,7 +292,7 @@ def slide_merge(states, sessions):
                                     boxstyle="round,pad=0,rounding_size=0.15",
                                     fc=F.LABEL_COLORS[lab], ec=INK if merged else "white",
                                     lw=1.2 if merged else 1, zorder=2))
-        ax.text(8.05, ly[li], F.LABEL_NAMES[lab], ha="center", va="center", fontsize=7,
+        ax.text(8.05, ly[li], F.LABEL_NAMES[lab], ha="center", va="center", fontsize=fs_box,
                 color="white", fontweight="bold", zorder=3)
     ax.text(1.95, -0.85, "fitted HMM states", ha="center", fontsize=7.5, color=INK2)
     ax.text(8.05, -0.85, "behaviour labels", ha="center", fontsize=7.5, color=INK2)
@@ -298,7 +311,7 @@ def slide_merge(states, sessions):
     ax.set_xscale("log")
     ax.set_xlim(0.01, 40)
     ax.set_ylim(len(names) - 0.4, -0.6)
-    ax.set_yticks(range(len(names)), [STATE_LABELS[n] for n in names])
+    ax.set_yticks(range(len(names)), [n if many else STATE_LABELS[n] for n in names], fontsize=fs_box)
     for l, n in zip(ax.get_yticklabels(), names):
         l.set_color(STATE_COLORS[n])
         l.set_fontweight("bold")
@@ -307,7 +320,8 @@ def slide_merge(states, sessions):
     for lab, sts in A.label_groups.items():
         if len(sts) > 1:
             ks = [names.index(st) for st in sts]
-            ax.axhspan(min(ks) - 0.45, max(ks) + 0.45, color=F.LABEL_COLORS[lab], alpha=0.1, lw=0)
+            for kk in ks:                                  # member rows (groups can be non-contiguous)
+                ax.axhspan(kk - 0.45, kk + 0.45, color=F.LABEL_COLORS[lab], alpha=0.12, lw=0)
             ax.text(38, np.mean(ks), f"→ {F.LABEL_NAMES[lab]}", ha="right", va="center",
                     fontsize=7, color=F.LABEL_COLORS[lab], fontweight="bold")
     ax.set_title("speed per fitted state", loc="left")
@@ -349,9 +363,12 @@ def slide_drugs(states, sessions):
 
 if __name__ == "__main__":
     states, sessions = F.load_data()
+    slide_merge(states, sessions)                      # fitted states -> labels
+    if "display" in A.cfg:                             # the rest on the merged labels
+        states, sessions = F.label_level(states, sessions)
     slide_features(states, sessions)
     slide_arhmm(states, sessions)
     slide_hmm(states, sessions)
-    slide_merge(states, sessions)
     slide_drugs(states, sessions)
-    slide_states(states, sessions, F.bouts(sessions))
+    b = F.bouts(sessions)
+    slide_states(states, sessions, b[b.state >= 0])
