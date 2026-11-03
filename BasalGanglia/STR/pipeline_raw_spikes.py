@@ -71,11 +71,14 @@ def selection_cli(argv):
     global detect_method, spike_thr, fig_thresholds, refit_selected
     argv = list(argv)
     for flag, key, typ in (("--ring", "ring_size_factor", float), ("--nrgthr", "nrgthr", float),
-                           ("--init_iter", "init_iter", int), ("--merge", "merge_thr", float)):
+                           ("--init_iter", "init_iter", int), ("--merge", "merge_thr", float),
+                           ("--gsig", "gsig", int)):
         if flag in argv:
             i = argv.index(flag)
             cnmf_params[key] = typ(argv[i + 1])
             del argv[i:i + 2]
+    g = cnmf_params["gsig"]
+    cnmf_params.update(gSig=(g, g), gSiz=(4 * g + 1, 4 * g + 1))
     refit_flag = "--refit" in argv
     if refit_flag:
         argv.remove("--refit")
@@ -226,7 +229,11 @@ extra_summary = {}
 # here are CaImAn's. --refit: after component selection, CNMF is refitted on the whole field
 # of view starting from the selected components only (rejected components no longer claim
 # pixels / signal; CaImAn's cnm.refit), outputs carry "_refit"
-cnmf_defaults = dict(ring_size_factor=1.4, nrgthr=0.9999, init_iter=2, merge_thr=0.7)
+# --gsig N: expected cell radius used by CNMF-E (seeding filter, footprint window gSiz =
+# 4 N + 1, ring radius = ring_size_factor x gSiz); the stored summary images (corr / PNR,
+# for evaluation and figures) stay at the module gSig so that variants remain comparable
+cnmf_defaults = dict(ring_size_factor=1.4, nrgthr=0.9999, init_iter=2, merge_thr=0.7, gsig=3)
+cnmf_params["gsig"] = gSig[0]
 cnmf_params.update(nrgthr=0.9999, init_iter=2)
 refit_selected = False
 
@@ -234,7 +241,7 @@ def cnmf_tag():
     """Identifies a CNMF-E setting in cache/output names (AR order + seeding thresholds +
     non-default settings of cnmf_defaults)."""
     t = f"p{cnmf_params['p']}_c{cnmf_params['min_corr']:g}_pnr{cnmf_params['min_pnr']:g}"
-    short = dict(ring_size_factor="ring", nrgthr="nrg", init_iter="it", merge_thr="m")
+    short = dict(ring_size_factor="ring", nrgthr="nrg", init_iter="it", merge_thr="m", gsig="g")
     for k, d in cnmf_defaults.items():
         if cnmf_params[k] != d:
             t += f"_{short[k]}{cnmf_params[k]:g}"
@@ -357,7 +364,7 @@ def run_cnmfe(fname, work, dview):
     cn, pnr = cm.summary_images.correlation_pnr(images[::step], gSig=gSig[0], swap_dim=False)
     np.save(f"{work}/corr_image.npy", cn)
     np.save(f"{work}/pnr_image.npy", pnr)
-    opts = params.CNMFParams(params_dict=dict(fr=fs, **cnmf_params))
+    opts = params.CNMFParams(params_dict=dict(fr=fs, **{k: v for k, v in cnmf_params.items() if k != "gsig"}))
     cnm = cnmf.CNMF(n_processes=n_processes, dview=dview, params=opts)
     cnm.fit(images)
     cnm.params.set("quality", quality)
