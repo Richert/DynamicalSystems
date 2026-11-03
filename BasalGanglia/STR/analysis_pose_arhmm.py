@@ -24,6 +24,9 @@ jitter, at 20 Hz:
               video day), which also sets the cm/px scale (arena diameter arena_cm).
               (wall_dist_c = clipped to [0, wall_clip_cm] for the HMM, v6: beyond a few cm
               the distance is location, not behaviour)
+  wall_ahead  distance (cm) from the torso to the arena wall along the body heading (tail base
+              -> neck): from wall_dist (facing the nearest wall) up to the arena diameter; v7
+              HMM input together with the raw wall_dist
   wall_facing cos of the angle between the body heading and the outward radial direction
               (1 = facing the wall, 0 = parallel, -1 = facing the centre), weighted by
               proximity max(0, 1 - wall_dist / wall_clip_cm) (undefined far from the wall);
@@ -80,8 +83,11 @@ wall_clip_cm = 8.0                 # wall features: distance clipped / proximity
 immobile_cm_s = 1.0                # session summary: immobile below this torso speed
 # HMM inputs (v6: + wall distance and wall facing; the v5 model used the first 9, the fitted
 # models store their feature list)
+# v7: raw wall distance (minimum, cm) and distance to the wall ahead along the heading (cm);
+# v6 used the clipped distance and the proximity-weighted facing, which were constant beyond
+# 8 cm and produced a pure location state (all frames > 8 cm from the wall)
 features = ["log_speed", "turn_asinh", "head_angle", "body_len", "bend", "log_head_speed",
-            "head_turn_asinh", "ear_width", "hip_width", "wall_dist_c", "wall_facing"]
+            "head_turn_asinh", "ear_width", "hip_width", "wall_dist", "wall_ahead"]
 conditions = ["Control", f"{drug} low", f"{drug} high", "Amphetamine", f"A + {drug} low",
               f"A + {drug} high"]
 cond_of = {("Vehicle", "Control"): "Control", ("Vehicle", "Amph"): "Amphetamine",
@@ -98,7 +104,7 @@ fit_cap_s = 900                    # at most 15 min per session in the fit
 # with clockwise turning (v4)
 # v6 (wall features): K 10 / 12 / 15 at kappa 1e7 (kappa scaled up with K, as it acts on
 # the per-state transition counts), larger K to prune / merge states afterwards
-K_grid = [10, 12, 15]
+K_grid = [20]                      # v7: large K, pruned / merged after review
 ar_lags = 4                        # 200 ms of context at 20 Hz
 # stickiness: at kappa = 100 states switched every 50-300 ms (median dwell) at 20 Hz with
 # 9 features; swept to reach realistic behavioural dwell times (~0.3-1 s). In ssm, kappa
@@ -108,13 +114,13 @@ ar_lags = 4                        # 200 ms of context at 20 Hz
 # v4: 3e5 -> 3e6 raised the median dwell 0.2 -> 0.3 s (K = 8) at a held-out cost of only
 # 0.04 nats/frame
 # v5: 6e6 / 9e6 gave the same median dwell (0.3 s) at K = 10
-kappa_grid = [1e7]
+kappa_grid = [1e7, 2e7]
 em_iters = 50
-n_restarts = 10                    # 30 fits: one round on ~70 server workers
+n_restarts = 10                    # 20 fits: one round on ~70 server workers
 heldout_frac = 0.2
 n_jobs = int(os.environ.get("N_PROCESSES", 8))
 seed = 1
-show_K = [10, 12, 15]      # candidate K values summarised in the figures (one per kappa)
+show_K = [20]              # candidate K values summarised in the figures (one per kappa)
 
 # selected model (v5): K = 10 / kappa = 6e6; K = 8 merged fast turning with the rearing /
 # artefact state, K = 12 only added near-empty or ~0.2 s states (held-out gain within the
@@ -143,6 +149,10 @@ model_cfg = {
     "pose_arhmm_v6": dict(
         K=15, kappa=1e7, names=[f"s{i:02d}" for i in range(15)], excluded=[],
         labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(15)}),
+    # v7 (raw wall distance + wall ahead): K = 20, kappa chosen from 1e7 / 2e7 after review
+    "pose_arhmm_v7": dict(
+        K=20, kappa=1e7, names=[f"s{i:02d}" for i in range(20)], excluded=[],
+        labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(20)}),
 }
 cfg = model_cfg.get(os.path.basename(os.path.normpath(out_dir)), model_cfg["pose_arhmm_v5"])
 final_K, final_kappa = cfg["K"], cfg["kappa"]
@@ -221,6 +231,11 @@ def session_features(f, off, n_frames, scale, centre_px=None):
     out = radial / np.maximum(np.linalg.norm(radial, axis=1, keepdims=True), 1e-6)
     facing = (body * out).sum(1) / np.maximum(np.linalg.norm(body, axis=1), 1e-6)
     prox = np.clip(1 - wall_dist / wall_clip_cm, 0, 1)
+    # distance from the torso to the arena wall along the body heading (ray-circle intersection)
+    hu = body / np.maximum(np.linalg.norm(body, axis=1, keepdims=True), 1e-6)
+    pu = (radial * hu).sum(1)
+    R = arena_cm / 2
+    wall_ahead = -pu + np.sqrt(np.maximum(pu ** 2 - (radial ** 2).sum(1) + R ** 2, 0))
     return pd.DataFrame(dict(
         log_speed=np.log10(speed + speed_eps), speed=speed,
         turn=turn, head_angle=head, turn_asinh=np.arcsinh(turn / turn_eps),
@@ -229,7 +244,7 @@ def session_features(f, off, n_frames, scale, centre_px=None):
         head_turn=head_turn, head_turn_asinh=np.arcsinh(head_turn / turn_eps),
         ear_width=ears / np.median(ears), hip_width=hipw / np.median(hipw),
         wall_dist=wall_dist, wall_dist_c=np.clip(wall_dist, 0, wall_clip_cm),
-        wall_facing=facing * prox,
+        wall_facing=facing * prox, wall_ahead=wall_ahead,
         abs_turn=np.abs(turn), abs_head_turn=np.abs(head_turn), interp_share=interp_share))
 
 def load_all(only=None):
