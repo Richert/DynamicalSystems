@@ -612,34 +612,107 @@ def refit_segment(cnm, fname, seg, dims, work, name):
     np.savez_compressed(out, C=C, Yraw=Yraw, g=g)
     return C, Yraw, g
 
+refit_iters_1p = 2                   # background / spatial / temporal alternations of the refit
+# footprints in the refit: trimmed to refit_nrg of their energy first and not allowed to grow
+# (spatial search region = their own pixels): a free refit let the remaining cells spread
+# into the signal of the rejected components (m85 rec0: area 27 -> 37 px, trace r with the
+# old pipeline 0.92 -> 0.87, noise events 0.1% -> 2.9%)
+refit_nrg = 0.99
+refit_grow = False
+
+def trim_energy(A, nrg):
+    """Each footprint (sparse column) restricted to its largest pixels holding nrg of its
+    energy (sum of squares)."""
+    import scipy.sparse as sps
+    A = sps.csc_matrix(A, copy=True)
+    for k in range(A.shape[1]):
+        lo, hi = A.indptr[k], A.indptr[k + 1]
+        v = A.data[lo:hi]
+        if len(v) == 0:
+            continue
+        o = np.argsort(v)[::-1]
+        e = np.cumsum(v[o] ** 2) / np.sum(v ** 2)
+        drop = o[np.searchsorted(e, nrg) + 1:]
+        v[drop] = 0
+    A.eliminate_zeros()
+    return A
+
+def ring_background(Yr, W, b0, A, C, dims, ssub, chunk=2000):
+    """Ring-model background B = b0 + W (Y - A C - b0) (W on the ssub-downsampled residual),
+    pixels (F order) x frames, computed in time chunks."""
+    d0, d1 = dims
+    T = Yr.shape[1]
+    B = np.empty((Yr.shape[0], T), dtype=np.float32)
+    for t0 in range(0, T, chunk):
+        t1 = min(T, t0 + chunk)
+        R = (np.asarray(Yr[:, t0:t1], dtype=np.float32) - A @ C[:, t0:t1] - b0[:, None])
+        R = R.reshape(d0, d1, -1, order="F")
+        if ssub > 1:
+            R = R[:d0 // ssub * ssub, :d1 // ssub * ssub].reshape(
+                d0 // ssub, ssub, d1 // ssub, ssub, -1).mean((1, 3))
+        WB = (W @ R.reshape(-1, R.shape[-1], order="F")).reshape(R.shape, order="F")
+        if ssub > 1:
+            WB = np.repeat(np.repeat(WB, ssub, 0), ssub, 1)[:d0, :d1]
+        B[:, t0:t1] = b0[:, None] + WB.reshape(-1, t1 - t0, order="F")
+    return B
+
 def refit_after_selection(cnm, fname, work, dims, cn):
-    """CNMF refit (whole field of view, ring background) initialised with the selected
-    components only; cached in cnmfe_<tag>_refit<selection>.hdf5. Returns the refitted
-    model and the indices of its components (all of them: refit only re-estimates the
-    selected cells; merged pairs come out as one)."""
+    """One-photon refit with the selected components only (CNMF-E's alternation, which
+    CaImAn does not provide for 1p data: its cnm.refit fits the footprints against the raw,
+    background-dominated movie): repeat refit_iters_1p times (1) ring background W, b0 from
+    the data minus the selected cells, (2) footprints re-estimated on the background-
+    subtracted movie (NNLS within each footprint's neighbourhood, trimmed by nrgthr /
+    largest connected part), (3) traces re-estimated (AR deconvolution). Rejected
+    components no longer claim pixels or signal. Cached in cnmfe_<tag><selection>_refit.hdf5.
+    Returns the refitted model and the indices of its components (all selected cells that
+    keep a non-empty footprint)."""
     import caiman as cm
     from caiman.source_extraction.cnmf import cnmf
+    from caiman.source_extraction.cnmf.initialization import compute_W
+    import scipy.sparse as sps
     out = f"{work}/cnmfe_{cnmf_tag()}{out_suffix}.hdf5"
     if os.path.isfile(out):
         new = cnmf.load_CNMF(out)
         return new, np.arange(new.estimates.A.shape[1])
     idx, _ = accepted_components(cnm, dims, cn)
     Yr, dims_, T = cm.load_memmap(fname)
-    images = Yr.T.reshape((T,) + dims_, order="F")
-    cnm.estimates.idx_components = np.asarray(idx)
-    cnm.estimates.idx_components_bad = np.setdiff1d(np.arange(cnm.estimates.A.shape[1]), idx)
-    _, dview, _ = cm.cluster.setup_cluster(backend="multiprocessing", n_processes=n_processes)
+    Yr = np.asarray(Yr, dtype=np.float32)                         # pixels x frames, in RAM
+    est = cnm.estimates
+    A = trim_energy(sps.csc_matrix(est.A)[:, idx], refit_nrg)
+    C = np.asarray(est.C)[idx].astype(np.float32)
+    if not refit_grow:
+        cnm.params.set("spatial", {"method_exp": "dilate", "expandCore": np.ones((1, 1), dtype=int),
+                                   "nrgthr": refit_nrg})
+    radius = int(round(cnmf_params["ring_size_factor"] * cnmf_params["gSiz"][0]))
+    ssub = cnmf_params["ssub_B"]
+    d = Yr.shape[0]
+    est.b, est.f = np.zeros((d, 0), np.float32), np.zeros((0, T), np.float32)
+    cnm.params.set("spatial", {"nb": 0, "update_background_components": False})
+    cnm.params.set("temporal", {"nb": 0, "p": cnmf_params["p"]})
+    # single process: CaImAn's parallel spatial update reloads the movie from a memmap file
+    # by name, which fails for the background-subtracted movie held in memory
+    cnm.dview, dview = None, None
     try:
-        new = cnm.refit(images, dview=dview)
+        for it in range(refit_iters_1p):
+            W, b0 = compute_W(Yr, A.toarray(), C, dims, radius, ssub=ssub)
+            Yb = Yr - ring_background(Yr, W, b0, A, C, dims, ssub)
+            est.A, est.C = A, C
+            cnm.update_spatial(Yb, use_init=False)
+            keep = np.flatnonzero(np.asarray(est.A.sum(0)).ravel() > 0)
+            est.A, est.C = sps.csc_matrix(est.A)[:, keep], np.asarray(est.C)[keep]
+            idx = [idx[k] for k in keep]
+            cnm.update_temporal(Yb, use_init=False)
+            A, C = sps.csc_matrix(est.A), np.asarray(est.C, dtype=np.float32)
+            print(f"refit iteration {it + 1}: {A.shape[1]} components", flush=True)
+            del Yb
+        est.W, est.b0 = compute_W(Yr, A.toarray(), C, dims, radius, ssub=ssub)
     finally:
-        cm.stop_server(dview=dview)
-    if new.estimates.YrA is None:
-        new.estimates.compute_residuals(Yr)
-    new.params.set("quality", quality)
-    new.estimates.evaluate_components(images, new.params, dview=None)   # SNR for reporting
-    new.save(out)
-    print(f"refit: {len(idx)} selected -> {new.estimates.A.shape[1]} components")
-    return new, np.arange(new.estimates.A.shape[1])
+        pass
+    est.idx_components = np.arange(A.shape[1])
+    est.idx_components_bad = np.array([], dtype=int)
+    cnm.save(out)
+    print(f"refit: {len(idx)} components after the 1p refit")
+    return cnm, np.arange(A.shape[1])
 
 def deconvolve_all(cnm, dims, segments=None, refit=None, cn=None, idx=None):
     """Accepted components: denoised traces C, OASIS deconvolution S of the raw trace
