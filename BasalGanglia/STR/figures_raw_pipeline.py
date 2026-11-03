@@ -413,7 +413,65 @@ def slide_spikes(r, t0, t1, n_ex=5):
     save(fig, "pipeline_spikes")
 
 
+# ---------------------------------------------------------------------------
+# slide 4: validation against the original Parker pipeline (all recordings)
+# ---------------------------------------------------------------------------
+
+def slide_validation():
+    """Per recording (evaluation summaries of the final selection): cells found by both
+    pipelines, share of the old pipeline's active neurons recovered and the trace
+    correlation of the matched pairs, recall of the old events (within 0.25 s)."""
+    rows = []
+    for f in glob.glob(f"{local}/*_rec?/summary_{tag}_thr2_sum3_{sel}.json"):
+        d = json.load(open(f))
+        name = os.path.basename(os.path.dirname(f))
+        rows.append(dict(rec=name, long=name.endswith("rec1"), n_old=d["n_old_total"],
+                         n_old_active=d["n_old_active"], n_new=d["n_new"],
+                         matched=d["frac_active_old_matched"], r=d["r_matched_median"],
+                         recall=d["recall_mean"], rate_new=d["rate_new_median_hz"],
+                         rate_old=d["rate_old_median_hz"]))
+    v = pd.DataFrame(rows)
+    fig, axes = plt.subplots(1, 3, figsize=(6.0, 2.2), gridspec_kw=dict(wspace=0.55))
+    fig.subplots_adjust(left=0.09, right=0.99, top=0.84, bottom=0.2)
+    col = {False: "#2a78d6", True: "#eb6834"}
+    # (a) cells per recording
+    ax = axes[0]
+    for lg in (False, True):
+        w = v[v.long == lg]
+        ax.scatter(w.n_old, w.n_new, s=10, color=col[lg], lw=0, alpha=0.8,
+                   label="15 min" if not lg else "45 min")
+    m = max(v.n_old.max(), v.n_new.max()) * 1.05
+    ax.plot([0, m], [0, m], color=AXIS, lw=0.8, ls=(0, (3, 2)))
+    ax.set(xlim=(0, m), ylim=(0, m), xlabel="cells, original pipeline", ylabel="cells, new pipeline")
+    ax.legend(frameon=False, handletextpad=0.2, loc="upper left", fontsize=6.5)
+    ax.set_title(f"cell yield ({np.median(v.n_new / v.n_old):.1f}× median)", loc="left")
+    # (b) recovery of the old active neurons and trace agreement
+    def strip(ax, cols, labels, title, ylabel, ylim):
+        rng = np.random.default_rng(1)
+        for i, c in enumerate(cols):
+            y = v[c].dropna().values
+            ax.scatter(i + rng.uniform(-0.18, 0.18, len(y)), y, s=6, color=INK2, alpha=0.5, lw=0)
+            ax.plot([i - 0.28, i + 0.28], [np.median(y)] * 2, color=ACCENT, lw=2)
+            ax.text(i + 0.32, np.median(y), f"{np.median(y):.2f}", va="center", fontsize=6.5,
+                    color=INK)
+        ax.set_xticks(range(len(cols)), labels)
+        ax.set(ylim=ylim, ylabel=ylabel, xlim=(-0.5, len(cols) - 0.2))
+        ax.set_title(title, loc="left")
+        ax.tick_params(axis="x", length=0)
+    strip(axes[1], ["matched", "r"], ["recovered", "trace r"],
+          "original active neurons", "share / correlation", (0, 1.02))
+    strip(axes[2], ["recall"], ["recall"], "original events", "share found (±0.25 s)", (0, 1.02))
+    ax = axes[2]
+    ax.text(0.98, 0.05, f"{len(v)} recordings\nnoise events < 1%", transform=ax.transAxes,
+            ha="right", va="bottom", fontsize=6.5, color=INK2)
+    for x, l in ((0.005, "a"), (0.355, "b"), (0.69, "c")):
+        fig.text(x, 0.92, l, fontsize=10, fontweight="bold", color=INK)
+    save(fig, "pipeline_validation")
+    print(v[["n_old", "n_new", "matched", "r", "recall"]].median().round(3).to_dict())
+
+
 if __name__ == "__main__":
+    slide_validation()
     r = Recording(rec)
     # the 120-s example window of the pose figures (pose frame = imaging frame, 20 Hz)
     t0, t1 = 6800, 9200
