@@ -470,6 +470,76 @@ def slide_validation():
     print(v[["n_old", "n_new", "matched", "r", "recall"]].median().round(3).to_dict())
 
 
+# ---------------------------------------------------------------------------
+# slide: the standard CaImAn pipeline (flow chart with one image per stage)
+# ---------------------------------------------------------------------------
+
+def slide_caiman_overview(r, t0, t1):
+    from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+    Y = r.frames(t0, t0 + 200)
+    fig = plt.figure(figsize=(6.0, 2.75))
+    n = 5
+    w, gap, x0 = 0.168, 0.031, 0.012
+    stages = [
+        ("raw movie", "1p miniscope, 20 Hz"),
+        ("motion correction", "NoRMCorre (rigid)"),
+        ("cell detection", "CNMF-E: seeds from\ncorrelation × PNR"),
+        ("demixing", "footprints + traces,\nring-model background"),
+        ("spike inference", "OASIS deconvolution\n(AR(1))"),
+    ]
+    for i, (title, sub) in enumerate(stages):
+        x = x0 + i * (w + gap)
+        box = fig.add_axes([x, 0.06, w, 0.88])
+        box.axis("off")
+        box.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0,rounding_size=0.06",
+                                     transform=box.transAxes, fc="#f4f3ee", ec=AXIS, lw=0.8))
+        box.text(0.5, 0.95, title, ha="center", va="top", fontsize=8, fontweight="bold", color=INK,
+                 transform=box.transAxes)
+        box.text(0.5, 0.05, sub, ha="center", va="bottom", fontsize=6.3, color=INK2,
+                 transform=box.transAxes)
+        ax = fig.add_axes([x + 0.012, 0.3, w - 0.024, 0.5])
+        frame_axes(ax)
+        if i == 0:
+            ax.imshow(Y[0], cmap=FLUO, vmin=np.percentile(Y[0], 1), vmax=np.percentile(Y[0], 99.8))
+        elif i == 1:
+            t = np.arange(len(r.shifts)) / r.fs / 60
+            ax.plot(t, r.shifts[:, 0] * um_per_px, color="#2a78d6", lw=0.4)
+            ax.plot(t, r.shifts[:, 1] * um_per_px, color="#eb6834", lw=0.4)
+            ax.set_xlim(0, t[-1]); ax.set_ylim(-6, 6)
+            ax.text(0.03, 0.95, "shift (µm), 45 min", transform=ax.transAxes, va="top", fontsize=5.5, color=INK2)
+            for s in ax.spines.values():
+                s.set_visible(True); s.set_color(AXIS)
+        elif i == 2:
+            seed = r.cn * r.pnr
+            ax.imshow(seed, cmap=FLUO, vmin=0, vmax=np.percentile(seed, 99.7))
+        elif i == 3:
+            ax.imshow(r.cn, cmap=FLUO, vmin=np.percentile(r.cn, 1), vmax=1)
+            for k in r.kept:
+                a = r.footprint(k)
+                ax.contour(a, [0.4 * a.max()], colors=ACCENT, linewidths=0.3)
+        else:
+            # cell with a clear transient: largest denoised peak relative to its noise, 3-8 events
+            nev = r.events[:, t0:t1].sum(1)
+            pk_snr = r.C[:, t0:t1].max(1) / r.sn
+            i_ex = int(np.argmax(np.where((nev >= 3) & (nev <= 8), pk_snr, -1)))
+            tp = t0 + int(np.argmax(r.C[i_ex, t0:t1]))
+            a, b_ = max(t0, tp - int(6 * r.fs)), min(t1, tp + int(14 * r.fs))
+            tt = np.arange(b_ - a) / r.fs
+            y = r.Yraw[i_ex, a:b_]; c = r.C[i_ex, a:b_]
+            sc = np.percentile(y, 99.9) - np.percentile(y, 5)
+            ax.plot(tt, (y - np.percentile(y, 5)) / sc, color=TRACE_RAW, lw=0.4)
+            ax.plot(tt, (c - np.percentile(y, 5)) / sc, color=TRACE_C, lw=0.8)
+            ts = tt[r.events[i_ex, a:b_]]
+            ax.plot(ts, np.full(len(ts), -0.12), "|", color=ACCENT, ms=5, mew=1.2)
+            ax.set_xlim(0, tt[-1]); ax.set_ylim(-0.25, 1.15)
+            ax.text(0.03, 0.95, "trace + spikes, 20 s", transform=ax.transAxes, va="top", fontsize=5.5, color=INK2)
+        if i < n - 1:
+            fig.patches.append(FancyArrowPatch((x + w + 0.003, 0.55), (x + w + gap - 0.003, 0.55),
+                                               transform=fig.transFigure, arrowstyle="-|>",
+                                               mutation_scale=9, color=INK2, lw=1))
+    save(fig, "pipeline_caiman_overview")
+
+
 if __name__ == "__main__":
     slide_validation()
     r = Recording(rec)
