@@ -68,8 +68,17 @@ def selection_cli(argv):
     out_suffix; and the spike detector (--detect_sum THR: summed detection at THR, see
     detect_method; outputs carry det_tag()). Returns the remaining argv."""
     global filt2, min_snr, min_eta, min_eta_margin, size_rel, lens_rim, out_suffix
-    global detect_method, spike_thr, fig_thresholds
+    global detect_method, spike_thr, fig_thresholds, refit_selected
     argv = list(argv)
+    for flag, key, typ in (("--ring", "ring_size_factor", float), ("--nrgthr", "nrgthr", float),
+                           ("--init_iter", "init_iter", int), ("--merge", "merge_thr", float)):
+        if flag in argv:
+            i = argv.index(flag)
+            cnmf_params[key] = typ(argv[i + 1])
+            del argv[i:i + 2]
+    refit_flag = "--refit" in argv
+    if refit_flag:
+        argv.remove("--refit")
     if "--filt2" in argv:
         filt2, out_suffix = True, out_suffix + "_f2"
         argv.remove("--filt2")
@@ -95,6 +104,8 @@ def selection_cli(argv):
         size_rel, out_suffix = True, out_suffix + "_sz"
     if lens_rim is not None:
         out_suffix += f"_rim{lens_rim:g}"
+    if refit_flag:
+        refit_selected, out_suffix = True, out_suffix + "_refit"
     return argv
 
 def eta_needed():
@@ -210,9 +221,24 @@ eta = None
 # extraction diagnostics added to the evaluation summary (set by accepted_components)
 extra_summary = {}
 
+# CNMF-E settings beyond the seeding thresholds (CLI --ring X, --nrgthr X, --init_iter N,
+# --merge X): non-default values are added to cnmf_tag() (cache / output names); defaults
+# here are CaImAn's. --refit: after component selection, CNMF is refitted on the whole field
+# of view starting from the selected components only (rejected components no longer claim
+# pixels / signal; CaImAn's cnm.refit), outputs carry "_refit"
+cnmf_defaults = dict(ring_size_factor=1.4, nrgthr=0.9999, init_iter=2, merge_thr=0.7)
+cnmf_params.update(nrgthr=0.9999, init_iter=2)
+refit_selected = False
+
 def cnmf_tag():
-    """Identifies a CNMF-E setting in cache/output names (AR order + seeding thresholds)."""
-    return f"p{cnmf_params['p']}_c{cnmf_params['min_corr']:g}_pnr{cnmf_params['min_pnr']:g}"
+    """Identifies a CNMF-E setting in cache/output names (AR order + seeding thresholds +
+    non-default settings of cnmf_defaults)."""
+    t = f"p{cnmf_params['p']}_c{cnmf_params['min_corr']:g}_pnr{cnmf_params['min_pnr']:g}"
+    short = dict(ring_size_factor="ring", nrgthr="nrg", init_iter="it", merge_thr="m")
+    for k, d in cnmf_defaults.items():
+        if cnmf_params[k] != d:
+            t += f"_{short[k]}{cnmf_params[k]:g}"
+    return t
 
 # spike detection on the OASIS output
 # spike if deconvolved activity > spike_thr x noise level; 1.5-2 gives high recall of
@@ -586,7 +612,36 @@ def refit_segment(cnm, fname, seg, dims, work, name):
     np.savez_compressed(out, C=C, Yraw=Yraw, g=g)
     return C, Yraw, g
 
-def deconvolve_all(cnm, dims, segments=None, refit=None, cn=None):
+def refit_after_selection(cnm, fname, work, dims, cn):
+    """CNMF refit (whole field of view, ring background) initialised with the selected
+    components only; cached in cnmfe_<tag>_refit<selection>.hdf5. Returns the refitted
+    model and the indices of its components (all of them: refit only re-estimates the
+    selected cells; merged pairs come out as one)."""
+    import caiman as cm
+    from caiman.source_extraction.cnmf import cnmf
+    out = f"{work}/cnmfe_{cnmf_tag()}{out_suffix}.hdf5"
+    if os.path.isfile(out):
+        new = cnmf.load_CNMF(out)
+        return new, np.arange(new.estimates.A.shape[1])
+    idx, _ = accepted_components(cnm, dims, cn)
+    Yr, dims_, T = cm.load_memmap(fname)
+    images = Yr.T.reshape((T,) + dims_, order="F")
+    cnm.estimates.idx_components = np.asarray(idx)
+    cnm.estimates.idx_components_bad = np.setdiff1d(np.arange(cnm.estimates.A.shape[1]), idx)
+    _, dview, _ = cm.cluster.setup_cluster(backend="multiprocessing", n_processes=n_processes)
+    try:
+        new = cnm.refit(images, dview=dview)
+    finally:
+        cm.stop_server(dview=dview)
+    if new.estimates.YrA is None:
+        new.estimates.compute_residuals(Yr)
+    new.params.set("quality", quality)
+    new.estimates.evaluate_components(images, new.params, dview=None)   # SNR for reporting
+    new.save(out)
+    print(f"refit: {len(idx)} selected -> {new.estimates.A.shape[1]} components")
+    return new, np.arange(new.estimates.A.shape[1])
+
+def deconvolve_all(cnm, dims, segments=None, refit=None, cn=None, idx=None):
     """Accepted components: denoised traces C, OASIS deconvolution S of the raw trace
     (C + residual YrA) and S_noise of a noise-only surrogate (the sign-flipped
     residual: realistic noise, no calcium transients), both with the neuron's own
@@ -596,11 +651,12 @@ def deconvolve_all(cnm, dims, segments=None, refit=None, cn=None):
     segments: list of frame slices (joint mode: one per recording) deconvolved
     separately, each with its own noise level; sn is then (cells, segments).
     refit: per segment (C, Yraw, g) of all components from refit_segment, used in place
-    of the joint C, YrA and AR coefficient."""
+    of the joint C, YrA and AR coefficient. idx: components to use (default: selection)."""
     import caiman as cm
     from caiman.source_extraction.cnmf.deconvolution import constrained_foopsi, GetSn
     est = cnm.estimates
-    idx, _ = accepted_components(cnm, dims, cn)
+    if idx is None:
+        idx, _ = accepted_components(cnm, dims, cn)
     C, YrA = est.C[idx].copy(), est.YrA[idx].copy()
     segs = segments or [slice(0, C.shape[1])]
     gs = [np.asarray(est.g)[idx]] * len(segs)
@@ -1060,6 +1116,11 @@ def main():
     global eta
     if eta_needed():                                  # metric also stored for evaluation
         eta = compute_eta(cnm, fname, work, dims)
+    if not joint and refit_selected:
+        cnm, ref_idx = refit_after_selection(cnm, fname, work, dims, cn)
+        C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, cn=cn, idx=ref_idx)
+        save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, *paths[0][1:3])
+        return
     if not joint:
         C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, cn=cn)
         save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, *paths[0][1:3])
