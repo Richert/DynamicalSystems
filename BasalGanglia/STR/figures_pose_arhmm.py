@@ -540,11 +540,16 @@ def decoder_confusion(sessions, K):
     cm = np.zeros((K, K))
     for tr, te in (halves, halves[::-1]):
         X, y = data(tr)
-        qda = QuadraticDiscriminantAnalysis(priors=np.full(K, 1 / K), reg_param=0.01).fit(X, y)
+        # states with too few frames for a covariance estimate are left out (rows nan)
+        ok = [k for k in range(K) if (y == k).sum() > 3 * X.shape[1]]
+        m = np.isin(y, ok)
+        qda = QuadraticDiscriminantAnalysis(priors=np.full(len(ok), 1 / len(ok)),
+                                            reg_param=0.01).fit(X[m], y[m])
         Xt, yt = data(te)
         pred = qda.predict(Xt)
         np.add.at(cm, (yt, pred), 1)
-    return cm / cm.sum(1, keepdims=True)
+    with np.errstate(invalid="ignore"):
+        return cm / cm.sum(1, keepdims=True)
 
 def heat(ax, M, labels_y, labels_x, cmap, vmin, vmax, fmt, thr, mask_diag=False):
     M = np.array(M, float)

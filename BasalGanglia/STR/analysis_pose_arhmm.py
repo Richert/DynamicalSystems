@@ -124,21 +124,32 @@ show_K = [10, 12, 15]      # candidate K values summarised in the figures (one p
 # amphetamine), reorient (mean +17 deg/s, 0.2 s bouts) turns < 20 deg net in ~90% of bouts
 # (brief head-led jerks, 58% followed by turn_fast). Direction has to come from the signed
 # turn within the bout.
-final_K = 10
-final_kappa = 6e6
-state_names = ["rest", "quiet", "shift", "slow_walk", "reorient", "walk", "rear_artifact",
-               "turn_fast", "run", "run_fast"]
-# excluded from the behavioural analyses: rearing / tracking artefact (5-7% interpolated
-# keypoints); the rare reorient state (~0.6% of frames) is kept in the labels, its use
-# (drop or merge with turn_fast) is decided on the neural response profiles
-excluded_states = ["rear_artifact"]
-# behaviour labels: fitted states merged where the split is not behaviourally meaningful
-# (label -> states, in display order). rest + quiet: both immobile (median speed 0.04 /
-# 0.07 cm/s), most switches between the two (rest -> quiet 100%, quiet -> rest 56%),
-# decoder confusion 0.34; run + run_fast: the same locomotion at different speeds.
-label_groups = {"rest": ["rest", "quiet"], "shift": ["shift"], "slow_walk": ["slow_walk"],
+# per model version (out_dir basename): selected K / kappa, state names (numbered by mean speed),
+# excluded states and the label table (label -> fitted states, display order)
+model_cfg = {
+    "pose_arhmm_v5": dict(
+        K=10, kappa=6e6,
+        names=["rest", "quiet", "shift", "slow_walk", "reorient", "walk", "rear_artifact",
+               "turn_fast", "run", "run_fast"],
+        # rearing / tracking artefact (5-7% interpolated keypoints)
+        excluded=["rear_artifact"],
+        # rest + quiet: both immobile (median speed 0.04 / 0.07 cm/s), most switches between
+        # the two, decoder confusion 0.34; run + run_fast: the same locomotion at two speeds
+        labels={"rest": ["rest", "quiet"], "shift": ["shift"], "slow_walk": ["slow_walk"],
                 "walk": ["walk"], "run": ["run", "run_fast"], "reorient": ["reorient"],
-                "turn_fast": ["turn_fast"], "rear_artifact": ["rear_artifact"]}
+                "turn_fast": ["turn_fast"], "rear_artifact": ["rear_artifact"]}),
+    # v6 (+ wall distance / facing): K = 15 / kappa = 1e7, to be pruned / merged after review;
+    # provisional names s00-s14 (one label per state) until then
+    "pose_arhmm_v6": dict(
+        K=15, kappa=1e7, names=[f"s{i:02d}" for i in range(15)], excluded=[],
+        labels={f"s{i:02d}": [f"s{i:02d}"] for i in range(15)}),
+}
+cfg = model_cfg.get(os.path.basename(os.path.normpath(out_dir)), model_cfg["pose_arhmm_v5"])
+final_K, final_kappa = cfg["K"], cfg["kappa"]
+state_names, excluded_states, label_groups = cfg["names"], cfg["excluded"], cfg["labels"]
+# export: bouts shorter than min_bout_s are unlabelled in state_clean (-1): clean states over
+# coverage for the behaviour-conditioned analyses
+min_bout_s = 0.2
 label_of = {st: lab for lab, sts in label_groups.items() for st in sts}
 
 # ---------------------------------------------------------------------------
@@ -477,7 +488,14 @@ def export_states():
     order = prof.speed.sort_values().index.tolist()
     remap = np.argsort(order)                                  # fitted state -> speed rank
     for name, feat, z in sessions:
-        pd.DataFrame(dict(frame=np.arange(len(z)), state=remap[z])).to_csv(
+        zz = remap[z]
+        st = np.flatnonzero(np.diff(np.r_[-1, zz]) != 0)
+        en = np.r_[st[1:], len(zz)]
+        clean = zz.copy()
+        for a_, b_ in zip(st, en):
+            if (b_ - a_) / fs < min_bout_s:
+                clean[a_:b_] = -1
+        pd.DataFrame(dict(frame=np.arange(len(zz)), state=zz, state_clean=clean)).to_csv(
             f"{out_dir}/states_{name}.csv.gz", index=False)
     prof = prof.loc[order].reset_index(drop=True)
     prof.insert(0, "occupancy", np.bincount(remap[allz], minlength=final_K) / len(allz))
