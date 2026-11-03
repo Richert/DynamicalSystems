@@ -86,6 +86,8 @@ def load():
     est = cnm.estimates
     if P.eta_needed():
         P.eta = P.compute_eta(cnm, fname, work, dims)      # cached by the pipeline run
+    if os.path.isfile(f"{work}/pnr_image.npy"):
+        P.pnr_img = np.load(f"{work}/pnr_image.npy")
     idx, _ = P.accepted_components(cnm, dims)       # quality check + shape filter
     A = est.A[:, idx].tocsc()
     C = est.C[idx]

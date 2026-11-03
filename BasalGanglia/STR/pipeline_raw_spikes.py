@@ -88,6 +88,23 @@ def selection_cli(argv):
     size_flag = "--size_rel" in argv
     if size_flag:
         argv.remove("--size_rel")
+    global hybrid, vessel_px, offpeak_px, frag_r
+    if "--hybrid" in argv:
+        i = argv.index("--hybrid")
+        hybrid = (float(argv[i + 1]), float(argv[i + 2]))
+        del argv[i:i + 3]
+    rule_sfx = ""
+    for flag in ("--vessel", "--offpeak", "--frag"):
+        if flag in argv:
+            i = argv.index(flag)
+            val = float(argv[i + 1])
+            del argv[i:i + 2]
+            if flag == "--vessel":
+                vessel_px = val
+            elif flag == "--offpeak":
+                offpeak_px = val
+            else:
+                frag_r = val
     for flag in ("--min_snr", "--min_eta", "--min_eta_margin", "--lens_rim", "--detect_sum"):
         if flag in argv:
             i = argv.index(flag)
@@ -107,12 +124,21 @@ def selection_cli(argv):
         size_rel, out_suffix = True, out_suffix + "_sz"
     if lens_rim is not None:
         out_suffix += f"_rim{lens_rim:g}"
+    if hybrid is not None:
+        out_suffix += f"_hyb{hybrid[0]:g}-{hybrid[1]:g}"
+    if vessel_px is not None:
+        out_suffix += f"_ves{vessel_px:g}"
+    if offpeak_px is not None:
+        out_suffix += f"_off{offpeak_px:g}"
+    if frag_r is not None:
+        out_suffix += f"_frag{frag_r:g}"
     if refit_flag:
         refit_selected, out_suffix = True, out_suffix + "_refit"
     return argv
 
 def eta_needed():
-    return min_snr is not None or min_eta is not None or min_eta_margin is not None
+    return min_snr is not None or min_eta is not None or min_eta_margin is not None or \
+        hybrid is not None
 
 def apply_cli(argv):
     """CLI: pipeline_raw_spikes.py <raw_session> [recording [min_corr min_pnr]] [--joint]
@@ -217,6 +243,25 @@ size_params = dict(max_rel=3.0, max_rel_edge=2.0)
 # mask). On 77 recordings: rim found in 26, B = 5 dropped 1-24 components where a rim was
 # found (rows of rim-artefact components in m795 / f414), none elsewhere
 lens_rim = None
+# final selection rules (CNMF-E settings tests, rounds 1-5; m85 rec0 + five test recordings),
+# applied after size / lens rim, in this order:
+#   --hybrid R_HI R_LO: event-triggered consistency r >= R_HI, or a clear local blob in the
+#       summary images (correlation-image peak minus its 5-9 px ring >= blob_contrast and
+#       seeding-image peak / ring median >= blob_ratio), or r >= R_LO with the footprint maximum
+#       on a correlation-image maximum (<= on_peak_px). Replaces --min_eta.
+#   --vessel D: footprint maximum within D px of a blood vessel (dark tubular structure in the
+#       baseline image b0, ridge filter, long connected parts only)
+#   --offpeak P: footprint maximum > P px from any correlation-image maximum (edge pieces of a
+#       neighbouring blob)
+#   --frag R: rim fragments: touches (dilated footprints > 0.2 max) a brighter kept cell whose
+#       denoised trace correlates with its own above R
+# outputs carry _hyb<R_HI>-<R_LO>, _ves<D>, _off<P>, _frag<R>
+hybrid = None
+blob_contrast, blob_ratio, on_peak_px = 0.25, 2.5, 2.0
+vessel_px = None
+offpeak_px = None
+frag_r = None
+pnr_img = None                       # PNR image of the recording (set in main / by callers)
 rim_params = dict(radii=(95, 240, 4), border_frac=0.25, min_support=0.4, min_contrast=0.08)
 eta_params = dict(n_events=20, min_sep_s=1.0, base_window_s=(1.0, 0.5), box_half_px=12, shift_px=8,
                   min_snr=2.0)
@@ -427,6 +472,76 @@ def footprint_centroid(a):
     Y, X = np.indices(a.shape)
     return (w * Y).sum() / w.sum(), (w * X).sum() / w.sum()
 
+def vessel_distance(b0, dims):
+    """Distance (px) of every pixel to the nearest blood vessel: dark tubular structures in the
+    baseline image (Sato ridge filter, sigmas 3-8 px, top 7% response, connected parts > 300 px)."""
+    from scipy import ndimage as ndi
+    from skimage.filters import sato
+    img = np.asarray(b0).reshape(dims, order="F")
+    v = sato(ndi.gaussian_filter(img, 1), sigmas=range(3, 9), black_ridges=True)
+    m = v > np.percentile(v, 93)
+    lab, n = ndi.label(m)
+    m = np.isin(lab, 1 + np.flatnonzero(ndi.sum(m, lab, range(1, n + 1)) > 300))
+    return ndi.distance_transform_edt(~m), m
+
+def final_rules(est, dims, cn, keep):
+    """hybrid / vessel / offpeak / frag rules (see settings) on the kept components.
+    Returns (kept, dropped)."""
+    from scipy import ndimage as ndi
+    from skimage.feature import peak_local_max
+    fine = peak_local_max(ndi.gaussian_filter(cn, 0.7), min_distance=2, threshold_abs=0.3)
+    seed = cn * pnr_img if pnr_img is not None else None
+    Yg, Xg = np.ogrid[:dims[0], :dims[1]]
+    snr = np.asarray(est.SNR_comp).ravel()
+    fp = {k: est.A[:, k].toarray().reshape(dims, order="F") for k in keep}
+    pos = {k: np.unravel_index(np.argmax(fp[k]), dims) for k in keep}
+    pdist = {k: np.min(np.hypot(fine[:, 0] - pos[k][0], fine[:, 1] - pos[k][1])) for k in keep}
+    dropped, stats = [], {}
+    def drop(ks, name):
+        nonlocal keep
+        ks = set(ks)
+        dropped.extend(sorted(ks))
+        keep = [k for k in keep if k not in ks]
+        stats[f"n_{name.replace(' ', '_').replace('-', '_')}_dropped"] = len(ks)
+        print(f"{name}: {len(ks)} dropped, {len(keep)} kept")
+    if hybrid is not None:
+        r_hi, r_lo = hybrid
+        bad = []
+        for k in keep:
+            r = eta["eta_r"].get(k, np.nan)
+            if np.isnan(r) or r >= r_hi or (r >= r_lo and pdist[k] <= on_peak_px):
+                continue
+            w = np.maximum(fp[k], 0)
+            cy, cx = (w * Yg).sum() / w.sum(), (w * Xg).sum() / w.sum()
+            iy, ix = int(round(cy)), int(round(cx))
+            dd = np.hypot(Yg - cy, Xg - cx)
+            ring = (dd >= 5) & (dd <= 9)
+            sl = (slice(max(0, iy - 1), iy + 2), slice(max(0, ix - 1), ix + 2))
+            contrast = cn[sl].max() - np.median(cn[ring])
+            ratio = seed[sl].max() / max(np.median(seed[ring]), 1e-6) if seed is not None else 0
+            if not (contrast >= blob_contrast and ratio >= blob_ratio):
+                bad.append(k)
+        drop(bad, "hybrid consistency")
+    if vessel_px is not None and keep:
+        dist_v, _ = vessel_distance(est.b0, dims)
+        drop([k for k in keep if dist_v[pos[k]] <= vessel_px], "vessel")
+    if offpeak_px is not None and keep:
+        drop([k for k in keep if pdist[k] > offpeak_px], "off-peak")
+    if frag_r is not None and keep:
+        C = np.asarray(est.C)[keep]
+        Z = (C - C.mean(1, keepdims=True)) / (C.std(1, keepdims=True) + 1e-9)
+        Rr = Z @ Z.T / C.shape[1]
+        masks = [ndi.binary_dilation(fp[k] > 0.2 * fp[k].max()) for k in keep]
+        bad = []
+        for i, k in enumerate(keep):
+            for j, l in enumerate(keep):
+                if j != i and snr[l] > snr[k] and Rr[i, j] > frag_r and (masks[i] & masks[j]).any():
+                    bad.append(k)
+                    break
+        drop(bad, "rim fragment")
+    extra_summary.update(stats)
+    return keep, dropped
+
 def quality_passed(est):
     """Components passing CaImAn's quality check, or with min_snr the looser re-selection
     (SNR >= min_snr or r_value >= rval_thr) from the stored values."""
@@ -543,6 +658,9 @@ def accepted_components(cnm, dims, cn=None):
                              lens_rim=list(rim) if rim is not None else None)
         print(f"lens rim: {'circle (%.0f, %.0f, r %.0f)' % rim if rim else 'none'}, "
               f"{len(out)} dropped, {len(keep)} kept")
+    if (hybrid or vessel_px or offpeak_px or frag_r) and keep:
+        keep, dropped = final_rules(est, dims, cn, keep)
+        rejected += dropped
     if filt2 and keep:
         lim = post_filter["max_area_rel"] * np.median([areas[k] for k in keep])
         big = [k for k in keep if areas[k] > lim]
@@ -1163,6 +1281,8 @@ def save_and_evaluate(work, cn, cents, idx, C, Yraw, S, S_noise, sn, old_file, c
         df.to_csv(f"{work}/matched_neurons_{tag}{sfx}.csv", index=False)
         summary.update(extra_summary, filt2=filt2, min_snr=min_snr or quality["min_SNR"], min_eta=min_eta,
                        min_eta_margin=min_eta_margin, size_rel=size_rel, lens_rim_band=lens_rim,
+                       hybrid=list(hybrid) if hybrid else None, vessel_px=vessel_px,
+                       offpeak_px=offpeak_px, frag_r=frag_r,
                        detect_method=detect_method,
                        sum_frames=sum_frames if detect_method == "sum" else None)
         json.dump(summary, open(f"{work}/summary_{tag}{sfx}.json", "w"), indent=1)
@@ -1193,9 +1313,11 @@ def main():
         cnm, cn, dims = run_cnmfe(fname, work, dview)
     finally:
         cm.stop_server(dview=dview)
-    global eta
+    global eta, pnr_img
     if eta_needed():                                  # metric also stored for evaluation
         eta = compute_eta(cnm, fname, work, dims)
+    if os.path.isfile(f"{work}/pnr_image.npy"):
+        pnr_img = np.load(f"{work}/pnr_image.npy")
     if not joint and refit_selected:
         cnm, ref_idx = refit_after_selection(cnm, fname, work, dims, cn)
         C, Yraw, S, S_noise, sn, cents, idx = deconvolve_all(cnm, dims, cn=cn, idx=ref_idx)
