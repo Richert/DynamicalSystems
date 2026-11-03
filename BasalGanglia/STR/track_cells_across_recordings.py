@@ -16,7 +16,9 @@ Outputs (cell_tracking/): per-day pairs (rec0 / rec1 cell index = row in the
 recording's new_pipeline_outputs / spikes arrays), a per-day summary and a figure
 (similarity real vs null, share of tracked cells per day, an example overlay).
 
-The CNMF-E footprints are read once from the shared drive (hdf5) and cached locally.
+Inputs (local): the CNMF-E footprints of all components (lens_inputs_<tag>.npz, see
+arena / lens-rim inputs), the kept components of the final selection (kept_<tag>_<sel>.npy:
+the 'component' list of new_pipeline_outputs_<tag>_<sel>.npz) and the correlation images.
 
   /home/rgast/conda/envs/parker/bin/python track_cells_across_recordings.py
 """
@@ -30,34 +32,30 @@ import scipy.sparse as sp
 from scipy.ndimage import shift as nd_shift
 from scipy.optimize import linear_sum_assignment
 
-results_root = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"     # CNMF-E hdf5 + QC table
-local_root = "/home/rgast/data/parker_data/raw_pipeline_results"          # local mirror
+results_root = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"     # QC table
+local_root = "/home/rgast/data/parker_data/raw_pipeline"                  # local copies
 out_dir = "/home/rgast/data/parker_data/cell_tracking"
-tag = "p1_c0.7_pnr6"
+tag = "p1_c0.6_pnr5"                    # CNMF-E setting
+sel = "snr2_eta0.4_sz_rim5"             # final component selection
 max_dist_px = 6.0                 # max centroid distance of candidate pairs (~20 um)
 null_shift_px = 20                # displacement for the null distribution
 null_fpr = 0.02                   # accepted false-match rate per rec0 cell
 
 def footprints(rec_dir):
-    """Accepted cells' footprints (pixels x cells, F-order pixels, unit norm), dims,
-    centroids (row, col) and correlation image, cached in the local mirror."""
+    """Kept cells' footprints (pixels x cells, F-order pixels, unit norm; column i = row i
+    of the recording's output arrays), dims, centroids (row, col) and correlation image."""
     name = os.path.basename(rec_dir)
-    cache = f"{local_root}/{name}/footprints_{tag}.npz"
-    out = np.load(f"{local_root}/{name}/new_pipeline_outputs_{tag}.npz")
-    if not os.path.isfile(cache):
-        with h5py.File(f"{results_root}/{name}/cnmfe_{tag}.hdf5", "r") as h:
-            g = h["estimates/A"]
-            A = sp.csc_matrix((g["data"][...], g["indices"][...], g["indptr"][...]),
-                              shape=tuple(g["shape"][...]))
-            dims = tuple(int(d) for d in h["dims"][...])
-        A = A[:, out["component"]]
-        sp.save_npz(cache.replace(".npz", "_A.npz"), A)
-        np.savez(cache, dims=dims)
-    A = sp.load_npz(cache.replace(".npz", "_A.npz")).tocsc()
-    dims = tuple(np.load(cache)["dims"])
+    z = np.load(f"{local_root}/{name}/lens_inputs_{tag}.npz")
+    dims = tuple(int(d) for d in z["dims"])
+    A = sp.csc_matrix((z["A_data"], z["A_indices"], z["A_indptr"]), shape=tuple(z["A_shape"]))
+    A = A[:, np.load(f"{local_root}/{name}/kept_{tag}_{sel}.npy")]
+    w = A.multiply(A > 0).tocsc()
+    Y, X = np.unravel_index(np.arange(A.shape[0]), dims, order="F")
+    tot = np.asarray(w.sum(0)).ravel() + 1e-12
+    cents = np.c_[(w.T @ Y) / tot, (w.T @ X) / tot]
     norm = np.sqrt(np.asarray(A.power(2).sum(0))).ravel() + 1e-12
     A = A @ sp.diags(1 / norm)
-    return A, dims, out["centroids_px"], np.load(f"{local_root}/{name}/corr_image.npy")
+    return A, dims, cents, np.load(f"{local_root}/{name}/corr_image.npy")
 
 def shift_footprints(A, dims, d):
     """Shift each footprint image by d = (rows, cols) pixels (bilinear)."""
@@ -94,8 +92,10 @@ def match_day(day):
 
 def main():
     os.makedirs(out_dir, exist_ok=True)
+    have = lambda p: os.path.isfile(f"{p}/kept_{tag}_{sel}.npy") and \
+        os.path.isfile(f"{p}/lens_inputs_{tag}.npz")
     days = sorted(p[:-5] for p in glob.glob(f"{local_root}/*_rec0")
-                  if os.path.isdir(p[:-5] + "_rec1"))
+                  if have(p) and have(p[:-5] + "_rec1"))
     res = []
     for day in days:
         r = match_day(day)
