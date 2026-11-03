@@ -27,6 +27,7 @@ Run with the parker env (has CaImAn):
 """
 
 import os
+import re
 import sys
 import glob
 import numpy as np
@@ -264,6 +265,10 @@ def session_paths(rec=None):
     else:
         old_session, cond = folder, "amph"
     old_file = f"{old_root}/{drug_old}/{dose}/{old_session}/{cond}_drug.mat"
+    if not os.path.isfile(old_file):
+        # raw folders name mouse 85 "m85", the old pipeline's folders "m085"
+        alt = re.sub(r"_m(\d{2})_", r"_m0\1_", old_file)
+        old_file = alt if os.path.isfile(alt) else old_file
     work = f"{work_root}/{folder}_joint" if joint else f"{work_root}/{folder}_rec{rec}"
     os.makedirs(work, exist_ok=True)
     return raw_file, old_file, cond, work
