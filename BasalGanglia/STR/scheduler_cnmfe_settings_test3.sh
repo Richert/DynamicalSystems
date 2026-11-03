@@ -1,7 +1,7 @@
 #!/bin/bash
 # CNMF-E settings test, round 3 (m85, 15-min recording): fine-tuning around trimming 0.99 /
-# ring 1.8 / merging 0.8, one setting varied at a time: trimming 0.98 / 0.995, ring 1.6 / 2.0,
-# merging 0.75. Per fit the final and the loose selection (no consistency filter, for the
+# ring 1.8 / merging 0.8, one setting varied at a time: trimming 0.995 / 0.999 (0.99 = round
+# 2), ring 1.6 / 2.0, merging 0.75. Per fit the final and the loose selection (no consistency filter, for the
 # local hybrid / vessel / fragment-rule evaluation).
 work_dir="$HOME/PycharmProjects/DynamicalSystems/BasalGanglia/STR"
 data_root="/media/storage/DATA"
@@ -20,7 +20,7 @@ cd $work_dir
 export PATH="$HOME/miniforge3/envs/parker/bin:$PATH"
 export N_PROCESSES=${N_PROCESSES:-8} OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 variants=(
-  "nrg0.98|--nrgthr 0.98 --ring 1.8 --merge 0.8"
+  "nrg0.999|--nrgthr 0.999 --ring 1.8 --merge 0.8"
   "nrg0.995|--nrgthr 0.995 --ring 1.8 --merge 0.8"
   "ring1.6|--nrgthr 0.99 --ring 1.6 --merge 0.8"
   "ring2.0|--nrgthr 0.99 --ring 2.0 --merge 0.8"
