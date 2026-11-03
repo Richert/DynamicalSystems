@@ -150,6 +150,9 @@ def main(what="all"):
         h.attrs.update(selection=f"{tag}_{sel}", detection="summed over 3 frames, 2 x noise",
                        fs=P.fs)
         for day in ds:
+            done = day in h and all(f"rec{r}/behaviour" in h[day] for r in (0, 1))
+            if what == "all" and done and "--force" not in sys.argv:
+                continue                                  # resume an interrupted build
             if what in ("neural", "all"):
                 write_neural(h, day, spn)
             if what in ("behaviour", "all"):
