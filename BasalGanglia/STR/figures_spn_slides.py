@@ -187,9 +187,227 @@ def slide_tracked(tc, ts, labels=("whole session", "walk", "straight run")):
                bbox_to_anchor=(0.55, 1.0), handlelength=1.6, columnspacing=1.6)
     save(fig, "spn_tracked_cells")
 
+# ---------------------------------------------------------------------------
+# decoding (analysis_spn_decoding.py)
+# ---------------------------------------------------------------------------
+
+dec_dir = os.environ.get("DEC_DIR", "/home/rgast/data/parker_data/spn_decoding")
+FEAT_GROUPS = [("movement", ["log_speed", "log_head_speed", "turn_asinh", "head_turn_asinh"]),
+               ("posture", ["head_angle", "bend", "body_len", "ear_width", "hip_width"]),
+               ("location", ["wall_dist", "wall_ahead"])]
+FEAT_NAMES = {"log_speed": "speed", "log_head_speed": "head speed", "turn_asinh": "turning",
+              "head_turn_asinh": "head turning", "head_angle": "head angle", "bend": "bend",
+              "body_len": "body length", "ear_width": "ear width", "hip_width": "hip width",
+              "wall_dist": "wall distance", "wall_ahead": "wall ahead"}
+READ_COL = {"spikes": "#2a78d6", "trace": "#eb6834"}
+READ_NAME = {"spikes": "spikes", "trace": "denoised traces"}
+
+def decoding_table():
+    d = pd.read_csv(f"{dec_dir}/decoding.csv")
+    return d.groupby(["readout", "target", "day", "rec", "condition", "mouse", "spn"])[
+        ["direct", "via", "ceiling", "null", "chance"]].mean().reset_index()
+
+def spines(ax):
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+
+def slide_decoding_contrast(m):
+    """Labels vs continuous features: (a) label decoding, direct vs via decoded features;
+    (b) feature decoding, direct vs via decoded label probabilities; (c) share retained."""
+    feats = [f for _, fs in FEAT_GROUPS for f in fs]
+    fig = plt.figure(figsize=(6.0, 2.75))
+    gs = fig.add_gridspec(1, 3, width_ratios=[0.8, 2.15, 0.85], wspace=0.45, left=0.1,
+                          right=0.99, top=0.8, bottom=0.27)
+    # (a) labels
+    ax = fig.add_subplot(gs[0])
+    lab = m[m.target == "labels"]
+    for i, ro in enumerate(("spikes", "trace")):
+        d = lab[lab.readout == ro]
+        x0 = i * 1.1
+        for _, r_ in d.iterrows():
+            ax.plot([x0, x0 + 0.45], [r_.via, r_.direct], color=GRID, lw=0.5, zorder=1)
+        for dx_, col_, fill in ((0, "via", False), (0.45, "direct", True)):
+            v = d[col_].values
+            ax.scatter(np.full(len(v), x0 + dx_), v, s=6, color=READ_COL[ro], alpha=0.35, lw=0,
+                       zorder=2)
+            ax.scatter([x0 + dx_], [np.median(v)], s=30, zorder=3, lw=1.2,
+                       facecolor=READ_COL[ro] if fill else "white", edgecolor=READ_COL[ro])
+    ax.axhline(lab.chance.median(), color=MUTED, lw=0.7, ls=(0, (3, 2)))
+    ax.text(2.0, lab.chance.median(), "chance", fontsize=6, color=MUTED, ha="right", va="bottom")
+    ax.set_xticks([0, 0.45, 1.1, 1.55], ["via", "dir.", "via", "dir."], fontsize=6.5)
+    ax.set_xlim(-0.3, 1.85)
+    ax.set_ylabel("balanced accuracy")
+    ax.set_title("behaviour labels", loc="left")
+    spines(ax)
+    # (b) features
+    ax = fig.add_subplot(gs[1])
+    xs, ticks, x = {}, [], 0.0
+    for gname, fs in FEAT_GROUPS:
+        for f in fs:
+            xs[f] = x
+            x += 1
+        ax.text(np.mean([xs[f] for f in fs]), 1.0, gname, transform=ax.get_xaxis_transform(),
+                ha="center", va="bottom", fontsize=7, color=INK2)
+        x += 0.6
+    for ro, off in (("spikes", -0.17), ("trace", 0.17)):
+        for f in feats:
+            d = m[(m.readout == ro) & (m.target == f)]
+            for col_, fill in (("via", False), ("direct", True)):
+                v = d[col_].values
+                q = np.percentile(v, [25, 75])
+                ax.plot([xs[f] + off] * 2, q, color=READ_COL[ro], lw=0.8, alpha=0.6 if fill else 0.35)
+                ax.scatter([xs[f] + off], [np.median(v)], s=22 if fill else 18, lw=1.0, zorder=3,
+                           facecolor=READ_COL[ro] if fill else "white", edgecolor=READ_COL[ro])
+    ax.axhline(0, color=MUTED, lw=0.6)
+    ax.set_xticks([xs[f] for f in feats], [FEAT_NAMES[f] for f in feats], rotation=45, ha="right",
+                  fontsize=6.8)
+    ax.set_xlim(-0.6, x - 0.4)
+    ax.set_ylabel("correlation r (held out)")
+    ax.set_title("pose features", loc="left", pad=12)
+    spines(ax)
+    # (c) share retained through the other representation
+    ax = fig.add_subplot(gs[2])
+    rows = []
+    for (ro, day, rec), d in m.groupby(["readout", "day", "rec"]):
+        l = d[d.target == "labels"].iloc[0]
+        lab_ret = (l.via - l.chance) / (l.direct - l.chance) if l.direct > l.chance else np.nan
+        f = d[d.target.isin(feats) & (d.direct > 0.1)]
+        feat_ret = f.via.clip(lower=0).sum() / f.direct.sum() if len(f) else np.nan
+        rows.append(dict(readout=ro, labels=lab_ret, features=feat_ret))
+    rr = pd.DataFrame(rows)
+    for i, (col_, name) in enumerate((("labels", "labels\nvia features"),
+                                      ("features", "features\nvia labels"))):
+        for j, ro in enumerate(("spikes", "trace")):
+            v = rr[rr.readout == ro][col_].dropna().clip(-0.2, 1.5).values
+            xx = i + (j - 0.5) * 0.32
+            ax.scatter(xx + np.random.default_rng(j).uniform(-0.06, 0.06, len(v)), v, s=6,
+                       color=READ_COL[ro], alpha=0.35, lw=0)
+            ax.scatter([xx], [np.median(v)], s=30, color=READ_COL[ro], edgecolor="white", lw=0.8,
+                       zorder=3)
+    ax.axhline(1, color=MUTED, lw=0.6, ls=(0, (3, 2)))
+    ax.set_xticks([0, 1], ["labels\nvia features", "features\nvia labels"], fontsize=6.8)
+    ax.set_xlim(-0.5, 1.5)
+    ax.set_ylim(-0.05, 1.4)
+    ax.set_ylabel("share of decoding retained")
+    ax.set_title("detour", loc="left")
+    spines(ax)
+    handles = [plt.Line2D([], [], color=READ_COL[ro], marker="o", lw=0, ms=4.5,
+                          label=READ_NAME[ro]) for ro in ("spikes", "trace")] + \
+              [plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=4.5, label="direct"),
+               plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=4.5, mfc="white",
+                          label="via the other representation")]
+    fig.legend(handles=handles, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.53, 1.0),
+               handletextpad=0.3, columnspacing=1.4)
+    for x_, l_ in ((0.005, "a"), (0.27, "b"), (0.745, "c")):
+        fig.text(x_, 0.85, l_, fontsize=10, fontweight="bold", color=INK)
+    save(fig, "spn_decoding_contrast")
+    print(rr.groupby("readout").median().round(3))
+
+def decoding_stats(m, readout):
+    """Mixed models of the direct decoding per feature (and labels): r ~ condition + (1 | mouse),
+    D1 / D2 separately; BH-FDR over targets x SPN types x contrasts."""
+    import statsmodels.formula.api as smf
+    from statsmodels.stats.multitest import multipletests
+    import warnings
+    out = []
+    for (t, spn), d in m[m.readout == readout].groupby(["target", "spn"]):
+        d = d.copy()
+        d["cond"] = pd.Categorical(d.condition, conditions)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fit = smf.mixedlm(f"direct ~ C(cond, Treatment('Control'))", d, groups="mouse").fit(reml=True)
+        names = list(fit.fe_params.index)
+        v = lambda c: np.eye(len(names))[names.index(f"C(cond, Treatment('Control'))[T.{c}]")]
+        for cname, vec in (("Amph - Control", v(conditions[1])),
+                           ("A+Cloz - Amph", v(conditions[2]) - v(conditions[1])),
+                           ("A+Cloz - Control", v(conditions[2]))):
+            tt = fit.t_test(vec[None])
+            out.append(dict(target=t, spn=spn, contrast=cname, estimate=float(tt.effect[0]),
+                            p=float(tt.pvalue)))
+    st = pd.DataFrame(out)
+    st["p_fdr"] = multipletests(st.p, method="fdr_bh")[1]
+    return st
+
+def slide_decoding_conditions(m, readout="trace"):
+    feats = [f for _, fs in FEAT_GROUPS for f in fs]
+    st = decoding_stats(m, readout)
+    st.to_csv(f"{dec_dir}/decoding_condition_stats_{readout}.csv", index=False)
+    d0 = m[m.readout == readout]
+    fig, axes = plt.subplots(2, 2, figsize=(6.0, 3.3), gridspec_kw=dict(width_ratios=[5.2, 0.75]),
+                             sharey="col")
+    fig.subplots_adjust(left=0.085, right=0.99, top=0.86, bottom=0.17, wspace=0.18, hspace=0.18)
+    for r_, spn in enumerate(groups):
+        ax = axes[r_, 0]
+        xs, x = {}, 0.0
+        for gname, fs in FEAT_GROUPS:
+            for f in fs:
+                xs[f] = x
+                x += 1
+            if r_ == 0:
+                ax.text(np.mean([xs[f] for f in fs]), 1.02, gname, transform=ax.get_xaxis_transform(),
+                        ha="center", va="bottom", fontsize=7, color=INK2)
+            x += 0.6
+        for ci, c in enumerate(conditions):
+            for f in feats:
+                v = d0[(d0.target == f) & (d0.spn == spn) & (d0.condition == c)].direct.values
+                xx = xs[f] + (ci - 1) * 0.24
+                ax.scatter(np.full(len(v), xx), v, s=4, color=cond_col[c], alpha=0.35, lw=0)
+                ax.errorbar(xx, v.mean(), v.std(ddof=1) / np.sqrt(len(v)), color=cond_col[c],
+                            lw=1.1, capsize=0)
+                ax.scatter([xx], [v.mean()], s=16, color=cond_col[c], edgecolor="white", lw=0.6,
+                           zorder=3)
+        top = d0[d0.target.isin(feats)].direct.max()
+        for f in feats:                                   # Amph vs Control, A+Cloz vs Amph
+            for k, (cname, x_off) in enumerate((("Amph - Control", -0.12), ("A+Cloz - Amph", 0.12))):
+                s_ = st[(st.target == f) & (st.spn == spn) & (st.contrast == cname)]
+                if len(s_) and stars(s_.p_fdr.iloc[0]):
+                    ax.text(xs[f] + x_off, top + 0.04 + 0.07 * k, stars(s_.p_fdr.iloc[0]),
+                            ha="center", fontsize=6,
+                            color=cond_col[conditions[1]] if k == 0 else cond_col[conditions[2]])
+        ax.axhline(0, color=MUTED, lw=0.6)
+        ax.set_xticks([xs[f] for f in feats],
+                      [FEAT_NAMES[f] for f in feats] if r_ == 1 else [], rotation=40, ha="right",
+                      fontsize=6.8)
+        ax.set_xlim(-0.6, x - 0.4)
+        ax.set_ylim(min(-0.15, d0[d0.target.isin(feats)].direct.min() - 0.02), top + 0.2)
+        ax.set_ylabel(f"{spn}\nfeature decoding r")
+        ax.yaxis.grid(True, color=GRID, lw=0.5)
+        ax.set_axisbelow(True)
+        spines(ax)
+        # labels (same readout)
+        ax = axes[r_, 1]
+        for ci, c in enumerate(conditions):
+            dd = d0[(d0.target == "labels") & (d0.spn == spn) & (d0.condition == c)]
+            v = (dd.direct - dd.chance).values
+            ax.scatter(np.full(len(v), ci), v, s=4, color=cond_col[c], alpha=0.35, lw=0)
+            ax.errorbar(ci, v.mean(), v.std(ddof=1) / np.sqrt(len(v)), color=cond_col[c], lw=1.1)
+            ax.scatter([ci], [v.mean()], s=16, color=cond_col[c], edgecolor="white", lw=0.6, zorder=3)
+        ax.set_xticks([])
+        ax.set_xlim(-0.6, 2.6)
+        ax.axhline(0, color=MUTED, lw=0.6)
+        if r_ == 0:
+            ax.set_title("labels", loc="left", fontsize=7.5)
+        if r_ == 1:
+            ax.set_xlabel("acc. − chance", fontsize=6.8)
+        ax.yaxis.grid(True, color=GRID, lw=0.5)
+        ax.set_axisbelow(True)
+        spines(ax)
+    handles = [plt.Line2D([], [], color=cond_col[c], marker="o", ms=4.5, lw=1.1,
+                          markeredgecolor="white", label=cond_short[c]) for c in conditions]
+    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False,
+               bbox_to_anchor=(0.5, 1.0), columnspacing=1.6)
+    save(fig, f"spn_decoding_conditions_{readout}")
+    pd.set_option("display.width", 200)
+    print(st[st.p_fdr < 0.05].round(4).to_string(index=False))
+
 
 if __name__ == "__main__":
     rd = pd.read_csv(f"{res_dir}/readouts_{a_drug}.csv")
     slide_rate_stats(rd, pd.read_csv(f"{res_dir}/stats_mixed_{a_drug}.csv"))
     slide_tracked(pd.read_csv(f"{res_dir}/tracked_cells.csv.gz"),
                   pd.read_csv(f"{res_dir}/stats_tracked.csv"))
+    if os.path.isfile(f"{dec_dir}/decoding.csv"):
+        m = decoding_table()
+        slide_decoding_contrast(m)
+        for ro in ("trace", "spikes"):
+            slide_decoding_conditions(m, ro)

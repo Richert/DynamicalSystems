@@ -8,6 +8,8 @@ behaviour frame (window covers the spike lead and the trace lag of analysis_spn_
 Behaviour (data file, fixed video offset): label_clean (artefacts / short bouts excluded) and
 the 11 AR-HMM features in the HMM's transforms. Fits on every step-th frame (5 Hz).
 
+Each recording is decoded in seg_s segments (15 min: Control 1, Amphetamine 3; averaged), so
+all decoders train on the same amount of data.
 Cross-validation: n_folds contiguous blocks, gap_s left out on both sides of each test block;
 hyper-parameters (C, alpha) chosen on the last inner block of the training data.
 Per recording, readout and draw:
@@ -15,7 +17,7 @@ Per recording, readout and draw:
             label (via features: out-of-fold feature predictions, then logistic), and of the
             true features -> label (ceiling: how well the pose features explain the labels);
             circular-shift null of the direct decoder
-  features  Pearson r (and R^2) per feature of neural -> feature (direct), of neural -> decoded label
+  features  Pearson r within test blocks (see corr; and R^2) per feature of neural -> feature (direct), of neural -> decoded label
             probabilities -> feature (via labels), and of true labels -> feature (ceiling);
             circular-shift null
 direct > via features: label information beyond the (linearly decodable) pose features;
@@ -42,6 +44,7 @@ lags_s = (-0.4, -0.2, 0.0, 0.2, 0.4)
 step = 4                                    # fit at 5 Hz
 n_sub, n_draw = 50, 3
 n_folds, gap_s = 5, 2.0
+seg_s = 900.0                               # decode in segments of this length (equal training data)
 min_class_s = 10.0                          # label used with >= this much time
 null_min_s = 60.0
 Cs = (0.01, 0.1, 1.0)
@@ -117,9 +120,14 @@ def r2(Y, P):
     return 1 - ((Y - P) ** 2).sum(0) / ((Y - Y.mean(0)) ** 2).sum(0)
 
 def corr(Y, P):
-    """Pearson r per column of the out-of-fold predictions with the truth (offset- and
-    scale-free: the R^2 of held-out contiguous blocks is dominated by slow drifts)."""
-    Yc, Pc = Y - Y.mean(0), P - P.mean(0)
+    """Pearson r per column of the out-of-fold predictions with the truth, after centring both
+    within each test block: scale-free, and free of the block offsets (a decoder predicting
+    the training mean anti-correlates with each held-out block's own mean)."""
+    edges = np.linspace(0, len(Y), n_folds + 1).astype(int)
+    Yc, Pc = Y.astype(float).copy(), P.astype(float).copy()
+    for a, b in zip(edges[:-1], edges[1:]):
+        Yc[a:b] -= Yc[a:b].mean(0)
+        Pc[a:b] -= Pc[a:b].mean(0)
     return (Yc * Pc).sum(0) / np.sqrt((Yc ** 2).sum(0) * (Pc ** 2).sum(0) + 1e-12)
 
 def cv_decode(X, y, Y, classes, n_gap):
@@ -163,9 +171,18 @@ def recording(day, rec):
         E[i, fr[ptr[i]:ptr[i + 1]]] = 1
     reads = {"spikes": gaussian_filter1d(E, kernel_s * fs, axis=1), "trace": C / sn[:, None]}
     pad = int(max(abs(l) for l in lags_s) * fs)
-    idx = np.arange(pad, T - pad, step)
     fin = np.isfinite(F).all(1)
-    idx = idx[(lab[idx] >= 0) & np.all([fin[idx + int(round(l * fs))] for l in lags_s], 0)]
+    Xz = {k: (X - X.mean(1, keepdims=True)) / (X.std(1, keepdims=True) + 1e-9) for k, X in reads.items()}
+    L = int(seg_s * fs)
+    rows = []
+    for seg in range(max(1, T // L)):                       # 15-min segments (Control: 1, Amph: 3)
+        idx = np.arange(seg * L + pad, min(T, (seg + 1) * L) - pad, step)
+        idx = idx[(lab[idx] >= 0) & np.all([fin[idx + int(round(l * fs))] for l in lags_s], 0)]
+        rows += segment(idx, lab, F, Xz, names, T, n, rng, dict(attrs, segment=seg))
+    print(day, rec, flush=True)
+    return rows
+
+def segment(idx, lab, F, Xz, names, T, n, rng, attrs):
     y = lab[idx]
     keep_cls = [c for c in np.unique(y) if (y == c).sum() * step / fs >= min_class_s]
     ok = np.isin(y, keep_cls)
@@ -181,8 +198,7 @@ def recording(day, rec):
     onehot = (y[:, None] == classes[None]).astype(float)
     P_ceil = cv_features(onehot, Y, n_gap)
     ceil_feat, ceil_feat_r2 = corr(Y, P_ceil), r2(Y, P_ceil)
-    for key, X in reads.items():
-        X = (X - X.mean(1, keepdims=True)) / (X.std(1, keepdims=True) + 1e-9)
+    for key, X in Xz.items():
         for d in range(n_draw):
             sel = np.sort(rng.choice(n, min(n_sub, n), replace=False))
             Xl = lagged(X[sel], idx)
@@ -201,7 +217,6 @@ def recording(day, rec):
                                  ceiling=ceil_feat[j], null=corr(Y, P_null)[j], chance=0.0,
                                  direct_r2=r2(Y, Fh)[j], via_r2=r2(Y, P_via)[j],
                                  ceiling_r2=ceil_feat_r2[j], null_r2=r2(Y, P_null)[j]))
-    print(day, rec, flush=True)
     return rows
 
 def main(n_jobs=4):
