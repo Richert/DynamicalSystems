@@ -541,6 +541,134 @@ def slide_caiman_overview(r, t0, t1):
     save(fig, "pipeline_caiman_overview")
 
 
+# ---------------------------------------------------------------------------
+# slide: post-processing on top of CaImAn (component selection)
+# ---------------------------------------------------------------------------
+
+RULES = [  # (key, label, criterion, colour)
+    ("snr", "low SNR", "transient SNR < 2", "#8c8a84"),
+    ("shape", "odd shape", "too large, elongated\nor split", "#e87ba4"),
+    ("size", "oversized", "> 3x the median\ncell area", "#7a4fa3"),
+    ("consistency", "inconsistent", "its events don't light\nup its footprint", "#e34948"),
+    ("vessel", "blood vessel", "centred on a vessel\n(baseline image)", "#2a78d6"),
+    ("offpeak", "off-peak", "> 6 px from any\ncorrelation peak", "#eda100"),
+    ("edge", "edge piece", "on the edge of a\nneighbouring cell", "#1fa187"),
+]
+
+def selection_stages(r):
+    """CNMF-E component -> first selection step that removes it (or 'kept'), by replaying the
+    pipeline's selection with one rule more at a time (same functions, local inputs)."""
+    import types
+    ex = np.load(f"{r.dir}/cnmfe_extra_{tag}.npz")
+    est = types.SimpleNamespace(A=r.A, SNR_comp=r.snr, b0=r.b0, r_values=ex["r_values"],
+                                idx_components=ex["idx_components"])
+    cnm = types.SimpleNamespace(estimates=est)
+    P.eta, P.pnr_img = r.eta, r.pnr
+    stage = {}
+    for k in range(r.A.shape[1]):
+        if r.snr[k] < 2:
+            stage[k] = "snr"
+    flags = [("shape", []), ("size", ["--size_rel"]), ("rim", ["--lens_rim", "5"]),
+             ("consistency", ["--hybrid", "0.3", "0.2"]), ("vessel", ["--vessel", "3"]),
+             ("offpeak", ["--offpeak", "6"]), ("edge", ["--frag_edge", "1.05"])]
+    argv, prev = ["x", "--min_snr", "2"], set(k for k in range(r.A.shape[1]) if k not in stage)
+    for key, f in flags:
+        argv = argv + f
+        P.selection_cli(list(argv))
+        idx, _ = P.accepted_components(cnm, r.dims, r.cn)
+        for k in prev - set(idx):
+            stage[k] = key
+        prev = set(idx)
+    for k in prev:
+        stage[k] = "kept"
+    assert prev == set(r.kept), "selection replay differs from the stored selection"
+    return stage
+
+def slide_postprocessing(r, pick=None):
+    """pick: rule -> component shown as its example (default: highest SNR away from the edge;
+    the defaults for the example recording were chosen by eye from all candidates)."""
+    if pick is None and r.name == "20191205_m85_clo01_amph_rec1" and tag == "p1_c0.6_pnr5_nrg0.999":
+        pick = {"size": 1047, "offpeak": 523}
+    pick = pick or {}
+    from matplotlib.gridspec import GridSpec
+    stage = selection_stages(r)
+    col = {k: c for k, _, _, c in RULES}
+    seed = r.cn * r.pnr
+    fig = plt.figure(figsize=(6.0, 3.05))
+    gs = GridSpec(2, 5, figure=fig, width_ratios=[1.55, 0.9, 0.62, 0.62, 0.62],
+                  height_ratios=[1, 1], wspace=0.12, hspace=0.62, left=0.005, right=0.995,
+                  top=0.88, bottom=0.12)
+    # (a) all CNMF-E components on the seeding image, coloured by the step removing them
+    ax = fig.add_subplot(gs[:, 0])
+    ax.imshow(seed, cmap=FLUO, vmin=0, vmax=np.percentile(seed, 99.7))
+    for k, st in stage.items():
+        if st == "snr":
+            continue                                       # (most: noise / background)
+        a = r.footprint(k)
+        ax.contour(a, [0.4 * a.max()], colors=[CELL if st == "kept" else col[st]],
+                   linewidths=0.35 if st == "kept" else 0.7)
+    frame_axes(ax, None)
+    ax.set_title("CNMF-E components (SNR ≥ 2)", loc="left")
+    scalebar(ax, r.dims)
+    # (b) counts per step
+    ax = fig.add_subplot(gs[:, 1])
+    n_all = len(stage)
+    keys = [k for k, *_ in RULES]
+    counts = [sum(v == k for v in stage.values()) for k in keys]
+    y = np.arange(len(keys) + 1)
+    n_kept = sum(v == "kept" for v in stage.values())
+    ax.barh(y[:-1], counts, color=[col[k] for k in keys], height=0.68)
+    ax.barh(y[-1], n_kept, color="#c9c7bf", height=0.68)
+    for yi, c, l in zip(y, counts + [n_kept], [l for _, l, _, _ in RULES] + ["kept cells"]):
+        inside = c > 250
+        ax.text(c - 12 if inside else c + 12, yi, f"{c}  {l}", va="center", fontsize=6.8,
+                color="white" if l == "low SNR" else INK, ha="right" if inside else "left")
+    ax.set_yticks([])
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(counts + [n_kept]) * 1.05)
+    ax.set_xticks([0, 250, 500])
+    ax.set_xlabel("components")
+    for sp in ("top", "right", "left"):
+        ax.spines[sp].set_visible(False)
+    ax.set_title(f"{n_all} → {n_kept}", loc="left")
+    # (c) one example per added rule (highest SNR), on the correlation image (vessel: baseline)
+    ex_rules = [R_ for R_ in RULES if R_[0] in ("shape", "size", "consistency", "vessel",
+                                                 "offpeak", "edge")]
+    b0 = r.b0.reshape(r.dims, order="F")
+    for i, (key, lab, crit, c) in enumerate(ex_rules):
+        ax = fig.add_subplot(gs[i // 3, 2 + i % 3])
+        ks = [k for k, v in stage.items() if v == key]
+        if not ks:
+            frame_axes(ax, lab)
+            continue
+        h = 16 if key in ("size", "shape", "vessel") else 11
+        inner = [k for k in ks if min(*np.unravel_index(np.argmax(r.footprint(k)), r.dims),
+                                      *(np.array(r.dims) - 1 - np.unravel_index(
+                                          np.argmax(r.footprint(k)), r.dims))) >= h]
+        k = pick.get(key) or max(inner or ks, key=lambda k: r.snr[k])   # (highest SNR, not at the edge)
+        a = r.footprint(k)
+        yy, xx = np.unravel_index(np.argmax(a), r.dims)
+        yy, xx = int(np.clip(yy, h, r.dims[0] - 1 - h)), int(np.clip(xx, h, r.dims[1] - 1 - h))
+        img = b0 if key == "vessel" else r.cn
+        ci = crop(img, yy, xx, h)
+        ax.imshow(ci, cmap="gray" if key == "vessel" else FLUO, interpolation="bilinear",
+                  vmin=np.percentile(ci, 1), vmax=np.percentile(ci, 99.5))
+        for kk in r.kept:                                  # kept neighbours
+            b = r.footprint(kk)
+            if abs(np.unravel_index(np.argmax(b), r.dims)[0] - yy) <= h + 6 and \
+                    abs(np.unravel_index(np.argmax(b), r.dims)[1] - xx) <= h + 6:
+                ax.contour(crop(b, yy, xx, h), [0.4 * b.max()], colors=CELL, linewidths=0.5)
+        ax.contour(crop(a, yy, xx, h), [0.4 * a.max()], colors=c, linewidths=1.1)
+        frame_axes(ax, None)
+        ax.set_title(lab, loc="left", fontsize=7.5, color=c, fontweight="bold", pad=2)
+        ax.text(0, -0.04, crit, transform=ax.transAxes, va="top", fontsize=6.2, color=INK2,
+                linespacing=1.1)
+    for x, l in ((0.005, "a"), (0.345, "b"), (0.565, "c")):
+        fig.text(x, 0.955, l, fontsize=10, fontweight="bold", color=INK)
+    save(fig, "pipeline_postprocessing")
+    print({k: sum(v == k for v in stage.values()) for k in keys + ["rim", "kept"]})
+
+
 if __name__ == "__main__":
     slide_validation()
     r = Recording(rec)
@@ -549,3 +677,4 @@ if __name__ == "__main__":
     slide_raw_data(r, t0, t1)
     slide_cells(r)
     slide_spikes(r, t0, t1)
+    slide_postprocessing(r)

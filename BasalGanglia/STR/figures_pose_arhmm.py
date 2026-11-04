@@ -20,7 +20,7 @@ import glob
 import numpy as np
 import pandas as pd
 
-os.environ.setdefault("OUT_DIR", "/home/rgast/data/parker_data/pose_arhmm_v5")
+os.environ.setdefault("OUT_DIR", "/home/rgast/data/parker_data/pose_arhmm_v7")   # final model
 import analysis_pose_arhmm as A
 
 video_root = os.environ.get("VIDEO_ROOT", "/mnt/kennedy_labdata/Parkerlab/sample_videos")
@@ -781,7 +781,8 @@ def fig_states(states, sessions, b):
     if len(order) < K:                                  # other model versions: label order
         order = list(range(K))
     nrow = int(np.ceil(K / 5))
-    fig, axes = plt.subplots(nrow, 5, figsize=(7.2, 2.3 * nrow))
+    ncol = int(np.ceil(K / nrow))                       # even rows (8 labels: 2 x 4)
+    fig, axes = plt.subplots(nrow, ncol, figsize=(1.44 * ncol, 2.3 * nrow), squeeze=False)
     cache = {}
     for ax, k in zip(axes.flat, order):
         bt = typical_bout(b, k)
@@ -814,14 +815,24 @@ def fig_states(states, sessions, b):
                 f"turn {net:+.0f}°".replace("-", "−"),
                 transform=ax.transAxes, fontsize=5.8, color=INK2, va="bottom")
         ax.set_aspect("equal")
-        ax.set_xlim(-5.5, 5.5)
-        ax.set_ylim(-6.5, 9.5)
         ax.axis("off")
+    # common limits covering every bout (same scale in all panels; room for the text below)
+    used = list(axes.flat[:len(order)])
+    x0 = min(a.dataLim.x0 for a in used) - 0.6
+    x1 = max(a.dataLim.x1 for a in used) + 0.6
+    y0 = min(a.dataLim.y0 for a in used) - 3.2
+    y1 = max(a.dataLim.y1 for a in used) + 1.2
+    w = max(x1 - x0, 11.0)
+    xc = (x0 + x1) / 2
+    for a in used:
+        a.set_xlim(xc - w / 2, xc + w / 2)
+        a.set_ylim(min(y0, -6.5), max(y1, 9.5))
     for ax in axes.flat[len(order):]:
         ax.axis("off")
     ax = axes.flat[0]
-    ax.plot([-5, -4], [8.8, 8.8], color=INK, lw=1)
-    ax.text(-4.5, 9.0, "1 cm", ha="center", va="bottom", fontsize=5.8, color=INK)
+    xl, yl = ax.get_xlim(), ax.get_ylim()
+    ax.plot([xl[0] + 0.3, xl[0] + 1.3], [yl[1] - 0.7] * 2, color=INK, lw=1)
+    ax.text(xl[0] + 0.8, yl[1] - 0.5, "1 cm", ha="center", va="bottom", fontsize=5.8, color=INK)
     fig.legend(handles=[plt.Line2D([], [], color=START_GREY, marker="o", lw=0.9, ms=3,
                                    mec="white", label="bout start (light grey)"),
                         plt.Line2D([], [], color=INK2, marker="o", lw=1.3, ms=4.5, mec="white",
