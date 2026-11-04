@@ -130,7 +130,60 @@ def slide_rate_stats(rd):
                bbox_to_anchor=(0.55, 1.005), handlelength=1.6, columnspacing=1.6)
     save(fig, "spn_rate_stats")
 
+def slide_tracked(tc, ts, labels=("whole session", "walk", "straight run")):
+    """Within-cell Control vs Amphetamine log rates of tracked cells (Vehicle days)."""
+    fig, axes = plt.subplots(2, len(labels), figsize=(6.0, 3.6), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.89, bottom=0.12, wspace=0.1, hspace=0.14)
+    lim = (-2.55, 0.15)
+    col_cell, col_mouse = "#2a78d6", "#0b3d7a"
+    for r, spn in enumerate(groups):
+        for k, lab in enumerate(labels):
+            ax = axes[r, k]
+            ax.plot(lim, lim, color=MUTED, lw=0.7, ls=(0, (3, 2)), zorder=1)
+            ax.set_aspect("equal")
+            ax.set_xlim(lim)
+            ax.set_ylim(lim)
+            ax.grid(True, color=GRID, lw=0.5)
+            ax.set_axisbelow(True)
+            for sp in ("top", "right"):
+                ax.spines[sp].set_visible(False)
+            ax.tick_params(axis="x", length=2.5)
+            if r == 0:
+                ttl = "all behaviour" if lab == "whole session" else lab
+                ax.set_title(ttl, loc="left", fontsize=8.5, fontweight="bold", color=INK)
+            if k == 0:
+                ax.set_ylabel(f"{spn}\nAmph.: log$_{{10}}$ rate (Hz)")
+            if r == 1:
+                ax.set_xlabel("Control: log$_{10}$ rate (Hz)")
+            d = tc[(tc.label == lab) & (tc.spn == spn)]
+            s = ts[(ts.label == lab) & (ts.spn == spn) & (ts.readout == "d_rate")]
+            if d.mouse.nunique() < 3 or not len(s) or not np.isfinite(s.p.iloc[0]):
+                ax.text(0.5, 0.5, "too little Control time\nin this behaviour", transform=ax.transAxes,
+                        ha="center", va="center", fontsize=7, color=MUTED)
+                continue
+            ax.scatter(d.ctrl_rate, d.amph_rate, s=2.5, color=col_cell, alpha=0.18, lw=0,
+                       rasterized=True, zorder=2)
+            m = d.groupby("mouse")[["ctrl_rate", "amph_rate"]].median()
+            ax.scatter(m.ctrl_rate, m.amph_rate, s=22, color=col_mouse, edgecolor="white", lw=0.8,
+                       zorder=4)
+            s = s.iloc[0]
+            st = stars(s.p_fdr) or "n.s."
+            ax.text(0.04, 0.97, f"Δ = {s.estimate:+.2f} ± {s.se:.2f} {st}\n"
+                    f"{s.share_down:.0%} of cells lower\n{s.n_cells} cells, {s.n_mice} mice",
+                    transform=ax.transAxes, ha="left", va="top", fontsize=6.3, color=INK2,
+                    linespacing=1.25)
+    handles = [plt.Line2D([], [], color=col_cell, marker="o", ms=3, lw=0, alpha=0.5,
+                          label="tracked cell"),
+               plt.Line2D([], [], color=col_mouse, marker="o", ms=5, lw=0, markeredgecolor="white",
+                          label="mouse median"),
+               plt.Line2D([], [], color=MUTED, lw=0.7, ls=(0, (3, 2)), label="no change")]
+    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False,
+               bbox_to_anchor=(0.55, 1.0), handlelength=1.6, columnspacing=1.6)
+    save(fig, "spn_tracked_cells")
+
 
 if __name__ == "__main__":
     rd = pd.read_csv(f"{res_dir}/readouts_{a_drug}.csv")
     slide_rate_stats(rd)
+    slide_tracked(pd.read_csv(f"{res_dir}/tracked_cells.csv.gz"),
+                  pd.read_csv(f"{res_dir}/stats_tracked.csv"))
