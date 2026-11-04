@@ -310,6 +310,9 @@ def decoding_stats(m, readout):
     from statsmodels.stats.multitest import multipletests
     import warnings
     out = []
+    m = m.copy()
+    lab = m.target == "labels"
+    m.loc[lab, "direct"] = m.loc[lab, "direct"] - m.loc[lab, "chance"]   # labels: accuracy - chance
     for (t, spn), d in m[m.readout == readout].groupby(["target", "spn"]):
         d = d.copy()
         d["cond"] = pd.Categorical(d.condition, conditions)
@@ -335,7 +338,7 @@ def slide_decoding_conditions(m, readout="trace"):
     d0 = m[m.readout == readout]
     fig, axes = plt.subplots(2, 2, figsize=(6.0, 3.3), gridspec_kw=dict(width_ratios=[5.2, 0.75]),
                              sharey="col")
-    fig.subplots_adjust(left=0.085, right=0.99, top=0.86, bottom=0.17, wspace=0.18, hspace=0.18)
+    fig.subplots_adjust(left=0.11, right=0.99, top=0.84, bottom=0.17, wspace=0.18, hspace=0.18)
     for r_, spn in enumerate(groups):
         ax = axes[r_, 0]
         xs, x = {}, 0.0
@@ -370,7 +373,7 @@ def slide_decoding_conditions(m, readout="trace"):
                       fontsize=6.8)
         ax.set_xlim(-0.6, x - 0.4)
         ax.set_ylim(min(-0.15, d0[d0.target.isin(feats)].direct.min() - 0.02), top + 0.2)
-        ax.set_ylabel(f"{spn}\nfeature decoding r")
+        ax.set_ylabel(f"{spn} mice\nfeature decoding r")
         ax.yaxis.grid(True, color=GRID, lw=0.5)
         ax.set_axisbelow(True)
         spines(ax)
@@ -382,6 +385,13 @@ def slide_decoding_conditions(m, readout="trace"):
             ax.scatter(np.full(len(v), ci), v, s=4, color=cond_col[c], alpha=0.35, lw=0)
             ax.errorbar(ci, v.mean(), v.std(ddof=1) / np.sqrt(len(v)), color=cond_col[c], lw=1.1)
             ax.scatter([ci], [v.mean()], s=16, color=cond_col[c], edgecolor="white", lw=0.6, zorder=3)
+        topl = (d0[(d0.target == "labels")].direct - d0[(d0.target == "labels")].chance).max()
+        for k, (cname, xx) in enumerate((("Amph - Control", 0.5), ("A+Cloz - Amph", 1.5))):
+            s_ = st[(st.target == "labels") & (st.spn == spn) & (st.contrast == cname)]
+            if len(s_) and stars(s_.p_fdr.iloc[0]):
+                ax.text(xx, 0.93, stars(s_.p_fdr.iloc[0]), ha="center", fontsize=6,
+                        transform=ax.get_xaxis_transform(),
+                        color=cond_col[conditions[1]] if k == 0 else cond_col[conditions[2]])
         ax.set_xticks([])
         ax.set_xlim(-0.6, 2.6)
         ax.axhline(0, color=MUTED, lw=0.6)
@@ -395,7 +405,10 @@ def slide_decoding_conditions(m, readout="trace"):
     handles = [plt.Line2D([], [], color=cond_col[c], marker="o", ms=4.5, lw=1.1,
                           markeredgecolor="white", label=cond_short[c]) for c in conditions]
     fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False,
-               bbox_to_anchor=(0.5, 1.0), columnspacing=1.6)
+               bbox_to_anchor=(0.45, 1.0), columnspacing=1.6)
+    fig.text(0.99, 0.965, "* Amph. vs Control", color=cond_col[conditions[1]], fontsize=6.5, ha="right")
+    fig.text(0.99, 0.93, f"* {cond_short[conditions[2]]} vs Amph.", color=cond_col[conditions[2]],
+             fontsize=6.5, ha="right")
     save(fig, f"spn_decoding_conditions_{readout}")
     pd.set_option("display.width", 200)
     print(st[st.p_fdr < 0.05].round(4).to_string(index=False))
