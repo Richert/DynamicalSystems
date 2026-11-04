@@ -66,6 +66,11 @@ behaviour_cols = ["speed", "turn", "head_angle", "bend", "body_len", "head_speed
 video_offset = 12007
 offsets_csv = "/home/rgast/data/parker_data/pose_alignment/pose_imaging_offsets" + \
     ("" if drug == "Clozapine" else f"_{drug.lower()}") + ".csv"
+# per-session corrections (frames, video frame of imaging frame 0 = video_offset + correction):
+# recordings whose motion-correction shifts lock to the keypoint movement consistently over the
+# whole recording (check_pose_imaging_alignment.py: all quarters within 4 frames) with a peak of
+# >= 3 frames (haloperidol: 3 of 9 such recordings, up to 1.85 s)
+corrections_csv = offsets_csv.replace("pose_imaging_offsets", "alignment_corrections")
 gz = dict(compression="gzip", compression_opts=4, shuffle=True)
 
 def days():
@@ -133,6 +138,8 @@ def write_behaviour(h, day):
     lmap = np.array([labels.index(l) for l in (st.label if "label" in st else st.name)])
     offs = pd.read_csv(offsets_csv)
     offs = dict(zip(offs.session.str.split("/").str[-1], offs.offset_frames))
+    corr = pd.read_csv(corrections_csv) if os.path.isfile(corrections_csv) else None
+    corr = dict(zip(corr.pose_session, corr.frames)) if corr is not None else {}
     excl_idx = sorted({lmap[k] for k in st.index if st.excluded[k]})
     for rec in (0, 1):
         r = h[f"{day}/rec{rec}"]
@@ -145,7 +152,7 @@ def write_behaviour(h, day):
         if not (os.path.isfile(ff) and os.path.isfile(fz)) or ps not in offs:
             b.attrs["available"] = False
             continue
-        shift = video_offset - int(offs[ps])               # feature row of imaging frame 0
+        shift = video_offset - int(offs[ps]) + int(corr.get(ps, 0))   # feature row of imaging frame 0
         idx = np.arange(T) + shift
         feat = pd.read_csv(ff)
         z = pd.read_csv(fz).state.values
@@ -171,7 +178,7 @@ def write_behaviour(h, day):
         b.attrs.update(available=True, model=pose_dir, labels=labels,
                        states=list(st.name), excluded=list(st.name[st.excluded]),
                        label_names=[_display_names(pose_dir).get(l, l) for l in labels],
-                       video_offset=video_offset, row_shift=shift)
+                       video_offset=video_offset, row_shift=shift, correction=int(corr.get(ps, 0)))
 
 def main(what="all"):
     os.makedirs(os.path.dirname(out), exist_ok=True)

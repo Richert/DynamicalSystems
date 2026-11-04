@@ -5,10 +5,12 @@ Per recording: spikes smoothed with a Gaussian kernel (kernel_s), feature in its
 transform (speed / head speed: log10(x + 0.5 cm/s), turning: arcsinh(x / 5 deg/s), others raw).
   per cell   cross-correlation with the feature over +-max_lag_s (lag > 0: behaviour follows the
              SPN); peak = largest |r|; significant if it exceeds the null_q percentile of the
-             same statistic with the behaviour circularly shifted (n_null shifts >= 30 s)
+             same statistic with the behaviour circularly shifted (n_null shifts >= 30 s);
+             lag distributions: significant cells with |r| >= r_min
   tuning     population event rate (mean over cells, Hz) in feature bins (common bins across
              recordings), with the neural activity shifted by the recording's population peak lag
-             (bins with >= min_bin_s of data)
+             (bins with >= min_bin_s of data); all cells, and only the positively tuned cells
+             (significant, r >= r_min; "selected", second figure)
 Conditions: Control, Amphetamine, <drug> high, A + <drug> high (DRUG, default Clozapine).
 
 Outputs (OUT_DIR): tuning_<feature>.csv, lags_<feature>.csv.gz, figure tuning_<feature>.png/pdf.
@@ -30,7 +32,8 @@ feature = sys.argv[1] if len(sys.argv) > 1 else "speed"
 conditions = ["Control", "Amphetamine", f"{drug} high", f"A + {drug} high"]
 fs = 20.0
 kernel_s = 0.1
-max_lag_s = 2.0
+max_lag_s = 1.0
+r_min = float(os.environ.get("R_MIN", 0.1))   # cells used: |r| >= r_min (lags) / r >= r_min (selected tuning)
 n_null, null_min_s, null_q = 20, 30.0, 99
 min_bin_s = 5.0
 seed = 1
@@ -75,18 +78,22 @@ def recording(r, rng, bins):
     pk = np.abs(cc).argmax(1)
     pop = xcorr(z(S.mean(0))[None], y, L)[0]
     lag = int(np.argmax(np.abs(pop))) - L                  # population peak lag (frames)
-    # tuning: population rate at frame t vs feature at t + lag
-    rate = E.mean(0) * fs
-    rate = gaussian_filter1d(rate, kernel_s * fs)
-    if lag >= 0:
-        rr, xx = rate[:len(rate) - lag], x[lag:]
-    else:
-        rr, xx = rate[-lag:], x[:len(x) + lag]
-    idx = np.digitize(xx, bins) - 1
-    tune = [rr[idx == k].mean() if (idx == k).sum() / fs >= min_bin_s else np.nan
-            for k in range(len(bins) - 1)]
-    return dict(cell_lag=(pk - L) / fs, cell_r=cc[np.arange(n), pk], cell_sig=np.abs(cc).max(1) > thr,
-                pop_lag=lag / fs, pop_r=pop[lag + L], tuning=np.array(tune))
+    # tuning: population rate at frame t vs feature at t + lag (all cells / positively tuned cells)
+    r_pk = cc[np.arange(n), pk]
+    sig = np.abs(cc).max(1) > thr
+    sel = sig & (r_pk >= r_min)
+    tunes = []
+    for cells_ in (np.ones(n, bool), sel):
+        rate = gaussian_filter1d(E[cells_].mean(0) * fs, kernel_s * fs) if cells_.any() else np.full(E.shape[1], np.nan)
+        if lag >= 0:
+            rr, xx = rate[:len(rate) - lag], x[lag:]
+        else:
+            rr, xx = rate[-lag:], x[:len(x) + lag]
+        idx = np.digitize(xx, bins) - 1
+        tunes.append(np.array([rr[idx == k].mean() if (idx == k).sum() / fs >= min_bin_s else np.nan
+                               for k in range(len(bins) - 1)]))
+    return dict(cell_lag=(pk - L) / fs, cell_r=r_pk, cell_sig=sig, pop_lag=lag / fs,
+                pop_r=pop[lag + L], tuning=tunes[0], tuning_sel=tunes[1], n_sel=int(sel.sum()), n=n)
 
 def main():
     os.makedirs(out_dir, exist_ok=True)
@@ -95,6 +102,9 @@ def main():
         figure(pd.read_csv(f"{out_dir}/tuning_{feature}{sfx}.csv"),
                pd.read_csv(f"{out_dir}/lags_{feature}{sfx}.csv.gz"),
                BINS[feature] if feature in BINS else np.load(f"{out_dir}/bins_{feature}{sfx}.npy"))
+        figure(pd.read_csv(f"{out_dir}/tuning_{feature}{sfx}.csv"),
+               pd.read_csv(f"{out_dir}/lags_{feature}{sfx}.csv.gz"),
+               BINS[feature] if feature in BINS else np.load(f"{out_dir}/bins_{feature}{sfx}.npy"), True)
         return
     rng = np.random.default_rng(seed)
     with h5py.File(dataset, "r") as h:
@@ -115,8 +125,9 @@ def main():
                 res = recording(r, rng, bins)
                 base = dict(day=day, rec=rec, condition=r.attrs["condition"], mouse=h[day].attrs["mouse"],
                             spn=h[day].attrs["spn"])
-                tun.append(dict(base, pop_lag=res["pop_lag"], pop_r=res["pop_r"],
-                                **{f"b{k}": v for k, v in enumerate(res["tuning"])}))
+                tun.append(dict(base, pop_lag=res["pop_lag"], pop_r=res["pop_r"], n_cells=res["n"],
+                                n_sel=res["n_sel"], **{f"b{k}": v for k, v in enumerate(res["tuning"])},
+                                **{f"s{k}": v for k, v in enumerate(res["tuning_sel"])}))
                 cells.append(pd.DataFrame(dict(base, lag=res["cell_lag"], r=res["cell_r"], sig=res["cell_sig"])))
             print(day, flush=True)
     tu, ce = pd.DataFrame(tun), pd.concat(cells, ignore_index=True)
@@ -130,8 +141,9 @@ def main():
     print(s.groupby(["spn", "condition"]).agg(n=("lag", "size"), med_lag=("lag", "median"),
                                              pos=("r", lambda q: np.mean(q > 0))).round(3).to_string())
     figure(tu, ce, bins)
+    figure(tu, ce, bins, selected=True)
 
-def figure(tu, ce, bins):
+def figure(tu, ce, bins, selected=False):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -152,13 +164,16 @@ def figure(tu, ce, bins):
         ax = axes[0, j]
         for spn in ("D1", "D2"):
             d = tu[(tu.condition == c) & (tu.spn == spn)]
-            T = d[[f"b{k}" for k in range(nb)]].values
+            T = d[[f"{'s' if selected else 'b'}{k}" for k in range(nb)]].values
             for row in T:
                 ax.plot(centres, row, color=SPN_COL[spn], lw=0.5, alpha=0.3)
             m = np.nanmean(T, 0)
             se = np.nanstd(T, 0) / np.sqrt(np.sum(np.isfinite(T), 0))
             ok = np.sum(np.isfinite(T), 0) >= 3
             ax.plot(centres[ok], m[ok], color=SPN_COL[spn], lw=1.8, label=f"{spn} ({len(d)})")
+            if selected:
+                ax.text(0.98, 0.04 + 0.1 * (spn == "D1"), f"{spn}: {d.n_sel.sum() / d.n_cells.sum():.0%} of cells",
+                        transform=ax.transAxes, ha="right", fontsize=6, color=SPN_COL[spn])
             ax.fill_between(centres[ok], (m - se)[ok], (m + se)[ok], color=SPN_COL[spn], alpha=0.2, lw=0)
         if feature in ("speed", "head_speed"):
             t = [0, 1, 3, 10, 30]
@@ -168,27 +183,30 @@ def figure(tu, ce, bins):
         ax.yaxis.grid(True, color=GRID, lw=0.5)
         ax.set_axisbelow(True)
         if j == 0:
-            ax.set_ylabel("population event rate (Hz)")
+            ax.set_ylabel("event rate, speed-tuned cells (Hz)" if selected else "population event rate (Hz)")
             ax.legend(frameon=False, loc="upper left", title="mice", title_fontsize=6.5)
         for sp in ("top", "right"):
             ax.spines[sp].set_visible(False)
         # lags of significantly correlated cells
         ax = axes[1, j]
-        bl = np.arange(-max_lag_s, max_lag_s + 0.1, 0.1) - 0.05
+        bl = np.arange(-max_lag_s, max_lag_s + 0.05, 0.05) - 0.025
         for spn in ("D1", "D2"):
             d = ce[(ce.condition == c) & (ce.spn == spn)]
-            s = d[d.sig]
+            s = d[d.sig & (d.r.abs() >= r_min)]
             if not len(s):
                 continue
             h, _ = np.histogram(s.lag, bins=bl)
             ax.stairs(h / len(s), bl, color=SPN_COL[spn], lw=1.3)
             med = s.lag.median()
             ax.axvline(med, color=SPN_COL[spn], lw=0.8, ls=(0, (3, 2)))
-            ax.text(0.0, 1.03 + 0.12 * (spn == "D1"), f"{spn}: {d.sig.mean():.0%} · {np.mean(s.r > 0):.0%} · "
+            ax.text(0.0, 1.03 + 0.12 * (spn == "D1"), f"{spn}: {len(s) / len(d):.0%} · {np.mean(s.r > 0):.0%} · "
                     f"{med:+.2f} s", transform=ax.transAxes,
                     ha="left", va="bottom", fontsize=5.6, color=SPN_COL[spn])
         ax.axvline(0, color=MUTED, lw=0.6)
         ax.set_xlim(-max_lag_s, max_lag_s)
+        ax.set_xticks(np.linspace(-max_lag_s, max_lag_s, 5),
+                      [f"{v:g}".replace("-", "−") if i % 2 == 0 else "" for i, v in
+                       enumerate(np.linspace(-max_lag_s, max_lag_s, 5))])
         ax.set_xlabel("lag of max. |r| (s)")
         if j == 0:
             ax.set_ylabel("share of correlated cells")
@@ -196,9 +214,10 @@ def figure(tu, ce, bins):
             ax.spines[sp].set_visible(False)
     fig.text(0.09, 0.955, f"SPN activity vs {LABEL.get(feature, feature).split(' (')[0]} ({drug} cohort; "
              f"lag > 0: behaviour follows the SPNs)", fontsize=8.5, color=INK)
-    fig.text(0.09, 0.015, "lag panels: share of cells correlated (vs. shuffled behaviour) · share of those with "
-             "r > 0 · median lag (dashed)", fontsize=6.3, color=INK2)
-    tagname = f"spn_tuning_{feature}" + ("" if drug == "Clozapine" else f"_{drug.lower()}")
+    fig.text(0.09, 0.015, f"lag panels: cells with |r| ≥ {r_min:g} (and above shuffled behaviour): share of all "
+             "cells · share with r > 0 · median lag (dashed)", fontsize=6.3, color=INK2)
+    tagname = f"spn_tuning_{feature}" + ("_selected" if selected else "") + \
+        ("" if drug == "Clozapine" else f"_{drug.lower()}")
     for d in (out_dir, slide_dir):
         os.makedirs(d, exist_ok=True)
         fig.savefig(f"{d}/{tagname}.pdf")
