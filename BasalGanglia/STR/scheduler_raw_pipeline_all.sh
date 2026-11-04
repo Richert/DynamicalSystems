@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Run pipeline_raw_spikes.py on every raw recording of one drug (argument, default Clozapine;
-# e.g. ./scheduler_raw_pipeline_all.sh Haloperidol), in parallel batches:
+# e.g. ./scheduler_raw_pipeline_all.sh Haloperidol), optionally only some doses (second
+# argument, e.g. "Vehicle HighDose"), in parallel batches:
 # both recordings of each session (0 = 15-min drug/vehicle, 1 = 45-min amphetamine),
 # each followed by its overlay figure (compare_cell_extraction.py, all in FIG_DIR).
 # Ends with a summary table of the evaluation vs the old pipeline. Recordings without
@@ -27,6 +28,7 @@ corr=0.6
 pnr=5
 sel="--nrgthr 0.999 --min_snr 2 --size_rel --lens_rim 5 --hybrid 0.3 0.2 --vessel 3 --offpeak 6 --frag_edge 1.05 --detect_sum 1.5"
 drug="${1:-Clozapine}"
+doses="${2:-}"                     # empty: all dose folders
 drug_tag="${drug,,}"; drug_tag="${drug_tag:0:3}"    # recording names: _clo.., _hal.., ...
 sfx="final_nrg0.999"
 [[ "$drug" != "Clozapine" ]] && sfx="final_nrg0.999_${drug,,}"   # (clozapine run: no suffix)
@@ -71,6 +73,10 @@ for rec in "${recs[@]}"; do
   for dir in "$RAW_ROOT/$drug"/*/*/; do
     session="${dir#$RAW_ROOT/}"
     session="${session%/}"
+    dose="$(basename $(dirname $session))"
+    if [[ -n "$doses" && " $doses " != *" $dose "* ]]; then
+      continue
+    fi
     run "$session" "$rec" &
     if [[ $(jobs -r -p | wc -l) -ge $batch_size ]]; then
       wait -n
