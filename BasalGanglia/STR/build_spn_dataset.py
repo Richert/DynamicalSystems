@@ -12,7 +12,8 @@ Layout (one group per recording day, e.g. "20191205_m85_clo01_amph"):
       component, centroids_px, A_data / A_indices / A_indptr / A_shape, dims
                         CNMF-E component ids and footprints (pixels in F order) of the cells
       behaviour/        pose features, AR-HMM state and behaviour label per imaging frame
-                        (imaging frame f <-> pose frame f - lag; -1 / nan where unavailable);
+                        (imaging frame f <-> video frame video_offset + f, i.e. feature row
+                        video_offset + f - pose offset_frames; -1 / nan where unavailable);
                         attrs: model (pose directory), labels (label names, index order)
   /<day>/tracking       rec0_cell, rec1_cell, similarity: cells tracked within the day
                         (row indices into rec0 / rec1)
@@ -50,7 +51,14 @@ condition_of = {("Vehicle", 0): "Control", ("Vehicle", 1): "Amphetamine",
                 ("LowDose", 0): "Clozapine low", ("LowDose", 1): "A + Clozapine low",
                 ("HighDose", 0): "Clozapine high", ("HighDose", 1): "A + Clozapine high"}
 behaviour_cols = ["speed", "turn", "head_angle", "bend", "body_len", "head_speed", "head_turn",
-                  "ear_width", "hip_width", "wall_dist", "wall_facing", "interp_share"]
+                  "ear_width", "hip_width", "wall_dist", "wall_facing", "wall_ahead", "interp_share"]
+# Imaging frame 0 = video frame 12007 in every session (TTL camera started 600.35 s before
+# imaging): from the motion-correction shifts vs keypoint movement (frame-precise in the
+# sessions where the shifts track movement; 12005-12008 there). The per-session offsets from
+# the 5 Hz speed match (pose_imaging_offsets.csv) scatter by ~+-0.5 s around it (up to 3.4 s)
+# and only give the start of the feature files.
+video_offset = 12007
+offsets_csv = "/home/rgast/data/parker_data/pose_alignment/pose_imaging_offsets.csv"
 gz = dict(compression="gzip", compression_opts=4, shuffle=True)
 
 def days():
@@ -116,6 +124,8 @@ def write_behaviour(h, day):
     st = pd.read_csv(f"{pose_dir}/pose_states.csv", index_col="state")
     labels = list(dict.fromkeys(st.label)) if "label" in st else list(st.name)
     lmap = np.array([labels.index(l) for l in (st.label if "label" in st else st.name)])
+    offs = pd.read_csv(offsets_csv)
+    offs = dict(zip(offs.session.str.split("/").str[-1], offs.offset_frames))
     excl_idx = sorted({lmap[k] for k in st.index if st.excluded[k]})
     for rec in (0, 1):
         r = h[f"{day}/rec{rec}"]
@@ -124,13 +134,12 @@ def write_behaviour(h, day):
         b = r.create_group("behaviour")
         T = r["C"].shape[1]
         ps = r.attrs["pose_session"]
-        lag = r.attrs["lag_frames"]
-        lag = 0 if not np.isfinite(lag) else int(lag)
-        idx = np.arange(T) - lag                          # pose frame of each imaging frame
         ff, fz = f"{pose_dir}/features_{ps}.csv.gz", f"{pose_dir}/states_{ps}.csv.gz"
-        if not (os.path.isfile(ff) and os.path.isfile(fz)):
+        if not (os.path.isfile(ff) and os.path.isfile(fz)) or ps not in offs:
             b.attrs["available"] = False
             continue
+        shift = video_offset - int(offs[ps])               # feature row of imaging frame 0
+        idx = np.arange(T) + shift
         feat = pd.read_csv(ff)
         z = pd.read_csv(fz).state.values
         ok = (idx >= 0) & (idx < min(len(feat), len(z)))
@@ -155,7 +164,7 @@ def write_behaviour(h, day):
         b.attrs.update(available=True, model=pose_dir, labels=labels,
                        states=list(st.name), excluded=list(st.name[st.excluded]),
                        label_names=[_display_names(pose_dir).get(l, l) for l in labels],
-                       lag_used=lag)
+                       video_offset=video_offset, row_shift=shift)
 
 def main(what="all"):
     os.makedirs(os.path.dirname(out), exist_ok=True)
