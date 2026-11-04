@@ -25,13 +25,13 @@ import pipeline_raw_spikes as P
 drive = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"
 local = "/home/rgast/data/parker_data/raw_pipeline"
 rec = os.environ.get("RECORDING", "20191205_m85_clo01_amph_rec1")
-tag = "p1_c0.6_pnr5"
-sel = "snr2_eta0.4_sz_rim5"        # component selection of the outputs shown
+tag = "p1_c0.6_pnr5_nrg0.999"      # final CNMF-E fit (full run)
+sel = "snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05"   # final component selection
 sel_base = "snr2_eta0.4"            # (fallback: derived from these outputs, see Recording)
 out_dir = os.environ.get("SLIDE_DIR", "/home/rgast/OneDrive/presentations/parker/images")
 um_per_px = 3.3                     # 192 x 192 movie (lens FOV ~630 um)
-# spike detection as in the pipeline batch (summed over 3 frames, 2 x noise)
-P.detect_method, P.sum_frames, spike_thr = "sum", 3, 2.0
+# spike detection as in the final full run (summed over 3 frames, 1.5 x noise)
+P.detect_method, P.sum_frames, spike_thr = "sum", 3, 1.5
 
 import matplotlib
 matplotlib.use("Agg")
@@ -145,7 +145,7 @@ class Recording:
 
     def C_all(self, t0, t1):
         """Denoised traces of all CNMF-E components (incl. rejected) for frames t0..t1."""
-        cache = f"{self.dir}/C_all_{t0}_{t1}.npy"
+        cache = f"{self.dir}/C_all_{tag}_{t0}_{t1}.npy"
         if os.path.isfile(cache):
             return np.load(cache)
         import h5py
@@ -235,7 +235,7 @@ def slide_raw_data(r, t0, t1):
 
 def C_row(r, k):
     """Full denoised trace of CNMF-E component k (cached)."""
-    cache = f"{r.dir}/C_comp{k}.npy"
+    cache = f"{r.dir}/C_comp{k}_{tag}.npy"
     if os.path.isfile(cache):
         return np.load(cache)
     import h5py
@@ -248,7 +248,7 @@ def event_triggered(r, k):
     """Event-triggered average image of component k as in the consistency filter
     (pipeline_raw_spikes.compute_eta): at the 20 largest peaks of C (>= 1 s apart), the
     frame minus the mean of the frames 0.5-1 s earlier."""
-    cache = f"{r.dir}/eta_image_comp{k}.npy"
+    cache = f"{r.dir}/eta_image_comp{k}_{tag}.npy"
     if os.path.isfile(cache):
         return np.load(cache)
     from scipy.signal import find_peaks
@@ -346,12 +346,13 @@ def slide_cells(r):
 # slide 3: from fluorescence to spikes
 # ---------------------------------------------------------------------------
 
-pose_dir = "/home/rgast/data/parker_data/pose_arhmm_v5"
-pose_session = "20191205_m085_clo01_amph"      # pose features of the same session
+dataset = os.environ.get("DATASET", "/home/rgast/data/parker_data/dataset/clozapine_spn.h5")
 
 def speed_trace(t0, t1):
-    f = pd.read_csv(f"{pose_dir}/features_{pose_session}.csv.gz", usecols=["speed"])
-    return f.speed.values[t0:t1]
+    """Torso speed per imaging frame (data file: pose aligned with the fixed video offset)."""
+    import h5py
+    with h5py.File(dataset, "r") as h:
+        return h[f"{rec[:-5]}/{rec[-4:]}/behaviour/speed"][t0:t1]
 
 def slide_spikes(r, t0, t1, n_ex=5):
     from matplotlib.gridspec import GridSpec
@@ -422,7 +423,7 @@ def slide_validation():
     pipelines, share of the old pipeline's active neurons recovered and the trace
     correlation of the matched pairs, recall of the old events (within 0.25 s)."""
     rows = []
-    for f in glob.glob(f"{local}/*_rec?/summary_{tag}_thr2_sum3_{sel}.json"):
+    for f in glob.glob(f"{local}/*_rec?/summary_{tag}_thr1.5_sum3_{sel}.json"):
         d = json.load(open(f))
         name = os.path.basename(os.path.dirname(f))
         rows.append(dict(rec=name, long=name.endswith("rec1"), n_old=d["n_old_total"],

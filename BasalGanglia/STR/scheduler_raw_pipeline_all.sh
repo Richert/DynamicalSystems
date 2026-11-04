@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Run pipeline_raw_spikes.py on every raw recording of one drug, in parallel batches:
+# Run pipeline_raw_spikes.py on every raw recording of one drug (argument, default Clozapine;
+# e.g. ./scheduler_raw_pipeline_all.sh Haloperidol), in parallel batches:
 # both recordings of each session (0 = 15-min drug/vehicle, 1 = 45-min amphetamine),
 # each followed by its overlay figure (compare_cell_extraction.py, all in FIG_DIR).
 # Ends with a summary table of the evaluation vs the old pipeline. Recordings without
@@ -9,8 +10,8 @@
 # min_pnr 5; footprint trimming nrgthr 0.999, ring factor 1.4, merging 0.7. Selection: SNR >= 2,
 # relative size, lens rim 5 px, hybrid consistency (r >= 0.3, or a local blob, or r >= 0.2 on a
 # correlation peak), vessel 3 px, off-peak 6 px, greedy edge-piece rule 1.05. Spikes: OASIS,
-# summed detection over 3 frames at 1.5 x noise. Motion correction is reused; CNMF-E is refitted
-# (new trimming). Outputs carry p1_c0.6_pnr5_nrg0.999 ... _snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05
+# summed detection over 3 frames at 1.5 x noise. Motion correction is reused where it exists
+# (clozapine), CNMF-E is refitted (new trimming). Outputs carry p1_c0.6_pnr5_nrg0.999 ... _snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05
 # and thr1.5_sum3.
 
 # paths on the server (/media/storage/DATA there = /mnt/kennedy_labdata on the workstation)
@@ -25,7 +26,10 @@ export WORK_ROOT="$data_root/Parkerlab/results/raw_pipeline"
 corr=0.6
 pnr=5
 sel="--nrgthr 0.999 --min_snr 2 --size_rel --lens_rim 5 --hybrid 0.3 0.2 --vessel 3 --offpeak 6 --frag_edge 1.05 --detect_sum 1.5"
+drug="${1:-Clozapine}"
+drug_tag="${drug,,}"; drug_tag="${drug_tag:0:3}"    # recording names: _clo.., _hal.., ...
 sfx="final_nrg0.999"
+[[ "$drug" != "Clozapine" ]] && sfx="final_nrg0.999_${drug,,}"   # (clozapine run: no suffix)
 spike_tag="1.5_sum3"               # summary_<...>_thr1.5_sum3 (collect_raw_pipeline_grid.py)
 log_dir="$WORK_ROOT/logs_$sfx"
 export FIG_DIR="$WORK_ROOT/cell_overlays_$sfx"
@@ -37,8 +41,7 @@ mamba activate parker 2>/dev/null
 export PATH="$HOME/miniforge3/envs/parker/bin:$PATH"   # (mamba activate fails in non-interactive shells)
 mkdir -p $log_dir $FIG_DIR
 
-# set condition
-drug="Clozapine"
+# condition: drug set above (first argument)
 recs=( 0 1 )
 # parallel runs per recording type: the grid run peaked at ~75 GB for 5 parallel
 # 15-min recordings (~15 GB each); 45-min recordings have 3x the frames (~45 GB).
@@ -78,5 +81,5 @@ done
 
 echo "All jobs finished."
 grep -L "summary" $(ls $log_dir/*.log | grep -v _overlay) | sed 's/^/no evaluation summary: /'
-python collect_raw_pipeline_grid.py "$WORK_ROOT" $spike_tag > "$WORK_ROOT/summary_$sfx.txt"
+REC_MATCH="_${drug_tag}" python collect_raw_pipeline_grid.py "$WORK_ROOT" $spike_tag > "$WORK_ROOT/summary_$sfx.txt"
 echo "$(ls $FIG_DIR/*_cell_overlay_*.png | wc -l) overlay figures in $FIG_DIR"

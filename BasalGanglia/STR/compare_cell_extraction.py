@@ -88,7 +88,8 @@ def load():
         P.eta = P.compute_eta(cnm, fname, work, dims)      # cached by the pipeline run
     if os.path.isfile(f"{work}/pnr_image.npy"):
         P.pnr_img = np.load(f"{work}/pnr_image.npy")
-    idx, _ = P.accepted_components(cnm, dims)       # quality check + shape filter
+    cn_img = np.load(f"{work}/corr_image.npy") if os.path.isfile(f"{work}/corr_image.npy") else None
+    idx, _ = P.accepted_components(cnm, dims, cn_img)   # quality check + shape + final rules
     A = est.A[:, idx].tocsc()
     C = est.C[idx]
     cents = cm.base.rois.com(A, *dims)

@@ -4,7 +4,7 @@ Top: arena video (top view) with the MARS keypoint skeleton | motion-corrected c
 movie with the outlines of the extracted cells, each filled in proportion to its denoised
 trace. Bottom: torso speed, AR-HMM state sequence and the population event rate (mean
 over cells), with a cursor. Pose and imaging frames are aligned with the pose-imaging
-offset (both 20 Hz; imaging frame i = pose feature frame i).
+offset (both 20 Hz; imaging frame i = video frame video_offset + i, see build_spn_dataset).
 
   conda run -n parker python video_session.py [t0_s duration_s]
 Writes <SLIDE_DIR>/../videos/session.mp4 and a poster frame session_poster.png.
@@ -76,13 +76,15 @@ def main(t0_s=0.0, dur_s=40.0):
     rate = gaussian_filter1d(r.events[:, t0:t0 + n].mean(0).astype(float) * fps, 0.25 * fps)
     kp, centre, sc, off, ix = F.keypoints(pose_session)
     px = kp / sc
-    video = arena_frames(off, t0, n)
+    from build_spn_dataset import video_offset
+    tp = t0 + video_offset - off                 # pose feature row of imaging frame t0
+    video = arena_frames(off, tp, n)
     feat = pd.read_csv(f"{F.A.out_dir}/features_{pose_session}.csv.gz", usecols=["speed"])
-    speed = feat.speed.values[t0:t0 + n]
+    speed = feat.speed.values[tp:tp + n]
     states = pd.read_csv(f"{F.A.out_dir}/pose_states.csv", index_col="state")
     # behaviour labels (merged fitted states, analysis_pose_arhmm.label_groups)
     lmap, names = F.label_map(states)
-    z = lmap[pd.read_csv(f"{F.A.out_dir}/states_{pose_session}.csv.gz").state.values[t0:t0 + n]]
+    z = lmap[pd.read_csv(f"{F.A.out_dir}/states_{pose_session}.csv.gz").state.values[tp:tp + n]]
     LCOL, LNAME = F.LABEL_COLORS, F.LABEL_NAMES
     # arena crop: square around the arena centre (keypoint extent)
     c = centre / sc
@@ -151,11 +153,11 @@ def main(t0_s=0.0, dur_s=40.0):
 
     def draw(i):
         im_v.set_data(video[i])
-        p = px[t0 + i]
+        p = px[tp + i]
         for line, (a, b) in zip(sk, F.EDGES):
             line.set_data(*np.c_[p[ix[a]], p[ix[b]]])
         dots.set_offsets(p)
-        tr = px[max(t0, t0 + i - 20):t0 + i + 1, ix["nose"]]
+        tr = px[max(tp, tp + i - 20):tp + i + 1, ix["nose"]]
         trail.set_data(tr[:, 0], tr[:, 1])
         im_c.set_data(Y[i])
         fc = np.tile(base, (len(polys), 1))

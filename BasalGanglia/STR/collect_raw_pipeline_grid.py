@@ -3,6 +3,7 @@ into one table (per recording and averaged over recordings), incl. the stricter
 post-filter (filt2) and the correlation-image peaks without an accepted cell.
 
   python collect_raw_pipeline_grid.py [work_root] [spike_thr, e.g. 1.5 or 2_sum3] [rec1,rec2,...]
+REC_MATCH (environment): only recordings whose name contains it (e.g. "_hal" for haloperidol).
 """
 import glob
 import json
@@ -15,7 +16,8 @@ work_root = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
 thr = sys.argv[2] if len(sys.argv) > 2 else "1.5"
 
 rows = []
-for f in glob.glob(f"{work_root}/*_rec?/summary_p*_c*_pnr*_thr{thr}*.json"):
+match = os.environ.get("REC_MATCH", "")
+for f in glob.glob(f"{work_root}/*{match}*_rec?/summary_p*_c*_pnr*_thr{thr}*.json"):
     s = json.load(open(f))
     rows.append(dict(recording=os.path.basename(os.path.dirname(f)),
                      min_corr=s["min_corr"], min_pnr=s["min_pnr"], filt2=s.get("filt2", False),

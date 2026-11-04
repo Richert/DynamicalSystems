@@ -35,8 +35,8 @@ from scipy.optimize import linear_sum_assignment
 results_root = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"     # QC table
 local_root = "/home/rgast/data/parker_data/raw_pipeline"                  # local copies
 out_dir = "/home/rgast/data/parker_data/cell_tracking"
-tag = "p1_c0.6_pnr5"                    # CNMF-E setting
-sel = "snr2_eta0.4_sz_rim5"             # final component selection
+tag = "p1_c0.6_pnr5_nrg0.999"          # CNMF-E setting
+sel = "snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05"   # final component selection
 max_dist_px = 6.0                 # max centroid distance of candidate pairs (~20 um)
 null_shift_px = 20                # displacement for the null distribution
 null_fpr = 0.02                   # accepted false-match rate per rec0 cell

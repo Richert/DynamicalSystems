@@ -44,8 +44,8 @@ local = "/home/rgast/data/parker_data/raw_pipeline"
 tracking_dir = "/home/rgast/data/parker_data/cell_tracking"
 pose_dir = os.environ.get("POSE_MODEL_DIR", "/home/rgast/data/parker_data/pose_arhmm_v7")
 out = os.environ.get("DATASET", "/home/rgast/data/parker_data/dataset/clozapine_spn.h5")
-tag, sel = "p1_c0.6_pnr5", "snr2_eta0.4_sz_rim5"
-P.detect_method, P.sum_frames, P.spike_thr = "sum", 3, 2.0          # as in the pipeline batch
+tag, sel = "p1_c0.6_pnr5_nrg0.999", "snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05"
+P.detect_method, P.sum_frames, P.spike_thr = "sum", 3, 1.5          # as in the final full run
 dose_of = {"clo01": "Vehicle", "clo05": "LowDose", "clo04": "HighDose"}
 condition_of = {("Vehicle", 0): "Control", ("Vehicle", 1): "Amphetamine",
                 ("LowDose", 0): "Clozapine low", ("LowDose", 1): "A + Clozapine low",
@@ -75,7 +75,7 @@ def pose_session(day, rec):
     return base if rec == 1 else base.replace("_amph", "")
 
 def lag_of(rec_dir):
-    f = f"{rec_dir}/summary_{tag}_thr2_sum3_{sel}.json"
+    f = f"{rec_dir}/summary_{tag}_thr1.5_sum3_{sel}.json"
     return float(json.load(open(f))["lag_frames"]) if os.path.isfile(f) else np.nan
 
 def write_neural(h, day, spn):
@@ -171,7 +171,7 @@ def main(what="all"):
     spn = mouse_spn()
     ds = days()
     with h5py.File(out, "a") as h:
-        h.attrs.update(selection=f"{tag}_{sel}", detection="summed over 3 frames, 2 x noise",
+        h.attrs.update(selection=f"{tag}_{sel}", detection="summed over 3 frames, 1.5 x noise",
                        fs=P.fs)
         for day in ds:
             done = day in h and all(f"rec{r}/behaviour" in h[day] for r in (0, 1))
