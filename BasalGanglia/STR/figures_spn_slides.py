@@ -4,8 +4,10 @@ example behaviours (from analysis_spn_behavior_readouts.py, readouts_<A_DRUG>.cs
   spn_rate_stats   rows: mean and SD over cells of the log10 event rate (equal time and 50
                    cells per draw, 50 draws); columns: whole session (random 5 s windows) and
                    example behaviour labels; D1 and D2 mice; dots: recordings (one per mouse
-                   and condition), lines: same mouse; mean +- SEM; brackets: Wilcoxon
-                   signed-rank test over mice (paired), uncorrected
+                   and condition), lines: same mouse; mean +- SEM; brackets: mixed models
+                   (analysis_spn_behavior_stats.py; mean: cell-level log rate, mouse and
+                   recording random effects; SD: mouse random effect), BH-FDR, shown with >=
+                   min_mice mice in both conditions
 
   conda run -n parker python figures_spn_slides.py
 """
@@ -13,7 +15,6 @@ import os
 import itertools
 import numpy as np
 import pandas as pd
-from scipy.stats import wilcoxon
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -35,6 +36,11 @@ plt.rcParams.update({"font.family": "Nimbus Sans", "font.size": 8, "axes.titlesi
                      "figure.facecolor": "white", "savefig.facecolor": "white"})
 rows = [("mean_log_rate", "mean of log$_{10}$ rate"), ("sd_log_rate", "SD of log$_{10}$ rate")]
 groups = ["D1", "D2"]
+min_mice = 3
+mixed_col = {"mean_log_rate": "log_rate", "sd_log_rate": "sd_log_rate"}
+contrast_of = {("Control", "Amphetamine"): "Amph - Control",
+               ("Control", f"A + Clozapine {a_drug}"): "A+Cloz - Control",
+               ("Amphetamine", f"A + Clozapine {a_drug}"): "A+Cloz - Amph"}
 dx, gap = 0.62, 0.75                       # spacing of conditions within / between D1 and D2
 
 def save(fig, name):
@@ -50,7 +56,7 @@ def stars(p):
 def xpos(g, c):
     return g * (len(conditions) * dx + gap) + c * dx
 
-def panel(ax, d, col):
+def panel(ax, d, col, st):
     tops = []
     for g, spn in enumerate(groups):
         p = d[d.spn == spn].pivot_table(index="mouse", columns="condition", values=col)
@@ -74,11 +80,11 @@ def panel(ax, d, col):
                         fontsize=5.5, color=MUTED)
         tests = []
         for i, j in itertools.combinations(range(len(conditions)), 2):
-            q = p[[conditions[i], conditions[j]]].dropna()
-            if len(q) >= 5:
-                pv = wilcoxon(q.iloc[:, 0], q.iloc[:, 1]).pvalue
-                if stars(pv):
-                    tests.append((xs[i], xs[j], stars(pv)))
+            m = st[(st.readout == mixed_col[col]) & (st.spn == spn) &
+                   (st.contrast == contrast_of[(conditions[i], conditions[j])])]
+            if len(m) and m.n_mice_a.iloc[0] >= min_mice and m.n_mice_b.iloc[0] >= min_mice \
+                    and stars(m.p_fdr.iloc[0]):
+                tests.append((xs[i], xs[j], stars(m.p_fdr.iloc[0])))
         tops.append((np.nanmax(p.values), tests))
     return tops
 
@@ -97,7 +103,7 @@ def brackets(ax, tops, step):
             ax.text((x0 + x1) / 2, y - 0.3 * step, s, ha="center", va="bottom", fontsize=7,
                     color=INK)
 
-def slide_rate_stats(rd):
+def slide_rate_stats(rd, st):
     budget = rd.groupby("label")["T"].first()
     fig, axes = plt.subplots(2, len(columns), figsize=(6.0, 3.35), sharey="row")
     fig.subplots_adjust(left=0.1, right=0.995, top=0.8, bottom=0.08, wspace=0.12, hspace=0.32)
@@ -106,7 +112,7 @@ def slide_rate_stats(rd):
         step = 0.075 * (hi - lo)
         for k, lab in enumerate(columns):
             ax = axes[r, k]
-            brackets(ax, panel(ax, rd[rd.label == lab], col), step)
+            brackets(ax, panel(ax, rd[rd.label == lab], col, st[st.label == lab]), step)
             ax.set_xticks([xpos(g, 1) for g in range(len(groups))], groups if r == 1 else [])
             ax.set_xlim(xpos(0, 0) - 0.45, xpos(1, len(conditions) - 1) + 0.55)
             ax.yaxis.grid(True, color=GRID, lw=0.5)
@@ -184,6 +190,6 @@ def slide_tracked(tc, ts, labels=("whole session", "walk", "straight run")):
 
 if __name__ == "__main__":
     rd = pd.read_csv(f"{res_dir}/readouts_{a_drug}.csv")
-    slide_rate_stats(rd)
+    slide_rate_stats(rd, pd.read_csv(f"{res_dir}/stats_mixed_{a_drug}.csv"))
     slide_tracked(pd.read_csv(f"{res_dir}/tracked_cells.csv.gz"),
                   pd.read_csv(f"{res_dir}/stats_tracked.csv"))
