@@ -34,7 +34,9 @@ from scipy.optimize import linear_sum_assignment
 
 results_root = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"     # QC table
 local_root = "/home/rgast/data/parker_data/raw_pipeline"                  # local copies
-out_dir = "/home/rgast/data/parker_data/cell_tracking"
+drug = os.environ.get("DRUG", "Clozapine")
+code = drug[:3].lower()                  # recording names: <date>_<mouse>_<code><dose>_amph
+out_dir = "/home/rgast/data/parker_data/cell_tracking" + ("" if drug == "Clozapine" else f"_{drug.lower()}")
 tag = "p1_c0.6_pnr5_nrg0.999"          # CNMF-E setting
 sel = "snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05"   # final component selection
 max_dist_px = 6.0                 # max centroid distance of candidate pairs (~20 um)
@@ -94,7 +96,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     have = lambda p: os.path.isfile(f"{p}/kept_{tag}_{sel}.npy") and \
         os.path.isfile(f"{p}/lens_inputs_{tag}.npz")
-    days = sorted(p[:-5] for p in glob.glob(f"{local_root}/*_rec0")
+    days = sorted(p[:-5] for p in glob.glob(f"{local_root}/*_{code}0?_amph_rec0")
                   if have(p) and have(p[:-5] + "_rec1"))
     res = []
     for day in days:

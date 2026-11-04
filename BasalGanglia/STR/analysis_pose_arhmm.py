@@ -65,13 +65,18 @@ import pandas as pd
 import h5py
 from scipy.ndimage import gaussian_filter1d
 
-pose_root = os.environ.get("POSE_ROOT", "/home/rgast/data/parker_data/pose_data/Clozapine")
+drug = os.environ.get("DRUG", "Clozapine")
+pose_root = os.environ.get("POSE_ROOT", f"/home/rgast/data/parker_data/pose_data/{drug}")
 offsets_csv = os.environ.get("OFFSETS_CSV",
                              "/home/rgast/data/parker_data/pose_alignment/pose_imaging_offsets.csv")
 arena_csv = os.environ.get("ARENA_CSV", os.path.join(os.path.dirname(offsets_csv),
                                                      "arena_circles.csv"))
 out_dir = os.environ.get("OUT_DIR", "/home/rgast/data/parker_data/pose_arhmm")
-drug = "Clozapine"
+# labelling another drug's sessions with a model fitted on clozapine (e.g. DRUG=Haloperidol,
+# OUT_DIR=<parker_data>/haloperidol/pose_arhmm_v7): STATE_REMAP points to the fitted model's
+# state_remap.npy (state numbering by mean speed in its fitting sessions), and the model's
+# models_K_sweep.pkl / pose_states.csv are copied into OUT_DIR
+state_remap = os.environ.get("STATE_REMAP")
 fs = 20.0
 arena_cm = 30.48
 smooth_s = 0.1                     # Gaussian SD for keypoint smoothing (s)
@@ -523,12 +528,19 @@ def export_states():
         feat = pd.read_csv(f)
         z = np.repeat(label(hmm, dict(feat=feat), mu, sd, feats), k)
         sessions.append((os.path.basename(f)[9:-7], feat.iloc[:len(z)], z))
-    fit = [cond.get(n) in fit_conditions for n, _, _ in sessions]
-    allf = pd.concat([f for (_, f, _), u in zip(sessions, fit) if u])
-    allz = np.concatenate([z for (_, _, z), u in zip(sessions, fit) if u])
-    prof = allf.groupby(allz).mean(numeric_only=True)
-    order = prof.speed.sort_values().index.tolist()
-    remap = np.argsort(order)                                  # fitted state -> speed rank
+    if state_remap:                                            # another drug: model's numbering
+        remap = np.load(state_remap)
+    else:
+        fit = [cond.get(n) in fit_conditions for n, _, _ in sessions]
+        allf = pd.concat([f for (_, f, _), u in zip(sessions, fit) if u])
+        allz = np.concatenate([z for (_, _, z), u in zip(sessions, fit) if u])
+        prof = allf.groupby(allz).mean(numeric_only=True)
+        order = prof.speed.sort_values().index.tolist()
+        remap = np.argsort(order)                              # fitted state -> speed rank
+        np.save(f"{out_dir}/state_remap.npy", remap)
+        if os.environ.get("REMAP_ONLY"):
+            print(f"saved {out_dir}/state_remap.npy")
+            return
     for name, feat, z in sessions:
         zz = remap[z]
         st = np.flatnonzero(np.diff(np.r_[-1, zz]) != 0)
@@ -539,6 +551,9 @@ def export_states():
                 clean[a_:b_] = -1
         pd.DataFrame(dict(frame=np.arange(len(zz)), state=zz, state_clean=clean)).to_csv(
             f"{out_dir}/states_{name}.csv.gz", index=False)
+    if state_remap:
+        print(f"saved {len(sessions)} state sequences (numbering: {state_remap})")
+        return
     prof = prof.loc[order].reset_index(drop=True)
     prof.insert(0, "occupancy", np.bincount(remap[allz], minlength=final_K) / len(allz))
     prof.insert(0, "excluded", [n in excluded_states for n in state_names])

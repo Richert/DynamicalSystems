@@ -12,11 +12,13 @@ a_C(l) needs >= min_s of l in the Control session; otherwise it is imputed as th
 Control walk activity x the pooled Control ratio a(l) / a(walk) of that SPN type (the share of
 drug-session time with imputed values is reported; beyond_measured: the beyond-behaviour term
 over the categories with measured Control activity only). Amph + Clozapine sessions are compared to
-the same mouse's Vehicle-day Control (different day, different cells).
+the same mouse's Vehicle-day Control (different day, different cells); so are the drug-alone
+sessions (the first recording of the high-dose day). DRUG selects the data file (default
+Clozapine).
 
 Outputs (OUT_DIR): expected_by_behaviour.csv (per mouse x drug x readout), stats, figure.
 
-  conda run -n parker python analysis_spn_behavior_expected.py
+  conda run -n parker python analysis_spn_behavior_expected.py        (DRUG=Haloperidol ...)
 """
 import os
 import numpy as np
@@ -24,10 +26,12 @@ import pandas as pd
 import h5py
 from scipy.stats import wilcoxon
 
-dataset = os.environ.get("DATASET", "/home/rgast/data/parker_data/dataset/clozapine_spn.h5")
-out_dir = os.environ.get("OUT_DIR", "/home/rgast/data/parker_data/spn_behavior_expected")
-CTRL, AMPH, ACLZ = "Control", "Amphetamine", "A + Clozapine high"
-drugs = [AMPH, ACLZ]
+drug_name = os.environ.get("DRUG", "Clozapine")
+_sfx = "" if drug_name == "Clozapine" else f"_{drug_name.lower()}"
+dataset = os.environ.get("DATASET", f"/home/rgast/data/parker_data/dataset/{drug_name.lower()}_spn.h5")
+out_dir = os.environ.get("OUT_DIR", f"/home/rgast/data/parker_data/spn_behavior_expected{_sfx}")
+CTRL, AMPH = "Control", "Amphetamine"
+drugs = [AMPH, f"{drug_name} high", f"A + {drug_name} high"]
 fs = 20.0
 min_s = 10.0
 

@@ -1,4 +1,4 @@
-"""One HDF5 file with everything the SPN analyses need (Clozapine, all doses).
+"""One HDF5 file per drug with everything the SPN analyses need (DRUG, default Clozapine; all doses).
 
 Layout (one group per recording day, e.g. "20191205_m85_clo01_amph"):
   /<day>                attrs: mouse, spn (D1 / D2), drug, dose
@@ -42,14 +42,20 @@ def _display_names(model_dir):
 drive = "/mnt/kennedy_labdata/Parkerlab/results/raw_pipeline"
 local = "/home/rgast/data/parker_data/raw_pipeline"
 tracking_dir = "/home/rgast/data/parker_data/cell_tracking"
-pose_dir = os.environ.get("POSE_MODEL_DIR", "/home/rgast/data/parker_data/pose_arhmm_v7")
-out = os.environ.get("DATASET", "/home/rgast/data/parker_data/dataset/clozapine_spn.h5")
+drug = os.environ.get("DRUG", "Clozapine")
+code = drug[:3].lower()                  # recording names: <date>_<mouse>_<code><dose>_amph
+_sub = "" if drug == "Clozapine" else f"{drug.lower()}/"
+pose_dir = os.environ.get("POSE_MODEL_DIR", f"/home/rgast/data/parker_data/{_sub}pose_arhmm_v7")
+out = os.environ.get("DATASET", f"/home/rgast/data/parker_data/dataset/{drug.lower()}_spn.h5")
+if drug != "Clozapine":
+    tracking_dir += f"_{drug.lower()}"
 tag, sel = "p1_c0.6_pnr5_nrg0.999", "snr2_sz_rim5_hyb0.3-0.2_ves3_off6_fedge1.05"
 P.detect_method, P.sum_frames, P.spike_thr = "sum", 3, 1.5          # as in the final full run
-dose_of = {"clo01": "Vehicle", "clo05": "LowDose", "clo04": "HighDose"}
+dose_of = {"clo01": "Vehicle", "clo05": "LowDose", "clo04": "HighDose",
+           "hal01": "Vehicle", "hal03": "LowDose", "hal04": "HighDose"}
 condition_of = {("Vehicle", 0): "Control", ("Vehicle", 1): "Amphetamine",
-                ("LowDose", 0): "Clozapine low", ("LowDose", 1): "A + Clozapine low",
-                ("HighDose", 0): "Clozapine high", ("HighDose", 1): "A + Clozapine high"}
+                ("LowDose", 0): f"{drug} low", ("LowDose", 1): f"A + {drug} low",
+                ("HighDose", 0): f"{drug} high", ("HighDose", 1): f"A + {drug} high"}
 behaviour_cols = ["speed", "turn", "head_angle", "bend", "body_len", "head_speed", "head_turn",
                   "ear_width", "hip_width", "wall_dist", "wall_facing", "wall_ahead", "interp_share"]
 # Imaging frame 0 = video frame 12007 in every session (TTL camera started 600.35 s before
@@ -58,11 +64,12 @@ behaviour_cols = ["speed", "turn", "head_angle", "bend", "body_len", "head_speed
 # the 5 Hz speed match (pose_imaging_offsets.csv) scatter by ~+-0.5 s around it (up to 3.4 s)
 # and only give the start of the feature files.
 video_offset = 12007
-offsets_csv = "/home/rgast/data/parker_data/pose_alignment/pose_imaging_offsets.csv"
+offsets_csv = "/home/rgast/data/parker_data/pose_alignment/pose_imaging_offsets" + \
+    ("" if drug == "Clozapine" else f"_{drug.lower()}") + ".csv"
 gz = dict(compression="gzip", compression_opts=4, shuffle=True)
 
 def days():
-    recs = sorted(os.path.basename(p) for p in glob.glob(f"{local}/*_rec?")
+    recs = sorted(os.path.basename(p) for p in glob.glob(f"{local}/*_{code}0?_amph_rec?")
                   if os.path.isfile(f"{p}/kept_{tag}_{sel}.npy"))
     return sorted({r[:-5] for r in recs if r[:-5] + "_rec0" in recs and r[:-5] + "_rec1" in recs})
 
@@ -82,7 +89,7 @@ def write_neural(h, day, spn):
     g = h.require_group(day)
     mouse = day.split("_")[1].replace("m85", "m085")
     dose = dose_of[day.split("_")[2]]
-    g.attrs.update(mouse=mouse, spn=spn.get(mouse, ""), drug="Clozapine", dose=dose)
+    g.attrs.update(mouse=mouse, spn=spn.get(mouse, ""), drug=drug, dose=dose)
     for rec in (0, 1):
         name = f"{day}_rec{rec}"
         if f"rec{rec}" in g:

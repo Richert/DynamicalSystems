@@ -21,7 +21,7 @@ def xc(a, b):
     a = (a - a.mean()) / a.std(); b = (b - b.mean()) / b.std()
     return np.array([np.mean(a[:len(a) - k] * b[k:]) if k >= 0 else np.mean(a[-k:] * b[:k]) for k in range(-L, L + 1)])
 rows, curves = [], []
-with h5py.File('/home/rgast/data/parker_data/dataset/clozapine_spn.h5', 'r') as h:
+with h5py.File(os.environ.get('DATASET', '/home/rgast/data/parker_data/dataset/clozapine_spn.h5'), 'r') as h:
     for day in h:
         for rec in ('rec0', 'rec1'):
             r = h[day][rec]; b = r['behaviour']

@@ -249,38 +249,46 @@ def slide_rate_pdfs(cv, st):
 
 exp_dir = os.environ.get("EXP_DIR", "/home/rgast/data/parker_data/spn_behavior_expected")
 
-def slide_expected(res, st, readout="spikes"):
+def slide_expected(res, st, readout="spikes", drugs=None, name=None):
     """Drug effect on the session activity split into the part expected from the behaviour
-    change and the part beyond it (analysis_spn_behavior_expected.py); dots: mice."""
+    change and the part beyond it (analysis_spn_behavior_expected.py); dots: mice.
+    drugs: conditions shown (default: Amphetamine and A + drug high)."""
     comps = [("total", "total"), ("behaviour", "expected"), ("beyond", "beyond")]
-    fig, axes = plt.subplots(1, 2, figsize=(6.0, 2.85), sharey=True)
-    fig.subplots_adjust(left=0.1, right=0.88, top=0.78, bottom=0.2, wspace=0.08)
-    drugs = conditions[1:]
+    drugs = drugs or conditions[1:]
+    dcol = {d: cond_col.get(d, "#8a4fb5" if not d.startswith(("A +", "Amph")) else "#e34948")
+            for d in drugs}
+    dshort = {d: cond_short.get(d, d.replace("Amphetamine", "Amph.").replace("Haloperidol", "Halo.")
+                                 .replace("Clozapine", "Cloz.")) for d in drugs}
+    span = 4.6
+    fig, axes = plt.subplots(1, 2, figsize=(6.0 if len(drugs) < 3 else 7.4, 2.85), sharey=True)
+    fig.subplots_adjust(left=0.08, right=0.9, top=0.78, bottom=0.2, wspace=0.08)
+    lo = min(-0.5, res[res.readout == readout][["total", "behaviour", "beyond"]].min().min() - 0.05)
+    hi = max(0.62, res[res.readout == readout][["total", "behaviour", "beyond"]].max().max() + 0.12)
     for a_, spn in zip(axes, groups):
         for di, drug in enumerate(drugs):
             d = res[(res.readout == readout) & (res.spn == spn) & (res.drug == drug)]
-            xs = [di * 4.6 + 1.35 * k for k in range(3)]
+            xs = [di * span + 1.35 * k for k in range(3)]
             for _, r_ in d.iterrows():
                 a_.plot(xs, [r_.total, r_.behaviour, r_.beyond], color=GRID, lw=0.5, zorder=1)
             for k, (comp, _) in enumerate(comps):
                 v = d[comp].values
-                face = cond_col[drug] if comp != "behaviour" else "white"
-                edge = cond_col[drug]
-                a_.scatter(np.full(len(v), xs[k]), v, s=7, color=cond_col[drug], alpha=0.4, lw=0, zorder=2)
+                face = dcol[drug] if comp != "behaviour" else "white"
+                edge = dcol[drug]
+                a_.scatter(np.full(len(v), xs[k]), v, s=7, color=dcol[drug], alpha=0.4, lw=0, zorder=2)
                 a_.errorbar(xs[k] + 0.22, v.mean(), v.std(ddof=1) / np.sqrt(len(v)), color=edge, lw=1.2, zorder=3)
                 a_.scatter([xs[k] + 0.22], [v.mean()], s=34, facecolor=face, edgecolor=edge, lw=1.3,
                            zorder=4, marker="D" if comp == "beyond" else "o")
                 s_ = st[(st.readout == readout) & (st.spn == spn) & (st.drug == drug) & (st.component == comp)]
                 if len(s_) and stars(s_.p.iloc[0]):
-                    a_.text(xs[k] + 0.22, 0.55, stars(s_.p.iloc[0]), ha="center", fontsize=7, color=INK)
-            a_.text(xs[1] + 0.1, -0.15, cond_short[drug], ha="center", fontsize=7.2, color=cond_col[drug],
+                    a_.text(xs[k] + 0.22, hi - 0.07, stars(s_.p.iloc[0]), ha="center", fontsize=7, color=INK)
+            a_.text(xs[1] + 0.1, -0.15, dshort[drug], ha="center", fontsize=7.2, color=dcol[drug],
                     fontweight="bold", transform=a_.get_xaxis_transform())
         a_.axhline(0, color=MUTED, lw=0.7)
-        a_.set_xticks([di * 4.6 + 1.35 * k + 0.1 for di in range(2) for k in range(3)],
+        a_.set_xticks([di * span + 1.35 * k + 0.1 for di in range(len(drugs)) for k in range(3)],
                       [c[1] for _ in drugs for c in comps], fontsize=6.5)
         a_.tick_params(axis="x", length=0)
-        a_.set_ylim(-0.5, 0.62)
-        a_.set_xlim(-0.6, 8.0)
+        a_.set_ylim(lo, hi)
+        a_.set_xlim(-0.6, span * (len(drugs) - 1) + 3.4)
         a_.set_title(f"{spn} SPNs", loc="left", fontweight="bold", fontsize=9)
         a_.yaxis.grid(True, color=GRID, lw=0.5)
         a_.set_axisbelow(True)
@@ -288,7 +296,7 @@ def slide_expected(res, st, readout="spikes"):
     axes[0].set_ylabel("log$_{10}$ activity ratio\nto Control")
     ax2 = axes[1].twinx()                                  # % change scale
     ax2.set_ylim(axes[1].get_ylim())
-    ticks = [-60, -40, -20, 0, 50, 100, 200]
+    ticks = [t for t in (-80, -60, -40, -20, 0, 50, 100, 200) if lo <= np.log10(1 + t / 100) <= hi]
     ax2.set_yticks(np.log10(1 + np.array(ticks) / 100), [f"{t:+d} %" if t else "0 %" for t in ticks],
                    fontsize=6.5)
     ax2.spines["top"].set_visible(False)
@@ -298,7 +306,7 @@ def slide_expected(res, st, readout="spikes"):
                plt.Line2D([], [], color=INK2, marker="D", lw=0, ms=4.5, label="beyond behaviour")]
     fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.0),
                columnspacing=1.4, handletextpad=0.3)
-    save(fig, f"spn_expected_{readout}")
+    save(fig, name or f"spn_expected_{readout}")
 
 # ---------------------------------------------------------------------------
 # decoding (analysis_spn_decoding.py)
