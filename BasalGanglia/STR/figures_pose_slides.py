@@ -328,10 +328,11 @@ def slide_merge(states, sessions):
     letters(fig, [(0.005, "a"), (0.47, "b")], 0.93)
     save(fig, "behavior_merge")
 
-def slide_drugs(states, sessions):
+def slide_drugs(states, sessions, conds=None):
     show = shown_states(states)
     names = states.name.tolist()
-    conds = getattr(A, "analysis_conditions", A.conditions) if "display" in A.cfg else A.conditions
+    if conds is None:
+        conds = getattr(A, "analysis_conditions", A.conditions) if "display" in A.cfg else A.conditions
     short = {"Control": "Control", f"{A.drug} low": "Cloz. low", f"{A.drug} high": "Cloz. high",
              "Amphetamine": "Amph.", f"A + {A.drug} low": "Amph. +\nCloz. low",
              f"A + {A.drug} high": "Amph. +\nCloz. high"}

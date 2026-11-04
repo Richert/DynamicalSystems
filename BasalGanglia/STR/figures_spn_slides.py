@@ -187,6 +187,119 @@ def slide_tracked(tc, ts, labels=("whole session", "walk", "straight run")):
                bbox_to_anchor=(0.55, 1.0), handlelength=1.6, columnspacing=1.6)
     save(fig, "spn_tracked_cells")
 
+def slide_rate_pdfs(cv, st):
+    """Whole-session per-cell event rates (all frames), D1 and D2 mice, per drug condition:
+    distributions over cells and medians per mouse; stars: cell-level mixed models
+    (stats_mixed_<A_DRUG>.csv, whole session)."""
+    w = cv[cv.label == "whole session"]
+    fig = plt.figure(figsize=(6.0, 2.6))
+    gs = fig.add_gridspec(1, 7, width_ratios=[1.6, 0.3, 0.62, 0.3, 1.6, 0.3, 0.62], wspace=0.05,
+                          left=0.085, right=0.99, top=0.8, bottom=0.18)
+    med = w.groupby(["spn", "mouse", "condition"]).log_rate.median()
+    mlo, mhi = med.min() - 0.08, med.max() + 0.32
+    bins = np.linspace(-2.45, 0.35, 29)
+    for g, spn in enumerate(groups):
+        ax = fig.add_subplot(gs[4 * g])
+        for c in conditions:
+            v = w[(w.spn == spn) & (w.condition == c)].log_rate.clip(bins[0], bins[-1])
+            h, _ = np.histogram(v, bins=bins)
+            ax.stairs(h / h.sum(), bins, color=cond_col[c], lw=1.5)
+            ax.stairs(h / h.sum(), bins, color=cond_col[c], fill=True, alpha=0.08)
+        ax.set_xticks(np.log10([0.01, 0.03, 0.1, 0.3, 1]), ["0.01", "0.03", "0.1", "0.3", "1"])
+        ax.set_xlim(bins[0], bins[-1])
+        ax.set_xlabel("event rate per cell (Hz)")
+        ax.set_ylabel("share of cells" if g == 0 else None)
+        ax.set_title(f"{spn} SPNs", loc="left", fontweight="bold", fontsize=9)
+        n = w[w.spn == spn].groupby("condition").recording.nunique()
+        ax.text(0.98, 0.97, f"{w[w.spn == spn].cell.size:,} cells\n{n.max()} mice".replace(",", " "),
+                transform=ax.transAxes, ha="right", va="top", fontsize=6.5, color=INK2)
+        spines(ax)
+        # medians per mouse
+        ax = fig.add_subplot(gs[4 * g + 2])
+        p = w[w.spn == spn].groupby(["mouse", "condition"]).log_rate.median().unstack().reindex(columns=conditions)
+        for _, v in p.iterrows():
+            ok = v.notna().values
+            ax.plot(np.arange(3)[ok], v.values[ok], color=GRID, lw=0.6, zorder=1)
+        for ci, c in enumerate(conditions):
+            v = p[c].dropna().values
+            ax.scatter(np.full(len(v), ci), v, s=8, color=cond_col[c], alpha=0.6, lw=0, zorder=2)
+            ax.scatter([ci], [np.median(v)], s=28, color=cond_col[c], edgecolor="white", lw=0.8, zorder=3)
+        top = p.max().max()
+        for k, (cname, (i, j)) in enumerate((("Amph - Control", (0, 1)), ("A+Cloz - Amph", (1, 2)),
+                                             ("A+Cloz - Control", (0, 2)))):
+            s_ = st[(st.readout == "log_rate") & (st.label == "whole session") & (st.spn == spn) &
+                    (st.contrast == cname)]
+            if len(s_) and stars(s_.p_fdr.iloc[0]):
+                y = top + 0.06 + (0.12 if k == 2 else 0)
+                ax.plot([i + 0.08, i + 0.08, j - 0.08, j - 0.08], [y - 0.02, y, y, y - 0.02], color=INK2, lw=0.6)
+                ax.text((i + j) / 2, y - 0.01, stars(s_.p_fdr.iloc[0]), ha="center", va="bottom", fontsize=6.5)
+        ax.set_xticks([])
+        ax.set_xlim(-0.5, 2.5)
+        ax.set_ylim(mlo, mhi)
+        yt = [t for t in (0.03, 0.05, 0.1, 0.2) if mlo <= np.log10(t) <= mhi - 0.2]
+        ax.set_yticks(np.log10(yt), [f"{t:g}" for t in yt])
+        ax.tick_params(axis="y", labelsize=6)
+        ax.set_ylabel("Hz", fontsize=6.5, labelpad=1)
+        ax.set_title("mouse medians", loc="left", fontsize=6.5, color=INK2)
+        spines(ax)
+    handles = [plt.Line2D([], [], color=cond_col[c], lw=1.5, label=cond_short[c]) for c in conditions]
+    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.0),
+               columnspacing=1.6)
+    save(fig, "spn_rate_pdfs")
+
+exp_dir = os.environ.get("EXP_DIR", "/home/rgast/data/parker_data/spn_behavior_expected")
+
+def slide_expected(res, st, readout="spikes"):
+    """Drug effect on the session activity split into the part expected from the behaviour
+    change and the part beyond it (analysis_spn_behavior_expected.py); dots: mice."""
+    comps = [("total", "total"), ("behaviour", "expected"), ("beyond", "beyond")]
+    fig, axes = plt.subplots(1, 2, figsize=(6.0, 2.85), sharey=True)
+    fig.subplots_adjust(left=0.1, right=0.88, top=0.78, bottom=0.2, wspace=0.08)
+    drugs = conditions[1:]
+    for a_, spn in zip(axes, groups):
+        for di, drug in enumerate(drugs):
+            d = res[(res.readout == readout) & (res.spn == spn) & (res.drug == drug)]
+            xs = [di * 4.6 + 1.35 * k for k in range(3)]
+            for _, r_ in d.iterrows():
+                a_.plot(xs, [r_.total, r_.behaviour, r_.beyond], color=GRID, lw=0.5, zorder=1)
+            for k, (comp, _) in enumerate(comps):
+                v = d[comp].values
+                face = cond_col[drug] if comp != "behaviour" else "white"
+                edge = cond_col[drug]
+                a_.scatter(np.full(len(v), xs[k]), v, s=7, color=cond_col[drug], alpha=0.4, lw=0, zorder=2)
+                a_.errorbar(xs[k] + 0.22, v.mean(), v.std(ddof=1) / np.sqrt(len(v)), color=edge, lw=1.2, zorder=3)
+                a_.scatter([xs[k] + 0.22], [v.mean()], s=34, facecolor=face, edgecolor=edge, lw=1.3,
+                           zorder=4, marker="D" if comp == "beyond" else "o")
+                s_ = st[(st.readout == readout) & (st.spn == spn) & (st.drug == drug) & (st.component == comp)]
+                if len(s_) and stars(s_.p.iloc[0]):
+                    a_.text(xs[k] + 0.22, 0.55, stars(s_.p.iloc[0]), ha="center", fontsize=7, color=INK)
+            a_.text(xs[1] + 0.1, -0.15, cond_short[drug], ha="center", fontsize=7.2, color=cond_col[drug],
+                    fontweight="bold", transform=a_.get_xaxis_transform())
+        a_.axhline(0, color=MUTED, lw=0.7)
+        a_.set_xticks([di * 4.6 + 1.35 * k + 0.1 for di in range(2) for k in range(3)],
+                      [c[1] for _ in drugs for c in comps], fontsize=6.5)
+        a_.tick_params(axis="x", length=0)
+        a_.set_ylim(-0.5, 0.62)
+        a_.set_xlim(-0.6, 8.0)
+        a_.set_title(f"{spn} SPNs", loc="left", fontweight="bold", fontsize=9)
+        a_.yaxis.grid(True, color=GRID, lw=0.5)
+        a_.set_axisbelow(True)
+        spines(a_)
+    axes[0].set_ylabel("log$_{10}$ activity ratio\nto Control")
+    ax2 = axes[1].twinx()                                  # % change scale
+    ax2.set_ylim(axes[1].get_ylim())
+    ticks = [-60, -40, -20, 0, 50, 100, 200]
+    ax2.set_yticks(np.log10(1 + np.array(ticks) / 100), [f"{t:+d} %" if t else "0 %" for t in ticks],
+                   fontsize=6.5)
+    ax2.spines["top"].set_visible(False)
+    handles = [plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=5, label="total: observed change"),
+               plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=5, mfc="white",
+                          label="expected from the behaviour change"),
+               plt.Line2D([], [], color=INK2, marker="D", lw=0, ms=4.5, label="beyond behaviour")]
+    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.0),
+               columnspacing=1.4, handletextpad=0.3)
+    save(fig, f"spn_expected_{readout}")
+
 # ---------------------------------------------------------------------------
 # decoding (analysis_spn_decoding.py)
 # ---------------------------------------------------------------------------
@@ -416,9 +529,15 @@ def slide_decoding_conditions(m, readout="trace"):
 
 if __name__ == "__main__":
     rd = pd.read_csv(f"{res_dir}/readouts_{a_drug}.csv")
-    slide_rate_stats(rd, pd.read_csv(f"{res_dir}/stats_mixed_{a_drug}.csv"))
+    st_mixed = pd.read_csv(f"{res_dir}/stats_mixed_{a_drug}.csv")
+    slide_rate_pdfs(pd.read_csv(f"{res_dir}/cell_values_{a_drug}.csv.gz"), st_mixed)
+    slide_rate_stats(rd, st_mixed)
     slide_tracked(pd.read_csv(f"{res_dir}/tracked_cells.csv.gz"),
                   pd.read_csv(f"{res_dir}/stats_tracked.csv"))
+    if os.path.isfile(f"{exp_dir}/expected_by_behaviour.csv"):
+        for ro in ("spikes", "trace"):
+            slide_expected(pd.read_csv(f"{exp_dir}/expected_by_behaviour.csv"),
+                           pd.read_csv(f"{exp_dir}/expected_stats.csv"), ro)
     if os.path.isfile(f"{dec_dir}/decoding.csv"):
         m = decoding_table()
         slide_decoding_contrast(m)
