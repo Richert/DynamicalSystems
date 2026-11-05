@@ -207,8 +207,43 @@ def intro_problem():
             ha="center", fontsize=7, color="#2a78d6")
     save(fig, "intro_problem")
 
+def intro_mediation():
+    """Direct drug effect on SPN activity vs an effect mediated by behaviour (2 build steps)."""
+    fig, ax = plt.subplots(figsize=(5.0, 2.55))
+    fig.subplots_adjust(0, 0, 1, 1)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 0.51)
+    ax.axis("off")
+    P = dict(drug=(0.1, 0.12), spn=(0.88, 0.12), beh=(0.49, 0.37))
+    node(ax, P["drug"], "drug", INK, w=0.14, h=0.08, bold=True, fs=9)
+    node(ax, P["spn"], "SPN activity", D1C, w=0.2, h=0.08, bold=True, fs=9)
+    node(ax, P["beh"], "behaviour", "#d1860a", w=0.18, h=0.08, bold=True, fs=9)
+    direct = FancyArrowPatch(P["drug"], P["spn"], arrowstyle="-|>,head_length=6,head_width=3.5",
+                             color=INK, lw=1.8, shrinkA=30, shrinkB=46, mutation_scale=1.6)
+    ax.add_patch(direct)
+    t_dir = ax.text(0.49, 0.075, "direct effect on the striatal circuit?", ha="center", fontsize=8,
+                    color=INK)
+    m1 = FancyArrowPatch(P["drug"], P["beh"], arrowstyle="-|>,head_length=6,head_width=3.5",
+                         color="#d1860a", lw=1.8, shrinkA=26, shrinkB=30, mutation_scale=1.6)
+    m2 = FancyArrowPatch(P["beh"], P["spn"], arrowstyle="<|-|>,head_length=6,head_width=3.5",
+                         color="#d1860a", lw=1.8, shrinkA=30, shrinkB=40, mutation_scale=1.6)
+    ax.add_patch(m1)
+    ax.add_patch(m2)
+    t_med = ax.text(0.49, 0.5, "or mediated by the change in behaviour?", ha="center", fontsize=8,
+                    color="#d1860a", va="top")
+    steps = [{direct, t_dir}, {direct, t_dir, m1, m2, t_med}]
+    managed = set().union(*steps)
+    for k, vis in enumerate(steps, 1):
+        for a in managed:
+            a.set_visible(a in vis)
+        fig.savefig(f"{out_dir}/intro_mediation_s{k}.pdf")
+        fig.savefig(f"{out_dir}/intro_mediation_s{k}.png", dpi=150)
+    plt.close(fig)
+    print(f"saved {out_dir}/intro_mediation_s1..2")
+
 
 if __name__ == "__main__":
     intro_circuit()
     intro_disease()
     intro_problem()
+    intro_mediation()

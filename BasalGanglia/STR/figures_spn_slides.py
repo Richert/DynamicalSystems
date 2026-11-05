@@ -308,6 +308,75 @@ def slide_expected(res, st, readout="spikes", drugs=None, name=None):
                columnspacing=1.4, handletextpad=0.3)
     save(fig, name or f"spn_expected_{readout}")
 
+def save_steps(fig, steps, name):
+    """Animation frames (see figures_raw_pipeline.save_steps): <name>_s<k>.pdf/.png."""
+    managed = set().union(*steps)
+    for k, vis in enumerate(steps, 1):
+        for art in managed:
+            art.set_visible(art in vis)
+        fig.savefig(f"{out_dir}/{name}_s{k}.pdf")
+        fig.savefig(f"{out_dir}/{name}_s{k}.png", dpi=150)
+    for art in managed:
+        art.set_visible(True)
+    print(f"saved {out_dir}/{name}_s1..{len(steps)}")
+
+def slide_rate_pdfs_steps(cv, rd, st):
+    """Rate distributions (D1, D2) built up per condition, then the mean and the SD of the log
+    rate per mouse (whole session, equal time / 50 cells per draw; mixed-model stars)."""
+    w = cv[cv.label == "whole session"]
+    fig = plt.figure(figsize=(6.0, 2.7))
+    gs = fig.add_gridspec(1, 4, width_ratios=[1.25, 1.25, 1.0, 1.0], wspace=0.42, left=0.095,
+                          right=0.99, top=0.8, bottom=0.2)
+    bins = np.linspace(-2.45, 0.35, 29)
+    hist = {c: set() for c in conditions}
+    for g, spn in enumerate(groups):
+        ax = fig.add_subplot(gs[g])
+        for c in conditions:
+            v = w[(w.spn == spn) & (w.condition == c)].log_rate.clip(bins[0], bins[-1])
+            h, _ = np.histogram(v, bins=bins)
+            hist[c] |= {ax.stairs(h / h.sum(), bins, color=cond_col[c], lw=1.5),
+                        ax.stairs(h / h.sum(), bins, color=cond_col[c], fill=True, alpha=0.08)}
+        ax.set_xticks(np.log10([0.01, 0.1, 1]), ["0.01", "0.1", "1"])
+        ax.set_xlim(bins[0], bins[-1])
+        ax.set_xlabel("event rate per cell (Hz)")
+        ax.set_ylabel("share of cells" if g == 0 else None)
+        ax.set_title(f"{spn} SPNs", loc="left", fontweight="bold", fontsize=9)
+        spines(ax)
+    quant = []
+    r0 = rd[rd.label == "whole session"]
+    s0 = st[st.label == "whole session"]
+    for j, (col, lab) in enumerate((("mean_log_rate", "mean rate (Hz)"), ("sd_log_rate", "SD of log$_{10}$ rate"))):
+        ax = fig.add_subplot(gs[2 + j])
+        lo, hi = r0[col].min(), r0[col].max()
+        step = 0.075 * (hi - lo)
+        brackets(ax, panel(ax, r0, col, s0), step)
+        ax.set_xticks([xpos(g, 1) for g in range(len(groups))], groups)
+        ax.set_xlim(xpos(0, 0) - 0.45, xpos(1, len(conditions) - 1) + 0.55)
+        ax.set_ylim(lo - 0.05 * (hi - lo), hi + 0.45 * (hi - lo))
+        if col == "mean_log_rate":
+            yt = [t for t in (0.03, 0.05, 0.1, 0.2) if lo - 0.05 <= np.log10(t) <= hi + 0.3]
+            ax.set_yticks(np.log10(yt), [f"{t:g}" for t in yt])
+        ax.set_title(lab, loc="left", fontsize=8)
+        ax.yaxis.grid(True, color=GRID, lw=0.5)
+        ax.set_axisbelow(True)
+        spines(ax)
+        quant.append({ax})
+    handles = [plt.Line2D([], [], color=cond_col[c], lw=1.5, label=cond_short[c]) for c in conditions]
+    legs = []
+    for k in range(1, len(conditions) + 1):
+        lg = fig.legend(handles=handles[:k], loc="upper left", ncol=3, frameon=False,
+                        bbox_to_anchor=(0.07, 1.0), columnspacing=1.6)
+        legs.append(lg)
+    steps, vis = [], set()
+    for k, c in enumerate(conditions):
+        vis = (vis - set(legs)) | hist[c] | {legs[k]}
+        steps.append(set(vis))
+    for q in quant:
+        vis = vis | q
+        steps.append(set(vis))
+    save_steps(fig, steps, "spn_rate_pdfs_anim")
+    plt.close(fig)
+
 # ---------------------------------------------------------------------------
 # decoding (analysis_spn_decoding.py)
 # ---------------------------------------------------------------------------

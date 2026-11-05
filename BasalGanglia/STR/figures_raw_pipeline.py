@@ -66,6 +66,31 @@ def save(fig, name):
     plt.close(fig)
     print(f"saved {out_dir}/{name}.pdf/.png")
 
+def save_steps(fig, steps, name):
+    """Animation frames: steps = list of sets of artists visible at that step; every artist in
+    any step is hidden in the other steps, all other artists are always shown.
+    Writes <name>_s<k>.pdf/.png (k = 1 ...)."""
+    managed = set().union(*steps)
+    for k, vis in enumerate(steps, 1):
+        for art in managed:
+            art.set_visible(art in vis)
+        os.makedirs(out_dir, exist_ok=True)
+        fig.savefig(f"{out_dir}/{name}_s{k}.pdf")
+        fig.savefig(f"{out_dir}/{name}_s{k}.png", dpi=150)
+    for art in managed:
+        art.set_visible(True)
+    print(f"saved {out_dir}/{name}_s1..{len(steps)}")
+
+def outline_paths(r, comps, frac=0.4):
+    """(x, y) outline polygons of components (largest contour at frac x max)."""
+    from skimage.measure import find_contours
+    out = []
+    for k in comps:
+        a = r.footprint(k)
+        c = find_contours(a, frac * a.max()) if a.max() > 0 else []
+        out.append(max(c, key=len)[:, ::-1] if len(c) else np.zeros((0, 2)))
+    return out
+
 def frame_axes(ax, title=None):
     ax.set_xticks([])
     ax.set_yticks([])
@@ -488,9 +513,11 @@ def slide_caiman_overview(r, t0, t1):
         ("demixing", "footprints + traces,\nring-model background"),
         ("spike inference", "OASIS deconvolution\n(AR(1))"),
     ]
+    groups = []
     for i, (title, sub) in enumerate(stages):
         x = x0 + i * (w + gap)
         box = fig.add_axes([x, 0.06, w, 0.88])
+        groups.append({box})
         box.axis("off")
         box.add_patch(FancyBboxPatch((0, 0), 1, 1, boxstyle="round,pad=0,rounding_size=0.06",
                                      transform=box.transAxes, fc="#f4f3ee", ec=AXIS, lw=0.8))
@@ -499,6 +526,7 @@ def slide_caiman_overview(r, t0, t1):
         box.text(0.5, 0.05, sub, ha="center", va="bottom", fontsize=6.3, color=INK2,
                  transform=box.transAxes)
         ax = fig.add_axes([x + 0.012, 0.3, w - 0.024, 0.5])
+        groups[-1].add(ax)
         frame_axes(ax)
         if i == 0:
             ax.imshow(Y[0], cmap=FLUO, vmin=np.percentile(Y[0], 1), vmax=np.percentile(Y[0], 99.8))
@@ -535,10 +563,20 @@ def slide_caiman_overview(r, t0, t1):
             ax.set_xlim(0, tt[-1]); ax.set_ylim(-0.25, 1.15)
             ax.text(0.03, 0.95, "trace + spikes, 20 s", transform=ax.transAxes, va="top", fontsize=5.5, color=INK2)
         if i < n - 1:
-            fig.patches.append(FancyArrowPatch((x + w + 0.003, 0.55), (x + w + gap - 0.003, 0.55),
-                                               transform=fig.transFigure, arrowstyle="-|>",
-                                               mutation_scale=9, color=INK2, lw=1))
+            arr = FancyArrowPatch((x + w + 0.003, 0.55), (x + w + gap - 0.003, 0.55),
+                                  transform=fig.transFigure, arrowstyle="-|>",
+                                  mutation_scale=9, color=INK2, lw=1)
+            fig.patches.append(arr)
+            groups[-1].add(arr)
     save(fig, "pipeline_caiman_overview")
+    # build-up: box i appears with the arrow leading into it
+    steps, vis = [], set()
+    for i, g in enumerate(groups):
+        boxes = {a_ for a_ in g if not isinstance(a_, FancyArrowPatch)}
+        into = {a_ for a_ in (groups[i - 1] if i else set()) if isinstance(a_, FancyArrowPatch)}
+        vis = vis | boxes | into
+        steps.append(set(vis))
+    save_steps(fig, steps, "pipeline_caiman_overview")
 
 
 # ---------------------------------------------------------------------------
@@ -667,6 +705,183 @@ def slide_postprocessing(r, pick=None):
         fig.text(x, 0.955, l, fontsize=10, fontweight="bold", color=INK)
     save(fig, "pipeline_postprocessing")
     print({k: sum(v == k for v in stage.values()) for k in keys + ["rim", "kept"]})
+
+
+# ---------------------------------------------------------------------------
+# animated slides (build-up frames)
+# ---------------------------------------------------------------------------
+
+def slide_spikes_steps(r, t0, t1, n_ex=5):
+    """From fluorescence to spikes, built up: raw traces -> denoised -> inferred spikes ->
+    raster of all cells -> population rate (Gaussian-smoothed events)."""
+    from matplotlib.gridspec import GridSpec
+    ev = r.events[:, t0:t1]
+    n = ev.sum(1)
+    snr = r.snr[r.kept]
+    cand = np.flatnonzero((n >= 3) & (n <= 10))
+    cand = cand[np.argsort(snr[cand])[::-1]][:4 * n_ex]
+    ex = sorted(cand[np.linspace(0, len(cand) - 1, n_ex).round().astype(int)], key=lambda i: -n[i])
+    fig = plt.figure(figsize=(6.0, 2.6))
+    gs = GridSpec(2, 2, figure=fig, width_ratios=[1, 1.15], height_ratios=[2.2, 0.75],
+                  wspace=0.2, hspace=0.12, left=0.035, right=0.99, top=0.84, bottom=0.15)
+    t = np.arange(t1 - t0) / r.fs
+    ax = fig.add_subplot(gs[:, 0])
+    raw_l, den_l, spk_l = set(), set(), set()
+    for j, i in enumerate(ex):
+        y0 = -j * 1.25
+        raw, c = r.Yraw[i, t0:t1], r.C[i, t0:t1]
+        sc = np.percentile(raw, 99.9) - np.percentile(raw, 5)
+        raw_l |= set(ax.plot(t, y0 + (raw - np.percentile(raw, 5)) / sc, color=TRACE_RAW, lw=0.5))
+        den_l |= set(ax.plot(t, y0 + (c - np.percentile(raw, 5)) / sc, color=TRACE_C, lw=0.8))
+        ts = t[ev[i]]
+        spk_l |= set(ax.plot(ts, np.full(len(ts), y0 - 0.12), "|", color=ACCENT, ms=4, mew=1.2))
+    ax.set_xlim(0, t[-1])
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.set_xlabel("time (s)")
+    leg = []
+    for x, (kind, lab) in zip((0.035, 0.17, 0.29), (("raw", "raw trace"), ("den", "denoised"),
+                                                  ("spk", "inferred spikes"))):
+        if kind == "spk":
+            h = fig.add_artist(plt.Line2D([x, x], [0.9, 0.95], color=ACCENT, lw=1.6, transform=fig.transFigure))
+        else:
+            h = fig.add_artist(plt.Line2D([x, x + 0.025], [0.925] * 2, color=TRACE_RAW if kind == "raw" else TRACE_C,
+                                          lw=1.2, transform=fig.transFigure))
+        tx = fig.text(x + (0.012 if kind == "spk" else 0.032), 0.925, lab, va="center", fontsize=7, color=INK2)
+        leg.append({h, tx})
+    axr = fig.add_subplot(gs[0, 1])
+    order = np.argsort(n)[::-1]
+    yy, xx = np.nonzero(ev[order])
+    axr.scatter(t[xx], yy, s=0.6, color=INK, lw=0, rasterized=True)
+    axr.set_xlim(0, t[-1])
+    axr.set_ylim(len(order), -1)
+    axr.set_ylabel("cell", labelpad=1)
+    axr.tick_params(labelbottom=False)
+    axr.set_title(f"spikes of all {len(order)} cells", loc="left")
+    axp = fig.add_subplot(gs[1, 1], sharex=axr)
+    axp.plot(t, pop_rate(r, t0, t1), color=ACCENT, lw=0.9)
+    axp.set_ylabel("rate (Hz)", labelpad=2, fontsize=7)
+    axp.yaxis.set_major_locator(plt.MaxNLocator(2))
+    axp.set_xlabel("time (s)")
+    la = fig.text(0.005, 0.92, "a", fontsize=10, fontweight="bold", color=INK)
+    lb = fig.text(0.47, 0.92, "b", fontsize=10, fontweight="bold", color=INK)
+    base = {ax, la}
+    s1 = base | raw_l | leg[0]
+    s2 = s1 | den_l | leg[1]
+    s3 = s2 | spk_l | leg[2]
+    s4 = s3 | {axr, lb}
+    s5 = s4 | {axp}
+    save_steps(fig, [s1, s2, s3, s4, s5], "pipeline_spikes_anim")
+    plt.close(fig)
+
+def slide_postprocessing_steps(r, pick=None):
+    """Post-processing on top of CaImAn, built up rule by rule: all CNMF-E components (grey)
+    -> each rule colours the components it removes, adds its bar (b) and its example (c) ->
+    final: dropped components blue, kept cells dark yellow."""
+    from matplotlib.gridspec import GridSpec
+    from matplotlib.collections import LineCollection
+    stage = selection_stages(r)
+    if pick is None and r.name == "20191205_m85_clo01_amph_rec1" and tag == "p1_c0.6_pnr5_nrg0.999":
+        pick = {"size": 1047, "offpeak": 523}
+    pick = pick or {}
+    col = {k: c for k, _, _, c in RULES}
+    col["snr"] = "#9fb7d6"
+    lab = {k: l for k, l, _, _ in RULES}
+    crit = {k: c for k, _, c, _ in RULES}
+    crit["snr"] = "transient SNR < 2"
+    keys = [k for k, *_ in RULES]
+    comps = sorted(stage)
+    paths = dict(zip(comps, outline_paths(r, comps)))
+    DROP, KEEP, BASE = "#3f7fc6", "#d9a400", "#cfcdc4"
+    seed = r.cn * r.pnr
+    fig = plt.figure(figsize=(6.0, 3.05))
+    gs = GridSpec(2, 6, figure=fig, width_ratios=[1.55, 0.85, 0.5, 0.5, 0.5, 0.5],
+                  height_ratios=[1, 1], wspace=0.12, hspace=0.62, left=0.005, right=0.995,
+                  top=0.86, bottom=0.12)
+    ax = fig.add_subplot(gs[:, 0])
+    ax.imshow(seed, cmap=FLUO, vmin=0, vmax=np.percentile(seed, 99.7))
+    frame_axes(ax, None)
+    scalebar(ax, r.dims)
+    lc = lambda ks, c, lw: ax.add_collection(LineCollection([paths[k] for k in ks if len(paths[k])],
+                                                            colors=c, linewidths=lw))
+    base = lc(comps, BASE, 0.35)
+    rule_lc = {k: lc([c for c, v in stage.items() if v == k], col[k], 0.8) for k in keys}
+    dropped = [c for c, v in stage.items() if v != "kept"]
+    kept = [c for c, v in stage.items() if v == "kept"]
+    fin_drop, fin_keep = lc(dropped, DROP, 0.55), lc(kept, KEEP, 0.8)
+    t_all = ax.set_title(f"all {len(comps)} CNMF-E components", loc="left")
+    t_fin = ax.text(0, 1.02, f"{len(kept)} kept (yellow), {len(dropped)} dropped (blue)",
+                    transform=ax.transAxes, fontsize=8.5, color=INK, va="bottom")
+    t_all_txt = ax.title
+    # (b) bars
+    axb = fig.add_subplot(gs[:, 1])
+    cnt = {k: sum(v == k for v in stage.values()) for k in keys}
+    n_kept = len(kept)
+    order = keys + ["kept"]
+    y = {k: i for i, k in enumerate(order)}
+    bars = {}
+    for k in order:
+        c = cnt[k] if k != "kept" else n_kept
+        bc = axb.barh(y[k], c, color=col.get(k, KEEP), height=0.68)
+        inside = c > 250
+        tx = axb.text(c - 12 if inside else c + 12, y[k], f"{c}  {lab.get(k, 'kept cells')}", va="center",
+                      fontsize=6.6, color="white" if inside and k != "kept" else INK,
+                      ha="right" if inside else "left")
+        bars[k] = set(bc.patches) | {tx}
+    axb.set_yticks([])
+    axb.set_ylim(len(order) - 0.4, -0.6)
+    axb.set_xlim(0, max(list(cnt.values()) + [n_kept]) * 1.05)
+    axb.set_xticks([0, 250, 500])
+    axb.set_xlabel("components")
+    for sp in ("top", "right", "left"):
+        axb.spines[sp].set_visible(False)
+    # (c) examples: one per rule + a kept cell
+    acc, _, _ = examples(r)
+    b0 = r.b0.reshape(r.dims, order="F")
+    exa = {}
+    for i, k in enumerate(order):
+        ax_ = fig.add_subplot(gs[i // 4, 2 + i % 4])
+        ks = [c for c, v in stage.items() if v == k] if k != "kept" else [acc]
+        h = 16 if k in ("size", "shape", "vessel") else 11
+        inner = [c for c in ks if min(*np.unravel_index(np.argmax(r.footprint(c)), r.dims),
+                                      *(np.array(r.dims) - 1 - np.unravel_index(np.argmax(r.footprint(c)), r.dims))) >= h]
+        if k == "snr":
+            pool = inner or ks
+            c0 = sorted(pool, key=lambda c: r.snr[c])[len(pool) // 2]
+        else:
+            c0 = pick.get(k) or max(inner or ks, key=lambda c: r.snr[c])
+        a = r.footprint(c0)
+        yy, xx = np.unravel_index(np.argmax(a), r.dims)
+        yy, xx = int(np.clip(yy, h, r.dims[0] - 1 - h)), int(np.clip(xx, h, r.dims[1] - 1 - h))
+        img = b0 if k == "vessel" else r.cn
+        ci = crop(img, yy, xx, h)
+        ax_.imshow(ci, cmap="gray" if k == "vessel" else FLUO, interpolation="bilinear",
+                   vmin=np.percentile(ci, 1), vmax=np.percentile(ci, 99.5))
+        for kk in kept:
+            if kk == c0:
+                continue
+            bb = r.footprint(kk)
+            p_ = np.unravel_index(np.argmax(bb), r.dims)
+            if abs(p_[0] - yy) <= h + 6 and abs(p_[1] - xx) <= h + 6:
+                ax_.contour(crop(bb, yy, xx, h), [0.4 * bb.max()], colors=CELL, linewidths=0.4)
+        ax_.contour(crop(a, yy, xx, h), [0.4 * a.max()], colors=col.get(k, KEEP), linewidths=1.1)
+        frame_axes(ax_, None)
+        ax_.set_title(lab.get(k, "kept cell"), loc="left", fontsize=7, color=col.get(k, KEEP),
+                      fontweight="bold", pad=2)
+        ax_.text(0, -0.04, crit.get(k, "passes every rule"), transform=ax_.transAxes, va="top",
+                 fontsize=5.6, color=INK2, linespacing=1.1)
+        exa[k] = {ax_}
+    for x, l in ((0.005, "a"), (0.33, "b"), (0.5, "c")):
+        fig.text(x, 0.955, l, fontsize=10, fontweight="bold", color=INK)
+    steps, vis = [], {base, t_all_txt}
+    steps.append(set(vis))
+    for k in keys:
+        vis = vis | {rule_lc[k]} | bars[k] | exa[k]
+        steps.append(set(vis))
+    final = (vis - set(rule_lc.values()) - {t_all_txt}) | {fin_drop, fin_keep, t_fin} | bars["kept"] | exa["kept"]
+    steps.append(final)
+    save_steps(fig, steps, "pipeline_postprocessing_anim")
+    plt.close(fig)
 
 
 if __name__ == "__main__":
