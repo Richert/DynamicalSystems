@@ -273,61 +273,58 @@ def draw_mouse(ax, x, y, s=1.0, mode="walk", color="#6b6a66"):
 
 def summary_findings():
     """Cartoon summary: per condition the behaviour, the share of speed-tuned SPNs (D1, D2) with a
-    mini tuning curve, and the SPN rate while moving relative to Control (matched speed)."""
-    rows = [("Control", "#2a78d6", "walk", (0.56, 0.61), (1.0, 1.0), "tuned"),
-            ("Amph.", "#eda100", "run", (0.09, 0.03), (0.66, 0.48), "flat"),
-            ("Amph. + clozapine", "#e34948", "walk", (0.22, 0.04), (0.75, 0.49), "D1"),
-            ("Amph. + haloperidol", "#b5382f", "rest", (0.37, 0.24), (0.92, 0.81), "partial")]
+    mini tuning curve, the session-wide SPN rate and the SPN rate while moving (matched speed), both
+    relative to Control."""
+    rows = [("Control", "#2a78d6", "walk", (0.56, 0.61), (1.0, 1.0), (1.0, 1.0), "tuned"),
+            ("Amph.", "#eda100", "run", (0.09, 0.03), (1.35, 0.88), (0.66, 0.48), "flat"),
+            ("Amph. +\nclozapine", "#e34948", "walk", (0.22, 0.04), (0.81, 0.65), (0.75, 0.49), "D1"),
+            ("Amph. +\nhaloperidol", "#b5382f", "rest", (0.37, 0.24), (0.44, 0.44), (0.92, 0.81), "partial")]
     fig, ax = plt.subplots(figsize=(6.15, 2.85))
     fig.subplots_adjust(0, 0, 1, 1)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 0.465)
     ax.axis("off")
-    cols = [(0.27, "behaviour"), (0.57, "speed-tuned SPNs"), (0.875, "SPN rate while moving")]
+    bar_x, bar_scale = {"session": 0.625, "moving": 0.815}, 0.1          # width per 100 %
+    cols = [(0.2, "behaviour"), (0.445, "speed-tuned SPNs"), (bar_x["session"] + 0.07, "session rate"),
+            (bar_x["moving"] + 0.075, "rate while moving")]
     for x, t in cols:
-        ax.text(x, 0.445, t, ha="center", va="center", fontsize=8.5, fontweight="bold", color=INK)
+        ax.text(x, 0.445, t, ha="center", va="center", fontsize=8, fontweight="bold", color=INK)
     ys = [0.36, 0.265, 0.17, 0.075]
-    for (name, col, mode, tuned, rate, curve), y in zip(rows, ys):
+    for (name, col, mode, tuned, sess, mov, curve), y in zip(rows, ys):
         ax.add_patch(FancyBboxPatch((0.005, y - 0.04), 0.99, 0.08, boxstyle="round,pad=0,rounding_size=0.012",
                                     fc="#f6f5f0", ec="none", zorder=0))
-        ax.text(0.015, y, name, ha="left", va="center", fontsize=7.5, fontweight="bold", color=col)
-        draw_mouse(ax, 0.265, y + 0.005, s=0.45, mode=mode)
-        # tuned cells: 10 icons per SPN type, filled share = tuned share
+        ax.text(0.015, y, name, ha="left", va="center", fontsize=7.2, fontweight="bold", color=col,
+                linespacing=1.05)
+        draw_mouse(ax, 0.205, y + 0.005, s=0.4, mode=mode)
         for g, (spn, c_, sh) in enumerate((("D1", D1C, tuned[0]), ("D2", D2C, tuned[1]))):
             yy = y + 0.017 - 0.034 * g
-            ax.text(0.435, yy, spn, ha="right", va="center", fontsize=6.5, color=c_, fontweight="bold")
+            ax.text(0.33, yy, spn, ha="right", va="center", fontsize=6.3, color=c_, fontweight="bold")
             nf = int(round(sh * 10))
             for i in range(10):
-                ax.add_patch(Circle((0.45 + i * 0.019, yy), 0.0072, fc=c_ if i < nf else "white", ec=c_, lw=0.6,
+                ax.add_patch(Circle((0.343 + i * 0.0165, yy), 0.0063, fc=c_ if i < nf else "white", ec=c_, lw=0.6,
                                     zorder=3))
-        # mini tuning curve: rate vs speed
-        x0, w, h = 0.66, 0.065, 0.05
+        x0, w, h = 0.52, 0.05, 0.05
         sx = np.linspace(0, 1, 30)
         shape = {"tuned": 0.15 + 0.85 * sx ** 1.5, "flat": 0.45 + 0.08 * sx,
                  "D1": 0.3 + 0.45 * sx ** 1.5, "partial": 0.2 + 0.65 * sx ** 1.5}[curve]
         ax.plot([x0, x0, x0 + w], [y + h / 2, y - h / 2, y - h / 2], color=INK2, lw=0.6)
         ax.plot(x0 + w * sx, y - h / 2 + h * 0.9 * shape, color=col, lw=1.4)
         if y == ys[0]:
-            ax.text(x0 + w / 2, y - h / 2 - 0.012, "speed", ha="center", va="top", fontsize=5.5, color=INK2)
-            ax.text(x0 - 0.006, y, "rate", ha="right", va="center", fontsize=5.5, color=INK2, rotation=90)
-        # rate while moving: bars relative to Control
-        for g, (c_, v) in enumerate(((D1C, rate[0]), (D2C, rate[1]))):
-            yy = y + 0.015 - 0.03 * g
-            ax.add_patch(FancyBboxPatch((0.775, yy - 0.009), 0.19 * v, 0.018, boxstyle="round,pad=0,rounding_size=0.004",
-                                        fc=c_, ec="none", zorder=3))
-            ax.text(0.78 + 0.19 * v, yy, f"{v:.0%}" if name != "Control" else "", va="center", fontsize=6,
-                    color=INK2)
-        ax.plot([0.775 + 0.19] * 2, [y - 0.035, y + 0.035], color=MUTED, lw=0.6, ls=(0, (2, 1.5)), zorder=4)
-    ax.text(0.99, ys[-1] - 0.05, "Control level", ha="right", fontsize=5.5, color=MUTED)
+            ax.text(x0 + w / 2, y - h / 2 - 0.012, "speed", ha="center", va="top", fontsize=5.3, color=INK2)
+            ax.text(x0 - 0.005, y, "rate", ha="right", va="center", fontsize=5.3, color=INK2, rotation=90)
+        for key, vals in (("session", sess), ("moving", mov)):
+            bx = bar_x[key]
+            for g, (c_, v) in enumerate(((D1C, vals[0]), (D2C, vals[1]))):
+                yy = y + 0.015 - 0.03 * g
+                ax.add_patch(FancyBboxPatch((bx, yy - 0.009), bar_scale * v, 0.018,
+                                            boxstyle="round,pad=0,rounding_size=0.004", fc=c_, ec="none", zorder=3))
+                if name != "Control":
+                    ax.text(bx + bar_scale * v + 0.005, yy, f"{v:.0%}", va="center", fontsize=5.8, color=INK2,
+                            zorder=5, bbox=dict(fc="#f6f5f0", ec="none", pad=0.4))
+            ax.plot([bx + bar_scale] * 2, [y - 0.035, y + 0.035], color=MUTED, lw=0.6, ls=(0, (2, 1.5)), zorder=4)
+    for key in ("session", "moving"):
+        ax.text(bar_x[key] + bar_scale, ys[-1] - 0.05, "Control", ha="center", fontsize=5.3, color=MUTED)
     fig.savefig(f"{out_dir}/summary_findings.pdf")
     fig.savefig(f"{out_dir}/summary_findings.png", dpi=200)
     plt.close(fig)
     print(f"saved {out_dir}/summary_findings.pdf/.png")
-
-
-if __name__ == "__main__":
-    intro_circuit()
-    intro_disease()
-    intro_problem()
-    intro_mediation()
-    summary_findings()
