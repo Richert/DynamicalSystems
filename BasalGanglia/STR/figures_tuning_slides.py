@@ -411,3 +411,80 @@ def bins_lines(feature):
         steps.append(set(vis))
     save_steps(fig, steps, f"bins_lines_{feature}")
     plt.close(fig)
+
+
+def tuning_feature(feat):
+    """One feature: population tuning curves (top row: clozapine D1 / D2, haloperidol D1 / D2), with
+    the median eta^2 of the tuned cells per condition, and the share of tuned cells (bottom row);
+    built up per condition. The first speed panel explains eta^2."""
+    fig, axes = plt.subplots(2, 4, figsize=(6.6, 2.85), sharey="row",
+                             gridspec_kw=dict(height_ratios=[1.45, 1]))
+    fig.subplots_adjust(left=0.085, right=0.995, top=0.82, bottom=0.08, wspace=0.12, hspace=0.62)
+    by_cond = [set() for _ in range(NC)]
+    name = {"speed": "speed bin (cm/s)", "turn": "turning bin (°/s)"}[feat]
+    for j, drug in enumerate(drugs):
+        c = load(drug)
+        bins = json.load(open(f"{res_dir}/bins_{drug.lower()}.json"))
+        conds = conditions(drug)
+        e = np.asarray(bins[feat])
+        centres = (e[:-1] + e[1:]) / 2
+        if feat == "speed":
+            lab = [f"{10 ** v - 0.5:.1f}" if 10 ** v - 0.5 < 10 else f"{10 ** v - 0.5:.0f}" for v in centres]
+        else:
+            lab = [f"{5 * np.sinh(v):.0f}" for v in centres]
+        for g, spn in enumerate(("D1", "D2")):
+            col = 2 * j + g
+            ax, axb = axes[0, col], axes[1, col]
+            for k, cond in enumerate(conds):
+                d_all = c[(c.spn == spn) & (c.condition == cond) & (c.feature == feat)]
+                d = d_all[d_all.tuned]
+                C = d[[f"c{b}" for b in range(8)]].values
+                C = C / np.maximum(C.mean(1, keepdims=True), 1e-9)
+                d = d.assign(**{f"n{b}": C[:, b] for b in range(8)})
+                per = d.groupby("mouse").filter(lambda x: len(x) >= min_cells).groupby("mouse")[
+                    [f"n{b}" for b in range(8)]].mean()
+                arts = set()
+                if len(per) >= 2:
+                    m, se = per.mean().values, per.std().values / np.sqrt(len(per))
+                    l, = ax.plot(np.arange(8), m, color=COND_COL[k], lw=1.4, marker="o", ms=2.5)
+                    arts |= {l, ax.fill_between(np.arange(8), m - se, m + se, color=COND_COL[k], alpha=0.18, lw=0)}
+                eta = d.eta2.median() if len(d) else np.nan
+                ex, ha = (0.04, "left") if feat == "speed" else (0.5, "center")
+                arts.add(ax.text(ex, 0.95 - 0.11 * k - (0.26 if (feat == "speed" and col == 0) else 0),
+                                 f"η² = {eta:.2f}", transform=ax.transAxes, ha=ha, va="top", fontsize=5.8,
+                                 color=COND_COL[k]))
+                arts |= set(axb.bar([k], [d_all.tuned.mean()], color=COND_COL[k], width=0.7).patches)
+                by_cond[k] |= arts
+            ax.axhline(1, color=MUTED, lw=0.6, ls=(0, (3, 2)))
+            ax.set_xticks([0, 7], [lab[0], lab[7]])
+            ax.set_xlabel(name, labelpad=1, fontsize=6.5)
+            ax.tick_params(labelsize=6.3)
+            ax.set_title(f"{drug[:4]}. cohort, {spn}", loc="left", fontsize=7.5)
+            ax.yaxis.grid(True, color=GRID, lw=0.5)
+            ax.set_axisbelow(True)
+            axb.set_xticks([])
+            axb.set_xlim(-0.6, NC - 0.4)
+            axb.set_ylim(0, 0.75)
+            axb.set_yticks([0, 0.25, 0.5, 0.75], ["0", "25%", "50%", "75%"])
+            axb.tick_params(labelsize=6.3)
+            axb.yaxis.grid(True, color=GRID, lw=0.5)
+            axb.set_axisbelow(True)
+            for a_ in (ax, axb):
+                for sp in ("top", "right"):
+                    a_.spines[sp].set_visible(False)
+            if col == 0:
+                ax.set_ylabel("rate / mean rate", fontsize=7)
+                axb.set_ylabel("cells tuned", fontsize=7)
+                if feat == "speed":
+                    ax.text(0.04, 0.97, "η²: share of a cell's rate\nvariance explained by the\nspeed bins (median, tuned)",
+                            transform=ax.transAxes, ha="left", va="top", fontsize=5.4, color=INK2,
+                            linespacing=1.1)
+    hs = [plt.Line2D([], [], color=COND_COL[k], lw=1.4, marker="o", ms=3) for k in range(NC)]
+    legs = [fig.legend(hs[:k + 1], COND_SHORT[:k + 1], loc="upper center", ncol=NC, frameon=False,
+                       bbox_to_anchor=(0.54, 1.0), columnspacing=1.4, fontsize=7) for k in range(NC)]
+    steps, vis = [], set()
+    for k in range(NC):
+        vis = (vis - set(legs)) | by_cond[k] | {legs[k]}
+        steps.append(set(vis))
+    save_steps(fig, steps, f"tuning_{feat}")
+    plt.close(fig)
