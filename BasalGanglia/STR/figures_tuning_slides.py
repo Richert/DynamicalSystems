@@ -138,7 +138,7 @@ def tuning_curves(features=("speed", "turn")):
             centres = (e[:-1] + e[1:]) / 2
             for g, spn in enumerate(("D1", "D2")):
                 ax = axes[i, 2 * j + g]
-                ins = ax.inset_axes([0.14, 0.5, 0.28, 0.42] if feat == "speed" else
+                ins = ax.inset_axes([0.22, 0.5, 0.28, 0.42] if feat == "speed" else
                                     [0.37, 0.5, 0.28, 0.42])      # share of tuned cells per condition
                 ins.set_xlim(-0.6, 3.6)
                 ins.set_ylim(0, 0.75)
