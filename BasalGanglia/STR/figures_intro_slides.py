@@ -144,34 +144,37 @@ def intro_circuit():
 # ---------------------------------------------------------------------------
 
 def mini_circuit(ax, title, da, d1, d2, out, thal, da_text, effect, color):
-    """Simplified loop; activity levels in [-1, 1] (0: normal) set fill and line width."""
+    """Simplified loop; activity changes in [-1, 1] (0: normal) shown by arrow widths and up / down
+    arrows next to the boxes (box fills are not scaled)."""
     blank(ax)
-    shade = lambda c, a: tuple(1 - (1 - np.array(matplotlib.colors.to_rgb(c))) * (0.18 + 0.32 * (a + 1)))
     lw = lambda a: 1.3 * (1 + 0.9 * a)
-    P = dict(da=(0.82, 0.8), d1=(0.28, 0.62), d2=(0.66, 0.62), ind=(0.66, 0.38), gpi=(0.28, 0.38),
-             thal=(0.28, 0.14))
-    node(ax, P["da"], "dopamine", DAC, w=0.24, fill=shade(DAC, da), bold=True)
-    node(ax, P["d1"], "D1 SPN", D1C, w=0.2, fill=shade(D1C, d1), bold=True)
-    node(ax, P["d2"], "D2 SPN", D2C, w=0.2, fill=shade(D2C, d2), bold=True)
-    node(ax, P["ind"], "GPe → STN", INK2, w=0.22, fs=6.8)
-    node(ax, P["gpi"], "GPi / SNr", INK2, w=0.22, fill=shade("#7a7974", out), fs=7)
-    node(ax, P["thal"], "thalamus → cortex", INK2, w=0.34, fill=shade("#7a7974", thal), fs=7)
-    arrow(ax, P["da"], P["d1"], "mod", color=DAC, ls="--", lw=lw(da), rad=0.25)
-    arrow(ax, P["da"], P["d2"], "mod", color=DAC, ls="--", lw=lw(da))
-    arrow(ax, P["d1"], P["gpi"], "inh", lw=lw(d1))
-    arrow(ax, P["d2"], P["ind"], "inh", lw=lw(d2))
-    arrow(ax, P["ind"], P["gpi"], "exc", lw=lw(d2))
-    arrow(ax, P["gpi"], P["thal"], "inh", lw=lw(out))
+    spec = dict(da=((0.82, 0.7), 0.24, 0.075), d1=((0.28, 0.55), 0.2, 0.075), d2=((0.66, 0.55), 0.2, 0.075),
+                ind=((0.66, 0.33), 0.22, 0.075), gpi=((0.28, 0.33), 0.22, 0.075),
+                thal=((0.28, 0.11), 0.34, 0.075))
+    boxes = {k: (c, (w / 2 + 0.008, h / 2 + 0.008)) for k, (c, w, h) in spec.items()}
+    labels = dict(da=("dopamine", DAC, dict(bold=True)), d1=("D1 SPN", D1C, dict(bold=True)),
+                  d2=("D2 SPN", D2C, dict(bold=True)), ind=("GPe → STN", INK2, dict(fs=6.8)),
+                  gpi=("GPi / SNr", INK2, dict(fs=7)), thal=("thalamus → cortex", INK2, dict(fs=7)))
+    for k, (c, w, h) in spec.items():
+        t, col, kw = labels[k]
+        node(ax, c, t, col, w=w, h=h, **kw)
+    # dopamine -> D1: from the box's left edge, curving onto the top of D1
+    (cx, cy), (hx, hy) = boxes["da"]
+    arrow(ax, (cx - hx - 0.02, cy), (boxes["d1"][0][0] + 0.03, boxes["d1"][0][1] + boxes["d1"][1][1] + 0.025),
+          "mod", color=DAC, ls="--", lw=lw(da), rad=0.25, shrink=0)
+    link(ax, boxes, "da", "d2", "mod", color=DAC, ls="--", lw=lw(da))
+    link(ax, boxes, "d1", "gpi", "inh", lw=lw(d1))
+    link(ax, boxes, "d2", "ind", "inh", lw=lw(d2))
+    link(ax, boxes, "ind", "gpi", "exc", lw=lw(d2))
+    link(ax, boxes, "gpi", "thal", "inh", lw=lw(out))
     for key, a in (("da", da), ("d1", d1), ("d2", d2), ("gpi", out), ("thal", thal)):
         if a:
-            x, y = P[key]
-            w = {"da": 0.24, "thal": 0.34, "gpi": 0.22}.get(key, 0.2)
-            ax.text(x + w / 2 + 0.015, y + (0.04 if key == "gpi" else 0), "↑" if a > 0 else "↓",
-                    fontsize=12, va="center",
-                    color=INK, fontweight="bold")
+            (x, y), (hx, _) = boxes[key]
+            ax.text(x + hx + 0.015, y + (0.04 if key == "gpi" else 0), "↑" if a > 0 else "↓",
+                    fontsize=12, va="center", color=INK, fontweight="bold")
     ax.text(0.0, 1.0, title, fontsize=10, fontweight="bold", color=color, va="top")
     ax.text(0.98, 0.93, da_text, fontsize=6.5, color=INK2, ha="right", va="top")
-    ax.text(0.62, 0.17, effect, fontsize=7, color=color, va="center", ha="left", linespacing=1.3)
+    ax.text(0.62, 0.13, effect, fontsize=7, color=color, va="center", ha="left", linespacing=1.3)
 
 def intro_disease():
     fig, axes = plt.subplots(1, 2, figsize=(6.0, 2.55))
