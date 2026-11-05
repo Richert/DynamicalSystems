@@ -291,3 +291,71 @@ if __name__ == "__main__":
         main_columns(*(float(a) for a in sys.argv[1:3] if a != "--columns"))
     else:
         main(*(float(a) for a in sys.argv[1:3]))
+
+
+def title_banner(t_frame_s=24.0, win_s=40.0, n_traces=6,
+                 out="/home/rgast/OneDrive/presentations/parker/logos/title_banner.png"):
+    """Title-slide banner (~5:1): video frame with the keypoint skeleton | correlation image with the
+    extracted cells | denoised traces and inferred spikes of a few cells (same session and window as
+    the videos)."""
+    from matplotlib.collections import PolyCollection
+    t0 = win0
+    n = int(win_s * fps)
+    r = R.Recording(R.rec)
+    kp, centre, sc, off, ix = F.keypoints(pose_session)
+    px = kp / sc
+    from build_spn_dataset import video_offset
+    tp = t0 + video_offset - off
+    i = int(t_frame_s * fps)
+    img = F.video_frame(pose_session, off + tp + i)
+    fig = plt.figure(figsize=(7.5, 1.5), dpi=300)
+    # behaviour
+    axv = fig.add_axes([0.0, 0.0, 0.2, 1.0])
+    axv.imshow(img, cmap="gray", vmin=0, vmax=255, interpolation="bilinear")
+    c = centre / sc
+    H, W = img.shape
+    half = 0.5 * H
+    x0 = int(np.clip(c[0] - half, 0, W - 2 * half))
+    axv.set_xlim(x0, x0 + 2 * half)
+    axv.set_ylim(H, 0)
+    p = px[tp + i]
+    for a, b in F.EDGES:
+        axv.plot(*np.c_[p[ix[a]], p[ix[b]]], color="#f4f3ee", lw=1.2, solid_capstyle="round")
+    axv.scatter(p[:, 0], p[:, 1], s=7, color=R.ACCENT, edgecolor=INK, lw=0.3, zorder=4)
+    axv.axis("off")
+    # imaging
+    axc = fig.add_axes([0.205, 0.0, 0.2, 1.0])
+    axc.imshow(r.cn, cmap=R.FLUO, vmin=np.percentile(r.cn, 1), vmax=1, interpolation="bilinear")
+    polys = cell_polygons(r)
+    from scipy.signal import find_peaks
+    Cn = r.C[:, t0:t0 + n] / r.sn[:, None]
+    npk, amp = np.zeros(len(Cn)), np.zeros(len(Cn))
+    for k in range(len(Cn)):                       # cells with several clear transients of similar size
+        pk, pr = find_peaks(Cn[k], prominence=6, distance=int(1.5 * fps))
+        npk[k] = len(pk)
+        amp[k] = np.median(pr["prominences"]) if len(pk) else 0
+    cand = np.flatnonzero((npk >= 3) & (npk <= 8))
+    pick = list(cand[np.argsort(-amp[cand])][:n_traces])
+    cols = plt.get_cmap("plasma")(np.linspace(0.15, 0.85, n_traces))
+    axc.add_collection(PolyCollection(polys, facecolors="none", edgecolors=[(1, 1, 1, 0.35)], linewidths=0.3))
+    axc.add_collection(PolyCollection([polys[k] for k in pick], facecolors=[(*c_[:3], 0.55) for c_ in cols],
+                                      edgecolors=cols, linewidths=0.8))
+    axc.set_xlim(0, r.dims[1])
+    axc.set_ylim(r.dims[0], 0)
+    axc.axis("off")
+    # traces
+    axt = fig.add_axes([0.43, 0.04, 0.565, 0.92])
+    t = np.arange(n) / fps
+    for j, (k, c_) in enumerate(zip(pick, cols)):
+        y = r.C[k, t0:t0 + n]
+        y = np.clip(y / max(np.percentile(y, 99.5), 1e-9), 0, 1.15)
+        off_y = -1.15 * j
+        axt.plot(t, off_y + y, color=c_, lw=0.9)
+        ts = t[r.events[k, t0:t0 + n]]
+        axt.plot(ts, np.full(len(ts), off_y - 0.12), "|", color=c_, ms=3, mew=0.9)
+    axt.set_xlim(0, t[-1])
+    axt.axis("off")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    fig.savefig(out, dpi=300, facecolor="white")
+    plt.close(fig)
+    print(f"saved {out}")
