@@ -328,3 +328,113 @@ def summary_findings():
     fig.savefig(f"{out_dir}/summary_findings.png", dpi=200)
     plt.close(fig)
     print(f"saved {out_dir}/summary_findings.pdf/.png")
+
+def summary_outlook():
+    """Second summary / outlook: SD of SPN rates per condition, the dopamine rate-distribution
+    hypothesis (cartoon), evidence from our data, next steps."""
+    from scipy.stats import norm as gauss
+    fig = plt.figure(figsize=(6.15, 2.85))
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 0.465)
+    ax.axis("off")
+    for x, t in ((0.15, "rate spread"), (0.5, "hypothesis"), (0.85, "our data")):
+        ax.text(x, 0.445, t, ha="center", va="center", fontsize=8.5, fontweight="bold", color=INK)
+    # column 1: narrow vs wide distribution + SD of log rates relative to Control
+    a1 = fig.add_axes([0.04, 0.5, 0.25, 0.33])
+    xr = np.linspace(-3, 3, 200)
+    a1.fill_between(xr, gauss.pdf(xr, 0, 0.6), color="#2a78d6", alpha=0.25, lw=0)
+    a1.plot(xr, gauss.pdf(xr, 0, 0.6), color="#2a78d6", lw=1.2)
+    a1.plot(xr, 0.6 / 0.95 * gauss.pdf(xr, 0, 0.95), color="#e34948", lw=1.2)
+    a1.text(0.0, 0.72, "Control", ha="center", fontsize=6, color="#2a78d6")
+    a1.text(1.5, 0.22, "drugs", ha="left", fontsize=6, color="#e34948")
+    a1.set_xlabel("log rate", fontsize=6, labelpad=1)
+    a1.set_xticks([])
+    a1.set_yticks([])
+    for sp in ("top", "right", "left"):
+        a1.spines[sp].set_visible(False)
+    a2 = fig.add_axes([0.075, 0.2, 0.215, 0.21])
+    cond = ["Amph.", "A + Cloz.", "A + Halo."]
+    d1, d2 = [1.09, 1.29, 1.40], [1.19, 1.40, 1.40]
+    xx = np.arange(3)
+    a2.bar(xx - 0.18, np.array(d1) - 1, 0.34, bottom=1, color=D1C, label="D1")
+    a2.bar(xx + 0.18, np.array(d2) - 1, 0.34, bottom=1, color=D2C, label="D2")
+    a2.axhline(1, color=MUTED, lw=0.6, ls=(0, (2, 1.5)))
+    a2.set_ylim(0.95, 1.5)
+    a2.set_yticks([1, 1.2, 1.4], ["Ctrl", "+20%", "+40%"])
+    a2.set_xticks(xx, cond, fontsize=5.6, rotation=25, ha="right")
+    a2.tick_params(axis="y", labelsize=5.6, length=2)
+    a2.tick_params(axis="x", length=0)
+    a2.set_title("SD of log rate", fontsize=6.3, loc="left", pad=2)
+    a2.legend(frameon=False, fontsize=5.5, loc="upper left", handlelength=0.8, borderaxespad=0)
+    for sp in ("top", "right"):
+        a2.spines[sp].set_visible(False)
+    # column 2: hypothesis cartoons
+    for k, (title, m1, m2, sd) in enumerate((("low dopamine / rest", -0.9, 0.9, 0.42),
+                                              ("high dopamine", 0.35, -0.35, 0.85))):
+        ah = fig.add_axes([0.365, 0.55 - 0.43 * k, 0.27, 0.28])
+        p1, p2 = gauss.pdf(xr, m1, sd), gauss.pdf(xr, m2, sd)
+        ah.fill_between(xr, (p1 + p2) / 2, color="#cfcdc4", alpha=0.7, lw=0)        # combined
+        ah.plot(xr, p1 / 2, color=D1C, lw=1.4)
+        ah.plot(xr, p2 / 2, color=D2C, lw=1.4)
+        ah.set_xticks([])
+        ah.set_yticks([])
+        ah.set_ylim(0, 0.55)
+        for sp in ("top", "right", "left"):
+            ah.spines[sp].set_visible(False)
+        ah.set_title(title, fontsize=6.8, loc="left", pad=1, color=INK)
+        ah.set_xlabel("log rate", fontsize=5.8, labelpad=1)
+        if k == 0:
+            ah.text(m1, 0.5, "D1", color=D1C, fontsize=6.5, ha="center", fontweight="bold")
+            ah.text(m2, 0.5, "D2", color=D2C, fontsize=6.5, ha="center", fontweight="bold")
+            ah.text(3.0, 0.3, "combined:\nbimodal", fontsize=5.6, color=INK2, ha="right")
+        else:
+            ah.annotate("", xy=(m1 + 0.7, 0.3), xytext=(m1 - 0.1, 0.3),
+                        arrowprops=dict(arrowstyle="-|>", color=D1C, lw=1.0, mutation_scale=6))
+            ah.annotate("", xy=(m2 - 0.7, 0.36), xytext=(m2 + 0.1, 0.36),
+                        arrowprops=dict(arrowstyle="-|>", color=D2C, lw=1.0, mutation_scale=6))
+            ah.text(3.0, 0.43, "combined:\nbroad, unimodal", fontsize=5.6, color=INK2, ha="right")
+    ax.annotate("", xy=(0.56, 0.222), xytext=(0.56, 0.252), arrowprops=dict(arrowstyle="-|>", color=INK2, lw=1.0,
+                                                                         mutation_scale=7))
+    # column 3: evidence
+    def check(x, y, good):
+        if good:
+            ax.plot([x - 0.011, x - 0.003, x + 0.012], [y, y - 0.012, y + 0.014], color="#1f8a70", lw=2.2,
+                    solid_capstyle="round", solid_joinstyle="round")
+        else:
+            for sgn in (1, -1):
+                ax.plot([x - 0.01, x + 0.01], [y - 0.012 * sgn, y + 0.012 * sgn], color="#c4372f", lw=2.2,
+                        solid_capstyle="round")
+    items = [(True, "both distributions widen\n(all drug conditions)"), (True, "Amph.: D1 ↑, D2 ↓\n(session-wide)"),
+             (False, "D2 > D1 at baseline"), (False, "bimodal at baseline")]
+    for i, (good, t) in enumerate(items):
+        y = 0.385 - i * 0.07
+        check(0.71, y, good)
+        ax.text(0.735, y, t, fontsize=6.3, va="center", color=INK, linespacing=1.1)
+    ax.text(0.7, 0.095, "D1 / D2 SPNs recorded in different mice;\nAmph. D1 ↑ is behaviour-mediated", fontsize=5.6,
+            color=MUTED, va="center", linespacing=1.15)
+    # bottom row: next steps
+    ax.add_patch(FancyBboxPatch((0.005, 0.005), 0.99, 0.04, boxstyle="round,pad=0,rounding_size=0.008",
+                                fc="#f6f5f0", ec="none", zorder=0))
+    steps = ["next: other dopamine drugs in the data set", "network model: tuned SPNs + DA-set excitability",
+             "context-specific striatal function"]
+    xs = [0.02, 0.385, 0.765]
+    for i, (x, t) in enumerate(zip(xs, steps)):
+        ax.text(x, 0.025, t, fontsize=6.3, va="center", color="#2a5d9f" if i == 0 else INK,
+                fontweight="bold" if i == 0 else "normal")
+        if i < 2:
+            ax.annotate("", xy=(xs[i + 1] - 0.01, 0.025), xytext=(xs[i + 1] - 0.035, 0.025),
+                        arrowprops=dict(arrowstyle="-|>", color=INK2, lw=0.9, mutation_scale=6))
+    fig.savefig(f"{out_dir}/summary_outlook.pdf")
+    fig.savefig(f"{out_dir}/summary_outlook.png", dpi=200)
+    plt.close(fig)
+    print(f"saved {out_dir}/summary_outlook.pdf/.png")
+
+
+if __name__ == "__main__":
+    intro_circuit()
+    intro_disease()
+    intro_problem()
+    intro_mediation()
+    summary_findings()
+    summary_outlook()
