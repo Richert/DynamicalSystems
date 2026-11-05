@@ -191,7 +191,92 @@ def tuning_curves(features=("speed", "turn")):
     save_steps(fig, steps, "tuning_curves")
     plt.close(fig)
 
+bins_dir = os.environ.get("BINS_DIR", "/home/rgast/data/parker_data/spn_feature_bins")
+BIN_ORDER = {"speed": ["rest", "slow", "fast"], "turning": ["left", "straight", "right"]}
+BIN_LABEL = {"rest": "rest\n< 0.5 cm/s", "slow": "slow\n0.5-3 cm/s", "fast": "fast\n≥ 3 cm/s",
+             "left": "left turn\n> 30°/s", "straight": "straight\n≤ 30°/s", "right": "right turn\n> 30°/s"}
+
+def stars(p):
+    return "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else ""
+
+def bins_figure(feature):
+    """Mean rate and SD of log rate per bin of `feature`, per condition, D1 / D2, both cohorts."""
+    rd = pd.concat([pd.read_csv(f"{bins_dir}/readouts_{d.lower()}.csv") for d in drugs], ignore_index=True)
+    st = pd.read_csv(f"{bins_dir}/stats.csv")
+    rd, st = rd[rd.feature == feature], st[st.feature == feature]
+    bins = BIN_ORDER[feature]
+    fig, axes = plt.subplots(2, 6, figsize=(6.6, 2.85), sharey="row")
+    fig.subplots_adjust(left=0.085, right=0.995, top=0.73, bottom=0.08, wspace=0.1, hspace=0.32)
+    dx, gap = 0.75, 0.45
+    xpos = lambda g, k: g * (4 * dx + gap) + k * dx
+    by_cond = [set() for _ in range(4)]
+    rows = [("mean_log_rate", "mean rate (Hz)"), ("sd_log_rate", "SD of log$_{10}$ rate")]
+    for r_, (col, ylab) in enumerate(rows):
+        lo, hi = rd[col].min(), rd[col].max()
+        for j, drug in enumerate(drugs):
+            conds = conditions(drug)
+            for b, bn in enumerate(bins):
+                ax = axes[r_, 3 * j + b]
+                for g, spn in enumerate(("D1", "D2")):
+                    p = rd[(rd.drug == drug) & (rd.bin == bn) & (rd.spn == spn)].pivot_table(
+                        index="mouse", columns="condition", values=col).reindex(columns=conds)
+                    xs = [xpos(g, k) for k in range(4)]
+                    for k, cond in enumerate(conds):
+                        v = p[cond].dropna().values
+                        if not len(v):
+                            continue
+                        a1 = ax.scatter(np.full(len(v), xs[k]), v, s=4, color=COND_COL[k], alpha=0.45, lw=0)
+                        m, se = v.mean(), v.std(ddof=1) / np.sqrt(len(v)) if len(v) > 1 else 0
+                        a2 = ax.errorbar(xs[k], m, se, color=COND_COL[k], lw=1.1)
+                        a3 = ax.scatter([xs[k]], [m], s=16, color=COND_COL[k], edgecolor="white", lw=0.6, zorder=3)
+                        arts = {a1, a3, *a2.lines[0:1], *a2.lines[2]}
+                        s_ = st[(st.drug == drug) & (st.bin == bn) & (st.spn == spn) & (st.readout == col)]
+                        if k > 0:
+                            q = s_[s_.contrast == ["", "Amph - Control", "drug - Control", "A+drug - Control"][k]]
+                            if len(q) and stars(q.p_fdr.iloc[0]):
+                                arts.add(ax.text(xs[k], hi + 0.04 * (hi - lo), stars(q.p_fdr.iloc[0]), ha="center",
+                                                 fontsize=4.8, color=INK, va="bottom"))
+                        if k == 3:
+                            q = s_[s_.contrast == "A+drug - Amph"]
+                            if len(q) and q.p_fdr.iloc[0] < 0.05:
+                                n_ = len(stars(q.p_fdr.iloc[0]))
+                                arts.add(ax.text(xs[k], hi + 0.2 * (hi - lo), "#" * n_, ha="center", fontsize=4.8,
+                                                 color=COND_COL[3], va="bottom"))
+                        by_cond[k] |= arts
+                ax.set_xticks([xpos(0, 1.5), xpos(1, 1.5)], ["D1", "D2"] if r_ == 1 else ["", ""], fontsize=6.5)
+                ax.tick_params(axis="x", length=0)
+                ax.set_xlim(-0.4, xpos(1, 3) + 0.4)
+                ax.set_ylim(lo - 0.05 * (hi - lo), hi + 0.36 * (hi - lo))
+                ax.yaxis.grid(True, color=GRID, lw=0.5)
+                ax.set_axisbelow(True)
+                for sp in ("top", "right"):
+                    ax.spines[sp].set_visible(False)
+                if r_ == 0:
+                    ax.set_title(BIN_LABEL[bn], fontsize=6.5, loc="center")
+                if 3 * j + b == 0:
+                    ax.set_ylabel(ylab, fontsize=7)
+        if col == "mean_log_rate":
+            yt = [t for t in (0.02, 0.05, 0.1, 0.2) if lo - 0.05 <= np.log10(t) <= hi + 0.3]
+            axes[r_, 0].set_yticks(np.log10(yt), [f"{t:g}" for t in yt])
+    for j, drug in enumerate(drugs):
+        x0 = axes[0, 3 * j].get_position().x0
+        x1 = axes[0, 3 * j + 2].get_position().x1
+        fig.text((x0 + x1) / 2, 0.865, f"{drug} cohort", ha="center", fontsize=8, fontweight="bold", color=INK)
+    hs = [plt.Line2D([], [], color=COND_COL[k], marker="o", lw=1.1, ms=3.5) for k in range(4)]
+    legs = [fig.legend(hs[:k + 1], COND_SHORT[:k + 1], loc="upper center", ncol=4, frameon=False,
+                       bbox_to_anchor=(0.54, 1.0), fontsize=6.8, columnspacing=1.4, handlelength=1.2)
+            for k in range(4)]
+    fig.text(0.995, 0.965, "* vs Control   # Amph. + drug vs Amph.", ha="right", fontsize=5.8, color=INK2)
+    steps, vis = [], set()
+    for k in range(4):
+        vis = (vis - set(legs)) | by_cond[k] | {legs[k]}
+        steps.append(set(vis))
+    save_steps(fig, steps, f"bins_{feature}")
+    plt.close(fig)
+
 
 if __name__ == "__main__":
     tuning_matrix()
     tuning_curves()
+    for f in ("speed", "turning"):
+        bins_figure(f)
