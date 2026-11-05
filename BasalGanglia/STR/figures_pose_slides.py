@@ -44,8 +44,8 @@ def slide_features(states, sessions):
     F.LABELS_OUT = True
     fig = plt.figure(figsize=(6.15, 2.85))
     top = fig.add_gridspec(1, 8, wspace=0.0, width_ratios=[1.33, 0.52, 1, 0.52, 1, 0.52, 1, 0.6],
-                           left=0.005, right=0.995, top=0.93, bottom=0.55)
-    bottom = fig.add_gridspec(1, 1, left=0.125, right=0.995, top=0.47, bottom=0.12)
+                           left=0.005, right=0.995, top=0.93, bottom=0.575)
+    bottom = fig.add_gridspec(1, 1, left=0.155, right=0.995, top=0.535, bottom=0.115)
     titles = ["frame + keypoints", "body posture", "head posture", "movement (0.4 s)"]
     for i, fn in enumerate((F.panel_frame, F.panel_body, F.panel_head, F.panel_movement)):
         ax = fig.add_subplot(top[2 * i])
@@ -55,14 +55,20 @@ def slide_features(states, sessions):
             fn(ax, ex, title=None)
         ax.set_title(titles[i], loc="left", fontsize=7.5)
     F.LABELS_OUT = False
-    rows = [("speed", "speed\n(cm/s)", "torso"), ("turn", "turn\n(°/s)", "torso"),
-            ("head_angle", "head\nangle (°)", "head"), ("bend", "bend\n(°)", "bend"),
-            ("wall_dist", "wall\ndist. (cm)", "wall"), ("wall_ahead", "wall\nahead (cm)", "wall_ahead")]
+    rows = [("speed", "speed (cm/s)", "torso"), ("turn", "turn (°/s)", "torso"),
+            ("head_angle", "head angle (°)", "head"), ("bend", "bend (°)", "bend"),
+            ("wall_dist", "wall dist. (cm)", "wall"), ("wall_ahead", "wall ahead (cm)", "wall_ahead")]
     axes = F.panel_feature_series(fig, bottom[0], ex, rows=rows, window=60, marks=False,
-                                  title=None, label_size=5.8, hspace=0.35)
-    for ax in axes:
-        ax.yaxis.set_major_locator(plt.MaxNLocator(2, prune="lower"))
-        ax.tick_params(axis="y", labelsize=5.8)
+                                  title=None, label_size=6.3, hspace=0.3)
+    from matplotlib.ticker import MaxNLocator
+    for ax in axes:                                   # exactly two tick labels per trace
+        y = np.concatenate([l.get_ydata() for l in ax.get_lines() if len(l.get_ydata()) > 2])
+        lo, hi = np.nanmin(y), np.nanmax(y)
+        tol = 0.05 * (hi - lo)
+        tv = [v for v in MaxNLocator(3).tick_values(lo, hi) if lo - tol <= v <= hi + tol]
+        if len(tv) >= 2:
+            ax.set_yticks([tv[0], tv[-1]])
+        ax.tick_params(axis="y", labelsize=6)
     save(fig, "behavior_features")
 
 def state_matrix_axes(fig, ax, M, show, names, title, cmap, vmin, vmax, ylabels, xlabel=None,
