@@ -44,8 +44,8 @@ def node(ax, xy, text, color=INK2, w=0.15, h=0.075, fill=None, fs=7.5, bold=Fals
 def arrow(ax, a, b, kind="exc", lw=1.2, color=None, rad=0.0, shrink=14, ls="-", z=2):
     """kind exc: triangle head (glutamate); inh: bar head (GABA); mod: open head, dashed."""
     color = color or (EXC if kind == "exc" else INH if kind == "inh" else DAC)
-    style = {"exc": "-|>,head_length=4,head_width=2.4", "inh": "-[,widthB=3.0,lengthB=0",
-             "mod": "-|>,head_length=3.5,head_width=2.2"}[kind]
+    style = {"exc": "-|>,head_length=3.2,head_width=1.9", "inh": "-[,widthB=2.6,lengthB=0",
+             "mod": "-|>,head_length=2.8,head_width=1.8"}[kind]
     ax.add_patch(FancyArrowPatch(a, b, arrowstyle=style, color=color, lw=lw,
                                  connectionstyle=f"arc3,rad={rad}", shrinkA=shrink, shrinkB=shrink,
                                  linestyle=ls, zorder=z, mutation_scale=1.6 if kind != "inh" else 1.4))
@@ -55,9 +55,11 @@ def blank(ax):
     ax.set_ylim(0, 1)
     ax.axis("off")
 
-def legend_items(ax, x, y, dy=0.06):
+def legend_items(ax, x, y, dy=0.06, serotonin=False):
     items = [("exc", "excitatory (glutamate)", EXC), ("inh", "inhibitory (GABA)", INH),
              ("mod", "dopamine", DAC), ("mod", "acetylcholine", ACHC)]
+    if serotonin:
+        items.append(("mod", "serotonin", "#2a78d6"))
     for i, (k, t, c) in enumerate(items):
         yy = y - i * dy
         arrow(ax, (x, yy), (x + 0.06, yy), kind=k, color=c, shrink=0, lw=1.1,
@@ -66,53 +68,77 @@ def legend_items(ax, x, y, dy=0.06):
 
 # ---------------------------------------------------------------------------
 
+SERC = "#2a78d6"                                       # serotonin
+
+def edge_point(c, half, toward, gap):
+    """Point on the boundary of the box (centre c, half sizes half) in the direction of `toward`,
+    moved outwards by gap (axes units, scaled to the figure aspect)."""
+    c, t = np.asarray(c, float), np.asarray(toward, float)
+    d = t - c
+    if not np.any(d):
+        return c
+    s = min(half[0] / abs(d[0]) if d[0] else np.inf, half[1] / abs(d[1]) if d[1] else np.inf)
+    u = d / np.linalg.norm(d)
+    return c + s * d + gap * u
+
+def link(ax, boxes, a, b, kind, gap=0.022, **kw):
+    """Arrow between boxes a and b ending `gap` outside both boundaries (never touching)."""
+    (ca, ha), (cb, hb) = boxes[a], boxes[b]
+    pa, pb = edge_point(ca, ha, cb, gap), edge_point(cb, hb, ca, gap)
+    arrow(ax, pa, pb, kind, shrink=0, **kw)
+
 def intro_circuit():
     fig, ax = plt.subplots(figsize=(4.4, 3.3))
     fig.subplots_adjust(0, 0, 1, 1)
     blank(ax)
-    P = dict(ctx=(0.42, 0.93), d1=(0.24, 0.66), d2=(0.60, 0.66), chi=(0.42, 0.735), fsi=(0.42, 0.585),
-             snc=(0.9, 0.66), gpe=(0.60, 0.43), stn=(0.60, 0.23), gpi=(0.24, 0.33), thal=(0.24, 0.08))
-    # striatum
+    spec = dict(ctx=((0.42, 0.93), 0.18, 0.075), d1=((0.22, 0.66), 0.15, 0.075),
+                d2=((0.62, 0.66), 0.15, 0.075), chi=((0.42, 0.745), 0.08, 0.05),
+                fsi=((0.42, 0.575), 0.08, 0.05), snc=((0.9, 0.73), 0.12, 0.075),
+                drn=((0.9, 0.55), 0.12, 0.075), gpe=((0.60, 0.43), 0.12, 0.075),
+                stn=((0.60, 0.23), 0.12, 0.075), gpi=((0.24, 0.33), 0.16, 0.075),
+                thal=((0.24, 0.08), 0.16, 0.075))
+    pad = 0.008                                       # FancyBboxPatch pad
+    boxes = {k: (c, (w / 2 + pad, h / 2 + pad)) for k, (c, w, h) in spec.items()}
     ax.add_patch(FancyBboxPatch((0.11, 0.535), 0.62, 0.25, boxstyle="round,pad=0.01,rounding_size=0.03",
                                 fc="#f6f5f0", ec=GRID, lw=1.0, zorder=0))
-    ax.text(0.12, 0.765, "striatum", fontsize=7, color=MUTED, va="center")
-    node(ax, P["ctx"], "cortex", INK2, w=0.18)
-    node(ax, P["d1"], "D1 SPN", D1C, w=0.15, bold=True)
-    node(ax, P["d2"], "D2 SPN", D2C, w=0.15, bold=True)
-    node(ax, P["chi"], "ChI", ACHC, w=0.08, h=0.05, fs=6.5)
-    node(ax, P["fsi"], "FSI", FSIC, w=0.08, h=0.05, fs=6.5)
-    node(ax, P["snc"], "SNc", DAC, w=0.12, bold=True)
-    node(ax, P["gpe"], "GPe", INK2, w=0.12)
-    node(ax, P["stn"], "STN", INK2, w=0.12)
-    node(ax, P["gpi"], "GPi / SNr", INK2, w=0.16)
-    node(ax, P["thal"], "thalamus", INK2, w=0.16)
-    # projections
-    arrow(ax, P["ctx"], P["d1"], "exc", rad=0.1)
-    arrow(ax, P["ctx"], P["d2"], "exc", rad=-0.1)
-    arrow(ax, P["d1"], P["gpi"], "inh", lw=1.6, color=INH)
-    arrow(ax, P["d2"], P["gpe"], "inh", lw=1.6)
-    arrow(ax, P["gpe"], P["stn"], "inh")
-    arrow(ax, P["stn"], P["gpi"], "exc", shrink=30)
-    arrow(ax, P["gpi"], P["thal"], "inh")
-    ax.plot([0.16, 0.035, 0.035], [0.08, 0.08, 0.93], color=EXC, lw=1.2, zorder=2,
-            solid_capstyle="round")                     # thalamus -> cortex (outside the loop)
-    arrow(ax, (0.035, 0.93), (0.33, 0.93), "exc", shrink=0)
-    # dopamine
-    arrow(ax, P["snc"], P["d2"], "mod", color=DAC, ls="--", lw=1.2)
-    arrow(ax, P["snc"], P["d1"], "mod", color=DAC, ls="--", lw=1.2, rad=0.32)
-    ax.text(0.76, 0.69, "D2 (−)", fontsize=6.5, color=DAC, ha="center")
-    ax.text(0.62, 0.825, "D1 (+)", fontsize=6.5, color=DAC, ha="center")
-    # interneurons
-    arrow(ax, P["chi"], P["d1"], "mod", color=ACHC, ls="--", lw=0.9, shrink=8)
-    arrow(ax, P["chi"], P["d2"], "mod", color=ACHC, ls="--", lw=0.9, shrink=8)
-    arrow(ax, P["fsi"], P["d1"], "inh", lw=0.9, shrink=8)
-    arrow(ax, P["fsi"], P["d2"], "inh", lw=0.9, shrink=8)
-    # pathway labels
+    ax.text(0.12, 0.55, "striatum", fontsize=7, color=MUTED, va="center")
+    style = dict(ctx=("cortex", INK2, {}), d1=("D1 SPN", D1C, dict(bold=True)), d2=("D2 SPN", D2C, dict(bold=True)),
+                 chi=("ChI", ACHC, dict(fs=6.5)), fsi=("FSI", FSIC, dict(fs=6.5)), snc=("SNc", DAC, dict(bold=True)),
+                 drn=("DRN", SERC, dict(bold=True)), gpe=("GPe", INK2, {}), stn=("STN", INK2, {}),
+                 gpi=("GPi / SNr", INK2, {}), thal=("thalamus", INK2, {}))
+    for k, (c, w, h) in spec.items():
+        t, col, kw = style[k]
+        node(ax, c, t, col, w=w, h=h, **kw)
+    link(ax, boxes, "ctx", "d1", "exc")
+    link(ax, boxes, "ctx", "d2", "exc")
+    link(ax, boxes, "d1", "gpi", "inh", lw=1.6)
+    link(ax, boxes, "d2", "gpe", "inh", lw=1.6)
+    link(ax, boxes, "gpe", "stn", "inh")
+    link(ax, boxes, "stn", "gpi", "exc")
+    link(ax, boxes, "gpi", "thal", "inh")
+    tl = boxes["thal"][0][0] - boxes["thal"][1][0] - 0.02           # thalamus -> cortex, around the loop
+    ax.plot([tl, 0.035, 0.035], [0.08, 0.08, 0.93], color=EXC, lw=1.2, zorder=2, solid_capstyle="round")
+    arrow(ax, (0.035, 0.93), (boxes["ctx"][0][0] - boxes["ctx"][1][0] - 0.022, 0.93), "exc", shrink=0)
+    # neuromodulators
+    link(ax, boxes, "snc", "d2", "mod", color=DAC, ls="--", lw=1.2)
+    # SNc -> D1: up, along the top of the striatum box (below the cortex box), down onto D1
+    sx, sy = 0.9, boxes["snc"][0][1] + boxes["snc"][1][1] + 0.022
+    yr = 0.835
+    ax.plot([sx, sx, 0.165], [sy, yr, yr], color=DAC, lw=1.2, ls=(0, (4, 2)), zorder=1)
+    arrow(ax, (0.165, yr), (0.165, boxes["d1"][0][1] + boxes["d1"][1][1] + 0.022), "mod", color=DAC,
+          ls="--", lw=1.2, shrink=0)
+    ax.text(0.79, 0.735, "D2 (−)", fontsize=6.3, color=DAC, ha="center", va="bottom")
+    ax.text(0.2, yr + 0.012, "D1 (+)", fontsize=6.3, color=DAC, ha="left", va="bottom")
+    link(ax, boxes, "drn", "d2", "mod", color=SERC, ls="--", lw=1.2)
+    ax.text(0.79, 0.565, "5-HT", fontsize=6.3, color=SERC, ha="center", va="top")
+    for k in ("d1", "d2"):
+        link(ax, boxes, "chi", k, "mod", color=ACHC, ls="--", lw=0.9, gap=0.015)
+        link(ax, boxes, "fsi", k, "inh", lw=0.9, gap=0.015)
     ax.text(0.115, 0.47, "direct\npathway\n\"go\"", fontsize=7, color=D1C, ha="center", va="center",
             fontweight="bold")
-    ax.text(0.77, 0.33, "indirect\npathway\n\"no-go\"", fontsize=7, color=D2C, ha="center", va="center",
+    ax.text(0.8, 0.43, "indirect\npathway\n\"no-go\"", fontsize=7, color=D2C, ha="center", va="center",
             fontweight="bold")
-    legend_items(ax, 0.7, 0.2)
+    legend_items(ax, 0.69, 0.27, dy=0.055, serotonin=True)
     save(fig, "intro_circuit")
 
 # ---------------------------------------------------------------------------
