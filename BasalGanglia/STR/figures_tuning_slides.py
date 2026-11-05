@@ -274,9 +274,73 @@ def bins_figure(feature):
     save_steps(fig, steps, f"bins_{feature}")
     plt.close(fig)
 
+BEH_FEATURES = [("speed", "speed (cm/s)"), ("turn", "turning (°/s)"), ("head_angle", "head angle (°)"),
+                ("bend", "bend (°)"), ("wall_dist", "wall distance (cm)"), ("wall_ahead", "wall ahead (cm)")]
+
+def behaviour_distributions(step=4):
+    """Distributions of behaviour features (all imaging-aligned frames of the recordings) per drug
+    condition, one row per cohort; speed on log10(x + 0.5), turning on arcsinh(x / 5) axes."""
+    import h5py
+    tf = {"speed": (lambda x: np.log10(x + 0.5)), "turn": (lambda x: np.arcsinh(x / 5.0))}
+    fig, axes = plt.subplots(2, len(BEH_FEATURES), figsize=(6.6, 2.85))
+    fig.subplots_adjust(left=0.07, right=0.995, top=0.82, bottom=0.14, wspace=0.18, hspace=0.62)
+    by_cond = [set() for _ in range(4)]
+    for i, drug in enumerate(drugs):
+        conds = conditions(drug)
+        vals = {(c, f): [] for c in conds for f, _ in BEH_FEATURES}
+        with h5py.File(f"/home/rgast/data/parker_data/dataset/{drug.lower()}_spn.h5", "r") as h:
+            for d in h:
+                for rec in ("rec0", "rec1"):
+                    r = h[d][rec]
+                    c = r.attrs["condition"]
+                    if c not in conds or not r["behaviour"].attrs.get("available", False):
+                        continue
+                    for f, _ in BEH_FEATURES:
+                        v = r["behaviour"][f][::step]
+                        vals[(c, f)].append(v[np.isfinite(v)])
+        for j, (f, lab) in enumerate(BEH_FEATURES):
+            ax = axes[i, j]
+            allv = np.concatenate([np.concatenate(vals[(c, f)]) for c in conds])
+            t = tf.get(f, lambda x: x)
+            lo, hi = np.percentile(t(allv), [0.5, 99.5])
+            bins = np.linspace(lo, hi, 36)
+            for k, c in enumerate(conds):
+                v = t(np.concatenate(vals[(c, f)]))
+                hgt, _ = np.histogram(np.clip(v, lo, hi), bins=bins)
+                by_cond[k].add(ax.stairs(hgt / hgt.sum(), bins, color=COND_COL[k], lw=1.2))
+            if f == "speed":
+                tk = [0, 1, 10]
+                ax.set_xticks(np.log10(np.array(tk) + 0.5), [str(v) for v in tk])
+            elif f == "turn":
+                tk = [-200, 0, 200]
+                ax.set_xticks(np.arcsinh(np.array(tk) / 5.0), [str(v) for v in tk])
+            else:
+                ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+            if f in ("speed", "turn"):                       # resting peak vs tails: log density
+                ax.set_yscale("log")
+                ax.set_ylim(3e-4, 1)
+                ax.minorticks_off()
+            ax.set_yticks([])
+            ax.set_xlabel(lab + (", log density" if f in ("speed", "turn") else ""), fontsize=6.3, labelpad=1)
+            ax.tick_params(axis="x", labelsize=6)
+            for sp in ("top", "right", "left"):
+                ax.spines[sp].set_visible(False)
+            if j == 0:
+                ax.set_ylabel(f"{drug}\ncohort", fontsize=7)
+    hs = [plt.Line2D([], [], color=COND_COL[k], lw=1.4) for k in range(4)]
+    legs = [fig.legend(hs[:k + 1], COND_SHORT[:k + 1], loc="upper center", ncol=4, frameon=False,
+                       bbox_to_anchor=(0.53, 1.0), fontsize=7, columnspacing=1.4) for k in range(4)]
+    steps, vis = [], set()
+    for k in range(4):
+        vis = (vis - set(legs)) | by_cond[k] | {legs[k]}
+        steps.append(set(vis))
+    save_steps(fig, steps, "behaviour_distributions")
+    plt.close(fig)
+
 
 if __name__ == "__main__":
     tuning_matrix()
     tuning_curves()
     for f in ("speed", "turning"):
         bins_figure(f)
+    behaviour_distributions()
