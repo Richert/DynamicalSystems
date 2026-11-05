@@ -347,3 +347,67 @@ if __name__ == "__main__":
     for f in ("speed", "turning"):
         bins_figure(f)
     behaviour_distributions()
+
+
+def bins_lines(feature):
+    """Rate statistics over the bins of `feature` as line graphs (as Yun et al. 2023, Fig. 1c): rows
+    D1 / D2; columns mean rate (clozapine, haloperidol cohort) and SD of the log rate (same);
+    one line per condition (mean +- SEM over mice); stars: vs Control (mixed models, FDR)."""
+    rd = pd.concat([pd.read_csv(f"{bins_dir}/readouts_{d.lower()}.csv") for d in drugs], ignore_index=True)
+    st = pd.read_csv(f"{bins_dir}/stats.csv")
+    rd, st = rd[rd.feature == feature], st[st.feature == feature]
+    bins = BIN_ORDER[feature]
+    cols = [("mean_log_rate", d) for d in drugs] + [("sd_log_rate", d) for d in drugs]
+    fig, axes = plt.subplots(2, 4, figsize=(6.6, 2.85))
+    fig.subplots_adjust(left=0.085, right=0.995, top=0.8, bottom=0.09, wspace=0.42, hspace=0.42)
+    by_cond = [set() for _ in range(NC)]
+    off = (np.arange(NC) - (NC - 1) / 2) * 0.07
+    for r_, spn in enumerate(("D1", "D2")):
+        for j, (col, drug) in enumerate(cols):
+            ax = axes[r_, j]
+            conds = conditions(drug)
+            d0 = rd[(rd.drug == drug) & (rd.spn == spn)]
+            lo, hi = rd[rd.spn == spn][col].min(), rd[rd.spn == spn][col].max()
+            for k, cond in enumerate(conds):
+                p = d0[d0.condition == cond].pivot_table(index="mouse", columns="bin", values=col).reindex(columns=bins)
+                m = p.mean().values
+                se = (p.std() / np.sqrt(p.count())).values
+                x = np.arange(len(bins)) + off[k]
+                l, = ax.plot(x, m, color=COND_COL[k], lw=1.4, marker="o", ms=3.2, zorder=3)
+                e = ax.errorbar(x, m, se, color=COND_COL[k], lw=1.0, ls="none", capsize=0, zorder=2)
+                arts = {l, *e.lines[2]}
+                if k > 0:
+                    s_ = st[(st.drug == drug) & (st.spn == spn) & (st.readout == col) & (st.contrast == CONTRAST[k])]
+                    for b_, bn in enumerate(bins):
+                        q = s_[s_.bin == bn]
+                        if len(q) and stars(q.p_fdr.iloc[0]) and np.isfinite(m[b_]):
+                            arts.add(ax.text(b_, hi + (0.08 + 0.13 * (k - 1)) * (hi - lo), stars(q.p_fdr.iloc[0]),
+                                             ha="center", va="bottom", fontsize=6, color=COND_COL[k],
+                                             zorder=4))
+                by_cond[k] |= arts
+            ax.set_xticks(range(len(bins)), bins, fontsize=6.5)
+            ax.set_xlim(-0.35, len(bins) - 0.65)
+            ax.set_ylim(lo - 0.04 * (hi - lo), hi + 0.36 * (hi - lo))
+            if col == "mean_log_rate":
+                yt = [t for t in (0.02, 0.05, 0.1, 0.2) if lo <= np.log10(t) <= hi]
+                ax.set_yticks(np.log10(yt), [f"{t:g}" for t in yt])
+            ax.tick_params(axis="y", labelsize=6.3)
+            ax.yaxis.grid(True, color=GRID, lw=0.5)
+            ax.set_axisbelow(True)
+            for sp in ("top", "right"):
+                ax.spines[sp].set_visible(False)
+            if r_ == 0:
+                ax.set_title(f"{'mean rate (Hz)' if col == 'mean_log_rate' else 'SD of log$_{10}$ rate'}\n"
+                             f"{drug} cohort", fontsize=7, loc="left")
+            if j == 0:
+                ax.set_ylabel(f"{spn} SPNs", fontsize=8, fontweight="bold")
+    hs = [plt.Line2D([], [], color=COND_COL[k], marker="o", lw=1.4, ms=3.5) for k in range(NC)]
+    legs = [fig.legend(hs[:k + 1], COND_SHORT[:k + 1], loc="upper center", ncol=NC, frameon=False,
+                       bbox_to_anchor=(0.5, 1.0), fontsize=7, columnspacing=1.4) for k in range(NC)]
+    fig.text(0.995, 0.975, "* vs Control", ha="right", fontsize=6, color=INK2)
+    steps, vis = [], set()
+    for k in range(NC):
+        vis = (vis - set(legs)) | by_cond[k] | {legs[k]}
+        steps.append(set(vis))
+    save_steps(fig, steps, f"bins_lines_{feature}")
+    plt.close(fig)
