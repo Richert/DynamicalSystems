@@ -301,56 +301,108 @@ def draw_mouse(ax, x, y, s=1.0, mode="walk", color="#6b6a66"):
                     color=INK2, lw=0.8)
 
 def summary_findings():
-    """Cartoon summary: per condition the behaviour, the share of speed-tuned SPNs (D1, D2) with a
-    mini tuning curve, the session-wide SPN rate and the SPN rate while moving (matched speed), both
-    relative to Control."""
-    rows = [("Control", "#2a78d6", "walk", (0.56, 0.61), (1.0, 1.0), (1.0, 1.0), "tuned"),
-            ("Amph.", "#eda100", "run", (0.09, 0.03), (1.35, 0.88), (0.66, 0.48), "flat"),
-            ("Amph. +\nclozapine", "#e34948", "walk", (0.22, 0.04), (0.81, 0.65), (0.75, 0.49), "D1"),
-            ("Amph. +\nhaloperidol", "#b5382f", "rest", (0.37, 0.24), (0.44, 0.44), (0.92, 0.81), "partial")]
+    """Cartoon summary per condition: typical pose (typical bout of the behaviour label, poses over
+    the bout from light grey to dark), share of speed-tuned SPNs (D1, D2), population rate vs speed
+    (all cells, mean over mice; D1 / D2), session-wide rate and rate while moving relative to Control."""
+    import pandas as pd
+    from matplotlib.colors import to_rgb
+    pose = np.load("/home/rgast/data/parker_data/summary_pose_sequences.npz")
+    ix = dict(zip(pose["ix_names"], pose["ix_vals"].astype(int)))
+    edges = [("nose", "ear1"), ("nose", "ear2"), ("ear1", "neck"), ("ear2", "neck"), ("neck", "hip1"),
+             ("neck", "hip2"), ("hip1", "tail_base"), ("hip2", "tail_base")]
+    tu = pd.concat([pd.read_csv("/home/rgast/data/parker_data/spn_feature_tuning/tuning_speed.csv").assign(drug="Clozapine"),
+                    pd.read_csv("/home/rgast/data/parker_data/spn_feature_tuning/tuning_speed_haloperidol.csv")
+                    .assign(drug="Haloperidol")])
+    bcols = [f"b{k}" for k in range(10)]
+    def pop_curve(conds, spn):
+        d = tu[tu.condition.isin(conds) & (tu.spn == spn)]
+        m = d.groupby("mouse")[bcols].mean()
+        ok = m.notna().sum() >= 3
+        return np.where(ok, m.mean(), np.nan)
+    rows = [("Control", "#2a78d6", "walk", (0.56, 0.61), (1.0, 1.0), (1.0, 1.0), ["Control"]),
+            ("Amph.", "#eda100", "run", (0.09, 0.03), (1.35, 0.88), (0.66, 0.48), ["Amphetamine"]),
+            ("Amph. +\nclozapine", "#e34948", "walk", (0.22, 0.04), (0.81, 0.65), (0.75, 0.49), ["A + Clozapine high"]),
+            ("Amph. +\nhaloperidol", "#b5382f", "rest", (0.37, 0.24), (0.44, 0.44), (0.92, 0.81), ["A + Haloperidol high"])]
     fig, ax = plt.subplots(figsize=(6.15, 2.85))
     fig.subplots_adjust(0, 0, 1, 1)
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 0.465)
     ax.axis("off")
-    bar_x, bar_scale = {"session": 0.625, "moving": 0.815}, 0.1          # width per 100 %
-    cols = [(0.2, "behaviour"), (0.445, "speed-tuned SPNs"), (bar_x["session"] + 0.07, "session rate"),
-            (bar_x["moving"] + 0.075, "rate while moving")]
-    for x, t in cols:
-        ax.text(x, 0.445, t, ha="center", va="center", fontsize=8, fontweight="bold", color=INK)
+    bar_x, bar_scale = {"session": 0.67, "moving": 0.835}, 0.085
+    for x, t in ((0.21, "behaviour"), (0.375, "speed-tuned SPNs"), (0.545, "population rate\nvs speed"),
+                 (bar_x["session"] + 0.06, "session rate"), (bar_x["moving"] + 0.065, "rate while\nmoving")):
+        ax.text(x, 0.445, t, ha="center", va="center", fontsize=7.3, fontweight="bold", color=INK, linespacing=1.0)
     ys = [0.36, 0.265, 0.17, 0.075]
-    for (name, col, mode, tuned, sess, mov, curve), y in zip(rows, ys):
+    ylim_rate = (0, 0.32)
+    for (name, col, mode, tuned, sess, mov, conds), y in zip(rows, ys):
         ax.add_patch(FancyBboxPatch((0.005, y - 0.04), 0.99, 0.08, boxstyle="round,pad=0,rounding_size=0.012",
                                     fc="#f6f5f0", ec="none", zorder=0))
-        ax.text(0.015, y, name, ha="left", va="center", fontsize=7.2, fontweight="bold", color=col,
-                linespacing=1.05)
-        draw_mouse(ax, 0.205, y + 0.005, s=0.4, mode=mode)
-        for g, (spn, c_, sh) in enumerate((("D1", D1C, tuned[0]), ("D2", D2C, tuned[1]))):
+        ax.text(0.012, y, name, ha="left", va="center", fontsize=6.8, fontweight="bold", color=col, linespacing=1.05)
+        # pose: typical bout, poses from light grey to dark grey (body axis horizontal, heading right)
+        pa = fig.add_axes([0.13, (y - 0.04) / 0.465, 0.15, 0.08 / 0.465])
+        seq = pose[mode]
+        rot = np.array([[0, 1], [-1, 0]])                        # egocentric (heading up) -> heading right
+        q = seq @ rot.T
+        idx = np.unique(np.linspace(0, len(q) - 1, 3).round().astype(int)) if mode != "rest" else np.array([len(q) - 1])
+        c0, c1 = np.array(to_rgb("#d3d1cb")), np.array(to_rgb("#52514e"))
+        for i_, t in enumerate(idx):
+            w = i_ / (len(idx) - 1) if len(idx) > 1 else 1.0
+            cc = (1 - w) * c0 + w * c1
+            for e1, e2 in edges:
+                pa.plot(*np.c_[q[t, ix[e1]], q[t, ix[e2]]], color=cc, lw=1.0 if i_ == len(idx) - 1 else 0.7,
+                        solid_capstyle="round", zorder=3 + i_)
+            pa.scatter(q[t, :, 0], q[t, :, 1], s=6 if i_ == len(idx) - 1 else 3, color=cc, edgecolor="white",
+                       lw=0.3, zorder=4 + i_)
+        pa.set_aspect("equal")
+        pa.axis("off")
+        c_ = q[idx[-1]].mean(0)                                  # centred on the final pose
+        pa.set_xlim(c_[0] - 7.0, c_[0] + 5.5)
+        pa.set_ylim(c_[1] - 3.2, c_[1] + 3.2)
+        for art in pa.lines + pa.collections:
+            art.set_clip_on(True)
+        if mode == "rest":
+            for i_, z in enumerate("zZZ"):
+                ax.text(0.262 + 0.011 * i_, y + 0.012 + 0.009 * i_, z, fontsize=5 + 1.2 * i_, color=INK2,
+                        fontweight="bold")
+        # speed-tuned cells
+        for g, (spn, c_s, sh) in enumerate((("D1", D1C, tuned[0]), ("D2", D2C, tuned[1]))):
             yy = y + 0.017 - 0.034 * g
-            ax.text(0.33, yy, spn, ha="right", va="center", fontsize=6.3, color=c_, fontweight="bold")
+            ax.text(0.302, yy, spn, ha="right", va="center", fontsize=6, color=c_s, fontweight="bold")
             nf = int(round(sh * 10))
-            for i in range(10):
-                ax.add_patch(Circle((0.343 + i * 0.0165, yy), 0.0063, fc=c_ if i < nf else "white", ec=c_, lw=0.6,
+            for i_ in range(10):
+                ax.add_patch(Circle((0.313 + i_ * 0.0142, yy), 0.0054, fc=c_s if i_ < nf else "white", ec=c_s, lw=0.55,
                                     zorder=3))
-        x0, w, h = 0.52, 0.05, 0.05
-        sx = np.linspace(0, 1, 30)
-        shape = {"tuned": 0.15 + 0.85 * sx ** 1.5, "flat": 0.45 + 0.08 * sx,
-                 "D1": 0.3 + 0.45 * sx ** 1.5, "partial": 0.2 + 0.65 * sx ** 1.5}[curve]
-        ax.plot([x0, x0, x0 + w], [y + h / 2, y - h / 2, y - h / 2], color=INK2, lw=0.6)
-        ax.plot(x0 + w * sx, y - h / 2 + h * 0.9 * shape, color=col, lw=1.4)
+        # population rate vs speed (all cells), D1 and D2
+        ra = fig.add_axes([0.5, (y - 0.032) / 0.465, 0.09, 0.064 / 0.465])
+        for spn, c_s in (("D1", D1C), ("D2", D2C)):
+            cv = pop_curve(conds, spn)
+            ra.plot(np.arange(10), cv, color=c_s, lw=1.2)
+        ra.set_ylim(*ylim_rate)
+        ra.set_xlim(-0.3, 9.3)
+        ra.set_xticks([])
+        ra.set_yticks([0, 0.3] if y == ys[0] else [])
+        ra.tick_params(labelsize=4.8, length=1.5, pad=1)
+        ra.patch.set_alpha(0)
+        for sp in ("top", "right"):
+            ra.spines[sp].set_visible(False)
+        for sp in ("left", "bottom"):
+            ra.spines[sp].set_color(INK2)
+            ra.spines[sp].set_linewidth(0.6)
         if y == ys[0]:
-            ax.text(x0 + w / 2, y - h / 2 - 0.012, "speed", ha="center", va="top", fontsize=5.3, color=INK2)
-            ax.text(x0 - 0.005, y, "rate", ha="right", va="center", fontsize=5.3, color=INK2, rotation=90)
+            ra.text(-0.08, 0.5, "Hz", transform=ra.transAxes, rotation=90, va="center", ha="right", fontsize=4.8, color=INK2)
+        if y == ys[-1]:
+            ra.set_xlabel("speed", fontsize=5.3, labelpad=1, color=INK2)
+        # rates relative to Control
         for key, vals in (("session", sess), ("moving", mov)):
             bx = bar_x[key]
-            for g, (c_, v) in enumerate(((D1C, vals[0]), (D2C, vals[1]))):
-                yy = y + 0.015 - 0.03 * g
-                ax.add_patch(FancyBboxPatch((bx, yy - 0.009), bar_scale * v, 0.018,
-                                            boxstyle="round,pad=0,rounding_size=0.004", fc=c_, ec="none", zorder=3))
+            for g, (c_s, v) in enumerate(((D1C, vals[0]), (D2C, vals[1]))):
+                yy = y + 0.011 - 0.022 * g
+                ax.add_patch(FancyBboxPatch((bx, yy - 0.0065), bar_scale * v, 0.013,
+                                            boxstyle="round,pad=0,rounding_size=0.003", fc=c_s, ec="none", zorder=3))
                 if name != "Control":
-                    ax.text(bx + bar_scale * v + 0.005, yy, f"{v:.0%}", va="center", fontsize=5.8, color=INK2,
-                            zorder=5, bbox=dict(fc="#f6f5f0", ec="none", pad=0.4))
-            ax.plot([bx + bar_scale] * 2, [y - 0.035, y + 0.035], color=MUTED, lw=0.6, ls=(0, (2, 1.5)), zorder=4)
+                    ax.text(bx + bar_scale * v + 0.004, yy, f"{v:.0%}", va="center", fontsize=5.4, color=INK2,
+                            zorder=5, bbox=dict(fc="#f6f5f0", ec="none", pad=0.3))
+            ax.plot([bx + bar_scale] * 2, [y - 0.03, y + 0.03], color=MUTED, lw=0.6, ls=(0, (2, 1.5)), zorder=4)
     for key in ("session", "moving"):
         ax.text(bar_x[key] + bar_scale, ys[-1] - 0.05, "Control", ha="center", fontsize=5.3, color=MUTED)
     fig.savefig(f"{out_dir}/summary_findings.pdf")
