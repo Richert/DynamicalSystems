@@ -47,8 +47,10 @@ def slide_features(states, sessions):
                            left=0.005, right=0.995, top=0.93, bottom=0.575)
     bottom = fig.add_gridspec(1, 1, left=0.155, right=0.995, top=0.535, bottom=0.115)
     titles = ["frame + keypoints", "body posture", "head posture", "movement (0.4 s)"]
+    panels = []
     for i, fn in enumerate((F.panel_frame, F.panel_body, F.panel_head, F.panel_movement)):
         ax = fig.add_subplot(top[2 * i])
+        panels.append(ax)
         if fn in (F.panel_body, F.panel_head):
             fn(ax, ex, title=None, values=False)
         else:
@@ -70,6 +72,19 @@ def slide_features(states, sessions):
             ax.set_yticks([tv[0], tv[-1]])
         ax.tick_params(axis="y", labelsize=6)
     save(fig, "behavior_features")
+    # build-up frames: the four video panels one by one, then the feature traces
+    managed = set(panels) | set(axes)
+    steps, vis = [], set()
+    for ax in panels:
+        vis = vis | {ax}
+        steps.append(set(vis))
+    steps.append(vis | set(axes))
+    for k, v in enumerate(steps, 1):
+        for art in managed:
+            art.set_visible(art in v)
+        fig.savefig(f"{out_dir}/behavior_features_s{k}.pdf")
+        fig.savefig(f"{out_dir}/behavior_features_s{k}.png", dpi=150)
+    print(f"saved {out_dir}/behavior_features_s1..{len(steps)}")
 
 def state_matrix_axes(fig, ax, M, show, names, title, cmap, vmin, vmax, ylabels, xlabel=None,
                       ylabel=None, fmt=None, thr=0.1, cbar=None):
