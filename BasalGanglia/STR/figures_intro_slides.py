@@ -320,7 +320,7 @@ def summary_findings():
         ok = m.notna().sum() >= 3
         return np.where(ok, m.mean(), np.nan)
     rows = [("Control", "#2a78d6", "walk", (0.56, 0.61), (1.0, 1.0), (1.0, 1.0), ["Control"]),
-            ("Amph.", "#eda100", "run", (0.09, 0.03), (1.35, 0.88), (0.66, 0.48), ["Amphetamine"]),
+            ("Amph.", "#eda100", "run_turn_cw", (0.09, 0.03), (1.35, 0.88), (0.66, 0.48), ["Amphetamine"]),
             ("Amph. +\nclozapine", "#e34948", "walk", (0.22, 0.04), (0.81, 0.65), (0.75, 0.49), ["A + Clozapine high"]),
             ("Amph. +\nhaloperidol", "#b5382f", "rest", (0.37, 0.24), (0.44, 0.44), (0.92, 0.81), ["A + Haloperidol high"])]
     fig, ax = plt.subplots(figsize=(6.15, 2.85))
@@ -329,7 +329,7 @@ def summary_findings():
     ax.set_ylim(0, 0.465)
     ax.axis("off")
     bar_x, bar_scale = {"session": 0.67, "moving": 0.835}, 0.085
-    for x, t in ((0.21, "behaviour"), (0.375, "speed-tuned SPNs"), (0.545, "population rate\nvs speed"),
+    for x, t in ((0.17, "behaviour"), (0.375, "speed-tuned SPNs"), (0.545, "population rate\nvs speed"),
                  (bar_x["session"] + 0.06, "session rate"), (bar_x["moving"] + 0.065, "rate while\nmoving")):
         ax.text(x, 0.445, t, ha="center", va="center", fontsize=7.3, fontweight="bold", color=INK, linespacing=1.0)
     ys = [0.36, 0.265, 0.17, 0.075]
@@ -339,7 +339,7 @@ def summary_findings():
                                     fc="#f6f5f0", ec="none", zorder=0))
         ax.text(0.012, y, name, ha="left", va="center", fontsize=6.8, fontweight="bold", color=col, linespacing=1.05)
         # pose: typical bout, poses from light grey to dark grey (body axis horizontal, heading right)
-        pa = fig.add_axes([0.13, (y - 0.04) / 0.465, 0.15, 0.08 / 0.465])
+        pa = fig.add_axes([0.095, (y - 0.04) / 0.465, 0.15, 0.08 / 0.465])
         seq = pose[mode]
         rot = np.array([[0, 1], [-1, 0]])                        # egocentric (heading up) -> heading right
         q = seq @ rot.T
@@ -355,14 +355,21 @@ def summary_findings():
                        lw=0.3, zorder=4 + i_)
         pa.set_aspect("equal")
         pa.axis("off")
-        c_ = q[idx[-1]].mean(0)                                  # centred on the final pose
-        pa.set_xlim(c_[0] - 7.0, c_[0] + 5.5)
-        pa.set_ylim(c_[1] - 3.2, c_[1] + 3.2)
+        if mode == "run_turn_cw":                                 # curved path: centre on the whole bout
+            pts = q[idx].reshape(-1, 2)
+            c_ = (pts.min(0) + pts.max(0)) / 2
+            half = max((pts.max(0) - pts.min(0))[1] / 2 + 0.6, 3.2)
+            pa.set_xlim(c_[0] - 2 * half, c_[0] + 2 * half)
+            pa.set_ylim(c_[1] - half, c_[1] + half)
+        else:
+            c_ = q[idx[-1]].mean(0)                              # centred on the final pose
+            pa.set_xlim(c_[0] - 7.0, c_[0] + 5.5)
+            pa.set_ylim(c_[1] - 3.2, c_[1] + 3.2)
         for art in pa.lines + pa.collections:
             art.set_clip_on(True)
         if mode == "rest":
             for i_, z in enumerate("zZZ"):
-                ax.text(0.262 + 0.011 * i_, y + 0.012 + 0.009 * i_, z, fontsize=5 + 1.2 * i_, color=INK2,
+                ax.text(0.218 + 0.011 * i_, y + 0.016 + 0.009 * i_, z, fontsize=5 + 1.2 * i_, color=INK2,
                         fontweight="bold")
         # speed-tuned cells
         for g, (spn, c_s, sh) in enumerate((("D1", D1C, tuned[0]), ("D2", D2C, tuned[1]))):
