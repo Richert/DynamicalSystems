@@ -536,17 +536,22 @@ def outlook_distributions():
     fig, axes = plt.subplots(1, 3, figsize=(6.15, 1.55))
     fig.subplots_adjust(left=0.02, right=0.99, top=0.8, bottom=0.2, wspace=0.18)
     xr = np.linspace(-3, 3, 200)
-    for ax, (title, m1, m2, sd) in zip(axes[:2], (("low dopamine (hypothesis)", -0.9, 0.9, 0.42),
-                                                  ("high dopamine (hypothesis)", 0.35, -0.35, 0.85))):
-        p1, p2 = gauss.pdf(xr, m1, sd), gauss.pdf(xr, m2, sd)
+    # low dopamine: D2 slightly higher and narrower than D1 (as in Control) -> skewed combined
+    # distribution; high dopamine: both wider, means closer -> symmetric, broad, unimodal
+    for ax, (title, m1, s1, m2, s2) in zip(axes[:2], (("low dopamine (hypothesis)", -0.45, 0.6, 0.45, 0.38),
+                                                      ("high dopamine (hypothesis)", 0.1, 0.9, -0.1, 0.85))):
+        p1, p2 = gauss.pdf(xr, m1, s1), gauss.pdf(xr, m2, s2)
         ax.fill_between(xr, (p1 + p2) / 2, color="#cfcdc4", alpha=0.7, lw=0)
         ax.plot(xr, p1 / 2, color=D1C, lw=1.4)
         ax.plot(xr, p2 / 2, color=D2C, lw=1.4)
-        ax.set_ylim(0, 0.55)
+        ax.set_ylim(0, 0.78)
         ax.set_title(title, fontsize=7.5, loc="left")
-        ax.text(m1, 0.5 if sd < 0.5 else 0.27, "D1", color=D1C, fontsize=6.5, ha="center", fontweight="bold")
-        ax.text(m2, 0.5 if sd < 0.5 else 0.27, "D2", color=D2C, fontsize=6.5, ha="center", fontweight="bold")
-        ax.text(2.95, 0.52, "combined", fontsize=5.8, color=MUTED, ha="right", va="top")
+        dx = 0.25 if abs(m1 - m2) < 0.5 else 0
+        ax.text(m1 - dx, p1.max() / 2 + 0.03, "D1", color=D1C, fontsize=6.5, ha="right" if dx else "center",
+                fontweight="bold")
+        ax.text(m2 + dx, p2.max() / 2 + 0.03, "D2", color=D2C, fontsize=6.5, ha="left" if dx else "center",
+                fontweight="bold")
+        ax.text(2.95, 0.75, "combined", fontsize=5.8, color=MUTED, ha="right", va="top")
     ax = axes[2]
     cv = pd.read_csv("/home/rgast/data/parker_data/spn_behavior_states/cell_values_high.csv.gz")
     cv = cv[cv.label == "whole session"]
