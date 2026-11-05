@@ -503,7 +503,7 @@ def slide_validation():
 def slide_caiman_overview(r, t0, t1):
     from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
     Y = r.frames(t0, t0 + 200)
-    fig = plt.figure(figsize=(6.0, 2.75))
+    fig = plt.figure(figsize=(6.15, 2.75))
     n = 5
     w, gap, x0 = 0.168, 0.031, 0.012
     stages = [
@@ -721,7 +721,7 @@ def slide_spikes_steps(r, t0, t1, n_ex=5):
     cand = np.flatnonzero((n >= 3) & (n <= 10))
     cand = cand[np.argsort(snr[cand])[::-1]][:4 * n_ex]
     ex = sorted(cand[np.linspace(0, len(cand) - 1, n_ex).round().astype(int)], key=lambda i: -n[i])
-    fig = plt.figure(figsize=(6.0, 2.6))
+    fig = plt.figure(figsize=(6.15, 2.75))
     gs = GridSpec(2, 2, figure=fig, width_ratios=[1, 1.15], height_ratios=[2.2, 0.75],
                   wspace=0.2, hspace=0.12, left=0.035, right=0.99, top=0.84, bottom=0.15)
     t = np.arange(t1 - t0) / r.fs
@@ -794,10 +794,10 @@ def slide_postprocessing_steps(r, pick=None):
     paths = dict(zip(comps, outline_paths(r, comps)))
     DROP, KEEP, BASE = "#3f7fc6", "#d9a400", "#cfcdc4"
     seed = r.cn * r.pnr
-    fig = plt.figure(figsize=(6.0, 3.05))
+    fig = plt.figure(figsize=(6.15, 2.85))
     gs = GridSpec(2, 6, figure=fig, width_ratios=[1.55, 0.85, 0.5, 0.5, 0.5, 0.5],
                   height_ratios=[1, 1], wspace=0.12, hspace=0.62, left=0.005, right=0.995,
-                  top=0.86, bottom=0.12)
+                  top=0.87, bottom=0.11)
     ax = fig.add_subplot(gs[:, 0])
     ax.imshow(seed, cmap=FLUO, vmin=0, vmax=np.percentile(seed, 99.7))
     frame_axes(ax, None)

@@ -105,11 +105,11 @@ def brackets(ax, tops, step):
 
 def slide_rate_stats(rd, st):
     budget = rd.groupby("label")["T"].first()
-    fig, axes = plt.subplots(2, len(columns), figsize=(6.0, 3.35), sharey="row")
+    fig, axes = plt.subplots(2, len(columns), figsize=(6.15, 2.85), sharey="row")
     fig.subplots_adjust(left=0.1, right=0.995, top=0.8, bottom=0.08, wspace=0.12, hspace=0.32)
     for r, (col, ylab) in enumerate(rows):
         lo, hi = rd[rd.label.isin(columns)][col].quantile([0.0, 1.0])
-        step = 0.075 * (hi - lo)
+        step = 0.09 * (hi - lo)
         for k, lab in enumerate(columns):
             ax = axes[r, k]
             brackets(ax, panel(ax, rd[rd.label == lab], col, st[st.label == lab]), step)
@@ -127,7 +127,7 @@ def slide_rate_stats(rd, st):
                 ax.text(0, 1.02, sub, transform=ax.transAxes, fontsize=6.5, color=INK2)
             if k == 0:
                 ax.set_ylabel(ylab)
-        axes[r, 0].set_ylim(lo - 0.05 * (hi - lo), hi + 0.5 * (hi - lo))
+        axes[r, 0].set_ylim(lo - 0.05 * (hi - lo), hi + 0.62 * (hi - lo))
     x =axes[0, 0].get_position().x1 + 0.5 * (axes[0, 1].get_position().x0 - axes[0, 0].get_position().x1)
     fig.add_artist(plt.Line2D([x, x], [0.06, 0.88], color=MUTED, lw=0.6, ls=(0, (2, 2))))
     handles = [plt.Line2D([], [], color=cond_col[c], marker="o", ms=4.5, lw=1.3,
@@ -137,54 +137,53 @@ def slide_rate_stats(rd, st):
     save(fig, "spn_rate_stats")
 
 def slide_tracked(tc, ts, labels=("whole session", "walk", "straight run")):
-    """Within-cell Control vs Amphetamine log rates of tracked cells (Vehicle days)."""
-    fig, axes = plt.subplots(2, len(labels), figsize=(6.0, 3.6), sharex=True, sharey=True)
-    fig.subplots_adjust(left=0.1, right=0.98, top=0.89, bottom=0.12, wspace=0.1, hspace=0.14)
+    """Within-cell Control vs Amphetamine log rates of tracked cells (Vehicle days): one square
+    panel per behaviour, D1 (green) and D2 (purple) cells overlaid, mouse medians on top."""
+    SPN_COL = {"D1": "#1f8a70", "D2": "#8a4fb5"}
+    MED_COL = {"D1": "#0e4d3e", "D2": "#4c2470"}
+    fig, axes = plt.subplots(1, len(labels), figsize=(6.15, 2.85), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.085, right=0.99, top=0.83, bottom=0.17, wspace=0.12)
     lim = (-2.55, 0.15)
-    col_cell, col_mouse = "#2a78d6", "#0b3d7a"
-    for r, spn in enumerate(groups):
-        for k, lab in enumerate(labels):
-            ax = axes[r, k]
-            ax.plot(lim, lim, color=MUTED, lw=0.7, ls=(0, (3, 2)), zorder=1)
-            ax.set_aspect("equal")
-            ax.set_xlim(lim)
-            ax.set_ylim(lim)
-            ax.grid(True, color=GRID, lw=0.5)
-            ax.set_axisbelow(True)
-            for sp in ("top", "right"):
-                ax.spines[sp].set_visible(False)
-            ax.tick_params(axis="x", length=2.5)
-            if r == 0:
-                ttl = "all behaviour" if lab == "whole session" else lab
-                ax.set_title(ttl, loc="left", fontsize=8.5, fontweight="bold", color=INK)
-            if k == 0:
-                ax.set_ylabel(f"{spn}\nAmph.: log$_{{10}}$ rate (Hz)")
-            if r == 1:
-                ax.set_xlabel("Control: log$_{10}$ rate (Hz)")
+    for k, lab in enumerate(labels):
+        ax = axes[k]
+        ax.plot(lim, lim, color=MUTED, lw=0.7, ls=(0, (3, 2)), zorder=1)
+        ax.set_aspect("equal")
+        ax.set_xlim(lim)
+        ax.set_ylim(lim)
+        ax.grid(True, color=GRID, lw=0.5)
+        ax.set_axisbelow(True)
+        spines(ax)
+        ax.tick_params(axis="x", length=2.5)
+        ax.set_title("all behaviour" if lab == "whole session" else lab, loc="left", fontsize=8.5,
+                     fontweight="bold", color=INK)
+        ax.set_xlabel("Control: log$_{10}$ rate (Hz)")
+        if k == 0:
+            ax.set_ylabel("Amph.: log$_{10}$ rate (Hz)")
+        lines = []
+        for spn in groups:
             d = tc[(tc.label == lab) & (tc.spn == spn)]
-            s = ts[(ts.label == lab) & (ts.spn == spn) & (ts.readout == "d_rate")]
-            if d.mouse.nunique() < 3 or not len(s) or not np.isfinite(s.p.iloc[0]):
-                ax.text(0.5, 0.5, "too little Control time\nin this behaviour", transform=ax.transAxes,
-                        ha="center", va="center", fontsize=7, color=MUTED)
+            s_ = ts[(ts.label == lab) & (ts.spn == spn) & (ts.readout == "d_rate")]
+            if d.mouse.nunique() < 3 or not len(s_) or not np.isfinite(s_.p.iloc[0]):
+                lines.append((spn, f"{spn}: too little Control time"))
                 continue
-            ax.scatter(d.ctrl_rate, d.amph_rate, s=2.5, color=col_cell, alpha=0.18, lw=0,
+            ax.scatter(d.ctrl_rate, d.amph_rate, s=2, color=SPN_COL[spn], alpha=0.16, lw=0,
                        rasterized=True, zorder=2)
             m = d.groupby("mouse")[["ctrl_rate", "amph_rate"]].median()
-            ax.scatter(m.ctrl_rate, m.amph_rate, s=22, color=col_mouse, edgecolor="white", lw=0.8,
+            ax.scatter(m.ctrl_rate, m.amph_rate, s=16, color=MED_COL[spn], edgecolor="white", lw=0.6,
                        zorder=4)
-            s = s.iloc[0]
-            st = stars(s.p_fdr) or "n.s."
-            ax.text(0.04, 0.97, f"Δ = {s.estimate:+.2f} ± {s.se:.2f} {st}\n"
-                    f"{s.share_down:.0%} of cells lower\n{s.n_cells} cells, {s.n_mice} mice",
-                    transform=ax.transAxes, ha="left", va="top", fontsize=6.3, color=INK2,
-                    linespacing=1.25)
-    handles = [plt.Line2D([], [], color=col_cell, marker="o", ms=3, lw=0, alpha=0.5,
-                          label="tracked cell"),
-               plt.Line2D([], [], color=col_mouse, marker="o", ms=5, lw=0, markeredgecolor="white",
+            s_ = s_.iloc[0]
+            lines.append((spn, f"{spn}: Δ {s_.estimate:+.2f} {stars(s_.p_fdr) or 'n.s.'}, "
+                               f"{s_.share_down:.0%} lower"))
+        for i, (spn, t) in enumerate(lines):
+            ax.text(0.03, 0.97 - 0.085 * i, t, transform=ax.transAxes, ha="left", va="top", fontsize=6,
+                    color=MED_COL[spn])
+    handles = [plt.Line2D([], [], color=SPN_COL[s_], marker="o", lw=0, ms=3.5, alpha=0.6, label=f"{s_} cell")
+               for s_ in groups] + \
+              [plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=5, markeredgecolor="white",
                           label="mouse median"),
                plt.Line2D([], [], color=MUTED, lw=0.7, ls=(0, (3, 2)), label="no change")]
-    fig.legend(handles=handles, loc="upper center", ncol=3, frameon=False,
-               bbox_to_anchor=(0.55, 1.0), handlelength=1.6, columnspacing=1.6)
+    fig.legend(handles=handles, loc="upper center", ncol=4, frameon=False, bbox_to_anchor=(0.54, 1.0),
+               handlelength=1.4, columnspacing=1.4)
     save(fig, "spn_tracked_cells")
 
 def slide_rate_pdfs(cv, st):
@@ -260,7 +259,7 @@ def slide_expected(res, st, readout="spikes", drugs=None, name=None):
     dshort = {d: cond_short.get(d, d.replace("Amphetamine", "Amph.").replace("Haloperidol", "Halo.")
                                  .replace("Clozapine", "Cloz.")) for d in drugs}
     span = 4.6
-    fig, axes = plt.subplots(1, 2, figsize=(6.0 if len(drugs) < 3 else 7.4, 2.85), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(6.15 if len(drugs) < 3 else 7.4, 2.85), sharey=True)
     fig.subplots_adjust(left=0.08, right=0.9, top=0.78, bottom=0.2, wspace=0.08)
     lo = min(-0.5, res[res.readout == readout][["total", "behaviour", "beyond"]].min().min() - 0.05)
     hi = max(0.62, res[res.readout == readout][["total", "behaviour", "beyond"]].max().max() + 0.12)
@@ -324,8 +323,8 @@ def slide_rate_pdfs_steps(cv, rd, st):
     """Rate distributions (D1, D2) built up per condition, then the mean and the SD of the log
     rate per mouse (whole session, equal time / 50 cells per draw; mixed-model stars)."""
     w = cv[cv.label == "whole session"]
-    fig = plt.figure(figsize=(6.0, 2.7))
-    gs = fig.add_gridspec(1, 4, width_ratios=[1.25, 1.25, 1.0, 1.0], wspace=0.42, left=0.095,
+    fig = plt.figure(figsize=(6.15, 2.8))
+    gs = fig.add_gridspec(1, 4, width_ratios=[1.1, 1.1, 1.3, 1.3], wspace=0.38, left=0.095,
                           right=0.99, top=0.8, bottom=0.2)
     bins = np.linspace(-2.45, 0.35, 29)
     hist = {c: set() for c in conditions}
@@ -405,7 +404,7 @@ def slide_decoding_contrast(m, readouts=("spikes", "trace"), out_name="spn_decod
     """Labels vs continuous features: (a) label decoding, direct vs via decoded features;
     (b) feature decoding, direct vs via decoded label probabilities; (c) share retained."""
     feats = [f for _, fs in FEAT_GROUPS for f in fs]
-    fig = plt.figure(figsize=(6.0, 2.75))
+    fig = plt.figure(figsize=(6.15, 2.75))
     gs = fig.add_gridspec(1, 3, width_ratios=[0.8, 2.15, 0.85], wspace=0.45, left=0.1,
                           right=0.99, top=0.8, bottom=0.27)
     # (a) labels
@@ -529,7 +528,7 @@ def slide_decoding_conditions(m, readout="trace"):
     st = decoding_stats(m, readout)
     st.to_csv(f"{dec_dir}/decoding_condition_stats_{readout}.csv", index=False)
     d0 = m[m.readout == readout]
-    fig, axes = plt.subplots(2, 2, figsize=(6.0, 3.3), gridspec_kw=dict(width_ratios=[5.2, 0.75]),
+    fig, axes = plt.subplots(2, 2, figsize=(6.15, 2.85), gridspec_kw=dict(width_ratios=[5.2, 0.75]),
                              sharey="col")
     fig.subplots_adjust(left=0.11, right=0.99, top=0.84, bottom=0.17, wspace=0.18, hspace=0.18)
     for r_, spn in enumerate(groups):
