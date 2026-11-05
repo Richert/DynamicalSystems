@@ -332,7 +332,7 @@ def spines(ax):
     for sp in ("top", "right"):
         ax.spines[sp].set_visible(False)
 
-def slide_decoding_contrast(m):
+def slide_decoding_contrast(m, readouts=("spikes", "trace"), out_name="spn_decoding_contrast"):
     """Labels vs continuous features: (a) label decoding, direct vs via decoded features;
     (b) feature decoding, direct vs via decoded label probabilities; (c) share retained."""
     feats = [f for _, fs in FEAT_GROUPS for f in fs]
@@ -342,7 +342,7 @@ def slide_decoding_contrast(m):
     # (a) labels
     ax = fig.add_subplot(gs[0])
     lab = m[m.target == "labels"]
-    for i, ro in enumerate(("spikes", "trace")):
+    for i, ro in enumerate(readouts):
         d = lab[lab.readout == ro]
         x0 = i * 1.1
         for _, r_ in d.iterrows():
@@ -354,9 +354,12 @@ def slide_decoding_contrast(m):
             ax.scatter([x0 + dx_], [np.median(v)], s=30, zorder=3, lw=1.2,
                        facecolor=READ_COL[ro] if fill else "white", edgecolor=READ_COL[ro])
     ax.axhline(lab.chance.median(), color=MUTED, lw=0.7, ls=(0, (3, 2)))
-    ax.text(2.0, lab.chance.median(), "chance", fontsize=6, color=MUTED, ha="right", va="bottom")
-    ax.set_xticks([0, 0.45, 1.1, 1.55], ["via", "dir.", "via", "dir."], fontsize=6.5)
-    ax.set_xlim(-0.3, 1.85)
+    ax.text(1.1 * (len(readouts) - 1) + 0.7, lab.chance.median(), "chance", fontsize=6, color=MUTED,
+            ha="right", va="bottom")
+    ax.set_xticks([x for i in range(len(readouts)) for x in (i * 1.1, i * 1.1 + 0.45)],
+                  ["via feat.", "direct"] * len(readouts) if len(readouts) == 1 else ["via", "dir."] * len(readouts),
+                  fontsize=6.5)
+    ax.set_xlim(-0.3, 1.1 * (len(readouts) - 1) + 0.75)
     ax.set_ylabel("balanced accuracy")
     ax.set_title("behaviour labels", loc="left")
     spines(ax)
@@ -370,7 +373,7 @@ def slide_decoding_contrast(m):
         ax.text(np.mean([xs[f] for f in fs]), 1.0, gname, transform=ax.get_xaxis_transform(),
                 ha="center", va="bottom", fontsize=7, color=INK2)
         x += 0.6
-    for ro, off in (("spikes", -0.17), ("trace", 0.17)):
+    for ro, off in zip(readouts, (-0.17, 0.17) if len(readouts) == 2 else (0.0,)):
         for f in feats:
             d = m[(m.readout == ro) & (m.target == f)]
             for col_, fill in (("via", False), ("direct", True)):
@@ -398,9 +401,9 @@ def slide_decoding_contrast(m):
     rr = pd.DataFrame(rows)
     for i, (col_, name) in enumerate((("labels", "labels\nvia features"),
                                       ("features", "features\nvia labels"))):
-        for j, ro in enumerate(("spikes", "trace")):
+        for j, ro in enumerate(readouts):
             v = rr[rr.readout == ro][col_].dropna().clip(-0.2, 1.5).values
-            xx = i + (j - 0.5) * 0.32
+            xx = i + ((j - 0.5) * 0.32 if len(readouts) == 2 else 0)
             ax.scatter(xx + np.random.default_rng(j).uniform(-0.06, 0.06, len(v)), v, s=6,
                        color=READ_COL[ro], alpha=0.35, lw=0)
             ax.scatter([xx], [np.median(v)], s=30, color=READ_COL[ro], edgecolor="white", lw=0.8,
@@ -412,8 +415,8 @@ def slide_decoding_contrast(m):
     ax.set_ylabel("share of decoding retained")
     ax.set_title("detour", loc="left")
     spines(ax)
-    handles = [plt.Line2D([], [], color=READ_COL[ro], marker="o", lw=0, ms=4.5,
-                          label=READ_NAME[ro]) for ro in ("spikes", "trace")] + \
+    handles = ([plt.Line2D([], [], color=READ_COL[ro], marker="o", lw=0, ms=4.5,
+                           label=READ_NAME[ro]) for ro in readouts] if len(readouts) > 1 else []) + \
               [plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=4.5, label="direct"),
                plt.Line2D([], [], color=INK2, marker="o", lw=0, ms=4.5, mfc="white",
                           label="via the other representation")]
@@ -421,7 +424,7 @@ def slide_decoding_contrast(m):
                handletextpad=0.3, columnspacing=1.4)
     for x_, l_ in ((0.005, "a"), (0.27, "b"), (0.745, "c")):
         fig.text(x_, 0.85, l_, fontsize=10, fontweight="bold", color=INK)
-    save(fig, "spn_decoding_contrast")
+    save(fig, out_name)
     print(rr.groupby("readout").median().round(3))
 
 def decoding_stats(m, readout):
