@@ -56,9 +56,9 @@ def stars(p):
 def xpos(g, c):
     return g * (len(conditions) * dx + gap) + c * dx
 
-def panel(ax, d, col, st):
+def panel(ax, d, col, st, spns=None):
     tops = []
-    for g, spn in enumerate(groups):
+    for g, spn in enumerate(spns or groups):
         p = d[d.spn == spn].pivot_table(index="mouse", columns="condition", values=col)
         p = p.reindex(columns=conditions)
         xs = [xpos(g, c) for c in range(len(conditions))]
@@ -374,6 +374,61 @@ def slide_rate_pdfs_steps(cv, rd, st):
         vis = vis | q
         steps.append(set(vis))
     save_steps(fig, steps, "spn_rate_pdfs_anim")
+    plt.close(fig)
+
+def slide_rate_pdfs_rows(cv, rd, st):
+    """Rate distributions (top row) and mean / SD of the log rate per mouse (bottom row), in two
+    macro-columns D1 and D2; built up per condition, then the statistics."""
+    w = cv[cv.label == "whole session"]
+    r0, s0 = rd[rd.label == "whole session"], st[st.label == "whole session"]
+    fig = plt.figure(figsize=(6.6, 2.85))
+    outer = fig.add_gridspec(1, 2, wspace=0.16, left=0.075, right=0.995, top=0.86, bottom=0.08)
+    bins = np.linspace(-2.45, 0.35, 29)
+    hist = {c: set() for c in conditions}
+    quant = [set(), set()]
+    lims = {col: (r0[col].min(), r0[col].max()) for col in ("mean_log_rate", "sd_log_rate")}
+    for g, spn in enumerate(groups):
+        inner = outer[g].subgridspec(2, 2, height_ratios=[1, 1.08], hspace=0.55, wspace=0.42)
+        ax = fig.add_subplot(inner[0, :])
+        for c in conditions:
+            v = w[(w.spn == spn) & (w.condition == c)].log_rate.clip(bins[0], bins[-1])
+            h, _ = np.histogram(v, bins=bins)
+            hist[c] |= {ax.stairs(h / h.sum(), bins, color=cond_col[c], lw=1.4),
+                        ax.stairs(h / h.sum(), bins, color=cond_col[c], fill=True, alpha=0.08)}
+        ax.set_xticks(np.log10([0.01, 0.1, 1]), ["0.01", "0.1", "1"])
+        ax.set_xlim(bins[0], bins[-1])
+        ax.set_xlabel("event rate per cell (Hz)", fontsize=7, labelpad=1)
+        ax.set_ylabel("share of cells" if g == 0 else None, fontsize=7)
+        ax.tick_params(labelsize=6.5)
+        ax.set_title(f"{spn} SPNs", loc="left", fontweight="bold", fontsize=9)
+        spines(ax)
+        for j, (col, lab) in enumerate((("mean_log_rate", "mean rate (Hz)"), ("sd_log_rate", "SD of log$_{10}$ rate"))):
+            ax = fig.add_subplot(inner[1, j])
+            lo, hi = lims[col]
+            brackets(ax, panel(ax, r0, col, s0, spns=[spn]), 0.09 * (hi - lo))
+            ax.set_xticks([])
+            ax.set_xlim(xpos(0, 0) - 0.45, xpos(0, len(conditions) - 1) + 0.55)
+            ax.set_ylim(lo - 0.05 * (hi - lo), hi + 0.5 * (hi - lo))
+            if col == "mean_log_rate":
+                yt = [t for t in (0.03, 0.05, 0.1, 0.2) if lo - 0.05 <= np.log10(t) <= hi + 0.3]
+                ax.set_yticks(np.log10(yt), [f"{t:g}" for t in yt])
+            ax.tick_params(labelsize=6.5)
+            ax.set_title(lab, loc="left", fontsize=7.2)
+            ax.yaxis.grid(True, color=GRID, lw=0.5)
+            ax.set_axisbelow(True)
+            spines(ax)
+            quant[j].add(ax)
+    handles = [plt.Line2D([], [], color=cond_col[c], lw=1.5, label=cond_short[c]) for c in conditions]
+    legs = [fig.legend(handles=handles[:k], loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.53, 1.0),
+                       columnspacing=1.6, fontsize=7) for k in range(1, len(conditions) + 1)]
+    steps, vis = [], set()
+    for k, c in enumerate(conditions):
+        vis = (vis - set(legs)) | hist[c] | {legs[k]}
+        steps.append(set(vis))
+    for q in quant:
+        vis = vis | q
+        steps.append(set(vis))
+    save_steps(fig, steps, "spn_rate_pdfs_rows")
     plt.close(fig)
 
 # ---------------------------------------------------------------------------
