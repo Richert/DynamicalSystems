@@ -526,3 +526,45 @@ if __name__ == "__main__":
     intro_mediation()
     summary_findings()
     summary_outlook()
+
+
+def outlook_distributions():
+    """Outlook: hypothesised D1 / D2 rate distributions at low and high dopamine (cartoon), and the
+    measured log-rate distributions (all SPNs, whole session; clozapine cohort) per condition."""
+    import pandas as pd
+    from scipy.stats import norm as gauss
+    fig, axes = plt.subplots(1, 3, figsize=(6.15, 1.55))
+    fig.subplots_adjust(left=0.02, right=0.99, top=0.8, bottom=0.2, wspace=0.18)
+    xr = np.linspace(-3, 3, 200)
+    for ax, (title, m1, m2, sd) in zip(axes[:2], (("low dopamine (hypothesis)", -0.9, 0.9, 0.42),
+                                                  ("high dopamine (hypothesis)", 0.35, -0.35, 0.85))):
+        p1, p2 = gauss.pdf(xr, m1, sd), gauss.pdf(xr, m2, sd)
+        ax.fill_between(xr, (p1 + p2) / 2, color="#cfcdc4", alpha=0.7, lw=0)
+        ax.plot(xr, p1 / 2, color=D1C, lw=1.4)
+        ax.plot(xr, p2 / 2, color=D2C, lw=1.4)
+        ax.set_ylim(0, 0.55)
+        ax.set_title(title, fontsize=7.5, loc="left")
+        ax.text(m1, 0.5 if sd < 0.5 else 0.27, "D1", color=D1C, fontsize=6.5, ha="center", fontweight="bold")
+        ax.text(m2, 0.5 if sd < 0.5 else 0.27, "D2", color=D2C, fontsize=6.5, ha="center", fontweight="bold")
+        ax.text(2.95, 0.52, "combined", fontsize=5.8, color=MUTED, ha="right", va="top")
+    ax = axes[2]
+    cv = pd.read_csv("/home/rgast/data/parker_data/spn_behavior_states/cell_values_high.csv.gz")
+    cv = cv[cv.label == "whole session"]
+    bins = np.linspace(-2.45, 0.35, 29)
+    for cond, col, lab in (("Control", "#2a78d6", "Control"), ("Amphetamine", "#eda100", "Amph."),
+                           ("A + Clozapine high", "#e34948", "Amph. + Cloz.")):
+        v = cv[cv.condition == cond].log_rate.clip(bins[0], bins[-1])
+        h, _ = np.histogram(v, bins=bins)
+        ax.stairs(h / h.sum(), bins, color=col, lw=1.3, label=lab)
+    ax.set_title("data: control vs. drugs (D1 + D2)", fontsize=7.5, loc="left")
+    ax.legend(frameon=False, fontsize=5.6, loc="upper left", handlelength=1.0, borderaxespad=0.1)
+    for a in axes:
+        a.set_yticks([])
+        a.set_xticks([])
+        a.set_xlabel("log rate", fontsize=6.3, labelpad=1)
+        for sp in ("top", "right", "left"):
+            a.spines[sp].set_visible(False)
+    fig.savefig(f"{out_dir}/outlook_distributions.pdf")
+    fig.savefig(f"{out_dir}/outlook_distributions.png", dpi=200)
+    plt.close(fig)
+    print(f"saved {out_dir}/outlook_distributions.pdf/.png")
