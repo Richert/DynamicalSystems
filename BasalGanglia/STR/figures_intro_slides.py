@@ -213,8 +213,8 @@ def intro_problem():
     ax.text(cx, y + 0.115, "striatal microcircuit", ha="center", fontsize=7, color=INK2)
     node(ax, (cx - 0.065, y + 0.035), "D1 SPN", D1C, w=0.1, h=0.05, fs=6.5, bold=True)
     node(ax, (cx + 0.065, y + 0.035), "D2 SPN", D2C, w=0.1, h=0.05, fs=6.5, bold=True)
-    for i, (t, c) in enumerate((("DA", DAC), ("ACh", ACHC), ("5-HT", "#2a78d6"))):
-        node(ax, (cx - 0.075 + i * 0.075, y - 0.04), t, c, w=0.06, h=0.045, fs=6.3)
+    for i, (t, c) in enumerate((("ChI", ACHC), ("FSI", FSIC))):           # striatal interneurons
+        node(ax, (cx - 0.045 + i * 0.09, y - 0.04), t, c, w=0.065, h=0.045, fs=6.3)
     # function
     node(ax, (0.9, y), "function /\nbehaviour", INK, w=0.15, h=0.1, bold=True, fs=8)
     # arrows with the two open questions
