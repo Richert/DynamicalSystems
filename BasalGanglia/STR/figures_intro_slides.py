@@ -242,9 +242,92 @@ def intro_mediation():
     plt.close(fig)
     print(f"saved {out_dir}/intro_mediation_s1..2")
 
+def draw_mouse(ax, x, y, s=1.0, mode="walk", color="#6b6a66"):
+    """Cartoon mouse (top-ish side view) at (x, y), scale s; mode walk / run / rest."""
+    from matplotlib.patches import Ellipse, Circle, Arc
+    if mode == "rest":                                       # curled up, eyes closed, zzz
+        ax.add_patch(Ellipse((x, y), 0.16 * s, 0.1 * s, fc=color, ec="none", zorder=3))
+        ax.add_patch(Circle((x + 0.065 * s, y + 0.01 * s), 0.035 * s, fc=color, ec="none", zorder=3))
+        ax.add_patch(Circle((x + 0.05 * s, y + 0.05 * s), 0.016 * s, fc="#e8b4b8", ec=color, lw=0.5, zorder=4))
+        ax.add_patch(Arc((x - 0.02 * s, y - 0.02 * s), 0.2 * s, 0.12 * s, theta1=180, theta2=330, color=color,
+                         lw=1.0, zorder=2))
+        for i, z in enumerate("zzZ"):
+            ax.text(x + (0.11 + 0.035 * i) * s, y + (0.0 + 0.025 * i) * s, z, fontsize=5 + i, color=INK2,
+                    fontweight="bold")
+        return
+    ax.add_patch(Ellipse((x, y), 0.2 * s, 0.09 * s, fc=color, ec="none", zorder=3))
+    ax.add_patch(Ellipse((x + 0.11 * s, y + 0.01 * s), 0.09 * s, 0.06 * s, angle=-10, fc=color, ec="none", zorder=3))
+    ax.add_patch(Circle((x + 0.09 * s, y + 0.045 * s), 0.022 * s, fc="#e8b4b8", ec=color, lw=0.5, zorder=4))
+    ax.add_patch(Circle((x + 0.135 * s, y + 0.02 * s), 0.007 * s, fc="white", ec="none", zorder=5))
+    tx = np.linspace(0, 1, 30)
+    ax.plot(x - 0.1 * s - 0.12 * s * tx, y - 0.01 * s + 0.03 * s * np.sin(tx * 5), color=color, lw=1.0, zorder=2)
+    leg_dx = (0.035, -0.04) if mode == "walk" else (0.06, -0.07)
+    for lx in (-0.055, 0.045):
+        for d in leg_dx:
+            ax.plot([x + lx * s, x + (lx + d * 0.5) * s], [y - 0.035 * s, y - 0.07 * s], color=color, lw=0.9,
+                    zorder=2)
+    if mode == "run":                                        # speed lines
+        for i in range(3):
+            ax.plot([x - (0.26 + 0.02 * i) * s, x - (0.16 + 0.02 * i) * s], [y + (0.03 - 0.03 * i) * s] * 2,
+                    color=INK2, lw=0.8)
+
+def summary_findings():
+    """Cartoon summary: per condition the behaviour, the share of speed-tuned SPNs (D1, D2) with a
+    mini tuning curve, and the SPN rate while moving relative to Control (matched speed)."""
+    rows = [("Control", "#2a78d6", "walk", (0.56, 0.61), (1.0, 1.0), "tuned"),
+            ("Amph.", "#eda100", "run", (0.09, 0.03), (0.66, 0.48), "flat"),
+            ("Amph. + clozapine", "#e34948", "walk", (0.22, 0.04), (0.75, 0.49), "D1"),
+            ("Amph. + haloperidol", "#b5382f", "rest", (0.37, 0.24), (0.92, 0.81), "partial")]
+    fig, ax = plt.subplots(figsize=(6.15, 2.85))
+    fig.subplots_adjust(0, 0, 1, 1)
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 0.465)
+    ax.axis("off")
+    cols = [(0.27, "behaviour"), (0.57, "speed-tuned SPNs"), (0.875, "SPN rate while moving")]
+    for x, t in cols:
+        ax.text(x, 0.445, t, ha="center", va="center", fontsize=8.5, fontweight="bold", color=INK)
+    ys = [0.36, 0.265, 0.17, 0.075]
+    for (name, col, mode, tuned, rate, curve), y in zip(rows, ys):
+        ax.add_patch(FancyBboxPatch((0.005, y - 0.04), 0.99, 0.08, boxstyle="round,pad=0,rounding_size=0.012",
+                                    fc="#f6f5f0", ec="none", zorder=0))
+        ax.text(0.015, y, name, ha="left", va="center", fontsize=7.5, fontweight="bold", color=col)
+        draw_mouse(ax, 0.265, y + 0.005, s=0.45, mode=mode)
+        # tuned cells: 10 icons per SPN type, filled share = tuned share
+        for g, (spn, c_, sh) in enumerate((("D1", D1C, tuned[0]), ("D2", D2C, tuned[1]))):
+            yy = y + 0.017 - 0.034 * g
+            ax.text(0.435, yy, spn, ha="right", va="center", fontsize=6.5, color=c_, fontweight="bold")
+            nf = int(round(sh * 10))
+            for i in range(10):
+                ax.add_patch(Circle((0.45 + i * 0.019, yy), 0.0072, fc=c_ if i < nf else "white", ec=c_, lw=0.6,
+                                    zorder=3))
+        # mini tuning curve: rate vs speed
+        x0, w, h = 0.66, 0.065, 0.05
+        sx = np.linspace(0, 1, 30)
+        shape = {"tuned": 0.15 + 0.85 * sx ** 1.5, "flat": 0.45 + 0.08 * sx,
+                 "D1": 0.3 + 0.45 * sx ** 1.5, "partial": 0.2 + 0.65 * sx ** 1.5}[curve]
+        ax.plot([x0, x0, x0 + w], [y + h / 2, y - h / 2, y - h / 2], color=INK2, lw=0.6)
+        ax.plot(x0 + w * sx, y - h / 2 + h * 0.9 * shape, color=col, lw=1.4)
+        if y == ys[0]:
+            ax.text(x0 + w / 2, y - h / 2 - 0.012, "speed", ha="center", va="top", fontsize=5.5, color=INK2)
+            ax.text(x0 - 0.006, y, "rate", ha="right", va="center", fontsize=5.5, color=INK2, rotation=90)
+        # rate while moving: bars relative to Control
+        for g, (c_, v) in enumerate(((D1C, rate[0]), (D2C, rate[1]))):
+            yy = y + 0.015 - 0.03 * g
+            ax.add_patch(FancyBboxPatch((0.775, yy - 0.009), 0.19 * v, 0.018, boxstyle="round,pad=0,rounding_size=0.004",
+                                        fc=c_, ec="none", zorder=3))
+            ax.text(0.78 + 0.19 * v, yy, f"{v:.0%}" if name != "Control" else "", va="center", fontsize=6,
+                    color=INK2)
+        ax.plot([0.775 + 0.19] * 2, [y - 0.035, y + 0.035], color=MUTED, lw=0.6, ls=(0, (2, 1.5)), zorder=4)
+    ax.text(0.99, ys[-1] - 0.05, "Control level", ha="right", fontsize=5.5, color=MUTED)
+    fig.savefig(f"{out_dir}/summary_findings.pdf")
+    fig.savefig(f"{out_dir}/summary_findings.png", dpi=200)
+    plt.close(fig)
+    print(f"saved {out_dir}/summary_findings.pdf/.png")
+
 
 if __name__ == "__main__":
     intro_circuit()
     intro_disease()
     intro_problem()
     intro_mediation()
+    summary_findings()
