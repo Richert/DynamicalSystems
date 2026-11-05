@@ -46,7 +46,7 @@ def slide_features(states, sessions):
     top = fig.add_gridspec(1, 8, wspace=0.0, width_ratios=[1.33, 0.52, 1, 0.52, 1, 0.52, 1, 0.6],
                            left=0.005, right=0.995, top=0.93, bottom=0.575)
     bottom = fig.add_gridspec(1, 1, left=0.155, right=0.995, top=0.535, bottom=0.115)
-    titles = ["frame + keypoints", "body posture", "head posture", "movement (0.4 s)"]
+    titles = ["location", "body posture", "head posture", "movement (0.4 s)"]
     panels = []
     for i, fn in enumerate((F.panel_frame, F.panel_body, F.panel_head, F.panel_movement)):
         ax = fig.add_subplot(top[2 * i])

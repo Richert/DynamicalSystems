@@ -380,8 +380,17 @@ def feature_example(states, sessions):
         if moving.any():
             break
     td = int(feat.turn.abs().where(moving).idxmax())
+    # location frame: well away from the wall and heading away from it (wall ahead >> wall
+    # distance), moving; anywhere in the session if the example window has none
+    ta = None
+    for w_ in (win, np.ones(len(feat), bool)):
+        cand = w_ & clean & feat.wall_dist.between(5, 9) & (feat.wall_ahead > feat.wall_dist + 12) & \
+            feat.speed.between(3, 20)
+        if cand.any():                                       # largest gap, prefer mid-arena
+            ta = int((feat.wall_ahead - feat.wall_dist + feat.wall_dist).where(cand).idxmax())
+            break
     return types.SimpleNamespace(s=s, feat=feat, px=px, centre=centre, scale=scale, off=off,
-                                 ix=ix, t0=t0, t1=t1, tb=tb, tc=tc, td=td, zb=80)
+                                 ix=ix, t0=t0, t1=t1, tb=tb, tc=tc, td=td, ta=ta, zb=80)
 
 def torso_of(q, ix):
     return q[[ix["neck"], ix["hip1"], ix["hip2"], ix["tail_base"]]].mean(0)
@@ -397,9 +406,10 @@ def panel_frame(ax, ex, title="top-view frame with MARS keypoints"):
     """Full frame: keypoints, arena circle (from the video), wall distance (torso to the nearest
     wall) and wall ahead (torso to the wall along the body heading), zoom box of panel_body."""
     ix, zb = ex.ix, ex.zb
-    img = video_frame(example, ex.off + ex.tb)
+    tf = ex.ta if getattr(ex, "ta", None) is not None else ex.tb      # location frame
+    img = video_frame(example, ex.off + tf)
     show_frame(ax, img)
-    p = ex.px[ex.tb]
+    p = ex.px[tf]
     R = A.arena_cm / 2 / ex.scale
     c = ex.centre / ex.scale
     th = np.linspace(0, 2 * np.pi, 200)
@@ -418,8 +428,9 @@ def panel_frame(ax, ex, title="top-view frame with MARS keypoints"):
     H, W = img.shape
     ax.set_xlim(-0.5, W - 0.5)
     ax.set_ylim(H - 0.5, -0.5)
-    zcen = np.clip(torso, zb, [W - zb, H - zb])                    # zoom box inside the frame
-    ax.add_patch(Rectangle(zcen - zb, 2 * zb, 2 * zb, fill=False, ec=INK, lw=0.6, ls="--"))
+    if tf == ex.tb:                                                # zoom box of panel_body (same frame)
+        zcen = np.clip(torso, zb, [W - zb, H - zb])
+        ax.add_patch(Rectangle(zcen - zb, 2 * zb, 2 * zb, fill=False, ec=INK, lw=0.6, ls="--"))
     items = [((torso + wall) / 2, "wall distance", FC["wall"]),
              (torso + 0.6 * (ahead - torso), "wall ahead", FC["wall_ahead"]),
              (c + R * np.array([np.cos(0.25), np.sin(0.25)]), "arena", INK2)]
