@@ -105,7 +105,10 @@ def label_map(states):
 START_GREY = "#d3d1cb"                     # bout start in fig 3
 # feature annotation colours (fig 1), shared between the frames and the time series
 FC = dict(torso="#2a78d6", head="#eb6834", bend="#6250d6", length="#c98500", ears="#1baf7a",
-          hips="#e87ba4", wall="#008300")
+          hips="#e87ba4", wall="#008300", wall_ahead="#0f7c8c")
+# feature labels of the frame panels: inside the image (callouts) or in the space to the right
+# of each panel with leader lines (slides: occlude less of the mouse)
+LABELS_OUT = False
 DIVERGING = LinearSegmentedColormap.from_list("div", ["#184f95", "#6da7ec", "#f0efec",
                                                       "#ec8a85", "#a8302f"])
 SEQUENTIAL = LinearSegmentedColormap.from_list("seq", ["#f7f9fc", "#b7d3f6", "#5598e7",
@@ -156,22 +159,41 @@ def keypoints(session):
     f, dose, _ = pose_file(session)
     o = pd.read_csv(A.offsets_csv).set_index("session").loc[f"{A.drug.lower()}/{dose}/{session}"]
     off, scale = int(o.offset_frames), float(o.cm_per_px)
-    kp, _, centre, nodes = A.load_keypoints(f, off, int(o.old_frames_5hz) * 4, scale)
+    try:                                         # arena circle of the feature computation
+        scale, centre_px = A.arena(f"{A.drug.lower()}/{dose}/{session}")
+    except KeyError:
+        centre_px = None
+    kp, _, centre, nodes = A.load_keypoints(f, off, int(o.old_frames_5hz) * 4, scale, centre_px)
     return kp, centre, scale, off, {n: i for i, n in enumerate(nodes)}
 
+frame_cache = os.environ.get("FRAME_CACHE", "/home/rgast/data/parker_data/video_frame_cache")
+
 def video_frame(session, frame):
+    """Grayscale video frame (cached locally: seeking in the .avi on the shared drive is slow)."""
+    cache = f"{frame_cache}/{session}_{int(frame)}.npy"
+    if os.path.isfile(cache):
+        return np.load(cache)
     import cv2
     cap = cv2.VideoCapture(f"{video_root}/{session}_Top.avi")
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame)
     ok, img = cap.read()
     cap.release()
-    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if ok else None
+    if not ok:
+        return None
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    os.makedirs(frame_cache, exist_ok=True)
+    np.save(cache, img)
+    return img
 
-def load_data():
+def load_data(only=None):
+    """States table and all sessions (only: these session names, e.g. [example] for figures that
+    need one session; the z-scoring then uses those sessions only)."""
     states = pd.read_csv(f"{A.out_dir}/pose_states.csv", index_col="state")
     sessions = []
     for f in sorted(glob.glob(f"{A.out_dir}/features_*.csv.gz")):
         name = os.path.basename(f)[9:-7]
+        if only is not None and name not in only:
+            continue
         z = pd.read_csv(f"{A.out_dir}/states_{name}.csv.gz").state.values
         feat = pd.read_csv(f).iloc[:len(z)].reset_index(drop=True)
         _, dose, part = pose_file(name)
@@ -259,10 +281,25 @@ def tag(ax, xy, text, color, ha="left", va="center"):
     ax.text(*xy, text, color=color, fontsize=6.5, ha=ha, va=va, zorder=8, fontweight="bold",
             bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.85))
 
+def callouts_outside(ax, items, x=1.05, y0=0.08, y1=0.92):
+    """Labels to the right of the axes, ordered by the anchors' vertical position (image rows
+    increase downwards), each joined to its anchor (data coordinates) by a leader line."""
+    items = sorted(items, key=lambda it: it[0][1])
+    items = [(a, t if "\n" in t else t.replace(" ", "\n", 1), c) for a, t, c in items]
+    ys = np.linspace(y1, y0, len(items)) if len(items) > 1 else [0.5]
+    for (anchor, text, color), y in zip(items, ys):
+        ax.annotate(text, xy=anchor, xycoords="data", xytext=(x, y), textcoords="axes fraction",
+                    ha="left", va="center", fontsize=6.1, color=color, fontweight="bold", linespacing=1.0,
+                    annotation_clip=False,
+                    arrowprops=dict(arrowstyle="-", color=color, lw=0.5, shrinkA=1, shrinkB=0))
+
 def callouts(ax, centre, items, dist, min_sep=np.radians(38)):
     """Labels on a circle of radius dist around centre, each at the angle of its anchor
     (spread apart to at least min_sep), joined to the anchor by a leader line.
-    items: (anchor, text, colour)."""
+    items: (anchor, text, colour). LABELS_OUT: to the right of the axes instead."""
+    if LABELS_OUT:
+        callouts_outside(ax, items)
+        return
     ang = np.array([np.arctan2(*(a - centre)[::-1]) for a, _, _ in items])
     order = np.argsort(ang)
     a = ang[order].copy()
@@ -357,7 +394,8 @@ def zoom(ax, q, z=80):
     return cz
 
 def panel_frame(ax, ex, title="top-view frame with MARS keypoints"):
-    """Full frame: keypoints, arena (keypoint extent), wall distance, zoom box of panel_body."""
+    """Full frame: keypoints, arena circle (from the video), wall distance (torso to the nearest
+    wall) and wall ahead (torso to the wall along the body heading), zoom box of panel_body."""
     ix, zb = ex.ix, ex.zb
     img = video_frame(example, ex.off + ex.tb)
     show_frame(ax, img)
@@ -370,21 +408,32 @@ def panel_frame(ax, ex, title="top-view frame with MARS keypoints"):
     u = (torso - c) / np.linalg.norm(torso - c)
     wall = c + R * u
     ax.plot(*np.c_[torso, wall], color=FC["wall"], lw=1.4, zorder=5)
+    hd = p[ix["neck"]] - p[ix["tail_base"]]
+    hd = hd / np.linalg.norm(hd)
+    r_ = torso - c
+    t_ = -(r_ @ hd) + np.sqrt(max((r_ @ hd) ** 2 - r_ @ r_ + R ** 2, 0))
+    ahead = torso + t_ * hd
+    ax.plot(*np.c_[torso, ahead], color=FC["wall_ahead"], lw=1.2, ls=(0, (3, 1.5)), zorder=5)
     skeleton(ax, p, ix, ms=5, lw=0.7)
     H, W = img.shape
     ax.set_xlim(-0.5, W - 0.5)
     ax.set_ylim(H - 0.5, -0.5)
     zcen = np.clip(torso, zb, [W - zb, H - zb])                    # zoom box inside the frame
     ax.add_patch(Rectangle(zcen - zb, 2 * zb, 2 * zb, fill=False, ec=INK, lw=0.6, ls="--"))
-    # wall-distance label beside the line, on the side away from the keypoints
-    perp = np.array([-u[1], u[0]])
-    wm = (torso + wall) / 2
-    if ((p - wm) @ perp).mean() > 0:
-        perp = -perp
-    pos = wall + 0.6 * zb * perp
-    ax.plot(*np.c_[wm, pos], color=FC["wall"], lw=0.5, zorder=6)
-    tag_in(ax, pos, "wall distance", FC["wall"], ha="left" if perp[0] > 0 else "right")
-    tag_in(ax, c + [0, 0.85 * R], "arena (keypoint extent)", INK2, ha="center", margin=0.2)
+    items = [((torso + wall) / 2, "wall distance", FC["wall"]),
+             (torso + 0.6 * (ahead - torso), "wall ahead", FC["wall_ahead"]),
+             (c + R * np.array([np.cos(0.25), np.sin(0.25)]), "arena", INK2)]
+    if LABELS_OUT:
+        callouts_outside(ax, items)
+    else:
+        perp = np.array([-u[1], u[0]])
+        wm = (torso + wall) / 2
+        if ((p - wm) @ perp).mean() > 0:
+            perp = -perp
+        pos = wall + 0.6 * zb * perp
+        ax.plot(*np.c_[wm, pos], color=FC["wall"], lw=0.5, zorder=6)
+        tag_in(ax, pos, "wall distance", FC["wall"], ha="left" if perp[0] > 0 else "right")
+        tag_in(ax, c + [0, 0.85 * R], "arena", INK2, ha="center", margin=0.2)
     if title:
         ax.set_title(title, loc="left")
 
@@ -466,12 +515,16 @@ def panel_movement(ax, ex, title=True):
     b1 = seg[-1, ix["neck"]] - seg[-1, ix["tail_base"]]
     v = (tors[-1] - tors[-3]) / 2 * A.fs * 0.25                   # px moved in 0.25 s
     arrow(ax, tors[-1], tors[-1] + v, FC["torso"], lw=1.4)
-    tag_in(ax, tors[-1] + 1.3 * v, "speed", FC["torso"], ha="center")
     ta = arc(ax, tors[0], b0, b1, 24, FC["torso"])
-    tag_in(ax, tors[0] + 2.2 * (ta - tors[0]), "turn", FC["torso"], ha="center")
     nz = seg[-1, ix["nose"]]
-    tag_in(ax, nz + 22 * (nz - tors[-1]) / np.linalg.norm(nz - tors[-1]), "head speed / turn",
-           FC["head"], ha="center", margin=0.3)
+    if LABELS_OUT:
+        callouts_outside(ax, [(tors[-1] + 0.6 * v, "speed", FC["torso"]), (ta, "turn", FC["torso"]),
+                              (seg[-3, ix["nose"]], "head speed\n/ head turn", FC["head"])])
+    else:
+        tag_in(ax, tors[-1] + 1.3 * v, "speed", FC["torso"], ha="center")
+        tag_in(ax, tors[0] + 2.2 * (ta - tors[0]), "turn", FC["torso"], ha="center")
+        tag_in(ax, nz + 22 * (nz - tors[-1]) / np.linalg.norm(nz - tors[-1]), "head speed / turn",
+               FC["head"], ha="center", margin=0.3)
     if title:
         ax.set_title(f"movement (last {lag / A.fs:.1f} s)", loc="left")
 

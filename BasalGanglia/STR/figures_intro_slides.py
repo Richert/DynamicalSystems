@@ -218,15 +218,16 @@ def intro_mediation():
     node(ax, P["drug"], "drug", INK, w=0.14, h=0.08, bold=True, fs=9)
     node(ax, P["spn"], "SPN activity", D1C, w=0.2, h=0.08, bold=True, fs=9)
     node(ax, P["beh"], "behaviour", "#d1860a", w=0.18, h=0.08, bold=True, fs=9)
-    direct = FancyArrowPatch(P["drug"], P["spn"], arrowstyle="-|>,head_length=6,head_width=3.5",
-                             color=INK, lw=1.8, shrinkA=30, shrinkB=46, mutation_scale=1.6)
+    # arrow ends placed explicitly with a gap to every box edge (boxes: centre +- w/2, h/2)
+    direct = FancyArrowPatch((0.195, 0.12), (0.755, 0.12), arrowstyle="-|>,head_length=6,head_width=3.5",
+                             color=INK, lw=1.8, shrinkA=0, shrinkB=0, mutation_scale=1.6)
     ax.add_patch(direct)
     t_dir = ax.text(0.49, 0.075, "direct effect on the striatal circuit?", ha="center", fontsize=8,
                     color=INK)
-    m1 = FancyArrowPatch(P["drug"], P["beh"], arrowstyle="-|>,head_length=6,head_width=3.5",
-                         color="#d1860a", lw=1.8, shrinkA=26, shrinkB=30, mutation_scale=1.6)
-    m2 = FancyArrowPatch(P["beh"], P["spn"], arrowstyle="<|-|>,head_length=6,head_width=3.5",
-                         color="#d1860a", lw=1.8, shrinkA=30, shrinkB=40, mutation_scale=1.6)
+    m1 = FancyArrowPatch((0.15, 0.185), (0.37, 0.32), arrowstyle="-|>,head_length=6,head_width=3.5",
+                         color="#d1860a", lw=1.8, shrinkA=0, shrinkB=0, mutation_scale=1.6)
+    m2 = FancyArrowPatch((0.61, 0.32), (0.815, 0.185), arrowstyle="<|-|>,head_length=6,head_width=3.5",
+                         color="#d1860a", lw=1.8, shrinkA=0, shrinkB=0, mutation_scale=1.6)
     ax.add_patch(m1)
     ax.add_patch(m2)
     t_med = ax.text(0.49, 0.5, "or mediated by the change in behaviour?", ha="center", fontsize=8,

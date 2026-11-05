@@ -38,31 +38,31 @@ def shown_states(states):
 # ---------------------------------------------------------------------------
 
 def slide_features(states, sessions):
+    """Video frames with the keypoints and the constructions of the features (labels in the space
+    to the right of each panel), and 60 s of feature traces."""
     ex = F.feature_example(states, sessions)
-    fig = plt.figure(figsize=(6.0, 3.15))
-    gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 1.05], hspace=0.22, left=0.155, right=0.99,
-                          top=0.92, bottom=0.11)
-    top = gs[0].subgridspec(1, 4, wspace=0.08, width_ratios=[1.33, 1, 1, 1])
+    F.LABELS_OUT = True
+    fig = plt.figure(figsize=(6.15, 2.85))
+    top = fig.add_gridspec(1, 8, wspace=0.0, width_ratios=[1.33, 0.52, 1, 0.52, 1, 0.52, 1, 0.6],
+                           left=0.005, right=0.995, top=0.93, bottom=0.55)
+    bottom = fig.add_gridspec(1, 1, left=0.125, right=0.995, top=0.47, bottom=0.12)
+    titles = ["frame + keypoints", "body posture", "head posture", "movement (0.4 s)"]
     for i, fn in enumerate((F.panel_frame, F.panel_body, F.panel_head, F.panel_movement)):
-        ax = fig.add_subplot(top[i])
+        ax = fig.add_subplot(top[2 * i])
         if fn in (F.panel_body, F.panel_head):
             fn(ax, ex, title=None, values=False)
         else:
             fn(ax, ex, title=None)
-        ax.set_title(["frame + keypoints", "body posture", "head posture",
-                      "movement (0.4 s)"][i], loc="left", fontsize=8)
-    rows = [("speed", "speed (cm/s)", "torso"), ("turn", "turn (°/s)", "torso"),
-            ("head_angle", "head angle (°)", "head"), ("bend", "bend (°)", "bend"),
-            ("body_len", "body length", "length")]
-    axes = F.panel_feature_series(fig, gs[1], ex, rows=rows, window=60, marks=False,
-                                  title=None, label_size=7, hspace=0.3)
+        ax.set_title(titles[i], loc="left", fontsize=7.5)
+    F.LABELS_OUT = False
+    rows = [("speed", "speed\n(cm/s)", "torso"), ("turn", "turn\n(°/s)", "torso"),
+            ("head_angle", "head\nangle (°)", "head"), ("bend", "bend\n(°)", "bend"),
+            ("wall_dist", "wall\ndist. (cm)", "wall"), ("wall_ahead", "wall\nahead (cm)", "wall_ahead")]
+    axes = F.panel_feature_series(fig, bottom[0], ex, rows=rows, window=60, marks=False,
+                                  title=None, label_size=5.8, hspace=0.35)
     for ax in axes:
         ax.yaxis.set_major_locator(plt.MaxNLocator(2, prune="lower"))
-        ax.tick_params(axis="y", labelsize=6)
-    letters(fig, [(0.005, "a"), (0.005, "b")], 0.95)
-    fig.texts[-1].set_position((0.005, 0.47))
-    for t in fig.texts[-2:]:
-        t.set_x(0.005)
+        ax.tick_params(axis="y", labelsize=5.8)
     save(fig, "behavior_features")
 
 def state_matrix_axes(fig, ax, M, show, names, title, cmap, vmin, vmax, ylabels, xlabel=None,

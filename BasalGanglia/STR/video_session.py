@@ -6,7 +6,9 @@ trace. Bottom: torso speed, AR-HMM state sequence and the population event rate 
 over cells), with a cursor. Pose and imaging frames are aligned with the pose-imaging
 offset (both 20 Hz; imaging frame i = video frame video_offset + i, see build_spn_dataset).
 
-  conda run -n parker python video_session.py [t0_s duration_s]
+  conda run -n parker python video_session.py [t0_s duration_s] [--columns]
+  --columns: movies in a left column, behaviour feature traces + SPN rate on the right
+  (session_features.mp4, first behaviour slide)
 Writes <SLIDE_DIR>/../videos/session.mp4 and a poster frame session_poster.png.
 """
 import os
@@ -183,6 +185,107 @@ def main(t0_s=0.0, dur_s=40.0):
     print(f"saved {out_dir}/session.mp4 ({n} frames, {dur_s:g} s of recording, "
           f"{dur_s / speed_factor:g} s video) and session_poster.png")
 
+FEATURE_TRACES = [("speed", "speed\n(cm/s)", "torso"), ("turn", "turning\n(°/s)", "torso"),
+                  ("head_angle", "head angle\n(°)", "head"), ("wall_dist", "wall dist.\n(cm)", "wall")]
+
+def main_columns(t0_s=0.0, dur_s=40.0, name="session_features"):
+    """Same snippet as main(): behaviour video (top) and calcium movie (bottom) in a left column;
+    to the right, behaviour feature traces and the SPN population rate with a moving cursor."""
+    from scipy.ndimage import gaussian_filter, uniform_filter1d, gaussian_filter1d
+    t0 = win0 + int(t0_s * fps)
+    n = int(dur_s * fps)
+    os.makedirs(out_dir, exist_ok=True)
+    r = R.Recording(R.rec)
+    Y = r.frames(win0, win0 + 2400)[t0 - win0:t0 - win0 + n]
+    Y = gaussian_filter(uniform_filter1d(Y, 3, axis=0), (0, 1, 1))
+    lo, hi = np.percentile(Y, [1, 99.7])
+    C = r.C[:, t0:t0 + n]
+    scale = np.percentile(r.C[:, win0:win0 + 2400], 99.5, axis=1)[:, None]
+    act = np.clip(C / np.maximum(scale, 1e-9), 0, 1)
+    rate = gaussian_filter1d(r.events[:, t0:t0 + n].mean(0).astype(float) * fps, 0.25 * fps)
+    kp, centre, sc, off, ix = F.keypoints(pose_session)
+    px = kp / sc
+    from build_spn_dataset import video_offset
+    tp = t0 + video_offset - off
+    video = arena_frames(off, tp, n)
+    feat = pd.read_csv(f"{F.A.out_dir}/features_{pose_session}.csv.gz",
+                       usecols=[c for c, _, _ in FEATURE_TRACES])
+    c = centre / sc
+    H, W = video.shape[1:]
+    half = H / 2
+    x0 = int(np.clip(c[0] - half, 0, W - 2 * half))
+    fig = plt.figure(figsize=(8, 4.5), dpi=160)
+    # left column: two square movies; right column: traces
+    axv = fig.add_axes([0.015, 0.52, 0.255, 0.425])
+    axc = fig.add_axes([0.015, 0.035, 0.255, 0.425])
+    im_v = axv.imshow(video[0], cmap="gray", vmin=0, vmax=255, interpolation="bilinear")
+    axv.set_xlim(x0, x0 + 2 * half)
+    axv.set_ylim(H, 0)
+    R.frame_axes(axv, "behaviour")
+    sk = [axv.plot([], [], color="#f4f3ee", lw=1.4, solid_capstyle="round")[0] for _ in F.EDGES]
+    dots = axv.scatter(np.zeros(7), np.zeros(7), s=10, color="#f4f3ee", edgecolor=INK, lw=0.4, zorder=4)
+    trail, = axv.plot([], [], color=R.ACCENT, lw=1.0, alpha=0.8)
+    im_c = axc.imshow(Y[0], cmap=R.FLUO, vmin=lo, vmax=hi, interpolation="bilinear")
+    R.frame_axes(axc, f"striatum, {len(r.kept)} SPNs")
+    polys = cell_polygons(r)
+    base = np.array(to_rgba(R.ACCENT))
+    pc = PolyCollection(polys, facecolors=np.zeros((len(polys), 4)),
+                        edgecolors=[(1, 1, 1, 0.35)] * len(polys), linewidths=0.4)
+    axc.add_collection(pc)
+    R.scalebar(axc, r.dims)
+    t = np.arange(n) / fps
+    rows = FEATURE_TRACES + [("rate", "SPN rate\n(Hz)", None)]
+    gs = fig.add_gridspec(len(rows), 1, left=0.42, right=0.985, top=0.96, bottom=0.1, hspace=0.25)
+    axes, cursors = [], []
+    for k, (col, lab, fc) in enumerate(rows):
+        ax = fig.add_subplot(gs[k], sharex=axes[0] if axes else None)
+        y = rate if col == "rate" else feat[col].values[tp:tp + n]
+        ax.plot(t, y, color=R.ACCENT if col == "rate" else F.FC[fc], lw=1.0 if col == "rate" else 0.9)
+        ax.set_ylabel(lab, rotation=0, ha="right", va="center", fontsize=8)
+        ax.yaxis.set_major_locator(plt.MaxNLocator(2))
+        ax.set_xlim(0, t[-1])
+        for sp in ("top", "right"):
+            ax.spines[sp].set_visible(False)
+        if k < len(rows) - 1:
+            ax.tick_params(axis="x", labelbottom=False, length=0)
+        else:
+            ax.set_xlabel("time (s)")
+        cursors.append(ax.axvline(0, color=INK, lw=0.8))
+        axes.append(ax)
+    pace = "real time" if speed_factor == 1 else f"{speed_factor:g}× speed"
+    fig.text(0.99, 0.01, f"m085, vehicle + amphetamine · {pace}", ha="right", va="bottom",
+             fontsize=7, color=MUTED)
+
+    def draw(i):
+        im_v.set_data(video[i])
+        p = px[tp + i]
+        for line, (a, b) in zip(sk, F.EDGES):
+            line.set_data(*np.c_[p[ix[a]], p[ix[b]]])
+        dots.set_offsets(p)
+        tr = px[max(tp, tp + i - 20):tp + i + 1, ix["nose"]]
+        trail.set_data(tr[:, 0], tr[:, 1])
+        im_c.set_data(Y[i])
+        fc_ = np.tile(base, (len(polys), 1))
+        fc_[:, 3] = 0.85 * act[:, i]
+        pc.set_facecolors(fc_)
+        for cl in cursors:
+            cl.set_xdata([t[i], t[i]])
+        return []
+
+    from matplotlib.animation import FuncAnimation, FFMpegWriter
+    draw(int(np.argmax(rate)))
+    fig.savefig(f"{out_dir}/{name}_poster.png", dpi=160)
+    anim = FuncAnimation(fig, draw, frames=n, blit=False)
+    writer = FFMpegWriter(fps=fps * speed_factor, codec="libx264", bitrate=4000,
+                          extra_args=["-pix_fmt", "yuv420p", "-preset", "slow", "-crf", "20"])
+    anim.save(f"{out_dir}/{name}.mp4", writer=writer, dpi=160)
+    plt.close(fig)
+    print(f"saved {out_dir}/{name}.mp4 and {name}_poster.png")
+
+
 
 if __name__ == "__main__":
-    main(*(float(a) for a in sys.argv[1:3]))
+    if "--columns" in sys.argv:
+        main_columns(*(float(a) for a in sys.argv[1:3] if a != "--columns"))
+    else:
+        main(*(float(a) for a in sys.argv[1:3]))
