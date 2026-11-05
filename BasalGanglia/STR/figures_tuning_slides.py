@@ -6,7 +6,8 @@ version: the same time per feature bin in every condition), both cohorts, built 
   tuning_curves   population tuning curves (each tuned cell's curve / its mean over bins; mean per
                   mouse, mean +- SEM over mice with >= min_cells tuned cells) for speed and turning
 
-Frames <name>_s1 ... _s4: Control, + Amphetamine, + drug alone, + Amphetamine + drug.
+Frames <name>_s1 ... _s4: Control, + Amphetamine, + drug alone, + Amphetamine + drug. The tuning-curve
+panels have an inset with the share of tuned cells (the cells the curves average over).
 
   conda run -n parker python figures_tuning_slides.py
 """
@@ -137,7 +138,21 @@ def tuning_curves(features=("speed", "turn")):
             centres = (e[:-1] + e[1:]) / 2
             for g, spn in enumerate(("D1", "D2")):
                 ax = axes[i, 2 * j + g]
+                ins = ax.inset_axes([0.14, 0.5, 0.28, 0.42] if feat == "speed" else
+                                    [0.37, 0.5, 0.28, 0.42])      # share of tuned cells per condition
+                ins.set_xlim(-0.6, 3.6)
+                ins.set_ylim(0, 0.75)
+                ins.set_xticks([])
+                ins.set_yticks([0, 0.5], ["0", "50%"])
+                ins.tick_params(axis="y", labelsize=5, length=1.5, pad=1)
+                for sp in ("top", "right"):
+                    ins.spines[sp].set_visible(False)
+                ins.set_title("tuned", fontsize=5.5, pad=1, color=INK2, loc="left")
+                ins.patch.set_facecolor("white")
+                ins.set_zorder(4)
                 for k, cond in enumerate(conds):
+                    sh = c[(c.spn == spn) & (c.condition == cond) & (c.feature == feat)].tuned.mean()
+                    by_cond[k] |= set(ins.bar([k], [sh], color=COND_COL[k], width=0.75).patches)
                     d = c[(c.spn == spn) & (c.condition == cond) & (c.feature == feat) & c.tuned]
                     C = d[[f"c{b}" for b in range(8)]].values
                     C = C / np.maximum(C.mean(1, keepdims=True), 1e-9)
