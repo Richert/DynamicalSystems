@@ -243,6 +243,8 @@ def main_columns(t0_s=0.0, dur_s=40.0, name="session_features"):
         ax.plot(t, y, color=R.ACCENT if col == "rate" else F.FC[fc], lw=1.0 if col == "rate" else 0.9)
         ax.set_ylabel(lab, rotation=0, ha="right", va="center", fontsize=8)
         ax.yaxis.set_major_locator(plt.MaxNLocator(2))
+        if col in ("turn", "head_angle"):                    # signed features: zero line
+            ax.axhline(0, color=MUTED, lw=0.7, ls=(0, (3, 2)), zorder=0)
         ax.set_xlim(0, t[-1])
         for sp in ("top", "right"):
             ax.spines[sp].set_visible(False)
