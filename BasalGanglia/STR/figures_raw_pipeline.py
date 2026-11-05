@@ -789,17 +789,17 @@ def slide_postprocessing_steps(r, pick=None):
     lab = {k: l for k, l, _, _ in RULES}
     crit = {k: c for k, _, c, _ in RULES}
     crit["snr"] = "transient SNR < 2"
+    crit["consistency"] = "events don't light\nup its footprint"
     keys = [k for k, *_ in RULES]
     comps = sorted(stage)
     paths = dict(zip(comps, outline_paths(r, comps)))
-    DROP, KEEP, BASE = "#3f7fc6", "#d9a400", "#cfcdc4"
-    seed = r.cn * r.pnr
-    fig = plt.figure(figsize=(6.15, 2.85))
+    KEEP, BASE = "#d9a400", "#cfcdc4"
+    fig = plt.figure(figsize=(6.15, 2.7))
     gs = GridSpec(2, 6, figure=fig, width_ratios=[1.55, 0.85, 0.5, 0.5, 0.5, 0.5],
                   height_ratios=[1, 1], wspace=0.12, hspace=0.62, left=0.005, right=0.995,
-                  top=0.87, bottom=0.11)
+                  top=0.9, bottom=0.15)
     ax = fig.add_subplot(gs[:, 0])
-    ax.imshow(seed, cmap=FLUO, vmin=0, vmax=np.percentile(seed, 99.7))
+    ax.imshow(r.cn, cmap=FLUO, vmin=np.percentile(r.cn, 1), vmax=1)
     frame_axes(ax, None)
     scalebar(ax, r.dims)
     lc = lambda ks, c, lw: ax.add_collection(LineCollection([paths[k] for k in ks if len(paths[k])],
@@ -808,9 +808,9 @@ def slide_postprocessing_steps(r, pick=None):
     rule_lc = {k: lc([c for c, v in stage.items() if v == k], col[k], 0.8) for k in keys}
     dropped = [c for c, v in stage.items() if v != "kept"]
     kept = [c for c, v in stage.items() if v == "kept"]
-    fin_drop, fin_keep = lc(dropped, DROP, 0.55), lc(kept, KEEP, 0.8)
+    fin_keep = lc(kept, KEEP, 0.8)
     t_all = ax.set_title(f"all {len(comps)} CNMF-E components", loc="left")
-    t_fin = ax.text(0, 1.02, f"{len(kept)} kept (yellow), {len(dropped)} dropped (blue)",
+    t_fin = ax.text(0, 1.02, f"{len(kept)} of {len(comps)} components kept",
                     transform=ax.transAxes, fontsize=8.5, color=INK, va="bottom")
     t_all_txt = ax.title
     # (b) bars
@@ -871,14 +871,12 @@ def slide_postprocessing_steps(r, pick=None):
         ax_.text(0, -0.04, crit.get(k, "passes every rule"), transform=ax_.transAxes, va="top",
                  fontsize=5.6, color=INK2, linespacing=1.1)
         exa[k] = {ax_}
-    for x, l in ((0.005, "a"), (0.33, "b"), (0.5, "c")):
-        fig.text(x, 0.955, l, fontsize=10, fontweight="bold", color=INK)
     steps, vis = [], {base, t_all_txt}
     steps.append(set(vis))
     for k in keys:
         vis = vis | {rule_lc[k]} | bars[k] | exa[k]
         steps.append(set(vis))
-    final = (vis - set(rule_lc.values()) - {t_all_txt}) | {fin_drop, fin_keep, t_fin} | bars["kept"] | exa["kept"]
+    final = (vis - set(rule_lc.values()) - {t_all_txt}) | {fin_keep, t_fin} | bars["kept"] | exa["kept"]
     steps.append(final)
     save_steps(fig, steps, "pipeline_postprocessing_anim")
     plt.close(fig)

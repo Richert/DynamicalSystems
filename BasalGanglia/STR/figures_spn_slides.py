@@ -323,8 +323,8 @@ def slide_rate_pdfs_steps(cv, rd, st):
     """Rate distributions (D1, D2) built up per condition, then the mean and the SD of the log
     rate per mouse (whole session, equal time / 50 cells per draw; mixed-model stars)."""
     w = cv[cv.label == "whole session"]
-    fig = plt.figure(figsize=(6.15, 2.8))
-    gs = fig.add_gridspec(1, 4, width_ratios=[1.1, 1.1, 1.3, 1.3], wspace=0.38, left=0.095,
+    fig = plt.figure(figsize=(6.6, 2.8))
+    gs = fig.add_gridspec(1, 4, width_ratios=[1.1, 1.1, 1.48, 1.48], wspace=0.38, left=0.09,
                           right=0.99, top=0.8, bottom=0.2)
     bins = np.linspace(-2.45, 0.35, 29)
     hist = {c: set() for c in conditions}
