@@ -359,3 +359,54 @@ def title_banner(t_frame_s=24.0, win_s=40.0, n_traces=6,
     fig.savefig(out, dpi=300, facecolor="white")
     plt.close(fig)
     print(f"saved {out}")
+
+
+def setup_still(t_s=24.0, out="/home/rgast/OneDrive/posters/SFN_2026/img/setup_still", figsize=(3.6, 1.85),
+                fs=8.0):
+    """Poster still of the slide videos (same session and window, frame at t_s s into the 40-s
+    snippet = the slides' poster frame): top-view arena frame with the keypoint skeleton | calcium
+    frame with the cell outlines, filled in proportion to the denoised trace. Native resolution."""
+    from scipy.ndimage import gaussian_filter, uniform_filter1d
+    i = int(t_s * fps)
+    r = R.Recording(R.rec)
+    Y = r.frames(win0, win0 + 2400)
+    Yd = gaussian_filter(uniform_filter1d(Y[max(i - 1, 0):i + 2], 3, axis=0), (0, 1, 1))[min(i, 1)]
+    lo, hi = np.percentile(gaussian_filter(Y[:800], (0, 1, 1)), [1, 99.7])
+    scale = np.percentile(r.C[:, win0:win0 + 2400], 99.5, axis=1)
+    act = np.clip(r.C[:, win0 + i] / np.maximum(scale, 1e-9), 0, 1)
+    kp, centre, sc, off, ix = F.keypoints(pose_session)
+    px = kp / sc
+    from build_spn_dataset import video_offset
+    tp = win0 + video_offset - off
+    frame = arena_frames(off, tp + i, 1)[0]
+    c = centre / sc
+    H, W = frame.shape
+    half = H / 2
+    x0 = int(np.clip(c[0] - half, 0, W - 2 * half))
+    fig = plt.figure(figsize=figsize)
+    axv = fig.add_axes([0.0, 0.0, 0.485, 0.87])
+    axc = fig.add_axes([0.515, 0.0, 0.485, 0.87])
+    axv.imshow(frame, cmap="gray", vmin=0, vmax=255, interpolation="bilinear")
+    axv.set_xlim(x0, x0 + 2 * half)
+    axv.set_ylim(H, 0)
+    R.frame_axes(axv, "behavior + pose")
+    axv.title.set_fontsize(fs)
+    p = px[tp + i]
+    for a, b in F.EDGES:
+        axv.plot(*np.c_[p[ix[a]], p[ix[b]]], color="#f4f3ee", lw=1.0, solid_capstyle="round")
+    axv.scatter(p[:, 0], p[:, 1], s=5, color="#f4f3ee", edgecolor=INK, lw=0.4, zorder=4)
+    tr = px[max(tp, tp + i - 20):tp + i + 1, ix["nose"]]
+    axv.plot(tr[:, 0], tr[:, 1], color=R.ACCENT, lw=1.2, alpha=0.8)
+    axc.imshow(Yd, cmap=R.FLUO, vmin=lo, vmax=hi, interpolation="bilinear")
+    R.frame_axes(axc, f"calcium imaging, {len(r.kept)} SPNs")
+    axc.title.set_fontsize(fs)
+    polys = cell_polygons(r)
+    fc = np.tile(np.array(to_rgba(R.ACCENT)), (len(polys), 1))
+    fc[:, 3] = 0.85 * act
+    axc.add_collection(PolyCollection(polys, facecolors=fc, edgecolors=[(1, 1, 1, 0.35)] * len(polys),
+                                      linewidths=0.4))
+    R.scalebar(axc, r.dims)
+    for ext in ("png", "pdf"):
+        fig.savefig(f"{out}.{ext}", dpi=400, facecolor="white")
+    plt.close(fig)
+    print(f"saved {out}.png/.pdf")
